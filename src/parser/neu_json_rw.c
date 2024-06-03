@@ -90,6 +90,107 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_read_paginate_resp(void *json_object, void *param)
+{
+    int                            ret = 0;
+    neu_json_read_paginate_resp_t *resp =
+        (neu_json_read_paginate_resp_t *) param;
+
+    void *                             tag_array = neu_json_array();
+    neu_json_read_paginate_resp_tag_t *p_tag     = resp->tags;
+
+    for (int i = 0; i < resp->n_tag; i++) {
+        neu_json_elem_t tag_elems[10 + NEU_TAG_META_SIZE] = { 0 };
+        int             if_precision                      = 0;
+
+        tag_elems[0].name      = "name";
+        tag_elems[0].t         = NEU_JSON_STR;
+        tag_elems[0].v.val_str = p_tag->name;
+
+        tag_elems[1].name      = "type";
+        tag_elems[1].t         = NEU_JSON_INT;
+        tag_elems[1].v.val_int = p_tag->datatag.type;
+
+        tag_elems[2].name      = "address";
+        tag_elems[2].t         = NEU_JSON_STR;
+        tag_elems[2].v.val_str = p_tag->datatag.address;
+
+        tag_elems[3].name      = "attribute";
+        tag_elems[3].t         = NEU_JSON_INT;
+        tag_elems[3].v.val_int = p_tag->datatag.attribute;
+
+        tag_elems[4].name      = "description";
+        tag_elems[4].t         = NEU_JSON_STR;
+        tag_elems[4].v.val_str = p_tag->datatag.description;
+
+        tag_elems[5].name      = "precision";
+        tag_elems[5].t         = NEU_JSON_INT;
+        tag_elems[5].v.val_int = p_tag->datatag.precision;
+
+        tag_elems[6].name         = "decimal";
+        tag_elems[6].t            = NEU_JSON_DOUBLE;
+        tag_elems[6].v.val_double = p_tag->datatag.decimal;
+
+        tag_elems[7].name         = "bias";
+        tag_elems[7].t            = NEU_JSON_DOUBLE;
+        tag_elems[7].v.val_double = p_tag->datatag.bias;
+
+        if (p_tag->error != 0) {
+            tag_elems[8].name      = "error";
+            tag_elems[8].t         = NEU_JSON_INT;
+            tag_elems[8].v.val_int = p_tag->error;
+        } else {
+            tag_elems[8].name      = "value";
+            tag_elems[8].t         = p_tag->t;
+            tag_elems[8].v         = p_tag->value;
+            tag_elems[8].precision = p_tag->precision;
+
+            if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
+                if_precision      = 1;
+                tag_elems[9].name = "precision";
+                tag_elems[9].t    = NEU_JSON_INT;
+                tag_elems[9].v.val_int =
+                    p_tag->precision > 0 ? p_tag->precision : 1;
+            }
+        }
+
+        for (int k = 0; k < p_tag->n_meta; k++) {
+            tag_elems[if_precision + 9 + k].name = p_tag->metas[k].name;
+            tag_elems[if_precision + 9 + k].t    = p_tag->metas[k].t;
+            tag_elems[if_precision + 9 + k].v    = p_tag->metas[k].value;
+        }
+
+        tag_array = neu_json_encode_array(tag_array, tag_elems,
+                                          9 + if_precision + p_tag->n_meta);
+
+        free(p_tag->datatag.name);
+        free(p_tag->datatag.address);
+        free(p_tag->datatag.description);
+
+        p_tag++;
+    }
+
+    void *          meta_object  = neu_json_encode_new();
+    neu_json_elem_t meta_elems[] = {
+        { .name      = "currentPage",
+          .t         = NEU_JSON_INT,
+          .v.val_int = resp->meta.current_page },
+        { .name      = "pageSize",
+          .t         = NEU_JSON_INT,
+          .v.val_int = resp->meta.page_size },
+        { .name = "total", .t = NEU_JSON_INT, .v.val_int = resp->meta.total }
+    };
+    neu_json_encode_field(meta_object, meta_elems, 3);
+
+    neu_json_elem_t resp_elems[] = {
+        { .name = "meta", .t = NEU_JSON_OBJECT, .v.val_object = meta_object },
+        { .name = "items", .t = NEU_JSON_OBJECT, .v.val_object = tag_array },
+    };
+    ret = neu_json_encode_field(json_object, resp_elems, 2);
+
+    return ret;
+}
+
 int neu_json_encode_read_resp1(void *json_object, void *param)
 {
     int                   ret  = 0;
@@ -519,6 +620,123 @@ void neu_json_decode_read_req_free(neu_json_read_req_t *req)
     free(req);
 }
 
+int neu_json_decode_read_paginate_req(char *                         buf,
+                                      neu_json_read_paginate_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = NULL;
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    neu_json_read_paginate_req_t *req =
+        calloc(1, sizeof(neu_json_read_paginate_req_t));
+    if (req == NULL) {
+        neu_json_decode_free(json_obj);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "sync",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "query",
+            .t         = NEU_JSON_OBJECT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+
+    neu_json_elem_t query_elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "description",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "currentPage",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "pageSize",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "isError",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+
+    if (ret != 0) {
+        goto error;
+    }
+
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->sync  = req_elems[2].v.val_bool;
+
+    if (req_elems[3].v.val_object) {
+        ret = neu_json_decode_by_json(req_elems[3].v.val_object,
+                                      NEU_JSON_ELEM_SIZE(query_elems),
+                                      query_elems);
+
+        if (ret != 0) {
+            goto error;
+        }
+        req->name         = query_elems[0].v.val_str;
+        req->desc         = query_elems[1].v.val_str;
+        req->current_page = query_elems[2].v.val_int;
+        req->page_size    = query_elems[3].v.val_int;
+        req->is_error     = query_elems[4].v.val_bool;
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return ret;
+
+error:
+    free(query_elems[0].v.val_str);
+    free(query_elems[1].v.val_str);
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    free(req);
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_read_paginate_req_free(neu_json_read_paginate_req_t *req)
+{
+    free(req->group);
+    free(req->node);
+
+    free(req);
+}
+
 int neu_json_encode_read_periodic_resp(void *json_object, void *param)
 {
     int                       ret  = 0;
@@ -547,6 +765,81 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
 
 void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
                             neu_json_read_resp_tag_t *json_tag)
+{
+    for (int k = 0; k < n_meta; k++) {
+        if (strlen(metas[k].name) > 0) {
+            json_tag->metas[k].name = metas[k].name;
+            switch (metas[k].value.type) {
+            case NEU_TYPE_UINT8:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u8;
+                break;
+            case NEU_TYPE_INT8:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i8;
+                break;
+            case NEU_TYPE_INT16:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i16;
+                break;
+            case NEU_TYPE_INT32:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i32;
+                break;
+            case NEU_TYPE_INT64:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i64;
+                break;
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_UINT16:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u16;
+                break;
+            case NEU_TYPE_DWORD:
+            case NEU_TYPE_UINT32:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u32;
+                break;
+            case NEU_TYPE_LWORD:
+            case NEU_TYPE_UINT64:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u64;
+                break;
+            case NEU_TYPE_FLOAT:
+                json_tag->metas[k].t               = NEU_JSON_FLOAT;
+                json_tag->metas[k].value.val_float = metas[k].value.value.f32;
+                break;
+            case NEU_TYPE_DOUBLE:
+                json_tag->metas[k].t                = NEU_JSON_DOUBLE;
+                json_tag->metas[k].value.val_double = metas[k].value.value.d64;
+                break;
+            case NEU_TYPE_BOOL:
+                json_tag->metas[k].t = NEU_JSON_BOOL;
+                json_tag->metas[k].value.val_bool =
+                    metas[k].value.value.boolean;
+                break;
+            case NEU_TYPE_BIT:
+                json_tag->metas[k].t             = NEU_JSON_BIT;
+                json_tag->metas[k].value.val_bit = metas[k].value.value.u8;
+                break;
+            case NEU_TYPE_STRING:
+            case NEU_TYPE_TIME:
+            case NEU_TYPE_DATA_AND_TIME:
+                json_tag->metas[k].t             = NEU_JSON_STR;
+                json_tag->metas[k].value.val_str = metas[k].value.value.str;
+                break;
+            default:
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+void neu_json_metas_to_json_paginate(
+    neu_tag_meta_t *metas, int n_meta,
+    neu_json_read_paginate_resp_tag_t *json_tag)
 {
     for (int k = 0; k < n_meta; k++) {
         if (strlen(metas[k].name) > 0) {
