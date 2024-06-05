@@ -236,7 +236,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        if (init->state == NEU_NODE_RUNNING_STATE_RUNNING ||
+        if (init->state == NEU_NODE_RUNNING_STATE_READY ||
+            init->state == NEU_NODE_RUNNING_STATE_RUNNING ||
             init->state == NEU_NODE_RUNNING_STATE_STOPPED) {
             neu_adapter_t *adapter =
                 neu_node_manager_find(manager->node_manager, init->node);
