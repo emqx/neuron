@@ -387,14 +387,14 @@ static bool check_password_pattern(const char *password)
     }
 
     const char *patterns[] = {
-        "qaz",    "wsx",   "edc",    "rfv",    "tgb",     "yhn",   "ujm",
-        "ik,",    "ol.",   "p;/",    "esz",    "rdx",     "tfc",   "ygv",
-        "uhb",    "ijn",   "okm",    "pl,",    "[;.",     "]'/",   "1qa",
-        "2ws",    "3ed",   "4rf",    "5tg",    "6yh",     "7uj",   "8ik",
-        "9ol",    "0p;",   "-['",    "=[;",    "-pl",     "0ok",   "9ij",
-        "8uh",    "7yg",   "6tf",    "5rd",    "4es",     "3wa",   "root",
-        "admin",  "mysql", "oracle", "system", "windows", "linux", "java",
-        "python", "unix",  "test",
+        "qaz",    "wsx",   "edc",    "rfv",      "tgb",     "yhn",   "ujm",
+        "ik,",    "ol.",   "p;/",    "esz",      "rdx",     "tfc",   "ygv",
+        "uhb",    "ijn",   "okm",    "pl,",      "[;.",     "]'/",   "1qa",
+        "2ws",    "3ed",   "4rf",    "5tg",      "6yh",     "7uj",   "8ik",
+        "9ol",    "0p;",   "-['",    "=[;",      "-pl",     "0ok",   "9ij",
+        "8uh",    "7yg",   "6tf",    "5rd",      "4es",     "3wa",   "root",
+        "admin",  "mysql", "oracle", "system",   "windows", "linux", "java",
+        "python", "unix",  "test",   "password",
     };
 
     // password must not contain any pattern
