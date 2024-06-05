@@ -34,6 +34,8 @@ extern "C" {
     XX(NEU_RESP_ERROR, neu_resp_error_t)                             \
     XX(NEU_REQ_READ_GROUP, neu_req_read_group_t)                     \
     XX(NEU_RESP_READ_GROUP, neu_resp_read_group_t)                   \
+    XX(NEU_REQ_READ_GROUP_PAGINATE, neu_req_read_group_paginate_t)   \
+    XX(NEU_RESP_READ_GROUP_PAGINATE, neu_resp_read_group_paginate_t) \
     XX(NEU_REQ_WRITE_TAG, neu_req_write_tag_t)                       \
     XX(NEU_REQ_WRITE_TAGS, neu_req_write_tags_t)                     \
     XX(NEU_REQ_WRITE_GTAGS, neu_req_write_gtags_t)                   \

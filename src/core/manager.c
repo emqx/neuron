@@ -1009,6 +1009,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
+    case NEU_REQ_READ_GROUP_PAGINATE:
     case NEU_REQ_WRITE_TAG:
     case NEU_REQ_WRITE_TAGS:
     case NEU_REQ_WRITE_GTAGS:
@@ -1019,6 +1020,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             NULL) {
             if (NEU_REQ_READ_GROUP == header->type) {
                 neu_req_read_group_fini((neu_req_read_group_t *) &header[1]);
+            } else if (NEU_REQ_READ_GROUP_PAGINATE == header->type) {
+                neu_req_read_group_paginate_fini(
+                    (neu_req_read_group_paginate_t *) &header[1]);
             } else if (NEU_REQ_WRITE_TAG == header->type) {
                 neu_req_write_tag_fini((neu_req_write_tag_t *) &header[1]);
             } else if (NEU_REQ_WRITE_TAGS == header->type) {
@@ -1247,6 +1251,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_ERROR:
     case NEU_RESP_READ_GROUP:
+    case NEU_RESP_READ_GROUP_PAGINATE:
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_SCAN_TAGS:
         forward_msg(manager, header, header->receiver);
