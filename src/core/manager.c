@@ -965,8 +965,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
-        int                 error =
-            neu_manager_add_node(manager, cmd->node, cmd->plugin, false, false);
+        int error = neu_manager_add_node(manager, cmd->node, cmd->plugin,
+                                         NEU_NODE_RUNNING_STATE_INIT, false);
         neu_resp_error_t e = { .error = error };
 
         if (error == NEU_ERR_SUCCESS) {
