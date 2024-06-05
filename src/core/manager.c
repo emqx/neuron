@@ -698,6 +698,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             (neu_req_subscribe_groups_t *) &header[1];
         neu_resp_error_t error = { 0 };
 
+        UT_array *subs =
+            neu_subscribe_manager_get(manager->subscribe_manager, cmd->app);
+        for (uint16_t i = 0; i < cmd->n_group; ++i) {
+            neu_req_subscribe_group_info_t *info = &cmd->groups[i];
+            utarray_foreach(subs, neu_resp_subscribe_info_t *, sub)
+            {
+                if (0 == strcmp(info->driver, sub->driver) &&
+                    0 == strcmp(info->group, sub->group)) {
+                    error.error = NEU_ERR_GROUP_ALREADY_SUBSCRIBED;
+                }
+            }
+        }
+        utarray_free(subs);
+
+        if (0 != error.error) {
+            neu_req_subscribe_groups_fini(cmd);
+            header->type = NEU_RESP_ERROR;
+            strcpy(header->receiver, header->sender);
+            reply(manager, header, &error);
+            break;
+        }
+
         for (uint16_t i = 0; i < cmd->n_group; ++i) {
             neu_req_subscribe_group_info_t *info = &cmd->groups[i];
 
