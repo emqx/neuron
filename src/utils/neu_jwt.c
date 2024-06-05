@@ -170,7 +170,7 @@ int neu_jwt_new(char **token)
         goto err_out;
     }
 
-    ret = jwt_add_grant_int(jwt, "exp", tv.tv_sec + 60 * 60);
+    ret = jwt_add_grant_int(jwt, "exp", tv.tv_sec + 24 * 60 * 60);
     if (ret != 0) {
         goto err_out;
     }
