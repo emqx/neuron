@@ -24,6 +24,7 @@
 #include <neuron.h>
 
 #include "modbus.h"
+#include "modbus_point.h"
 
 typedef struct modbus_stack modbus_stack_t;
 
@@ -45,10 +46,13 @@ void            modbus_stack_destroy(modbus_stack_t *stack);
 
 int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
                       neu_protocol_unpack_buf_t *buf);
+int modbus_stack_recv_test(neu_plugin_t *plugin, void *req,
+                           modbus_point_t *           point,
+                           neu_protocol_unpack_buf_t *buf);
 
 int  modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                        enum modbus_area area, uint16_t start_address,
-                       uint16_t n_reg, uint16_t *response_size);
+                       uint16_t n_reg, uint16_t *response_size, bool is_test);
 int  modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                         enum modbus_area area, uint16_t start_address,
                         uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,

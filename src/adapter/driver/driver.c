@@ -343,6 +343,23 @@ static void scan_tags_response(neu_adapter_t *adapter, void *r, neu_error error,
     adapter->cb_funs.response(adapter, req, &value);
 }
 
+static void test_read_tag_response(neu_adapter_t *adapter, void *r,
+                                   neu_json_type_e t, neu_type_e type,
+                                   neu_json_value_u value, int64_t error)
+{
+    neu_reqresp_head_t *     req    = (neu_reqresp_head_t *) r;
+    neu_resp_test_read_tag_t dvalue = {
+        .t     = t,
+        .type  = type,
+        .value = value,
+        .error = error,
+    };
+    req->type = NEU_RESP_TEST_READ_TAG;
+    nlog_notice("test reading tag response <%p>", req->ctx);
+
+    adapter->cb_funs.response(adapter, req, &dvalue);
+}
+
 neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
@@ -354,6 +371,8 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->adapter.cb_funs.driver.update_im          = update_im;
     driver->adapter.cb_funs.driver.update_with_meta   = update_with_meta;
     driver->adapter.cb_funs.driver.scan_tags_response = scan_tags_response;
+    driver->adapter.cb_funs.driver.test_read_tag_response =
+        test_read_tag_response;
 
     return driver;
 }
@@ -2651,4 +2670,43 @@ void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
     neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) &req[1];
     driver->adapter.module->intf_funs->driver.scan_tags(driver->adapter.plugin,
                                                         req, cmd->id);
+}
+
+void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
+                                      neu_reqresp_head_t *  req)
+{
+    neu_json_value_u error_value;
+    error_value.val_int = 0;
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        driver->adapter.cb_funs.driver.test_read_tag_response(
+            &driver->adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR, error_value,
+            NEU_ERR_PLUGIN_NOT_RUNNING);
+
+        nlog_warn("%s not running", driver->adapter.name);
+        return;
+    }
+
+    if (driver->adapter.module->intf_funs->driver.test_read_tag == NULL) {
+        driver->adapter.cb_funs.driver.test_read_tag_response(
+            &driver->adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR, error_value,
+            NEU_ERR_PLUGIN_NOT_SUPPORT_TEST_READ_TAG);
+
+        nlog_warn("%s not support testing reading", driver->adapter.name);
+        return;
+    }
+
+    neu_req_test_read_tag_t *cmd = (neu_req_test_read_tag_t *) &req[1];
+    neu_datatag_t            datatag;
+    datatag.name      = cmd->tag;
+    datatag.address   = cmd->address;
+    datatag.attribute = cmd->attribute;
+    datatag.type      = cmd->type;
+    datatag.precision = cmd->precision;
+    datatag.decimal   = cmd->decimal;
+    datatag.bias      = cmd->bias;
+    datatag.option    = cmd->option;
+
+    driver->adapter.module->intf_funs->driver.test_read_tag(
+        driver->adapter.plugin, req, datatag);
 }

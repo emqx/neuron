@@ -181,6 +181,26 @@ void neu_json_metas_to_json_paginate(
     neu_tag_meta_t *metas, int n_meta,
     neu_json_read_paginate_resp_tag_t *json_tag);
 
+typedef struct {
+    char *                    driver;
+    char *                    group;
+    char *                    tag;
+    char *                    address;
+    neu_attribute_e           attribute;
+    neu_type_e                type;
+    uint8_t                   precision;
+    double                    decimal;
+    double                    bias;
+    neu_datatag_addr_option_u option;
+} neu_json_test_read_tag_req_t;
+
+int neu_json_decode_test_read_tag_req(char *                         buf,
+                                      neu_json_test_read_tag_req_t **result);
+
+void neu_json_decode_test_read_tag_req_free(neu_json_test_read_tag_req_t *req);
+
+int neu_json_encode_test_read_tag_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif
