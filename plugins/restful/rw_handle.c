@@ -135,6 +135,62 @@ void handle_read_paginate(nng_aio *aio)
         })
 }
 
+void handle_test_read_tag(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_test_read_tag_req_t, neu_json_decode_test_read_tag_req, {
+            int                     ret    = 0;
+            neu_reqresp_head_t      header = { 0 };
+            neu_req_test_read_tag_t cmd    = { 0 };
+            int                     err_type;
+            header.ctx  = aio;
+            header.type = NEU_REQ_TEST_READ_TAG;
+
+            if (req->driver && strlen(req->driver) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+            if (req->group && strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+            if (req->tag && strlen(req->tag) >= NEU_TAG_NAME_LEN) {
+                err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                goto error;
+            }
+            if (req->address && strlen(req->address) >= NEU_TAG_ADDRESS_LEN) {
+                err_type = NEU_ERR_TAG_ADDRESS_TOO_LONG;
+                goto error;
+            }
+
+            strcpy(cmd.driver, req->driver);
+            strcpy(cmd.group, req->group);
+            strcpy(cmd.tag, req->tag);
+            strcpy(cmd.address, req->address);
+            cmd.attribute = req->attribute;
+            cmd.type      = req->type;
+            cmd.precision = req->precision;
+            cmd.decimal   = req->decimal;
+            cmd.bias      = req->bias;
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+
+        success:;
+        })
+}
+
 void handle_write(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -548,5 +604,13 @@ void handle_read_paginate_resp(nng_aio *                       aio,
     }
     neu_http_ok(aio, result);
     free(api_res.tags);
+    free(result);
+}
+
+void handle_test_read_tag_resp(nng_aio *aio, neu_resp_test_read_tag_t *resp)
+{
+    char *result = NULL;
+    neu_json_encode_by_fn(resp, neu_json_encode_test_read_tag_resp, &result);
+    neu_http_ok(aio, result);
     free(result);
 }

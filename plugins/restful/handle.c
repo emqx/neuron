@@ -77,6 +77,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/read/paginate",
     },
     {
+        .url = "/api/v2/read/test",
+    },
+    {
         .url = "/api/v2/write",
     },
     {
@@ -271,6 +274,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/read/paginate",
         .value.handler = handle_read_paginate,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/read/test",
+        .value.handler = handle_test_read_tag,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

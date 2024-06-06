@@ -744,6 +744,29 @@ class TestModbus:
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=input_bit_5[0]['name'])
 
+    @description(given="created modbus node", when="test read tag", then="read tcp success and read rtu failed")
+    def test_modbus_test_read_tag(self, param):
+        body = {
+                "driver": param[0],
+                "group": "group",
+                "tag": "tag",
+                "address": "1!400001",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW,
+                "type": config.NEU_TYPE_INT16,
+                "precision": 0,
+                "decimal": 0,
+                "bias": 0.0
+               }
+        if param[0] == 'modbus-tcp':
+            time.sleep(1)
+            response = api.test_read_tag(json=body)
+            assert response.json()["value"] == -123
+        elif param[0] == 'modbus-rtu':
+            response = api.test_read_tag(json=body)
+            assert response.json()["error"] == 3022
+        else:
+            pytest.skip("modbus rtu tty pass")
+
     @description(given="created modbus node and tags", when="read tags fuzz", then="should return correct result")
     def test_read_tags_fuzz(self, param):
         response = api.read_tags(

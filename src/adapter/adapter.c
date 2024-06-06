@@ -450,6 +450,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_TEST_READ_TAG: {
+        neu_req_test_read_tag_t *cmd = (neu_req_test_read_tag_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
     case NEU_REQ_WRITE_TAG: {
         neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) data;
         strcpy(pheader->receiver, cmd->driver);
@@ -1221,6 +1226,17 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_RESP_SCAN_TAGS: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_msg_free(msg);
+        break;
+    }
+    case NEU_REQ_TEST_READ_TAG: {
+        neu_adapter_driver_test_read_tag((neu_adapter_driver_t *) adapter,
+                                         header);
+        break;
+    }
+    case NEU_RESP_TEST_READ_TAG: {
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
