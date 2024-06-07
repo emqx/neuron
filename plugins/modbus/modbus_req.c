@@ -482,13 +482,20 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     }
 
     switch (point->type) {
-    case NEU_TYPE_UINT16:
-    case NEU_TYPE_INT16: {
+    case NEU_TYPE_UINT16: {
         jtype = NEU_JSON_INT;
         uint16_t tmp_val16;
         memcpy(&tmp_val16, jvalue.val_bytes.bytes, sizeof(uint16_t));
         free(jvalue.val_bytes.bytes);
         jvalue.val_int = ntohs(tmp_val16);
+        break;
+    }
+    case NEU_TYPE_INT16: {
+        jtype = NEU_JSON_INT;
+        int16_t tmp_val16;
+        memcpy(&tmp_val16, jvalue.val_bytes.bytes, sizeof(int16_t));
+        free(jvalue.val_bytes.bytes);
+        jvalue.val_int = (int16_t) ntohs(tmp_val16);
         break;
     }
     case NEU_TYPE_FLOAT: {
@@ -499,12 +506,19 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         jvalue.val_int = ntohl(tmp_valf);
         break;
     }
-    case NEU_TYPE_INT32:
+    case NEU_TYPE_INT32: {
+        jtype = NEU_JSON_INT;
+        int32_t tmp_val32;
+        memcpy(&tmp_val32, jvalue.val_bytes.bytes, sizeof(int32_t));
+        free(jvalue.val_bytes.bytes);
+        jvalue.val_int = (int32_t) ntohl(tmp_val32);
+        break;
+    }
     case NEU_TYPE_UINT32: {
+        jtype = NEU_JSON_INT;
         uint32_t tmp_val32;
         memcpy(&tmp_val32, jvalue.val_bytes.bytes, sizeof(uint32_t));
         free(jvalue.val_bytes.bytes);
-        jtype          = NEU_JSON_INT;
         jvalue.val_int = ntohl(tmp_val32);
         break;
     }
@@ -516,12 +530,19 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         jvalue.val_int = neu_ntohll(tmp_vald);
         break;
     }
-    case NEU_TYPE_INT64:
+    case NEU_TYPE_INT64: {
+        jtype = NEU_JSON_INT;
+        int64_t tmp_val64;
+        memcpy(&tmp_val64, jvalue.val_bytes.bytes, sizeof(int64_t));
+        free(jvalue.val_bytes.bytes);
+        jvalue.val_int = (int64_t) neu_ntohll(tmp_val64);
+        break;
+    }
     case NEU_TYPE_UINT64: {
+        jtype = NEU_JSON_INT;
         uint64_t tmp_val64;
         memcpy(&tmp_val64, jvalue.val_bytes.bytes, sizeof(uint64_t));
         free(jvalue.val_bytes.bytes);
-        jtype          = NEU_JSON_INT;
         jvalue.val_int = neu_ntohll(tmp_val64);
         break;
     }
