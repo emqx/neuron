@@ -87,4 +87,6 @@ void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
  */
 void neu_async_queue_clean(neu_async_queue_t *q);
 
+int neu_async_queue_len(neu_async_queue_t *q);
+
 #endif
