@@ -160,3 +160,15 @@ void neu_async_queue_clean(neu_async_queue_t *q)
     }
     pthread_mutex_unlock(&q->mtx);
 }
+
+int neu_async_queue_len(neu_async_queue_t *q)
+{
+    int      count = 0;
+    element *elt   = NULL;
+
+    pthread_mutex_lock(&q->mtx);
+    DL_COUNT(q->list, elt, count);
+    pthread_mutex_unlock(&q->mtx);
+
+    return count;
+}
