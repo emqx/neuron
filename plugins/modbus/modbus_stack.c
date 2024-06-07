@@ -177,9 +177,104 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
     return neu_protocol_unpack_buf_used_size(buf);
 }
 
+int modbus_stack_recv_test(neu_plugin_t *plugin, void *req,
+                           modbus_point_t *           point,
+                           neu_protocol_unpack_buf_t *buf)
+{
+    struct modbus_header header = { 0 };
+    struct modbus_code   code   = { 0 };
+    int                  ret    = 0;
+
+    if (plugin->stack->protocol == MODBUS_PROTOCOL_TCP) {
+        ret = modbus_header_unwrap(buf, &header);
+        if (ret < 0) {
+            plog_warn((neu_plugin_t *) plugin->stack->ctx,
+                      "try modbus rtu driver");
+        }
+        if (ret <= 0) {
+            return -1;
+        }
+    }
+
+    ret = modbus_code_unwrap(buf, &code);
+    if (ret <= 0) {
+        return -1;
+    }
+
+    if (code.slave_id != point->slave_id) {
+        return -1;
+    }
+
+    switch (code.function) {
+    case MODBUS_READ_COIL:
+    case MODBUS_READ_INPUT:
+    case MODBUS_READ_HOLD_REG:
+    case MODBUS_READ_INPUT_REG: {
+        struct modbus_data data  = { 0 };
+        uint8_t *          bytes = NULL;
+        ret                      = modbus_data_unwrap(buf, &data);
+        if (ret <= 0) {
+            return -1;
+        }
+
+        if (data.n_byte == 0xff) {
+            bytes = neu_protocol_unpack_buf(buf,
+                                            header.len -
+                                                sizeof(struct modbus_code) -
+                                                sizeof(struct modbus_data));
+            if (bytes == NULL) {
+                return -1;
+            }
+
+            modbus_value_handle_test(plugin, req, point, data.n_byte, bytes);
+        } else {
+            bytes = neu_protocol_unpack_buf(buf, data.n_byte);
+            if (bytes == NULL) {
+                return -1;
+            }
+            modbus_value_handle_test(plugin, req, point, data.n_byte, bytes);
+        }
+
+        break;
+    }
+    case MODBUS_WRITE_S_COIL:
+    case MODBUS_WRITE_M_HOLD_REG:
+    case MODBUS_WRITE_M_COIL: {
+        struct modbus_address address = { 0 };
+        ret                           = modbus_address_unwrap(buf, &address);
+        if (ret <= 0) {
+            return -1;
+        }
+        break;
+    }
+    case MODBUS_READ_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_INPUT_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_INPUT_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_S_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_S_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_M_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_M_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_S_HOLD_REG:
+        break;
+    default:
+        return -1;
+    }
+
+    return neu_protocol_unpack_buf_used_size(buf);
+}
+
 int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                       enum modbus_area area, uint16_t start_address,
-                      uint16_t n_reg, uint16_t *response_size)
+                      uint16_t n_reg, uint16_t *response_size, bool is_test)
 {
     static __thread uint8_t                 buf[16] = { 0 };
     static __thread neu_protocol_pack_buf_t pbuf    = { 0 };
@@ -229,7 +324,7 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
 
     ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
                          neu_protocol_pack_buf_get(&pbuf));
-    if (ret <= 0) {
+    if (ret <= 0 && !is_test) {
         stack->value_fn(stack->ctx, 0, 0, NULL, NEU_ERR_PLUGIN_DISCONNECTED);
         plog_warn((neu_plugin_t *) stack->ctx, "send read req fail, %hhu!%hu",
                   slave_id, start_address);

@@ -35,6 +35,8 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req);
 void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
                                             neu_reqresp_head_t *  req);
+void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
+                                      neu_reqresp_head_t *  req);
 
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req);

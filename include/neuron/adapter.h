@@ -68,6 +68,10 @@ typedef struct adapter_callbacks {
             void (*scan_tags_response)(neu_adapter_t *adapter, void *r,
                                        int error, void *tags, neu_type_e type,
                                        bool is_array);
+            void (*test_read_tag_response)(neu_adapter_t *adapter, void *r,
+                                           neu_json_type_e t, neu_type_e type,
+                                           neu_json_value_u value,
+                                           int64_t          error);
         } driver;
     };
 } adapter_callbacks_t;

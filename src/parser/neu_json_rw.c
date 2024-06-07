@@ -30,6 +30,7 @@
 #include "json/json.h"
 
 #include "define.h"
+#include "msg.h"
 #include "tag.h"
 
 #include "json/neu_json_rw.h"
@@ -178,6 +179,31 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
         { .name = "items", .t = NEU_JSON_OBJECT, .v.val_object = tag_array },
     };
     ret = neu_json_encode_field(json_object, resp_elems, 2);
+
+    return ret;
+}
+
+int neu_json_encode_test_read_tag_resp(void *json_object, void *param)
+{
+    int                       ret       = 0;
+    neu_resp_test_read_tag_t *resp      = (neu_resp_test_read_tag_t *) param;
+    neu_json_elem_t           resp_elem = { 0 };
+
+    if (resp->type == NEU_TYPE_ERROR) {
+        resp_elem.name      = "error";
+        resp_elem.t         = NEU_JSON_INT;
+        resp_elem.v.val_int = resp->error;
+    } else {
+        resp_elem.name = "value";
+        resp_elem.t    = resp->t;
+        resp_elem.v    = resp->value;
+    }
+
+    ret = neu_json_encode_field(json_object, &resp_elem, 1);
+
+    if (resp->t == NEU_JSON_STR) {
+        free(resp->value.val_str);
+    }
 
     return ret;
 }
@@ -715,6 +741,103 @@ void neu_json_decode_read_paginate_req_free(neu_json_read_paginate_req_t *req)
     free(req->group);
     free(req->node);
 
+    free(req);
+}
+
+int neu_json_decode_test_read_tag_req(char *                         buf,
+                                      neu_json_test_read_tag_req_t **result)
+{
+    int                           ret      = 0;
+    void *                        json_obj = NULL;
+    neu_json_test_read_tag_req_t *req =
+        calloc(1, sizeof(neu_json_test_read_tag_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tag",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "address",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "attribute",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "type",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "precision",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "decimal",
+            .t    = NEU_JSON_DOUBLE,
+        },
+        {
+            .name = "bias",
+            .t    = NEU_JSON_DOUBLE,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->driver    = req_elems[0].v.val_str;
+    req->group     = req_elems[1].v.val_str;
+    req->tag       = req_elems[2].v.val_str;
+    req->address   = req_elems[3].v.val_str;
+    req->attribute = req_elems[4].v.val_int;
+    req->type      = req_elems[5].v.val_int;
+    req->precision = req_elems[6].v.val_int;
+    req->decimal   = req_elems[7].v.val_double;
+    req->bias      = req_elems[8].v.val_double;
+    *result        = req;
+    goto decode_exit;
+
+decode_fail:
+    free(req);
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    free(req_elems[2].v.val_str);
+    free(req_elems[3].v.val_str);
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_test_read_tag_req_free(neu_json_test_read_tag_req_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->tag);
+    free(req->address);
     free(req);
 }
 

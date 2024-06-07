@@ -37,6 +37,9 @@ struct modbus_write_tags_data {
 static void plugin_group_free(neu_plugin_group_t *pgp);
 static int  process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
                                  uint16_t response_size);
+static int  process_protocol_buf_test(neu_plugin_t *plugin, void *req,
+                                      modbus_point_t *point,
+                                      uint16_t        response_size);
 
 void modbus_conn_connected(void *data, int fd)
 {
@@ -125,10 +128,10 @@ int modbus_stack_read_retry(neu_plugin_t *plugin, struct modbus_group_data *gd,
     struct timespec t4 = { 0 };
     nanosleep(&t3, &t4);
     plog_notice(plugin, "Resend read req. Times:%hu", j + 1);
-    int ret = modbus_stack_read(plugin->stack, gd->cmd_sort->cmd[i].slave_id,
-                                gd->cmd_sort->cmd[i].area,
-                                gd->cmd_sort->cmd[i].start_address,
-                                gd->cmd_sort->cmd[i].n_register, response_size);
+    int ret = modbus_stack_read(
+        plugin->stack, gd->cmd_sort->cmd[i].slave_id, gd->cmd_sort->cmd[i].area,
+        gd->cmd_sort->cmd[i].start_address, gd->cmd_sort->cmd[i].n_register,
+        response_size, false);
     return ret;
 }
 
@@ -175,7 +178,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         int      ret_r         = modbus_stack_read(
             plugin->stack, gd->cmd_sort->cmd[i].slave_id,
             gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
-            gd->cmd_sort->cmd[i].n_register, &response_size);
+            gd->cmd_sort->cmd[i].n_register, &response_size, false);
         if (ret_r > 0) {
             ret_buf = process_protocol_buf(
                 plugin, gd->cmd_sort->cmd[i].slave_id, response_size);
@@ -453,6 +456,174 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
     return 0;
 }
 
+int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
+                             modbus_point_t *point, uint16_t n_byte,
+                             uint8_t *bytes)
+{
+    (void) req;
+    neu_json_value_u jvalue = { 0 };
+    neu_json_type_e  jtype;
+
+    switch (point->area) {
+    case MODBUS_AREA_HOLD_REGISTER:
+    case MODBUS_AREA_INPUT_REGISTER:
+        if (n_byte >= point->n_register * 2) {
+            jvalue.val_bytes.bytes =
+                (uint8_t *) malloc(point->n_register * 2 + 1);
+            memcpy(jvalue.val_bytes.bytes, bytes, point->n_register * 2);
+            jvalue.val_bytes.length = point->n_register * 2;
+        }
+        break;
+    case MODBUS_AREA_COIL:
+    case MODBUS_AREA_INPUT: {
+        neu_value8_u u8 = { .value = bytes[0] };
+        jvalue.val_bit  = neu_value8_get_bit(u8, 0);
+    } break;
+    }
+
+    switch (point->type) {
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_INT16: {
+        jtype = NEU_JSON_INT;
+        uint16_t tmp_val16;
+        memcpy(&tmp_val16, jvalue.val_bytes.bytes, sizeof(uint16_t));
+        free(jvalue.val_bytes.bytes);
+        jvalue.val_int = ntohs(tmp_val16);
+        break;
+    }
+    case NEU_TYPE_FLOAT: {
+        uint32_t tmp_valf;
+        memcpy(&tmp_valf, jvalue.val_bytes.bytes, sizeof(uint32_t));
+        free(jvalue.val_bytes.bytes);
+        jtype          = NEU_JSON_FLOAT;
+        jvalue.val_int = ntohl(tmp_valf);
+        break;
+    }
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_UINT32: {
+        uint32_t tmp_val32;
+        memcpy(&tmp_val32, jvalue.val_bytes.bytes, sizeof(uint32_t));
+        free(jvalue.val_bytes.bytes);
+        jtype          = NEU_JSON_INT;
+        jvalue.val_int = ntohl(tmp_val32);
+        break;
+    }
+    case NEU_TYPE_DOUBLE: {
+        uint64_t tmp_vald;
+        memcpy(&tmp_vald, jvalue.val_bytes.bytes, sizeof(uint64_t));
+        free(jvalue.val_bytes.bytes);
+        jtype          = NEU_JSON_DOUBLE;
+        jvalue.val_int = neu_ntohll(tmp_vald);
+        break;
+    }
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_UINT64: {
+        uint64_t tmp_val64;
+        memcpy(&tmp_val64, jvalue.val_bytes.bytes, sizeof(uint64_t));
+        free(jvalue.val_bytes.bytes);
+        jtype          = NEU_JSON_INT;
+        jvalue.val_int = neu_ntohll(tmp_val64);
+        break;
+    }
+    case NEU_TYPE_BIT: {
+        switch (point->area) {
+        case MODBUS_AREA_HOLD_REGISTER:
+        case MODBUS_AREA_INPUT_REGISTER: {
+            jtype             = NEU_JSON_BIT;
+            neu_value16_u v16 = { 0 };
+            v16.value         = htons(*(uint16_t *) jvalue.val_bytes.bytes);
+            free(jvalue.val_bytes.bytes);
+            jvalue.val_bit = neu_value16_get_bit(v16, point->option.bit.bit);
+            break;
+        }
+        case MODBUS_AREA_COIL:
+        case MODBUS_AREA_INPUT:
+            jtype = NEU_JSON_INT;
+            break;
+        }
+        break;
+    }
+    case NEU_TYPE_STRING: {
+        jtype                      = NEU_JSON_STR;
+        size_t str_length          = point->n_register * 2;
+        jvalue.val_str             = (char *) jvalue.val_bytes.bytes;
+        jvalue.val_str[str_length] = '\0';
+
+        switch (point->option.string.type) {
+        case NEU_DATATAG_STRING_TYPE_H:
+            break;
+        case NEU_DATATAG_STRING_TYPE_L:
+            neu_datatag_string_ltoh(jvalue.val_str, str_length);
+            break;
+        case NEU_DATATAG_STRING_TYPE_D:
+            break;
+        case NEU_DATATAG_STRING_TYPE_E:
+            break;
+        }
+
+        if (!neu_datatag_string_is_utf8(jvalue.val_str, str_length)) {
+            jvalue.val_str[0] = '?';
+            jvalue.val_str[1] = 0;
+        }
+        break;
+    }
+    default:
+        break;
+    }
+
+    plugin->common.adapter_callbacks->driver.test_read_tag_response(
+        plugin->common.adapter, req, jtype, point->type, jvalue,
+        NEU_ERR_SUCCESS);
+
+    return 0;
+}
+
+int modbus_test_read_tag(neu_plugin_t *plugin, void *req, neu_datatag_t tag)
+{
+    modbus_point_t   point = { 0 };
+    neu_json_value_u error_value;
+    error_value.val_int = 0;
+
+    int err = modbus_tag_to_point(&tag, &point);
+    if (err != NEU_ERR_SUCCESS) {
+        plugin->common.adapter_callbacks->driver.test_read_tag_response(
+            plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
+            error_value, err);
+        return 0;
+    }
+
+    uint16_t response_size = 0;
+    int      ret = modbus_stack_read(plugin->stack, point.slave_id, point.area,
+                                point.start_address, point.n_register,
+                                &response_size, true);
+    if (ret <= 0) {
+        plugin->common.adapter_callbacks->driver.test_read_tag_response(
+            plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
+            error_value, NEU_ERR_PLUGIN_READ_FAILURE);
+        return 0;
+    }
+
+    ret = process_protocol_buf_test(plugin, req, &point, response_size);
+    if (ret == 0) {
+        plugin->common.adapter_callbacks->driver.test_read_tag_response(
+            plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
+            error_value, NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE);
+        return 0;
+    } else if (ret == -1) {
+        plugin->common.adapter_callbacks->driver.test_read_tag_response(
+            plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
+            error_value, NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE);
+        return 0;
+    } else if (ret == -2) {
+        plugin->common.adapter_callbacks->driver.test_read_tag_response(
+            plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
+            error_value, NEU_ERR_PLUGIN_READ_FAILURE);
+        return 0;
+    }
+
+    return 0;
+}
+
 int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                  neu_value_u value, bool response)
 {
@@ -700,6 +871,80 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
             }
             neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
             int ret_s = modbus_stack_recv(plugin->stack, slave_id, &pbuf);
+            if (ret_s == MODBUS_DEVICE_ERR) {
+                ret = ret_s;
+            } else {
+                if (ret != response_size) {
+                    ret = -1;
+                } else {
+                    ret = ret_s;
+                }
+            }
+        }
+    }
+    free(recv_buf);
+    return ret;
+}
+
+static int process_protocol_buf_test(neu_plugin_t *plugin, void *req,
+                                     modbus_point_t *point,
+                                     uint16_t        response_size)
+{
+    uint8_t *                 recv_buf = calloc(response_size, 1);
+    neu_protocol_unpack_buf_t pbuf     = { 0 };
+    ssize_t                   ret      = 0;
+    if (plugin->protocol == MODBUS_PROTOCOL_TCP) {
+        if (plugin->is_server) {
+            ret = neu_conn_tcp_server_recv(plugin->conn, plugin->client_fd,
+                                           recv_buf,
+                                           sizeof(struct modbus_header));
+        } else {
+            ret = neu_conn_recv(plugin->conn, recv_buf,
+                                sizeof(struct modbus_header));
+        }
+
+        if (ret == 0 || ret == -1) {
+            free(recv_buf);
+            return 0;
+        }
+
+        if (ret == sizeof(struct modbus_header)) {
+            struct modbus_header *header = (struct modbus_header *) recv_buf;
+            int                   ret1   = 0;
+
+            if (htons(header->len) >
+                response_size - sizeof(struct modbus_header)) {
+                free(recv_buf);
+                return -1;
+            }
+
+            plog_recv_protocol(plugin, recv_buf, ret);
+            if (plugin->is_server) {
+                ret1 = neu_conn_tcp_server_recv(
+                    plugin->conn, plugin->client_fd,
+                    recv_buf + sizeof(struct modbus_header),
+                    htons(header->len));
+            } else {
+                ret1 = neu_conn_recv(plugin->conn,
+                                     recv_buf + sizeof(struct modbus_header),
+                                     htons(header->len));
+            }
+            if (ret1 != htons(header->len)) {
+                free(recv_buf);
+                return -1;
+            }
+            ret += ret1;
+        } else {
+            free(recv_buf);
+            return -1;
+        }
+
+        if (ret > 0) {
+            if (ret < 512) {
+                plog_recv_protocol(plugin, recv_buf, ret);
+            }
+            neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
+            int ret_s = modbus_stack_recv_test(plugin, req, point, &pbuf);
             if (ret_s == MODBUS_DEVICE_ERR) {
                 ret = ret_s;
             } else {
