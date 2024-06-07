@@ -163,6 +163,9 @@ def read_tags_paginate(node, group, sync=False, query=None):
         body["query"] = query
     return requests.post(url=config.BASE_URL + "/api/v2/read/paginate", headers={"Authorization": config.default_jwt}, json=body)
 
+def test_read_tag(json):
+    return requests.post(url=config.BASE_URL + '/api/v2/read/test', headers={"Authorization": config.default_jwt}, json=json)
+
 def read_tag(node, group, tag, sync=False):
     response = read_tags(node, group, sync, query={"name": tag})
     assert 200 == response.status_code
