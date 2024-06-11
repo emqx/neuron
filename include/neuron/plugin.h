@@ -69,6 +69,7 @@ struct neu_plugin_group {
 
     void *                user_data;
     neu_plugin_group_free group_free;
+    uint32_t              interval;
 };
 
 typedef int (*neu_plugin_tag_validator_t)(const neu_datatag_t *tag);

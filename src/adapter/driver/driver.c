@@ -928,6 +928,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->name           = strdup(name);
         find->group          = neu_group_new(name, interval);
         find->grp.group_name = strdup(name);
+        find->grp.interval   = interval;
         neu_group_split_static_tags(find->group, &find->static_tags,
                                     &find->grp.tags);
 
@@ -977,6 +978,8 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
                 return NEU_ERR_GROUP_EXIST;
             }
         }
+    } else if (neu_group_get_interval(find->group) == interval) {
+        return 0; // no change
     }
 
     // stop the timer first to avoid race condition
@@ -1002,7 +1005,6 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
             find->grp.group_name = new_name_cp2;
             neu_adapter_metric_update_group_name((neu_adapter_t *) driver, name,
                                                  new_name);
-            find->timestamp = global_timestamp; // trigger group_change
             HASH_ADD_STR(driver->groups, name, find);
         } else {
             free(new_name_cp1);
@@ -1011,6 +1013,8 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
         }
     }
 
+    find->timestamp    = global_timestamp; // trigger group_change
+    find->grp.interval = interval;
     neu_group_set_interval(find->group, interval);
 
     // restore the timers
@@ -1581,6 +1585,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
 
     neu_plugin_group_t grp = {
         .group_name = strdup(group->name),
+        .interval   = neu_group_get_interval(group->group),
         .tags       = NULL,
         .group_free = NULL,
         .user_data  = NULL,
