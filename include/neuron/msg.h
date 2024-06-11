@@ -48,6 +48,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_READ_GROUP,
     NEU_REQ_READ_GROUP_PAGINATE,
     NEU_RESP_READ_GROUP_PAGINATE,
+    NEU_REQ_TEST_READ_TAG,
+    NEU_RESP_TEST_READ_TAG,
     NEU_REQ_WRITE_TAG,
     NEU_REQ_WRITE_TAGS,
     NEU_REQ_WRITE_GTAGS,
@@ -129,6 +131,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_READ_GROUP]          = "NEU_RESP_READ_GROUP",
     [NEU_REQ_READ_GROUP_PAGINATE]  = "NEU_REQ_READ_GROUP_PAGINATE",
     [NEU_RESP_READ_GROUP_PAGINATE] = "NEU_RESP_READ_GROUP_PAGINATE",
+    [NEU_REQ_TEST_READ_TAG]        = "NEU_REQ_TEST_READ_TAG",
+    [NEU_RESP_TEST_READ_TAG]       = "NEU_RESP_TEST_READ_TAG",
     [NEU_REQ_WRITE_TAG]            = "NEU_REQ_WRITE_TAG",
     [NEU_REQ_WRITE_TAGS]           = "NEU_REQ_WRITE_TAGS",
     [NEU_REQ_WRITE_GTAGS]          = "NEU_REQ_WRITE_GTAGS",
@@ -1151,6 +1155,26 @@ typedef struct {
     char       id[5 + 1 + NEU_TAG_ADDRESS_LEN];
     neu_type_e type;
 } neu_scan_tag_attribute_t;
+
+typedef struct neu_req_test_rea_tag {
+    char                      driver[NEU_NODE_NAME_LEN];
+    char                      group[NEU_GROUP_NAME_LEN];
+    char                      tag[NEU_TAG_NAME_LEN];
+    char                      address[NEU_TAG_ADDRESS_LEN];
+    neu_attribute_e           attribute;
+    neu_type_e                type;
+    uint8_t                   precision;
+    double                    decimal;
+    double                    bias;
+    neu_datatag_addr_option_u option;
+} neu_req_test_read_tag_t;
+
+typedef struct {
+    neu_type_e       type;
+    neu_json_type_e  t;
+    neu_json_value_u value;
+    int64_t          error;
+} neu_resp_test_read_tag_t;
 
 #ifdef __cplusplus
 }

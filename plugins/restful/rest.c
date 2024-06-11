@@ -228,6 +228,10 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         handle_read_paginate_resp(header->ctx,
                                   (neu_resp_read_group_paginate_t *) data);
         break;
+    case NEU_RESP_TEST_READ_TAG:
+        handle_test_read_tag_resp(header->ctx,
+                                  (neu_resp_test_read_tag_t *) data);
+        break;
     case NEU_RESP_SCAN_TAGS:
         handle_scan_tags_resp(header->ctx, (neu_resp_scan_tags_t *) data);
         break;
