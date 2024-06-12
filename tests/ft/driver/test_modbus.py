@@ -350,6 +350,27 @@ hold_uint16_utf8 = [{"name": "hold_uint16_utf8", "address": "1!401100",
 hold_string_utf8 = [{"name": "hold_string_utf8", "address": "1!401100.4",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
+test_hold_int16         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_uint16        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400002",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_int32         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400003",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_uint32        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400015",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_float         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400017",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_bit           = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001.15",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_string        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400020.10",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING, "precision": 0, "decimal": 0, "bias": 0.0}
+test_coil_bit           = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!000001",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_input_bit          = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!100001",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_input_register_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!30010.0",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+
 class TestModbus:
 
     @description(given="created modbus node", when="add multiple tags", then="add success")
@@ -712,6 +733,67 @@ class TestModbus:
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=coil_bit_5[0]['name'])
 
+    @description(given="created modbus node", when="test read tag", then="read tcp success and others failed")
+    def test_modbus_test_read_tag(self, param):
+        time.sleep(1)
+        if param[0] == 'modbus-tcp':
+            response = api.test_read_tag(json=test_hold_bit)
+            assert response.json()["value"] == 1
+            response = api.test_read_tag(json=test_hold_int16)
+            assert response.json()["value"] == -123
+            response = api.test_read_tag(json=test_hold_uint16)
+            assert response.json()["value"] == 123
+            response = api.test_read_tag(json=test_hold_int32)
+            assert response.json()["value"] == -1234
+            response = api.test_read_tag(json=test_hold_uint32)
+            assert response.json()["value"] == 1234
+            response = api.test_read_tag(json=test_hold_float)
+            assert compare_float(13.4121, response.json()["value"])
+            response = api.test_read_tag(json=test_hold_string)
+            assert 'hello' == response.json()["value"]
+            response = api.test_read_tag(json=test_coil_bit)
+            assert response.json()["value"] == 1
+            response = api.test_read_tag(json=test_input_bit)
+            assert response.json()["value"] == 0
+            response = api.test_read_tag(json=test_input_register_bit)
+            assert response.json()["value"] == 0
+        else:
+            body = {
+                "driver": param[0],
+                "group": "group",
+                "tag": "tag",
+                "address": "1!400001",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW,
+                "type": config.NEU_TYPE_INT16,
+                "precision": 0,
+                "decimal": 0,
+                "bias": 0.0
+               }
+            response = api.test_read_tag(json=body)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_NOT_SUPPORT_TEST_READ_TAG
+
+            """ simulator of modbus tcp stopped """
+            response = api.test_read_tag(json=test_hold_bit)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_int16)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_uint16)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_int32)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_uint32)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_float)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_hold_string)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_coil_bit)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_input_bit)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            response = api.test_read_tag(json=test_input_register_bit)
+            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+
     @description(given="created modbus node and tags", when="read tags", then="read success")
     def test_read_tags(self, param):
         assert 0 == api.read_tag(
@@ -743,29 +825,6 @@ class TestModbus:
             node=param[0], group='group', tag=input_bit_4[0]['name'])
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=input_bit_5[0]['name'])
-
-    @description(given="created modbus node", when="test read tag", then="read tcp success and read rtu failed")
-    def test_modbus_test_read_tag(self, param):
-        body = {
-                "driver": param[0],
-                "group": "group",
-                "tag": "tag",
-                "address": "1!400001",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW,
-                "type": config.NEU_TYPE_INT16,
-                "precision": 0,
-                "decimal": 0,
-                "bias": 0.0
-               }
-        if param[0] == 'modbus-tcp':
-            time.sleep(1)
-            response = api.test_read_tag(json=body)
-            assert response.json()["value"] == -123
-        elif param[0] == 'modbus-rtu':
-            response = api.test_read_tag(json=body)
-            assert response.json()["error"] == 3022
-        else:
-            pytest.skip("modbus rtu tty pass")
 
     @description(given="created modbus node and tags", when="read tags fuzz", then="should return correct result")
     def test_read_tags_fuzz(self, param):
