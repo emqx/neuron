@@ -53,6 +53,7 @@ typedef struct {
     uint8_t              precision;
     int                  n_meta;
     neu_json_tag_meta_t *metas;
+    neu_datatag_t        datatag;
 } neu_json_read_resp_tag_t;
 
 typedef struct {
