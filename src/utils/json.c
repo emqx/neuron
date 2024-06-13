@@ -77,7 +77,7 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
         break;
     case NEU_JSON_FLOAT: {
         double t = ele->v.val_float;
-        if (ele->precision == 0) {
+        if (ele->precision == 0 && ele->bias == 0) {
             t = format_tag_value(ele->v.val_float);
         }
         ob = json_realp(t, ele->precision);
@@ -109,7 +109,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         break;
     case NEU_JSON_FLOAT: {
         double t = ele.v.val_float;
-        if (ele.precision == 0) {
+        if (ele.precision == 0 && ele.bias == 0) {
             t = format_tag_value(ele.v.val_float);
         }
         json_object_set_new(ob, ele.name, json_realp(t, ele.precision));
