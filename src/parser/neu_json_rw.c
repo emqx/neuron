@@ -328,14 +328,15 @@ int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
         },
     };
 
-    if (req_elems[4].v.val_int > 0) {
-        req_elems[3].t = NEU_JSON_DOUBLE;
-    }
-
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
         goto error;
+    }
+
+    if (req_elems[4].v.val_int > 0) {
+        req_elems[3].t            = NEU_JSON_DOUBLE;
+        req_elems[3].v.val_double = (double_t) req_elems[3].v.val_int;
     }
 
     req->node  = req_elems[0].v.val_str;
