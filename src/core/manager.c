@@ -162,7 +162,8 @@ neu_manager_t *neu_manager_create()
 
 void neu_manager_destroy(neu_manager_t *manager)
 {
-    neu_req_node_init_t uninit = { 0 };
+    neu_req_node_init_t uninit           = { 0 };
+    int                 send_msg_success = 1;
 
     UT_array *addrs = neu_node_manager_get_addrs_all(manager->node_manager);
 
@@ -176,15 +177,19 @@ void neu_manager_destroy(neu_manager_t *manager)
         if (0 != neu_send_msg_to(manager->server_fd, addr, msg)) {
             nlog_error("manager -> %s uninit msg send fail",
                        &addr->sun_path[1]);
+            send_msg_success = 0;
             neu_msg_free(msg);
+            break;
         }
     }
     utarray_free(addrs);
 
-    while (1) {
-        usleep(1000 * 100);
-        if (neu_node_manager_size(manager->node_manager) == 0) {
-            break;
+    if (send_msg_success) {
+        while (1) {
+            usleep(1000 * 100);
+            if (neu_node_manager_size(manager->node_manager) == 0) {
+                break;
+            }
         }
     }
 
