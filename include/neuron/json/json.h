@@ -68,6 +68,7 @@ typedef struct neu_json_elem {
     enum neu_json_type   t;
     union neu_json_value v;
     uint8_t              precision;
+    double               bias;
 } neu_json_elem_t;
 
 #define NEU_JSON_ELEM_SIZE(elems) sizeof(elems) / sizeof(neu_json_elem_t)

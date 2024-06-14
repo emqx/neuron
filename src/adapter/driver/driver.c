@@ -2109,6 +2109,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
         }
         strcpy(tag_value.tag, tag->name);
 
+        tag_value.datatag.bias = tag->bias;
+
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
 
@@ -2249,7 +2251,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                     break;
                 }
             }
-            if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
+            if (tag->precision == 0 && tag->bias == 0 &&
+                tag->type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }
@@ -2269,6 +2272,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
         neu_driver_cache_value_t  value     = { 0 };
 
         strcpy(tag_value.tag, tag->name);
+
+        tag_value.datatag.bias = tag->bias;
 
         if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
                                       tag_value.metas,
@@ -2410,7 +2415,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
                 }
             }
 
-            if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
+            if (tag->precision == 0 && tag->bias == 0 &&
+                tag->type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }
@@ -2581,7 +2587,8 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
                 }
             }
 
-            if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
+            if (tag->precision == 0 && tag->bias == 0 &&
+                tag->type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }

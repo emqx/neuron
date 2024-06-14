@@ -670,6 +670,7 @@ typedef struct neu_resp_tag_value_meta {
     char           tag[NEU_TAG_NAME_LEN];
     neu_dvalue_t   value;
     neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+    neu_datatag_t  datatag;
 } neu_resp_tag_value_meta_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_icd()
@@ -871,6 +872,8 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
             tag_json->n_meta, sizeof(neu_json_tag_meta_t));
     }
     neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, tag_json);
+
+    tag_json->datatag.bias = tag_value->datatag.bias;
 
     switch (tag_value->value.type) {
     case NEU_TYPE_ERROR:
