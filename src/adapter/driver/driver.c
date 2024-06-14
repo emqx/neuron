@@ -2723,6 +2723,15 @@ void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
     datatag.bias      = cmd->bias;
     datatag.option    = cmd->option;
 
+    group_t *g = find_group(driver, cmd->group);
+    if (g != NULL && neu_group_tag_size(g->group) > 0) {
+        stop_group_timer(driver, g);
+    }
+
     driver->adapter.module->intf_funs->driver.test_read_tag(
         driver->adapter.plugin, req, datatag);
+
+    if (g != NULL && neu_group_tag_size(g->group) > 0) {
+        start_group_timer(driver, g);
+    }
 }
