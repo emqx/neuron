@@ -59,6 +59,7 @@ int neu_json_encode_read_resp(void *json_object, void *param)
             tag_elems[1].t         = p_tag->t;
             tag_elems[1].v         = p_tag->value;
             tag_elems[1].precision = p_tag->precision;
+            tag_elems[1].bias      = p_tag->datatag.bias;
 
             if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
                 if_precision      = 1;
@@ -145,6 +146,7 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
             tag_elems[8].t         = p_tag->t;
             tag_elems[8].v         = p_tag->value;
             tag_elems[8].precision = p_tag->precision;
+            tag_elems[8].bias      = p_tag->datatag.bias;
 
             if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
                 if_precision      = 1;
@@ -235,6 +237,7 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
             tag_elem.t         = p_tag->t;
             tag_elem.v         = p_tag->value;
             tag_elem.precision = p_tag->precision;
+            tag_elem.bias      = p_tag->datatag.bias;
             neu_json_encode_field(values, &tag_elem, 1);
         } else {
             tag_elem.name      = p_tag->name;
