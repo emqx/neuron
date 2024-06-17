@@ -179,6 +179,18 @@ def read_tag(node, group, tag, sync=False):
     finally:
         return x[0]['value']
 
+def read_tag_paginate(node, group, tag, sync=False):
+    response = read_tags_paginate(node, group, sync, query={"name": tag})
+    assert response.status_code == 200
+    tag_items = response.json()['items']
+    matching_tags = list(filter(lambda x: x['name'] == tag, tag_items))
+    assert len(matching_tags) == 1
+    matching_tag = matching_tags[0]
+    try:
+        value = matching_tag['value']
+    except KeyError:
+        print(matching_tag['error'])
+    return value
 
 def read_tag_error(node, group, tag, sync=False):
     response = read_tags(node, group, sync)

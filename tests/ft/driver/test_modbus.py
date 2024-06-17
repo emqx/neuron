@@ -858,31 +858,27 @@ class TestModbus:
         assert 200 == response.status_code
         assert 1 == len(response.json()["tags"])
 
-    @description(given="created modbus node and tags", when="read tags synchronously", then="read fail")
+    @description(given="created modbus node and tags", when="read tags synchronously", then="read success")
     def test_read_tags_sync(self, param):
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_bit[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_uint16[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_int16[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_uint32[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_int32[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_register_string[0]['name'], sync=True)
+        assert -123 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16[0]['name'], sync=True)
 
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_bit_1[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_bit_2[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_bit_3[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_bit_4[0]['name'], sync=True)
-        assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
-            node=param[0], group='group', tag=input_bit_5[0]['name'], sync=True)
+        assert -123 == api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_int16[0]['name'], sync=True)
+        assert 123 == api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_uint16[0]['name'], sync=True)
+        assert -1234 == api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_int32[0]['name'], sync=True)
+        assert 1234 == api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_uint32[0]['name'], sync=True)
+        assert compare_float(13.4121, api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_float[0]['name'], sync=True))
+        assert 'hello' == api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_string[0]['name'], sync=True)
+        bytes = api.read_tag_paginate(
+            node=param[0], group='group', tag=hold_bytes[0]['name'], sync=True)
+        assert len(bytes) == 10
+        assert bytes == [0x1, 0x2, 0x3, 0x4, 0, 0, 0, 0, 0, 0]
 
     @description(given="created modbus node, a tag with same name/address that in different groups", when="read tags", then="read success")
     def test_read_tag_in_diff_group(self, param):

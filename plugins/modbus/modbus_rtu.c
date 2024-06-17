@@ -56,6 +56,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
     .driver.validate_tag  = driver_validate_tag,
     .driver.group_timer   = driver_group_timer,
+    .driver.group_sync    = driver_group_timer,
     .driver.write_tag     = driver_write,
     .driver.tag_validator = driver_tag_validator,
     .driver.write_tags    = driver_write_tags,
