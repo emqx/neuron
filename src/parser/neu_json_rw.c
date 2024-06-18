@@ -63,7 +63,7 @@ int neu_json_encode_read_resp(void *json_object, void *param)
 
             if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
                 if_precision      = 1;
-                tag_elems[2].name = "precision";
+                tag_elems[2].name = "transferPrecision";
                 tag_elems[2].t    = NEU_JSON_INT;
                 tag_elems[2].v.val_int =
                     p_tag->precision > 0 ? p_tag->precision : 1;
@@ -150,7 +150,7 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
 
             if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
                 if_precision      = 1;
-                tag_elems[9].name = "precision";
+                tag_elems[9].name = "transferPrecision";
                 tag_elems[9].t    = NEU_JSON_INT;
                 tag_elems[9].v.val_int =
                     p_tag->precision > 0 ? p_tag->precision : 1;
