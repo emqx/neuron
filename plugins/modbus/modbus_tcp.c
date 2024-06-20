@@ -181,7 +181,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
-    ret = neu_parse_param((char *) config, &err_param, 2, &port, &max_retries,
+    ret = neu_parse_param((char *) config, &err_param, 2, &max_retries,
                           &retry_interval);
     if (ret != 0) {
         free(err_param);

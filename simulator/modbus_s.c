@@ -139,7 +139,7 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
             }
         }
 
-        if (simulate_error && ntohs(address->start_address) == 8000) {
+        if (simulate_error && ntohs(address->start_address) == 8004) {
             ++start_address_8001_counter;
             if (start_address_8001_counter % 3 != 0) {
                 return -2;
@@ -244,7 +244,7 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
             }
         }
 
-        if (simulate_error && ntohs(address->start_address) == 8000) {
+        if (simulate_error && ntohs(address->start_address) == 8004) {
             ++start_address_8001_counter;
             if (start_address_8001_counter % 3 != 0) {
                 return -2;
