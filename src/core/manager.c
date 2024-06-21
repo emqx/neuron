@@ -965,6 +965,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
+        nlog_notice("add node name:%s plugin:%s", cmd->node, cmd->plugin);
         int error = neu_manager_add_node(manager, cmd->node, cmd->plugin,
                                          NEU_NODE_RUNNING_STATE_INIT, false);
         neu_resp_error_t e = { .error = error };
@@ -981,7 +982,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_NODE: {
         neu_req_update_node_t *cmd = (neu_req_update_node_t *) &header[1];
         neu_resp_error_t       e   = { 0 };
-
+        nlog_notice("update node name:%s new_name:%s", cmd->node,
+                    cmd->new_name);
         if (NULL == neu_node_manager_find(manager->node_manager, cmd->node)) {
             e.error = NEU_ERR_NODE_NOT_EXIST;
         } else if (NULL !=
@@ -1005,7 +1007,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_NODE: {
         neu_req_del_node_t *cmd   = (neu_req_del_node_t *) &header[1];
         neu_resp_error_t    error = { 0 };
-        neu_adapter_t *     adapter =
+        nlog_notice("del node name:%s", cmd->node);
+        neu_adapter_t *adapter =
             neu_node_manager_find(manager->node_manager, cmd->node);
         bool single =
             neu_node_manager_is_single(manager->node_manager, cmd->node);
@@ -1103,6 +1106,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t     error    = { 0 };
         uint16_t             app_port = 0;
 
+        nlog_notice("add sub app_name:%s driver_node:%s group:%s params:%s",
+                    cmd->app, cmd->driver, cmd->group,
+                    cmd->params != NULL ? cmd->params : "");
+
         error.error = neu_manager_subscribe(manager, cmd->app, cmd->driver,
                                             cmd->group, cmd->params, &app_port);
 
@@ -1128,7 +1135,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         for (uint16_t i = 0; i < cmd->n_group; ++i) {
             neu_req_subscribe_group_info_t *info = &cmd->groups[i];
-
+            nlog_notice("add sub app_name:%s driver_node:%s group:%s params:%s",
+                        cmd->app, info->driver, info->group,
+                        info->params != NULL ? info->params : "");
             error.error =
                 neu_manager_subscribe(manager, cmd->app, info->driver,
                                       info->group, info->params, &info->port);
@@ -1156,7 +1165,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP: {
         neu_req_subscribe_t *cmd   = (neu_req_subscribe_t *) &header[1];
         neu_resp_error_t     error = { 0 };
-
+        nlog_notice("update sub app_name:%s driver_node:%s group:%s params:%s",
+                    cmd->app, cmd->driver, cmd->group,
+                    cmd->params != NULL ? cmd->params : "");
         error.error = neu_manager_update_subscribe(
             manager, cmd->app, cmd->driver, cmd->group, cmd->params);
 
@@ -1176,7 +1187,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UNSUBSCRIBE_GROUP: {
         neu_req_unsubscribe_t *cmd   = (neu_req_unsubscribe_t *) &header[1];
         neu_resp_error_t       error = { 0 };
-
+        nlog_notice("del sub app_name:%s driver_node:%s group:%s", cmd->app,
+                    cmd->driver, cmd->group);
         error.error =
             neu_manager_unsubscribe(manager, cmd->app, cmd->driver, cmd->group);
 
