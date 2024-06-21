@@ -806,7 +806,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd   = (neu_req_node_setting_t *) &header[1];
         neu_resp_error_t        error = { 0 };
-
+        nlog_notice("setting node:%s params:%s", cmd->node, cmd->setting);
         error.error = neu_adapter_set_setting(adapter, cmd->setting);
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_setting(adapter->name, cmd->setting);
@@ -899,7 +899,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GROUP: {
         neu_req_add_group_t *cmd   = (neu_req_add_group_t *) &header[1];
         neu_resp_error_t     error = { 0 };
-
+        nlog_notice("add group node:%s group:%s interval:%d", cmd->driver,
+                    cmd->group, cmd->interval);
         if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
             error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
         } else {
@@ -924,7 +925,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_DRIVER_GROUP: {
         neu_req_update_group_t *cmd  = (neu_req_update_group_t *) &header[1];
         neu_resp_update_group_t resp = { 0 };
-
+        nlog_notice("update group node:%s old_name:%s new_name:%s interval:%d",
+                    header->receiver, cmd->group, cmd->new_name, cmd->interval);
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             resp.error = neu_adapter_driver_update_group(
                 (neu_adapter_driver_t *) adapter, cmd->group, cmd->new_name,
@@ -949,7 +951,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_GROUP: {
         neu_req_del_group_t *cmd   = (neu_req_del_group_t *) &header[1];
         neu_resp_error_t     error = { 0 };
-
+        nlog_notice("del group node:%s group:%s", cmd->driver, cmd->group);
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             error.error = neu_adapter_driver_del_group(
                 (neu_adapter_driver_t *) adapter, cmd->group);
@@ -1005,6 +1007,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
+                nlog_notice("del tag node:%s group:%s tag:%s", cmd->driver,
+                            cmd->group, cmd->tags[i]);
                 int ret = neu_adapter_driver_del_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags[i]);
                 if (0 == ret) {
