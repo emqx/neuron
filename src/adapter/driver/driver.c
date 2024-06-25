@@ -547,6 +547,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
             }
         } else {
             // sync read to update cache
+            stop_group_timer(driver, g);
             driver->adapter.module->intf_funs->driver.group_sync(
                 driver->adapter.plugin, &g->grp);
             // fetch updated data from cache
@@ -555,6 +556,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                            NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                        neu_adapter_get_tag_cache_type(&driver->adapter),
                        driver->cache, cmd->group, tags, resp.tags);
+            start_group_timer(driver, g);
         }
     } else {
         read_group(global_timestamp,
@@ -643,6 +645,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
             }
         } else {
             // sync read to update cache
+            stop_group_timer(driver, g);
             driver->adapter.module->intf_funs->driver.group_sync(
                 driver->adapter.plugin, &g->grp);
             // fetch updated data from cache
@@ -652,6 +655,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
                     NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                 neu_adapter_get_tag_cache_type(&driver->adapter), driver->cache,
                 cmd->group, tags, resp.tags);
+            start_group_timer(driver, g);
         }
     } else {
         read_group_paginate(global_timestamp,
