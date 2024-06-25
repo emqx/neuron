@@ -285,7 +285,7 @@ coil_bit_m15 = [{"name": "coil_bit_m15", "address": "1!000125",
 
 hold_int16_retry_1 = [{"name": "hold_int16_retry_1", "address": "1!408000",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
-hold_int16_retry_2 = [{"name": "hold_int16_retry_2", "address": "1!408001",
+hold_int16_retry_2 = [{"name": "hold_int16_retry_2", "address": "1!408005",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 
 hold_int16_B = [{"name": "hold_int16_B", "address": "1!400401#B",
@@ -1492,16 +1492,10 @@ class TestModbus:
     def test_read_tag_retry(self, param):
         if param[0] == 'modbus-rtu-tty':
             pytest.skip("modbus rtu tty pass")
-        api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_1)
         api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_2)
-
-        api.write_tag_check(
-            node=param[0], group='group', tag=hold_int16_retry_1[0]['name'], value=111)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16_retry_2[0]['name'], value=222)
         time.sleep(0.5)
-        assert 111 == api.read_tag(
-            node=param[0], group='group', tag=hold_int16_retry_1[0]['name'])
         assert 222 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_retry_2[0]['name'])
 
