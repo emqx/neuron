@@ -414,6 +414,11 @@ char *xinao_ctx_gen_batch_resp_json(xinao_batch_ctx_t *ctx)
     json_t *cmd   = json_object_get(ctx->root, "cmd");
     int     n_cmd = json_array_size(cmd);
 
+    // rename to `data`
+    json_incref(cmd);
+    json_object_del(ctx->root, "cmd");
+    json_object_set_new(ctx->root, "data", cmd);
+
     json_object_set_new(ctx->root, "ts", json_integer(global_timestamp));
     json_object_set_new(ctx->root, "type", json_string("algset/cack"));
 
