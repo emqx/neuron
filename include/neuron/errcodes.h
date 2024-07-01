@@ -47,6 +47,7 @@ typedef enum {
     NEU_ERR_COMMAND_EXECUTION_FAILED = 1014,
     NEU_ERR_IP_ADDRESS_INVALID       = 1015,
     NEU_ERR_IP_ADDRESS_IN_USE        = 1016,
+    NEU_ERR_BODY_TOO_BIG             = 1017,
 
     NEU_ERR_NODE_EXIST               = 2002,
     NEU_ERR_NODE_NOT_EXIST           = 2003,
