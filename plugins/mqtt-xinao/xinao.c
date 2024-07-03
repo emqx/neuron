@@ -76,14 +76,15 @@ int neu_json_decode_xinao_write_tag_req_json(neu_plugin_t *    plugin,
         return -1;
     }
 
-    json_t *node_name = json_object_get(data, "sysId");
-    if (NULL == node_name || !json_is_string(node_name)) {
+    json_t *sysId = json_object_get(data, "sysId");
+    if (NULL == sysId || !json_is_string(sysId)) {
         plog_error(plugin, "data no valid key `sysId`");
         return -1;
     }
 
-    json_t *group_name = json_object_get(data, "dev");
-    if (NULL == group_name || !json_is_string(group_name)) {
+    json_t *node_name  = json_object_get(data, "dev");
+    json_t *group_name = node_name;
+    if (NULL == node_name || !json_is_string(node_name)) {
         plog_error(plugin, "data no valid key `dev`");
         return -1;
     }
@@ -97,7 +98,7 @@ int neu_json_decode_xinao_write_tag_req_json(neu_plugin_t *    plugin,
 
     if (neu_json_decode_by_json(data, 1, &elem)) {
         plog_error(plugin, "sysId:%s dev:%s m:%s decode v fail",
-                   json_string_value(node_name), json_string_value(group_name),
+                   json_string_value(sysId), json_string_value(node_name),
                    json_string_value(tag));
         return -1;
     }
@@ -149,14 +150,15 @@ int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
     for (int i = 0; i < n_cmd; ++i) {
         json_t *a_cmd = json_array_get(cmd, i);
 
-        json_t *node_name = json_object_get(a_cmd, "sysId");
-        if (NULL == node_name || !json_is_string(node_name)) {
+        json_t *sysId = json_object_get(a_cmd, "sysId");
+        if (NULL == sysId || !json_is_string(sysId)) {
             plog_error(plugin, "cmd[%d] no valid key `sysId`", i);
             goto error;
         }
 
-        json_t *group_name = json_object_get(a_cmd, "dev");
-        if (NULL == group_name || !json_is_string(group_name)) {
+        json_t *node_name  = json_object_get(a_cmd, "dev");
+        json_t *group_name = node_name;
+        if (NULL == node_name || !json_is_string(node_name)) {
             plog_error(plugin, "cmd[%d] no valid key `dev`", i);
             goto error;
         }
@@ -193,8 +195,7 @@ int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
             index_map_add(&map, json_string_value(node_name),
                           json_string_value(group_name))) {
             plog_error(plugin, "cmd[%d] {sysId:%s, dev:%s} duplicate", i,
-                       json_string_value(node_name),
-                       json_string_value(group_name));
+                       json_string_value(sysId), json_string_value(node_name));
             goto error;
         }
     }
@@ -209,8 +210,9 @@ int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
 
     for (int i = 0; i < n_cmd; ++i) {
         json_t *a_cmd      = json_array_get(cmd, i);
-        json_t *node_name  = json_object_get(a_cmd, "sysId");
-        json_t *group_name = json_object_get(a_cmd, "dev");
+        json_t *sysId      = json_object_get(a_cmd, "sysId");
+        json_t *node_name  = json_object_get(a_cmd, "dev");
+        json_t *group_name = node_name;
 
         node_index_t * n = NULL;
         group_index_t *g = NULL;
@@ -267,7 +269,7 @@ int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
             int ret = neu_json_decode_by_json(tag_value, 1, &elem);
             if (0 != ret) {
                 plog_error(plugin, "sysId:%s dev:%s m:%s decode v fail",
-                           batch_driver->driver, batch_group->group,
+                           json_string_value(sysId), batch_driver->driver,
                            batch_group->tags[j].name);
                 goto error;
             }
@@ -424,8 +426,8 @@ char *xinao_ctx_gen_batch_resp_json(xinao_batch_ctx_t *ctx)
 
     for (int i = 0; i < n_cmd; ++i) {
         json_t *a_cmd      = json_array_get(cmd, i);
-        json_t *node_name  = json_object_get(a_cmd, "sysId");
-        json_t *group_name = json_object_get(a_cmd, "dev");
+        json_t *node_name  = json_object_get(a_cmd, "dev");
+        json_t *group_name = node_name;
 
         node_index_t * n = NULL;
         group_index_t *g = NULL;
