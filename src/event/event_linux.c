@@ -108,7 +108,7 @@ static void *event_loop(void *arg)
     neu_events_t *events   = (neu_events_t *) arg;
     int           epoll_fd = events->epoll_fd;
 
-    while (true) {
+    while (!events->stop) {
         struct epoll_event event = { 0 };
         struct event_data *data  = NULL;
 
