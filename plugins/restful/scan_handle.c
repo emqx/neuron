@@ -36,12 +36,21 @@ void handle_scan_tags(nng_aio *aio)
                 goto error;
             }
 
+            if (NULL != req->ctx && NEU_VALUE_SIZE <= strlen(req->ctx)) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
             if (NULL != req->node) {
                 strcpy(cmd.driver, req->node);
             }
 
             if (NULL != req->id) {
                 strcpy(cmd.id, req->id);
+            }
+
+            if (NULL != req->ctx) {
+                strcpy(cmd.ctx, req->ctx);
             }
 
             if (0 != neu_plugin_op(plugin, header, &cmd)) {

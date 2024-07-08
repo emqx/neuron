@@ -1138,6 +1138,7 @@ typedef struct {
 typedef struct neu_req_scan_tags {
     char driver[NEU_NODE_NAME_LEN];
     char id[NEU_TAG_ADDRESS_LEN];
+    char ctx[NEU_VALUE_SIZE];
 } neu_req_scan_tags_t;
 
 typedef struct {
@@ -1151,6 +1152,7 @@ typedef struct {
     int32_t    error;
     neu_type_e type;
     bool       is_array;
+    char       ctx[NEU_VALUE_SIZE];
 } neu_resp_scan_tags_t;
 
 typedef struct {
