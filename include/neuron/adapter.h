@@ -66,8 +66,7 @@ typedef struct adapter_callbacks {
                               const char *tag, neu_dvalue_t value,
                               neu_tag_meta_t *metas, int n_meta);
             void (*scan_tags_response)(neu_adapter_t *adapter, void *r,
-                                       int error, void *tags, neu_type_e type,
-                                       bool is_array);
+                                       neu_resp_scan_tags_t *resp_scan);
             void (*test_read_tag_response)(neu_adapter_t *adapter, void *r,
                                            neu_json_type_e t, neu_type_e type,
                                            neu_json_value_u value,

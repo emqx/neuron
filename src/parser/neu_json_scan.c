@@ -57,6 +57,13 @@ int neu_json_decode_scan_tags_req(char *buf, neu_json_scan_tags_req_t **result)
         },
     };
 
+    neu_json_elem_t req_ctx_elems[] = {
+        {
+            .name = "ctx",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
     if (0 !=
         neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_node_elems),
                                 req_node_elems)) {
@@ -67,8 +74,13 @@ int neu_json_decode_scan_tags_req(char *buf, neu_json_scan_tags_req_t **result)
 
     neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_id_elems),
                             req_id_elems);
+
+    neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_ctx_elems),
+                            req_ctx_elems);
+
     req->node = req_node_elems[0].v.val_str;
     req->id   = req_id_elems[0].v.val_str;
+    req->ctx  = req_ctx_elems[0].v.val_str;
     *result   = req;
 
     neu_json_decode_free(json_obj);
@@ -79,6 +91,7 @@ void neu_json_decode_scan_tags_req_free(neu_json_scan_tags_req_t *req)
 {
     free(req->node);
     free(req->id);
+    free(req->ctx);
     free(req);
 }
 
@@ -108,9 +121,13 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
                     {
                         .name      = "tag",
                         .t         = NEU_JSON_INT,
+                        .v.val_int = p_tag->tag,
+                    },
+                    {
+                        .name      = "type",
+                        .t         = NEU_JSON_INT,
                         .v.val_int = p_tag->type,
                     },
-
                 };
 
                 neu_json_encode_array(tag_array, tag_elems,
@@ -140,6 +157,11 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
                                          .name       = "is_array",
                                          .t          = NEU_JSON_BOOL,
                                          .v.val_bool = resp->is_array,
+                                     },
+                                     {
+                                         .name      = "ctx",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->ctx,
                                      },
                                      {
                                          .name         = "tags",

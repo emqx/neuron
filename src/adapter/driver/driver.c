@@ -337,20 +337,13 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     update_with_meta(adapter, group, tag, value, NULL, 0);
 }
 
-static void scan_tags_response(neu_adapter_t *adapter, void *r, neu_error error,
-                               void *tags, neu_type_e type, bool is_array)
+static void scan_tags_response(neu_adapter_t *adapter, void *r,
+                               neu_resp_scan_tags_t *resp_scan)
 {
-    neu_reqresp_head_t * req   = (neu_reqresp_head_t *) r;
-    neu_resp_scan_tags_t value = {
-        .scan_tags = tags,
-        .error     = error,
-        .type      = type,
-        .is_array  = is_array,
-    };
-    req->type = NEU_RESP_SCAN_TAGS;
+    neu_reqresp_head_t *req = (neu_reqresp_head_t *) r;
+    req->type               = NEU_RESP_SCAN_TAGS;
     nlog_notice("scan tags response <%p>", req->ctx);
-
-    adapter->cb_funs.response(adapter, req, &value);
+    adapter->cb_funs.response(adapter, req, resp_scan);
 }
 
 static void test_read_tag_response(neu_adapter_t *adapter, void *r,
@@ -2680,18 +2673,28 @@ void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.scan_tags_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING, NULL,
-            NEU_TYPE_ERROR, false);
+        neu_resp_scan_tags_t resp_scan = {
+            .scan_tags = NULL,
+            .error     = NEU_ERR_PLUGIN_NOT_RUNNING,
+            .type      = NEU_TYPE_ERROR,
+            .is_array  = false,
+        };
+        driver->adapter.cb_funs.driver.scan_tags_response(&driver->adapter, req,
+                                                          &resp_scan);
 
         nlog_warn("%s not running", driver->adapter.name);
         return;
     }
 
     if (driver->adapter.module->intf_funs->driver.scan_tags == NULL) {
-        driver->adapter.cb_funs.driver.scan_tags_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_SCAN_TAGS, NULL,
-            NEU_TYPE_ERROR, false);
+        neu_resp_scan_tags_t resp_scan = {
+            .scan_tags = NULL,
+            .error     = NEU_ERR_PLUGIN_NOT_SUPPORT_SCAN_TAGS,
+            .type      = NEU_TYPE_ERROR,
+            .is_array  = false,
+        };
+        driver->adapter.cb_funs.driver.scan_tags_response(&driver->adapter, req,
+                                                          &resp_scan);
 
         nlog_warn("%s not support scan tags", driver->adapter.name);
         return;
@@ -2699,7 +2702,7 @@ void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
 
     neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) &req[1];
     driver->adapter.module->intf_funs->driver.scan_tags(driver->adapter.plugin,
-                                                        req, cmd->id);
+                                                        req, cmd->id, cmd->ctx);
 }
 
 void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
