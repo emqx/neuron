@@ -248,6 +248,7 @@ typedef struct {
     const char *           name;  // NOTE: should points to string literal
     const char *           help;  // NOTE: should points to string literal
     neu_metric_type_e      type;  //
+    uint64_t               init;  //
     uint64_t               value; //
     neu_rolling_counter_t *rcnt;  //
     UT_hash_handle         hh;    // ordered by name
@@ -489,7 +490,7 @@ static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
     HASH_LOOP(hh, node_metrics->entries, entry)
     {
         if (!neu_metric_type_no_reset(entry->type)) {
-            entry->value = 0;
+            entry->value = entry->init;
             if (neu_metric_type_is_rolling_counter(entry->type)) {
                 neu_rolling_counter_reset(entry->rcnt);
             }
@@ -502,7 +503,7 @@ static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
         HASH_LOOP(hh, g->entries, entry)
         {
             if (!neu_metric_type_no_reset(entry->type)) {
-                entry->value = 0;
+                entry->value = entry->init;
                 if (neu_metric_type_is_rolling_counter(entry->type)) {
                     neu_rolling_counter_reset(entry->rcnt);
                 }
