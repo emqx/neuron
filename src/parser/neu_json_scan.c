@@ -123,11 +123,6 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
                         .t         = NEU_JSON_INT,
                         .v.val_int = p_tag->tag,
                     },
-                    {
-                        .name      = "type",
-                        .t         = NEU_JSON_INT,
-                        .v.val_int = p_tag->type,
-                    },
                 };
 
                 neu_json_encode_array(tag_array, tag_elems,
