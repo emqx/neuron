@@ -373,5 +373,5 @@ def get_nodes_disable_auth(type):
 
 
 @gen_check
-def scan_tags(node, id):
-    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id})
+def scan_tags(node, id, ctx=""):
+    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx})
