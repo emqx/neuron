@@ -209,6 +209,34 @@ filter_tags(tag_elem_t *tags,
     return array;
 }
 
+static inline UT_array *filter_tags_by_page(
+    tag_elem_t *tags, bool (*predicate)(const neu_datatag_t *, void *data),
+    void *data, int current_page, int page_size, int *total_count)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  array       = NULL;
+    int         count       = 0;
+    int         start_index = (current_page - 1) * page_size;
+    int         end_index   = start_index + page_size;
+
+    utarray_new(array, neu_tag_get_icd());
+    HASH_ITER(hh, tags, el, tmp)
+    {
+        if (predicate(el->tag, data)) {
+            if (count >= start_index && count < end_index) {
+                utarray_push_back(array, el->tag);
+            }
+            count++;
+        }
+    }
+
+    if (total_count) {
+        *total_count = count;
+    }
+
+    return array;
+}
+
 static inline bool is_readable(const neu_datatag_t *tag, void *data)
 {
     (void) data;
@@ -270,6 +298,25 @@ UT_array *neu_group_query_read_tag(neu_group_t *group, const char *name,
 
     pthread_mutex_lock(&group->mtx);
     array = filter_tags(group->tags, is_readable_and_match_query, &q);
+    pthread_mutex_unlock(&group->mtx);
+
+    return array;
+}
+
+UT_array *neu_group_query_read_tag_paginate(neu_group_t *group,
+                                            const char *name, const char *desc,
+                                            int current_page, int page_size,
+                                            int *total_count)
+{
+    UT_array *   array = NULL;
+    struct query q     = {
+        .name = (char *) name,
+        .desc = (char *) desc,
+    };
+
+    pthread_mutex_lock(&group->mtx);
+    array = filter_tags_by_page(group->tags, is_readable_and_match_query, &q,
+                                current_page, page_size, total_count);
     pthread_mutex_unlock(&group->mtx);
 
     return array;
