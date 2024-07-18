@@ -933,6 +933,7 @@ typedef struct {
     int   current_page;
     int   page_size;
     bool  is_error;
+    int   total_count; // tags count without pagination
 
     UT_array *tags; // neu_resp_tag_value_meta_paginate_t
 } neu_resp_read_group_paginate_t;
