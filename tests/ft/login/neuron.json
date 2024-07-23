@@ -3,5 +3,6 @@
 	"port": 7000,
 	"disable_auth": 1,
 	"syslog_host": "",
-	"syslog_port": 541
+	"syslog_port": 541,
+	"sub_filter_error": 0
 }
