@@ -29,6 +29,8 @@
 
 #include "cache.h"
 
+extern bool sub_filter_err;
+
 typedef struct {
     char group[NEU_GROUP_NAME_LEN];
     char tag[NEU_TAG_NAME_LEN];
@@ -39,6 +41,7 @@ struct elem {
     bool    changed;
 
     neu_dvalue_t value;
+    neu_dvalue_t value_old;
 
     neu_tag_meta_t metas[NEU_TAG_META_SIZE];
 
@@ -142,8 +145,91 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
     if (elem != NULL) {
         elem->timestamp = timestamp;
-        if (elem->value.type != value.type) {
+
+        if (sub_filter_err && value.type == NEU_TYPE_ERROR) {
+            goto error_not_report;
+        }
+
+        if ((!sub_filter_err && elem->value.type != value.type) ||
+            (sub_filter_err && elem->value.type != value.type &&
+             elem->value.type != NEU_TYPE_ERROR)) {
             elem->changed = true;
+        } else if (sub_filter_err && elem->value.type != value.type &&
+                   elem->value.type == NEU_TYPE_ERROR) {
+            switch (value.type) {
+            case NEU_TYPE_INT8:
+            case NEU_TYPE_UINT8:
+            case NEU_TYPE_INT16:
+            case NEU_TYPE_UINT16:
+            case NEU_TYPE_INT32:
+            case NEU_TYPE_UINT32:
+            case NEU_TYPE_INT64:
+            case NEU_TYPE_UINT64:
+            case NEU_TYPE_BIT:
+            case NEU_TYPE_BOOL:
+            case NEU_TYPE_STRING:
+            case NEU_TYPE_TIME:
+            case NEU_TYPE_DATA_AND_TIME:
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_DWORD:
+            case NEU_TYPE_LWORD:
+                if (memcmp(&elem->value_old.value, &value.value,
+                           sizeof(value.value)) != 0) {
+                    elem->changed = true;
+                }
+                break;
+            case NEU_TYPE_BYTES:
+                if (elem->value_old.value.bytes.length !=
+                    value.value.bytes.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcpy(elem->value_old.value.bytes.bytes,
+                               value.value.bytes.bytes,
+                               value.value.bytes.length) != 0) {
+                        elem->changed = true;
+                    }
+                }
+                break;
+            case NEU_TYPE_PTR: {
+                if (elem->value_old.value.ptr.length !=
+                    value.value.ptr.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value_old.value.ptr.ptr,
+                               value.value.ptr.ptr,
+                               value.value.ptr.length) != 0) {
+                        elem->changed = true;
+                    }
+                }
+
+                break;
+            }
+            case NEU_TYPE_FLOAT:
+                if (elem->value_old.precision == 0) {
+                    elem->changed =
+                        elem->value_old.value.f32 != value.value.f32;
+                } else {
+                    if (fabs(elem->value_old.value.f32 - value.value.f32) >
+                        pow(0.1, elem->value_old.precision)) {
+                        elem->changed = true;
+                    }
+                }
+                break;
+            case NEU_TYPE_DOUBLE:
+                if (elem->value_old.precision == 0) {
+                    elem->changed =
+                        elem->value_old.value.d64 != value.value.d64;
+                } else {
+                    if (fabs(elem->value_old.value.d64 - value.value.d64) >
+                        pow(0.1, elem->value_old.precision)) {
+                        elem->changed = true;
+                    }
+                }
+
+                break;
+            case NEU_TYPE_ERROR:
+                break;
+            }
         } else {
             switch (value.type) {
             case NEU_TYPE_INT8:
@@ -217,6 +303,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 break;
             }
         }
+
+        if (sub_filter_err && value.type != NEU_TYPE_ERROR) {
+            elem->value_old.type      = value.type;
+            elem->value_old.value     = value.value;
+            elem->value_old.precision = value.precision;
+        }
+
+    error_not_report:
 
         if (change) {
             elem->changed = true;
