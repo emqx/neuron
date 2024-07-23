@@ -351,10 +351,10 @@ def modbus_rtu_node_setting_base(node, port=502, connection_mode=0, transport_mo
                                     "parity": parity, "baud": baud, "data": data, "address_base": base})
 
 
-def mqtt_node_setting(node):
-    return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos": 0, "format": 0,
+def mqtt_node_setting(node, client_id="neuron_aBcDeF", host="broker.emqx.io", port=1883):
+    return node_setting(node, json={"client-id": client_id, "qos": 0, "format": 0,
                                     "write-req-topic": f"/neuron/{node}/write/req", "write-resp-topic": f"/neuron/{node}/write/resp",
-                                    "offline-cache": False, "cache-sync-interval": 100, "host": "broker.emqx.io", "port": 1883, "username": "", "password": "", "ssl": False})
+                                    "offline-cache": False, "cache-sync-interval": 100, "host": host, "port": port, "username": "", "password": "", "ssl": False})
 
 def get_nodes_disable_auth(type):
     return requests.get(url=config.BASE_URL + '/api/v2/node', params={"type": type})

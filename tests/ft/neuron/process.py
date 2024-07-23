@@ -30,6 +30,9 @@ class NeuronProcess:
     def start_debug(self):
         self.p = start_neuron_debug(self.dir)
 
+    def start_sub_filter_err(self):
+        self.p = start_neuron_sub_filter_err(self.dir)
+
 def start_neuron_disable_auth(dir='build/'):
     command = ['./neuron', '--disable_auth']
     process = subprocess.Popen(
@@ -40,6 +43,14 @@ def start_neuron_disable_auth(dir='build/'):
 
 def start_neuron_debug(dir='build/'):
     command = ['./neuron', '--log_level', 'DEBUG']
+    process = subprocess.Popen(
+        command, stderr=subprocess.PIPE, cwd=dir)
+    time.sleep(1)
+    assert process.poll() is None
+    return process
+
+def start_neuron_sub_filter_err(dir='build/'):
+    command = ['./neuron', '--sub_filter_error']
     process = subprocess.Popen(
         command, stderr=subprocess.PIPE, cwd=dir)
     time.sleep(1)
