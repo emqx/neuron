@@ -35,6 +35,7 @@
 #define NEU_ENV_PLUGIN_DIR "NEURON_PLUGIN_DIR"
 #define NEU_ENV_SYSLOG_HOST "NEURON_SYSLOG_HOST"
 #define NEU_ENV_SYSLOG_PORT "NEURON_SYSLOG_PORT"
+#define NEU_ENV_SUB_FILTER_ERROR "NEURON_SUB_FILTER_ERROR"
 
 #define NEURON_CONFIG_FNAME "./config/neuron.json"
 
@@ -64,6 +65,7 @@ typedef struct {
     int      port;
     char *   syslog_host;
     uint16_t syslog_port;
+    bool     sub_filter_err;
 } neu_cli_args_t;
 
 /** Parse command line arguments.

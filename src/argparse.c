@@ -80,6 +80,7 @@ const char *usage_text =
 "    --plugin_dir <DIR>   directory from which neuron loads plugin lib files\n"
 "    --syslog_host <HOST> syslog server host to which neuron will send logs\n"
 "    --syslog_port <PORT> syslog server port (default 541 if not provided)\n"
+"    --sub_filter_error The subscribe attribute only detects the last read value and does not report any error tags\n"
 "\n";
 // clang-format on
 
@@ -176,6 +177,19 @@ static inline int load_env(neu_cli_args_t *args, char **log_level_out,
                 args->dev_log = false;
             } else {
                 printf("neuron NEURON_LOG setting error!\n");
+                ret = -1;
+                break;
+            }
+        }
+
+        char *sub_filter_e = getenv(NEU_ENV_SUB_FILTER_ERROR);
+        if (sub_filter_e != NULL) {
+            if (strcmp(sub_filter_e, "1") == 0) {
+                args->sub_filter_err = true;
+            } else if (strcmp(sub_filter_e, "0") == 0) {
+                args->sub_filter_err = false;
+            } else {
+                printf("neuron NEURON_SUB_FILTER_ERROR setting error!\n");
                 ret = -1;
                 break;
             }
@@ -289,6 +303,7 @@ static inline int load_config_file(int argc, char *argv[],
         { .name = "port", .t = NEU_JSON_INT },
         { .name = "syslog_host", .t = NEU_JSON_STR },
         { .name = "syslog_port", .t = NEU_JSON_INT },
+        { .name = "sub_filter_error", .t = NEU_JSON_INT },
     };
 
     resolve_config_file_path(argc, argv, long_options, opts, &config_file);
@@ -369,6 +384,16 @@ static inline int load_config_file(int argc, char *argv[],
                 break;
             }
 
+            if (elems[5].v.val_int == 1) {
+                args->sub_filter_err = true;
+            } else if (elems[5].v.val_int == 0) {
+                args->sub_filter_err = false;
+            } else {
+                printf("config file %s sub_filter_error setting error!\n",
+                       config_file);
+                break;
+            }
+
             ret = 0;
         } else {
             printf("config file %s elems error! must had ip, port and "
@@ -424,6 +449,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "stop", no_argument, NULL, 's' },
         { "syslog_host", required_argument, NULL, 'S' },
         { "syslog_port", required_argument, NULL, 'P' },
+        { "sub_filter_error", no_argument, NULL, 'f' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -516,6 +542,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
                 free(args->syslog_host);
             }
             args->syslog_host = strdup(optarg);
+            break;
+        case 'f':
+            args->sub_filter_err = true;
             break;
         case '?':
         default:
