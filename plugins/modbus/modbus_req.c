@@ -171,7 +171,8 @@ void finalize_modbus_read_result(neu_plugin_t *            plugin,
             handle_modbus_error(plugin, gd, cmd_index,
                                 NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE,
                                 "modbus message error");
-            *rtt = neu_time_ms() - read_tms;
+            *rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+            neu_conn_disconnect(plugin->conn);
             break;
         case -2:
             handle_modbus_error(plugin, gd, cmd_index,
