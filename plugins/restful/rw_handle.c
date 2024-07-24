@@ -41,17 +41,17 @@ void handle_read(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_READ_GROUP;
 
-            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+            if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+            if (req->group && strlen(req->group) >= NEU_GROUP_NAME_LEN) {
                 err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_TAG_NAME_LEN) {
+            if (req->name && strlen(req->name) >= NEU_TAG_NAME_LEN) {
                 err_type = NEU_ERR_TAG_NAME_TOO_LONG;
                 goto error;
             }
@@ -93,17 +93,17 @@ void handle_read_paginate(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_READ_GROUP_PAGINATE;
 
-            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+            if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+            if (req->group && strlen(req->group) >= NEU_GROUP_NAME_LEN) {
                 err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_TAG_NAME_LEN) {
+            if (req->name && strlen(req->name) >= NEU_TAG_NAME_LEN) {
                 err_type = NEU_ERR_TAG_NAME_TOO_LONG;
                 goto error;
             }
@@ -226,17 +226,17 @@ void handle_write(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
 
-            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+            if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+            if (req->group && strlen(req->group) >= NEU_GROUP_NAME_LEN) {
                 err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
                 goto error;
             }
 
-            if (strlen(req->node) >= NEU_TAG_NAME_LEN) {
+            if (req->tag && strlen(req->tag) >= NEU_TAG_NAME_LEN) {
                 err_type = NEU_ERR_TAG_NAME_TOO_LONG;
                 goto error;
             }
