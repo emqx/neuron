@@ -127,12 +127,13 @@ global_config_del_modbus = {
     ]
 }
 
+
 class TestHttp:
 
     @description(given="running neuron", when="add driver/app node/group/tag, app subscribes driver group, and get global config", then="success")
     def test_get_global_config(self):
         response = api.put_global_config(json=global_config)
-        assert 200 == response.status_code     
+        assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
         response = api.get_global_config()
@@ -163,7 +164,7 @@ class TestHttp:
         assert config_data['settings'][0]['node'] == 'mqtt'
 
         response = api.put_global_config(json=global_config_del_modbus)
-        assert 200 == response.status_code     
+        assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
         response = api.get_global_config()
@@ -191,7 +192,7 @@ class TestHttp:
     @description(given="running neuron", when="get subscribe info", then="should success")
     def test_get_subscribe_info(self):
         app = 'MQTT-1'
-        params = {'topic':'/neuron/test'}
+        params = {'topic': '/neuron/test'}
         driver_1 = 'modbus-01'
         driver_2 = 'modbus-02'
         group_1 = 'group-01'
@@ -212,7 +213,8 @@ class TestHttp:
             # match all drivers
             response = api.get_subscribe_group(app, driver='modbus')
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 4
             assert groups[0]['driver'] == driver_1
             assert groups[0]['group'] == group_1
@@ -226,7 +228,8 @@ class TestHttp:
             # match one driver
             response = api.get_subscribe_group(app, driver=driver_1)
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 2
             assert groups[0]['driver'] == driver_1
             assert groups[0]['group'] == group_1
@@ -241,7 +244,8 @@ class TestHttp:
             # match all groups
             response = api.get_subscribe_group(app, group='group')
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 4
             assert groups[0]['driver'] == driver_1
             assert groups[0]['group'] == group_1
@@ -255,7 +259,8 @@ class TestHttp:
             # match one group
             response = api.get_subscribe_group(app, group=group_1)
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 2
             assert groups[0]['driver'] == driver_1
             assert groups[0]['group'] == group_1
@@ -268,15 +273,19 @@ class TestHttp:
             assert len(response.json()['groups']) == 0
 
             # match driver and group
-            response = api.get_subscribe_group(app, driver=driver_1, group=group_1)
+            response = api.get_subscribe_group(
+                app, driver=driver_1, group=group_1)
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 1
             assert groups[0]['driver'] == driver_1
             assert groups[0]['group'] == group_1
-            response = api.get_subscribe_group(app, driver=driver_2, group=group_2)
+            response = api.get_subscribe_group(
+                app, driver=driver_2, group=group_2)
             assert 200 == response.status_code
-            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            groups = sorted(response.json()['groups'], key=lambda g: (
+                g['driver'], g['group']))
             assert len(groups) == 1
             assert groups[0]['driver'] == driver_2
             assert groups[0]['group'] == group_2
@@ -307,16 +316,23 @@ class TestHttp:
         response = api.get_version()
         assert 200 == response.status_code
 
+    @description(given="running neuron", when="get status", then="success")
+    def test_get_status(self):
+        response = api.get_status()
+        assert 200 == response.status_code
+
     @description(given="running neuron", when="test ndriver", then="failed because it is not supported yet")
     def test_ndriver(self):
         api.add_node_check(node='modbus', plugin=config.PLUGIN_MODBUS_TCP)
         api.add_group_check(node='modbus', group='group')
         api.add_tags_check(node='modbus', group='group', tags=hold_int16)
-        response = api.subscribe_group(app='mqtt', driver='modbus', group='group')
+        response = api.subscribe_group(
+            app='mqtt', driver='modbus', group='group')
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
-        response = api.post_ndriver_map(ndriver='mqtt', driver='modbus', group='group')
+        response = api.post_ndriver_map(
+            ndriver='mqtt', driver='modbus', group='group')
         assert 400 == response.status_code
 
         response = api.get_ndriver_map(ndriver='mqtt')
@@ -325,17 +341,19 @@ class TestHttp:
         ndriver_tag_param = {"ndriver": "mqtt", "driver": "modbus", "group": "group", "tags": [
             {"name": "hold_int16", "params": {"address": "1!400002"}}]}
         response = api.put_ndriver_tag_param(json=ndriver_tag_param)
-        assert 200 == response.status_code     
+        assert 200 == response.status_code
 
         ndriver_tag_info = {"ndriver": "mqtt", "driver": "modbus", "group": "group", "tags": [
             {"name": "hold_int16", "address": "1!400002"}]}
         response = api.put_ndriver_tag_info(json=ndriver_tag_info)
         assert 200 == response.status_code
 
-        response = api.get_ndriver_tag(ndriver='mqtt', driver='modbus', group='group')
-        assert 200 == response.status_code     
+        response = api.get_ndriver_tag(
+            ndriver='mqtt', driver='modbus', group='group')
+        assert 200 == response.status_code
 
-        response = api.delete_ndriver_map(ndriver='mqtt', driver='modbus', group='group')
+        response = api.delete_ndriver_map(
+            ndriver='mqtt', driver='modbus', group='group')
         assert 200 == response.status_code
 
     @description(given="running neuron", when="test jwt error", then="failed")

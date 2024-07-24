@@ -65,6 +65,7 @@
 extern int  default_log_level;
 extern bool disable_jwt;
 extern char host_port[32];
+extern char g_status[32];
 
 typedef enum neu_plugin_kind {
     NEU_PLUGIN_KIND_STATIC = 0,

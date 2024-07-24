@@ -41,6 +41,7 @@ zlog_category_t *     neuron            = NULL;
 bool                  disable_jwt       = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
 char                  host_port[32]     = { 0 };
+char                  g_status[32]      = { 0 };
 
 int64_t global_timestamp = 0;
 
