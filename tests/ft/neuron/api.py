@@ -154,11 +154,13 @@ def read_tags(node, group, sync=False, query=None):
         body["query"] = query
     return requests.post(url=config.BASE_URL + "/api/v2/read", headers={"Authorization": config.default_jwt}, json=body)
 
+
 def read_tags_paginate(node, group, sync=False, query=None):
     body = {"node": node, "group": group, "sync": sync}
     if query:
         body["query"] = query
     return requests.post(url=config.BASE_URL + "/api/v2/read/paginate", headers={"Authorization": config.default_jwt}, json=body)
+
 
 def read_tag(node, group, tag, sync=False):
     response = read_tags(node, group, sync, query={"name": tag})
@@ -276,6 +278,10 @@ def put_driver(name, plugin, params, groups=[], jwt=config.default_jwt):
 @gen_check
 def put_drivers(drivers, jwt=config.default_jwt):
     return requests.put(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, json={"nodes": drivers})
+
+
+def get_status():
+    return requests.get(url=config.BASE_URL + "/api/v2/status", headers={"Authorization": config.default_jwt})
 
 
 def get_driver(name, jwt=config.default_jwt):

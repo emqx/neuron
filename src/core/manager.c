@@ -128,6 +128,8 @@ neu_manager_t *neu_manager_create()
 
     manager->timestamp_lev_manager = 0;
 
+    strncpy(g_status, "loading", sizeof(g_status));
+
     neu_metrics_init();
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
 
@@ -156,6 +158,7 @@ neu_manager_t *neu_manager_create()
     manager->timer_timestamp =
         neu_event_add_timer(manager->events, timestamp_timer_param);
 
+    strncpy(g_status, "ready", sizeof(g_status));
     nlog_notice("manager start");
     return manager;
 }
