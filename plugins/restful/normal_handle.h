@@ -26,5 +26,6 @@ void handle_ping(nng_aio *aio);
 void handle_login(nng_aio *aio);
 void handle_password(nng_aio *aio);
 void handle_get_plugin_schema(nng_aio *aio);
+void handle_status(nng_aio *aio);
 
 #endif

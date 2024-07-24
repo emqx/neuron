@@ -407,6 +407,12 @@ static struct neu_http_handler rest_handlers[] = {
         .url           = "/api/v2/scan/tags",
         .value.handler = handle_scan_tags,
     },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/status",
+        .value.handler = handle_status,
+    },
 };
 
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)
