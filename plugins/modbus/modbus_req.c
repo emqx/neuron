@@ -203,6 +203,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                                     "modbus message error, skip, %hhu!%hu",
                                     gd->cmd_sort->cmd[i].slave_id,
                                     gd->cmd_sort->cmd[i].start_address);
+                                rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+                                neu_conn_disconnect(plugin->conn);
                             } else if (ret_buf == -2) {
                                 modbus_value_handle(
                                     plugin, gd->cmd_sort->cmd[i].slave_id, 0,
@@ -213,8 +215,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                                     "%hhu!%hu",
                                     gd->cmd_sort->cmd[i].slave_id,
                                     gd->cmd_sort->cmd[i].start_address);
+                                rtt = neu_time_ms() - read_tms;
                             }
-                            rtt = neu_time_ms() - read_tms;
                             break;
                         }
                     } else {
@@ -243,6 +245,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                     plog_error(plugin, "modbus message error, skip, %hhu!%hu",
                                gd->cmd_sort->cmd[i].slave_id,
                                gd->cmd_sort->cmd[i].start_address);
+                    rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+                    neu_conn_disconnect(plugin->conn);
                 } else if (ret_buf == -2) {
                     modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id,
                                         0, NULL, NEU_ERR_PLUGIN_READ_FAILURE);
@@ -250,8 +254,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                                "modbus device response error, skip, %hhu!%hu",
                                gd->cmd_sort->cmd[i].slave_id,
                                gd->cmd_sort->cmd[i].start_address);
+                    rtt = neu_time_ms() - read_tms;
                 }
-                rtt = neu_time_ms() - read_tms;
             }
         } else {
             for (uint16_t j = 0; j < plugin->max_retries; j++) {
@@ -272,6 +276,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                                        "modbus message error, skip, %hhu!%hu",
                                        gd->cmd_sort->cmd[i].slave_id,
                                        gd->cmd_sort->cmd[i].start_address);
+                            rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+                            neu_conn_disconnect(plugin->conn);
                         } else if (ret_buf == -2) {
                             modbus_value_handle(
                                 plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
@@ -281,8 +287,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                                        "%hhu!%hu",
                                        gd->cmd_sort->cmd[i].slave_id,
                                        gd->cmd_sort->cmd[i].start_address);
+                            rtt = neu_time_ms() - read_tms;
                         }
-                        rtt = neu_time_ms() - read_tms;
                         break;
                     } else if (ret_buf == 0) {
                         modbus_value_handle(
