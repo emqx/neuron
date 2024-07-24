@@ -328,3 +328,22 @@ void handle_get_plugin_schema(nng_aio *aio)
     free(buf);
     free(schema_path);
 }
+
+void handle_status(nng_aio *aio)
+{
+    char *result = NULL;
+
+    NEU_VALIDATE_JWT(aio);
+
+    int ret = neu_asprintf(&result, "{\"status\":\"%s\"}", g_status);
+
+    if (ret < 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+        return;
+    }
+
+    neu_http_response(aio, 0, result);
+    free(result);
+}
