@@ -388,6 +388,12 @@ static struct neu_http_handler rest_handlers[] = {
         .url           = "/api/v2/metrics",
         .value.handler = handle_get_metric,
     },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/status",
+        .value.handler = handle_status,
+    },
 };
 
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)
