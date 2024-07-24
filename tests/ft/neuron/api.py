@@ -22,6 +22,7 @@ def gen_check(func):
 def ping():
     return requests.post(url=config.BASE_URL + '/api/v2/ping')
 
+
 def login(user='admin', password='0000'):
     return requests.post(url=config.BASE_URL + '/api/v2/login', json={"name": user, "pass": password})
 
@@ -157,14 +158,17 @@ def read_tags(node, group, sync=False, query=None):
         body["query"] = query
     return requests.post(url=config.BASE_URL + "/api/v2/read", headers={"Authorization": config.default_jwt}, json=body)
 
+
 def read_tags_paginate(node, group, sync=False, query=None):
     body = {"node": node, "group": group, "sync": sync}
     if query:
         body["query"] = query
     return requests.post(url=config.BASE_URL + "/api/v2/read/paginate", headers={"Authorization": config.default_jwt}, json=body)
 
+
 def test_read_tag(json):
     return requests.post(url=config.BASE_URL + '/api/v2/read/test', headers={"Authorization": config.default_jwt}, json=json)
+
 
 def read_tag(node, group, tag, sync=False):
     response = read_tags(node, group, sync, query={"name": tag})
@@ -179,6 +183,7 @@ def read_tag(node, group, tag, sync=False):
     finally:
         return x[0]['value']
 
+
 def read_tag_paginate(node, group, tag, sync=False):
     response = read_tags_paginate(node, group, sync, query={"name": tag})
     assert response.status_code == 200
@@ -191,6 +196,7 @@ def read_tag_paginate(node, group, tag, sync=False):
     except KeyError:
         print(matching_tag['error'])
     return value
+
 
 def read_tag_error(node, group, tag, sync=False):
     response = read_tags(node, group, sync)
@@ -296,6 +302,10 @@ def put_drivers(drivers, jwt=config.default_jwt):
     return requests.put(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, json={"nodes": drivers})
 
 
+def get_status():
+    return requests.get(url=config.BASE_URL + "/api/v2/status", headers={"Authorization": config.default_jwt})
+
+
 def get_driver(name, jwt=config.default_jwt):
     return get_drivers(names=[name])
 
@@ -340,6 +350,7 @@ def modbus_rtu_node_setting(node, port=502, connection_mode=0, transport_mode=0,
                                     "max_retries": max_retries, "retry_interval": retry_interval, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data})
 
+
 def modbus_tcp_node_setting_endian(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1, endianness=1):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
                                     "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "retry_interval": retry_interval, "endianess": endianness})
@@ -350,6 +361,7 @@ def modbus_rtu_node_setting_endian(node, port=502, connection_mode=0, transport_
                                     "interval": interval, "host": host, "port": port, "timeout": timeout,
                                     "max_retries": max_retries, "retry_interval": retry_interval, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data, "endianess": endianness})
+
 
 def modbus_tcp_node_setting_base(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1, base=1):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
@@ -367,6 +379,7 @@ def mqtt_node_setting(node):
     return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos": 0, "format": 0,
                                     "write-req-topic": f"/neuron/{node}/write/req", "write-resp-topic": f"/neuron/{node}/write/resp",
                                     "offline-cache": False, "cache-sync-interval": 100, "host": "broker.emqx.io", "port": 1883, "username": "", "password": "", "ssl": False})
+
 
 def get_nodes_disable_auth(type):
     return requests.get(url=config.BASE_URL + '/api/v2/node', params={"type": type})
