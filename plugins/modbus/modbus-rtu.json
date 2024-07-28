@@ -68,10 +68,8 @@
 		}
 	},
 	"timeout": {
-		"name": "Connection Timeout",
-		"name_zh": "连接超时时间",
-		"description": "Connection timeout(ms)",
-		"description_zh": "连接超时时间，单位为毫秒",
+		"name": "Connection Timeout (ms)",
+		"name_zh": "连接超时时间 (ms)",
 		"attribute": "required",
 		"type": "int",
 		"default": 3000,
@@ -94,10 +92,8 @@
 		}
 	},
 	"retry_interval": {
-		"name": "Retry Interval",
-		"name_zh": "指令重新发送间隔",
-		"description": "Resend reading instruction interval(ms) after a failed attempt to send a read command",
-		"description_zh": "发送读指令失败后重新发送读指令时间间隔，单位为毫秒",
+		"name": "Retry Interval (ms)",
+		"name_zh": "指令重新发送间隔 (ms)",
 		"attribute": "required",
 		"type": "int",
 		"default": 0,
@@ -107,10 +103,8 @@
 		}
 	},
 	"interval": {
-		"name": "Send Interval",
-		"name_zh": "指令发送间隔",
-		"description": "Send reading instruction interval(ms)",
-		"description_zh": "发送指令时间间隔，单位为毫秒",
+		"name": "Send Interval (ms)",
+		"name_zh": "指令发送间隔 (ms)",
 		"attribute": "required",
 		"type": "int",
 		"default": 20,
@@ -137,8 +131,6 @@
 	"stop": {
 		"name": "Stop Bits",
 		"name_zh": "停止位",
-		"description": "Stop bits",
-		"description_zh": "停止位",
 		"attribute": "required",
 		"type": "map",
 		"default": 0,
@@ -162,8 +154,6 @@
 	"parity": {
 		"name": "Parity",
 		"name_zh": "校验位",
-		"description": "Parity",
-		"description_zh": "校验位",
 		"attribute": "required",
 		"type": "map",
 		"default": 0,
@@ -199,8 +189,6 @@
 	"baud": {
 		"name": "Baud Rate",
 		"name_zh": "波特率",
-		"description": "Baud rate",
-		"description_zh": "波特率",
 		"attribute": "required",
 		"type": "map",
 		"default": 4,
@@ -268,8 +256,6 @@
 	"data": {
 		"name": "Data Bits",
 		"name_zh": "数据位",
-		"description": "Data bits",
-		"description_zh": "数据位",
 		"attribute": "required",
 		"type": "map",
 		"default": 3,
