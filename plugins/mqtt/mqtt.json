@@ -2,8 +2,6 @@
   "client-id": {
     "name": "Client ID",
     "name_zh": "客户端 ID",
-    "description": "MQTT client id",
-    "description_zh": "MQTT 客户端 ID",
     "type": "string",
     "attribute": "required",
     "default": "neuron_${random_str}",
@@ -126,8 +124,6 @@
   "cache-sync-interval": {
     "name": "Cache Sync Interval (MS)",
     "name_zh": "缓存消息重传间隔（MS）",
-    "description": "When MQTT connection restores, cached messages will be synchronised to the broker. This controls the interval in milliseconds between each message to synchronise.",
-    "description_zh": "当 MQTT 连接重建后，缓存的消息会被同步到服务器。此配置项控制消息重传时每条消息之间的时间间隔，以毫秒为单位。",
     "type": "int",
     "attribute": "required",
     "condition": {
@@ -143,8 +139,6 @@
   "host": {
     "name": "Broker Host",
     "name_zh": "服务器地址",
-    "description": "MQTT broker host",
-    "description_zh": "MQTT 服务器地址",
     "attribute": "required",
     "type": "string",
     "default": "broker.emqx.io",
@@ -155,8 +149,6 @@
   "port": {
     "name": "Broker Port",
     "name_zh": "服务器端口",
-    "description": "MQTT broker port",
-    "description_zh": "MQTT 服务器端口",
     "attribute": "required",
     "type": "int",
     "default": 1883,
@@ -168,8 +160,6 @@
   "username": {
     "name": "Username",
     "name_zh": "用户名",
-    "description": "MQTT user name",
-    "description_zh": "MQTT 用户名",
     "attribute": "optional",
     "type": "string",
     "default": "",
@@ -180,8 +170,6 @@
   "password": {
     "name": "Password",
     "name_zh": "密码",
-    "description": "MQTT user password",
-    "description_zh": "MQTT 用户密码",
     "attribute": "optional",
     "type": "string",
     "default": "",
