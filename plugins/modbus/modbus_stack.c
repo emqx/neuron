@@ -77,6 +77,12 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
         if (ret <= 0) {
             return -1;
         }
+
+        neu_plugin_t *plugin = (neu_plugin_t *) stack->ctx;
+        if (plugin->check_header && header.seq + 1 != stack->read_seq &&
+            header.seq + 1 != stack->write_seq) {
+            return -1;
+        }
     }
 
     ret = modbus_code_unwrap(buf, &code);

@@ -43,6 +43,7 @@ struct neu_plugin {
     uint16_t interval;
     uint16_t retry_interval;
     uint16_t max_retries;
+    uint16_t check_header;
 };
 
 void modbus_conn_connected(void *data, int fd);
