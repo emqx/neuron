@@ -90,9 +90,7 @@ jobs:
 
       - name: setup dependencies
         run: |
-          if [ "${{ matrix.plugin }}" = "mqtt" ] || [ "${{ matrix.plugin }}" = "azure" ]; then
-            sudo apt-get install -y mosquitto
-          fi
+          sudo apt-get install -y mosquitto
           pip install -U pytest requests prometheus-client gmqtt pynng sniffio
           sudo apt-get install -y socat
 
