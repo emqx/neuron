@@ -39,6 +39,7 @@ static bool           exit_flag         = false;
 static neu_manager_t *g_manager         = NULL;
 zlog_category_t *     neuron            = NULL;
 bool                  disable_jwt       = false;
+bool                  sub_filter_err    = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
 char                  host_port[32]     = { 0 };
 char                  g_status[32]      = { 0 };
@@ -165,7 +166,8 @@ int main(int argc, char *argv[])
     global_timestamp = neu_time_ms();
     neu_cli_args_init(&args, argc, argv);
 
-    disable_jwt = args.disable_auth;
+    disable_jwt    = args.disable_auth;
+    sub_filter_err = args.sub_filter_err;
     snprintf(host_port, sizeof(host_port), "http://%s:%d", args.ip, args.port);
 
     if (args.daemonized) {
