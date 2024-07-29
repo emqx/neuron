@@ -162,6 +162,8 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t  max_retries = { .name = "max_retries", .t = NEU_JSON_INT };
     neu_json_elem_t  retry_interval = { .name = "retry_interval",
                                        .t    = NEU_JSON_INT };
+    neu_json_elem_t  check_header   = { .name = "check_header",
+                                     .t    = NEU_JSON_INT };
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
@@ -190,10 +192,17 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         retry_interval.v.val_int = 0;
     }
 
+    ret = neu_parse_param((char *) config, &err_param, 1, &check_header);
+    if (ret != 0) {
+        free(err_param);
+        check_header.v.val_int = 0;
+    }
+
     param.log              = plugin->common.log;
     plugin->interval       = interval.v.val_int;
     plugin->max_retries    = max_retries.v.val_int;
     plugin->retry_interval = retry_interval.v.val_int;
+    plugin->check_header   = check_header.v.val_int;
 
     if (mode.v.val_int == 1) {
         param.type                           = NEU_CONN_TCP_SERVER;

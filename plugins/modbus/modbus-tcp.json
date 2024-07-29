@@ -67,6 +67,25 @@
 			]
 		}
 	},
+	"check_header": {
+		"name": "Check Header",
+		"name_zh": "校验报文头",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "False",
+					"value": 0
+				},
+				{
+					"key": "True",
+					"value": 1
+				}
+			]
+		}
+	},
 	"max_retries": {
 		"name": "Maximum Retry Times",
 		"name_zh": "最大重试次数",
