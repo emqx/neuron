@@ -801,10 +801,22 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
             utarray_free(subscriptions);
         }
+
         neu_reqresp_node_deleted_t resp = { 0 };
         strcpy(resp.node, header->receiver);
+        // notify MQTT about node removal
+        if (0 == strcmp(adapter->module->module_name, "MQTT")) {
+            msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
+            if (NULL != msg) {
+                neu_reqresp_head_t *hd = neu_msg_get_header(msg);
+                strcpy(hd->receiver, cmd->node);
+                strcpy(hd->sender, "manager");
+                reply(manager, hd, &resp);
+            }
+        }
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, header, header->receiver);
+
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
             UT_array *apps = neu_subscribe_manager_find_by_driver(
                 manager->subscribe_manager, resp.node);
