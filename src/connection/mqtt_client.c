@@ -123,6 +123,7 @@ struct neu_mqtt_client_s {
     neu_mqtt_client_connection_cb_t disconnect_cb;
     void *                          disconnect_cb_data;
     nng_mqtt_sqlite_option *        sqlite_cfg;
+    char *                          db;
     bool                            receiving;
     nng_aio *                       recv_aio;
     subscription_t *                subscriptions;
@@ -901,26 +902,10 @@ static inline nng_mqtt_sqlite_option *
 alloc_sqlite_config(neu_mqtt_client_t *client)
 {
     int                     rv;
-    char *                  db  = NULL;
     nng_mqtt_sqlite_option *cfg = NULL;
-    const mqtt_buf          client_id =
-        nng_mqtt_msg_get_connect_client_id(client->conn_msg);
-
-    if (NULL == client_id.buf || 0 == client_id.length) {
-        log(error, "nng_mqtt_msg_get_connect_client_id fail");
-        return NULL;
-    }
-
-    neu_asprintf(&db, "neuron-mqtt-client-%.*s.db", (unsigned) client_id.length,
-                 (char *) client_id.buf);
-    if (NULL == db) {
-        log(error, "neu_asprintf nano-mqtt cilent db fail");
-        return NULL;
-    }
 
     if ((rv = nng_mqtt_alloc_sqlite_opt(&cfg)) != 0) {
         log(error, "nng_mqtt_alloc_sqlite_opt fail: %s", nng_strerror(rv));
-        free(db);
         return NULL;
     }
 
@@ -928,9 +913,7 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     nng_mqtt_set_sqlite_flush_threshold(cfg, 256);
     nng_mqtt_set_sqlite_max_rows(cfg, 256);
     nng_mqtt_set_sqlite_db_dir(cfg, "persistence/");
-    nng_mqtt_sqlite_db_init(cfg, db, client->version);
 
-    free(db);
     return cfg;
 }
 
@@ -989,6 +972,7 @@ void neu_mqtt_client_free(neu_mqtt_client_t *client)
         subscriptions_free(client->subscriptions);
         tasks_free(client->task_free_list);
         nng_msg_free(client->conn_msg);
+        free(client->db);
         free(client->url);
         free(client->host);
         nng_mtx_free(client->mtx);
@@ -1213,6 +1197,76 @@ end:
     return rv;
 }
 
+static void rand_str(char *dst, size_t len)
+{
+    char alphabet[] = "0123456789"
+                      "abcdefghijklmnopqrstuvwxyz"
+                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    while (len-- > 1) {
+        size_t i = (double) rand() / RAND_MAX * ((sizeof alphabet) - 1);
+        *dst++   = alphabet[i];
+    }
+    *dst = '\0';
+}
+
+static int neu_mqtt_client_set_cache_db(neu_mqtt_client_t *client)
+{
+    char str[8] = { 0 };
+    rand_str(str, sizeof(str));
+
+    char *db = NULL;
+    neu_asprintf(&db, "neuron-mqtt-client-%s.db", str);
+    if (NULL == db) {
+        log(error, "neu_asprintf nano-mqtt cilent db fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (client->db && 0 == strcmp(client->db, db)) {
+        free(db);
+        return 0;
+    }
+
+    neu_mqtt_client_remove_cache_db(client);
+
+    free(client->db);
+    client->db = db;
+
+    if (client->sqlite_cfg) {
+        nng_mqtt_sqlite_db_init(client->sqlite_cfg, db, client->version);
+    }
+
+    log(notice, "set cache db %s", db);
+
+    return 0;
+}
+
+void neu_mqtt_client_remove_cache_db(neu_mqtt_client_t *client)
+{
+    if (NULL == client->db) {
+        return;
+    }
+
+    const char *dir       = "persistence";
+    int         path_size = strlen(dir) + strlen(client->db) + 6;
+    char *      path      = calloc(path_size, 1);
+    if (NULL == path) {
+        return;
+    }
+
+    snprintf(path, path_size, "%s/%s", dir, client->db);
+    log(notice, "rm cache db %s", path);
+    remove(path);
+    snprintf(path, path_size, "%s/%s-shm", dir, client->db);
+    log(notice, "rm cache db %s", path);
+    remove(path);
+    snprintf(path, path_size, "%s/%s-wal", dir, client->db);
+    log(notice, "rm cache db %s", path);
+    remove(path);
+
+    free(path);
+}
+
 int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
                                    size_t mem_size_bytes, size_t db_size_bytes)
 {
@@ -1227,6 +1281,7 @@ int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
         if (client->sqlite_cfg) {
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
             client->sqlite_cfg = NULL;
+            neu_mqtt_client_remove_cache_db(client);
         }
         goto end;
     }
@@ -1238,6 +1293,10 @@ int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
             rv = -1;
             goto end;
         }
+    }
+
+    if (0 != (rv = neu_mqtt_client_set_cache_db(client))) {
+        return rv;
     }
 
     // FIXME: until NanoSDK cache size limit feature out

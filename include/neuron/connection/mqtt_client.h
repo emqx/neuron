@@ -85,25 +85,26 @@ bool   neu_mqtt_client_is_open(neu_mqtt_client_t *client);
 bool   neu_mqtt_client_is_connected(neu_mqtt_client_t *client);
 size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client);
 
-int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
-                             uint16_t port);
-int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id);
-int neu_mqtt_client_set_will_msg(neu_mqtt_client_t *client, const char *topic,
-                                 uint8_t *msg, uint32_t len, bool retain,
-                                 uint8_t qos);
-int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
-                             const char *password);
-int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
-                                   neu_mqtt_client_connection_cb_t cb,
-                                   void *                          data);
-int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
-                                      neu_mqtt_client_connection_cb_t cb,
-                                      void *                          data);
-int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
-                            const char *ca, const char *cert, const char *key,
-                            const char *keypass);
-int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
-                                   size_t mem_size_bytes, size_t db_size_bytes);
+int  neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
+                              uint16_t port);
+int  neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id);
+int  neu_mqtt_client_set_will_msg(neu_mqtt_client_t *client, const char *topic,
+                                  uint8_t *msg, uint32_t len, bool retain,
+                                  uint8_t qos);
+int  neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
+                              const char *password);
+int  neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
+                                    neu_mqtt_client_connection_cb_t cb,
+                                    void *                          data);
+int  neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
+                                       neu_mqtt_client_connection_cb_t cb,
+                                       void *                          data);
+int  neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
+                             const char *ca, const char *cert, const char *key,
+                             const char *keypass);
+void neu_mqtt_client_remove_cache_db(neu_mqtt_client_t *client);
+int  neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
+                                    size_t mem_size_bytes, size_t db_size_bytes);
 // default to NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT if not set
 int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
                                             uint32_t           interval);

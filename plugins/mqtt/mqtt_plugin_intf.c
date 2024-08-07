@@ -402,9 +402,17 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQ_UPDATE_NODE:
         error = handle_update_driver(plugin, data);
         break;
-    case NEU_REQRESP_NODE_DELETED:
-        error = handle_del_driver(plugin, data);
+    case NEU_REQRESP_NODE_DELETED: {
+        neu_reqresp_node_deleted_t *req = data;
+        if (0 != strcmp(plugin->common.name, req->node)) {
+            error = handle_del_driver(plugin, data);
+        } else {
+            if (plugin->client) {
+                neu_mqtt_client_remove_cache_db(plugin->client);
+            }
+        }
         break;
+    }
     default:
         error = NEU_ERR_MQTT_FAILURE;
         break;
