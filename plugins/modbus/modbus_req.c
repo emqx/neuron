@@ -383,6 +383,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 case MODBUS_AREA_INPUT_REGISTER: {
                     neu_value16_u v16 = { 0 };
                     v16.value = htons(*(uint16_t *) dvalue.value.bytes.bytes);
+                    memset(&dvalue.value, 0, sizeof(dvalue.value));
                     dvalue.value.u8 =
                         neu_value16_get_bit(v16, (*p_tag)->option.bit.bit);
                     break;
