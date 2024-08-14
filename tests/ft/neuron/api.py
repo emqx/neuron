@@ -307,7 +307,7 @@ def get_template_tags(tmpl, group, name):
 
 
 @gen_check
-def subscribe_group(app, driver, group, params={}):
+def subscribe_group(app, driver, group, params={"topic": "/neuron/mqtt/test"}):
     return requests.post(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group, "params": params})
 
 
