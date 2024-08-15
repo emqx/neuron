@@ -702,9 +702,11 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
     // guard against empty mqtt topic parameter
     // this is not an elegant solution due to the current architecture
     if (params && 0 == strcmp(adapter->module->module_name, "MQTT")) {
-        neu_json_elem_t elem = { .name = "topic", .t = NEU_JSON_STR };
-        neu_parse_param(params, NULL, 1, &elem);
-        if (elem.v.val_str && 0 == strlen(elem.v.val_str)) {
+        neu_json_elem_t elem = { .name      = "topic",
+                                 .t         = NEU_JSON_STR,
+                                 .v.val_str = NULL };
+        int             ret  = neu_parse_param(params, NULL, 1, &elem);
+        if (ret != 0 || (elem.v.val_str && 0 == strlen(elem.v.val_str))) {
             free(elem.v.val_str);
             return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
         }
