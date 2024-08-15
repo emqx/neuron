@@ -83,6 +83,8 @@ int         neu_http_internal_error(nng_aio *aio, char *content);
 int neu_http_response_file(nng_aio *aio, void *data, size_t len,
                            const char *disposition);
 
+int neu_http_post_otel_trace(uint8_t *data, int len);
+
 #ifdef __cplusplus
 }
 #endif

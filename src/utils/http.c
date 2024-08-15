@@ -28,6 +28,7 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "define.h"
 #include "errcodes.h"
 #include "utils/http.h"
 #include "utils/log.h"
@@ -413,4 +414,92 @@ int neu_http_conflict(nng_aio *aio, char *content)
 int neu_http_internal_error(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
+}
+
+int neu_http_post_otel_trace(uint8_t *data, int len)
+{
+    nng_url *        url    = NULL;
+    nng_http_client *client = NULL;
+    nng_aio *        aio    = NULL;
+
+    nng_aio_alloc(&aio, NULL, NULL);
+    nng_aio_set_timeout(aio, 1000);
+
+    char url_s[128] = { 0 };
+    snprintf(url_s, sizeof(url_s), "http://%s:%d%s", otel_host, otel_port,
+             otel_traces_url);
+    if (nng_url_parse(&url, url_s) != 0) {
+        nng_aio_free(aio);
+        return -1;
+    }
+    nng_http_client_alloc(&client, url);
+
+    nng_http_client_connect(client, aio);
+
+    nng_aio_wait(aio);
+
+    int rv = -1;
+    if ((rv = nng_aio_result(aio)) != 0) {
+        nlog_error("(%s)nng error: %s", url_s, nng_strerror(rv));
+        nng_url_free(url);
+        nng_http_client_free(client);
+        nng_aio_free(aio);
+        return -1;
+    }
+
+    nng_http_conn *conn = nng_aio_get_output(aio, 0);
+    nng_http_req * req  = NULL;
+    nng_http_res * res  = NULL;
+    nng_http_req_alloc(&req, url);
+    nng_http_req_set_method(req, "POST");
+    nng_http_req_add_header(req, "Content-Type", "application/x-protobuf");
+    char buf_len[32] = { 0 };
+    sprintf(buf_len, "%d", len);
+    nng_http_req_add_header(req, "Content-Length", buf_len);
+    nng_http_req_set_data(req, data, len);
+    nng_http_conn_write_req(conn, req, aio);
+    nng_aio_wait(aio);
+    if ((rv = nng_aio_result(aio)) != 0) {
+        nlog_error("nng error: %s", nng_strerror(rv));
+        nng_url_free(url);
+        nng_http_client_free(client);
+        nng_http_req_free(req);
+        nng_http_conn_close(conn);
+        nng_aio_free(aio);
+        return -1;
+    }
+
+    nng_http_res_alloc(&res);
+    nng_http_conn_read_res(conn, res, aio);
+    nng_aio_wait(aio);
+
+    if ((rv = nng_aio_result(aio)) != 0) {
+        nlog_error("nng error: %s", nng_strerror(rv));
+        nng_url_free(url);
+        nng_http_client_free(client);
+        nng_http_req_free(req);
+        nng_http_res_free(res);
+        nng_http_conn_close(conn);
+        nng_aio_free(aio);
+        return -1;
+    }
+
+    uint16_t status = nng_http_res_get_status(res);
+
+    if (status != NNG_HTTP_STATUS_OK) {
+        nng_url_free(url);
+        nng_http_client_free(client);
+        nng_http_req_free(req);
+        nng_http_res_free(res);
+        nng_http_conn_close(conn);
+        nng_aio_free(aio);
+        return status;
+    }
+    nng_url_free(url);
+    nng_http_client_free(client);
+    nng_http_req_free(req);
+    nng_http_res_free(res);
+    nng_http_conn_close(conn);
+    nng_aio_free(aio);
+    return status;
 }

@@ -31,6 +31,7 @@
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "handle.h"
+#include "otel/otel_manager.h"
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
@@ -38,6 +39,7 @@
 #include "utils/http.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
+#include "utils/time.h"
 #include "json/neu_json_fn.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
@@ -172,12 +174,37 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         return 0;
     }
 
+    neu_otel_trace_ctx *trace = NULL;
+    neu_otel_scope_ctx  scope = NULL;
+    if (otel_flag) {
+        trace = neu_otel_find_trace(header->ctx);
+        if (trace) {
+            scope = neu_otel_add_span(trace);
+            neu_otel_scope_set_span_name(scope, "rest response");
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+        }
+    }
+
     switch (header->type) {
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
         NEU_JSON_RESPONSE_ERROR(error->error, {
             neu_http_response(header->ctx, error->error, result_error);
         });
+        if (otel_flag && trace) {
+            neu_otel_scope_add_span_attr_int(scope, "error", error->error);
+            neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            neu_otel_trace_set_final(trace);
+        }
         break;
     }
     case NEU_RESP_GET_PLUGIN:
@@ -241,6 +268,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         assert(false);
         break;
     }
+
     return 0;
 }
 

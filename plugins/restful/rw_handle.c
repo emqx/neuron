@@ -25,8 +25,11 @@
 
 #include "handle.h"
 #include "utils/http.h"
+#include "utils/time.h"
 
 #include "rw_handle.h"
+
+#include "otel/otel_manager.h"
 
 void handle_read(nng_aio *aio)
 {
@@ -201,12 +204,76 @@ void handle_write(nng_aio *aio)
             neu_req_write_tag_t cmd    = { 0 };
             int                 err_type;
 
+            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
+                        nng_http_req_get_uri(nng_req));
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_WRITE_TAG;
+
+            bool               trace_flag = false;
+            neu_otel_trace_ctx trace      = NULL;
+            neu_otel_scope_ctx scope      = NULL;
+
+            if (otel_flag) {
+                const char *trace_parent =
+                    nng_http_req_get_header(nng_req, "traceparent");
+                if (trace_parent) {
+                    char     trace_id[64] = { 0 };
+                    char     span_id[32]  = { 0 };
+                    uint32_t flags        = 0;
+                    neu_otel_split_traceparent(trace_parent, trace_id, span_id,
+                                               &flags);
+                    if (strlen(trace_id) == 32) {
+                        trace_flag = true;
+                        trace =
+                            neu_otel_create_trace(trace_id, header.ctx, flags);
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(
+                            scope, nng_http_req_get_uri(nng_req));
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        if (strlen(span_id) == 16) {
+                            neu_otel_scope_set_parent_span_id(scope, span_id);
+                        }
+                        neu_otel_scope_set_span_flags(scope, flags);
+                        neu_otel_scope_set_span_start_time(scope,
+                                                           neu_time_ms());
+
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
+
+                        neu_otel_scope_add_span_attr_string(
+                            scope, "HTTP method",
+                            nng_http_req_get_method(nng_req));
+
+                        char * req_data      = NULL;
+                        size_t req_data_size = 0;
+
+                        if (neu_http_get_body((aio), (void **) &req_data,
+                                              &req_data_size) == 0) {
+                            neu_otel_scope_add_span_attr_string(
+                                scope, "HTTP body", req_data);
+                        }
+
+                        free(req_data);
+                    }
+                }
+            }
+
             if (req->t == NEU_JSON_STR &&
                 strlen(req->value.val_str) >= NEU_VALUE_SIZE) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
                 });
+                if (otel_flag && trace_flag) {
+                    neu_otel_scope_add_span_attr_int(scope, "error type",
+                                                     NEU_ERR_STRING_TOO_LONG);
+                    neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                    neu_otel_trace_set_final(trace);
+                }
                 return;
             }
 
@@ -216,15 +283,14 @@ void handle_write(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
                 });
+                if (otel_flag && trace_flag) {
+                    neu_otel_scope_add_span_attr_int(scope, "error type",
+                                                     NEU_ERR_STRING_TOO_LONG);
+                    neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                    neu_otel_trace_set_final(trace);
+                }
                 return;
             }
-
-            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
-            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
-                        nng_http_req_get_uri(nng_req));
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_WRITE_TAG;
 
             if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -244,6 +310,7 @@ void handle_write(nng_aio *aio)
             cmd.driver = req->node;
             cmd.group  = req->group;
             cmd.tag    = req->tag;
+
             req->node  = NULL; // ownership moved
             req->group = NULL; // ownership moved
             req->tag   = NULL; // ownership moved
@@ -256,6 +323,7 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_STR:
                 cmd.value.type = NEU_TYPE_STRING;
                 strcpy(cmd.value.value.str, req->value.val_str);
+
                 break;
             case NEU_JSON_BYTES:
                 cmd.value.type               = NEU_TYPE_BYTES;
@@ -266,6 +334,7 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_DOUBLE:
                 cmd.value.type      = NEU_TYPE_DOUBLE;
                 cmd.value.value.d64 = req->value.val_double;
+
                 break;
             case NEU_JSON_BOOL:
                 cmd.value.type          = NEU_TYPE_BOOL;
@@ -276,18 +345,35 @@ void handle_write(nng_aio *aio)
                 break;
             }
 
-            int ret = neu_plugin_op(plugin, header, &cmd);
+            int ret = 0;
+            if (otel_flag && trace_flag) {
+                ret = neu_plugin_op(plugin, header, &cmd);
+
+                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            } else {
+                ret = neu_plugin_op(plugin, header, &cmd);
+            }
+
             if (ret != 0) {
                 neu_req_write_tag_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
+                if (otel_flag && trace_flag) {
+                    neu_otel_scope_add_span_attr_int(scope, "error type",
+                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_trace_set_final(trace);
+                }
             }
             goto success;
 
         error:
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
+            if (otel_flag && trace_flag) {
+                neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
+                neu_otel_trace_set_final(trace);
+            }
 
         success:;
         })
@@ -303,6 +389,63 @@ void handle_write_tags(nng_aio *aio)
             neu_req_write_tags_t cmd    = { 0 };
             int                  err_type;
 
+            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
+                        nng_http_req_get_uri(nng_req));
+            header.ctx  = aio;
+            header.type = NEU_REQ_WRITE_TAGS;
+
+            bool               trace_flag = false;
+            neu_otel_trace_ctx trace      = NULL;
+            neu_otel_scope_ctx scope      = NULL;
+
+            if (otel_flag) {
+                const char *trace_parent =
+                    nng_http_req_get_header(nng_req, "traceparent");
+                if (trace_parent) {
+                    char     trace_id[64] = { 0 };
+                    char     span_id[32]  = { 0 };
+                    uint32_t flags        = 0;
+                    neu_otel_split_traceparent(trace_parent, trace_id, span_id,
+                                               &flags);
+                    if (strlen(trace_id) == 32) {
+                        trace_flag = true;
+                        trace =
+                            neu_otel_create_trace(trace_id, header.ctx, flags);
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(
+                            scope, nng_http_req_get_uri(nng_req));
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        if (strlen(span_id) == 16) {
+                            neu_otel_scope_set_parent_span_id(scope, span_id);
+                        }
+                        neu_otel_scope_set_span_flags(scope, flags);
+                        neu_otel_scope_set_span_start_time(scope,
+                                                           neu_time_ms());
+
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
+
+                        neu_otel_scope_add_span_attr_string(
+                            scope, "HTTP method",
+                            nng_http_req_get_method(nng_req));
+
+                        char * req_data      = NULL;
+                        size_t req_data_size = 0;
+
+                        if (neu_http_get_body((aio), (void **) &req_data,
+                                              &req_data_size) == 0) {
+                            neu_otel_scope_add_span_attr_string(
+                                scope, "HTTP body", req_data);
+                        }
+
+                        free(req_data);
+                    }
+                }
+            }
+
             for (int i = 0; i < req->n_tag; i++) {
                 if (req->tags[i].t == NEU_JSON_STR) {
                     if (strlen(req->tags[i].value.val_str) >= NEU_VALUE_SIZE) {
@@ -310,16 +453,17 @@ void handle_write_tags(nng_aio *aio)
                             neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                               result_error);
                         });
+                        if (otel_flag && trace_flag) {
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "error type", NEU_ERR_STRING_TOO_LONG);
+                            neu_otel_scope_set_span_end_time(scope,
+                                                             neu_time_ms());
+                            neu_otel_trace_set_final(trace);
+                        }
                         return;
                     }
                 }
             }
-
-            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
-            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
-                        nng_http_req_get_uri(nng_req));
-            header.ctx  = aio;
-            header.type = NEU_REQ_WRITE_TAGS;
 
             if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -373,18 +517,35 @@ void handle_write_tags(nng_aio *aio)
                 }
             }
 
-            int ret = neu_plugin_op(plugin, header, &cmd);
+            int ret = 0;
+
+            if (otel_flag && trace_flag) {
+                ret = neu_plugin_op(plugin, header, &cmd);
+                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            } else {
+                ret = neu_plugin_op(plugin, header, &cmd);
+            }
+
             if (ret != 0) {
                 neu_req_write_tags_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
+                if (otel_flag && trace_flag) {
+                    neu_otel_scope_add_span_attr_int(scope, "error type",
+                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_trace_set_final(trace);
+                }
             }
             goto success;
 
         error:
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
+            if (otel_flag && trace_flag) {
+                neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
+                neu_otel_trace_set_final(trace);
+            }
 
         success:;
         })
@@ -458,14 +619,78 @@ void handle_write_gtags(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_GTAGS;
 
+            bool               trace_flag = false;
+            neu_otel_trace_ctx trace      = NULL;
+            neu_otel_scope_ctx scope      = NULL;
+
+            if (otel_flag) {
+                const char *trace_parent =
+                    nng_http_req_get_header(nng_req, "traceparent");
+                if (trace_parent) {
+                    char     trace_id[64] = { 0 };
+                    char     span_id[32]  = { 0 };
+                    uint32_t flags        = 0;
+                    neu_otel_split_traceparent(trace_parent, trace_id, span_id,
+                                               &flags);
+                    if (strlen(trace_id) == 32) {
+                        trace_flag = true;
+                        trace =
+                            neu_otel_create_trace(trace_id, header.ctx, flags);
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(
+                            scope, nng_http_req_get_uri(nng_req));
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        if (strlen(span_id) == 16) {
+                            neu_otel_scope_set_parent_span_id(scope, span_id);
+                        }
+                        neu_otel_scope_set_span_flags(scope, flags);
+                        neu_otel_scope_set_span_start_time(scope,
+                                                           neu_time_ms());
+
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
+
+                        neu_otel_scope_add_span_attr_string(
+                            scope, "HTTP method",
+                            nng_http_req_get_method(nng_req));
+
+                        char * req_data      = NULL;
+                        size_t req_data_size = 0;
+
+                        if (neu_http_get_body((aio), (void **) &req_data,
+                                              &req_data_size) == 0) {
+                            neu_otel_scope_add_span_attr_string(
+                                scope, "HTTP body", req_data);
+                        }
+
+                        free(req_data);
+                    }
+                }
+            }
+
             trans(req, &cmd);
 
-            int ret = neu_plugin_op(plugin, header, &cmd);
+            int ret = 0;
+
+            if (otel_flag && trace_flag) {
+                ret = neu_plugin_op(plugin, header, &cmd);
+                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            } else {
+                ret = neu_plugin_op(plugin, header, &cmd);
+            }
+
             if (ret != 0) {
                 neu_req_write_gtags_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
+                if (otel_flag && trace_flag) {
+                    neu_otel_scope_add_span_attr_int(scope, "error type",
+                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_trace_set_final(trace);
+                }
             }
         })
 }

@@ -69,6 +69,7 @@ set(PERSIST_SOURCES
     src/persist/sqlite.c
     src/persist/json/persist_json_plugin.c)
 aux_source_directory(src/parser NEURON_SRC_PARSE)
+aux_source_directory(src/otel NEURON_SRC_OTEL)
 set(NEURON_BASE_SOURCES
     src/base/tag.c
     src/base/neu_plugin_common.c
@@ -109,12 +110,12 @@ endif()
 
 
 add_library(neuron-base SHARED)
-target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
+target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_OTEL}) 
 target_include_directories(neuron-base
                            PRIVATE include/neuron src)
 target_link_libraries(neuron-base libssl.a libcrypto.a)
 target_link_libraries(neuron-base nng libzlog.so jansson jwt
-                      ${CMAKE_THREAD_LIBS_INIT} -lm)
+                      ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c)
 add_dependencies(neuron-base neuron-version)
 
 # dependency imposed by nng
@@ -148,6 +149,7 @@ set(NEURON_SOURCES
     plugins/restful/plugin_handle.c
     plugins/restful/version_handle.c
     plugins/restful/scan_handle.c
+    plugins/restful/otel_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)
 

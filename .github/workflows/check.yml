@@ -21,7 +21,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.12
         with:
           source: 'src plugins include tests'
-          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h'
+          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h src/otel/trace.pb-c.h src/otel/trace.pb-c.c src/otel/resource.pb-c.h src/otel/resource.pb-c.c src/otel/common.pb-c.c src/otel/common.pb-c.h' 
           clangFormatVersion: 10
           style: file
 
@@ -36,7 +36,7 @@ jobs:
       - name: cppcheck
         run: |
           sudo apt install cppcheck
-          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction ./plugins ./src
+          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c  ./plugins ./src
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
 
   ut:
