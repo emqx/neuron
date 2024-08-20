@@ -433,8 +433,10 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_mqtt_client_t *             client = arg;
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
+    int                             reason = 0;
 
-    log(notice, "mqtt client connected");
+    nng_pipe_get_int(p, NNG_OPT_MQTT_CONNECT_REASON, &reason);
+    log(notice, "mqtt client connected, reason: %d", reason);
 
     nng_mtx_lock(client->mtx);
     // start receiving
@@ -459,8 +461,11 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     subscription_t *                sub    = NULL;
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
+    int                             reason = 0;
 
-    log(notice, "mqtt client disconnected");
+    nng_pipe_get_int(p, NNG_OPT_MQTT_DISCONNECT_REASON, &reason);
+    log(notice, "mqtt client disconnected, reason: %d", reason);
+
     nng_mtx_lock(client->mtx);
     client->connected = false;
     cb                = client->disconnect_cb;
