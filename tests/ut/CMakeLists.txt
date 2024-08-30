@@ -71,6 +71,14 @@ target_include_directories(mqtt_client_test PRIVATE
 )
 target_link_libraries(mqtt_client_test neuron-base gtest_main gtest)
 
+
+add_executable(common_test common_test.cc)
+target_include_directories(common_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(common_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -81,3 +89,4 @@ gtest_discover_tests(modbus_test)
 gtest_discover_tests(async_queue_test)
 gtest_discover_tests(rolling_counter_test)
 gtest_discover_tests(mqtt_client_test)
+gtest_discover_tests(common_test)

@@ -474,6 +474,238 @@ static inline void neu_value16_set_bit(neu_value16_u *value, uint8_t index,
     }
 }
 
+static inline uint16_t neu_get_u16(uint8_t *bytes)
+{
+    uint16_t ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+
+    return ret;
+}
+
+static inline void neu_set_u16(uint8_t *bytes, uint16_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+}
+
+static inline int16_t neu_get_i16(uint8_t *bytes)
+{
+    int16_t  ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+
+    return ret;
+}
+
+static inline void neu_set_i16(uint8_t *bytes, int16_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+}
+
+static inline uint32_t neu_get_u32(uint8_t *bytes)
+{
+    uint32_t ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+
+    return ret;
+}
+
+static inline void neu_set_u32(uint8_t *bytes, uint32_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+}
+
+static inline int32_t neu_get_i32(uint8_t *bytes)
+{
+    int32_t  ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+
+    return ret;
+}
+
+static inline void neu_set_i32(uint8_t *bytes, int32_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+}
+
+static inline float neu_get_f32(uint8_t *bytes)
+{
+    float    ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+
+    return ret;
+}
+
+static inline void neu_set_f32(uint8_t *bytes, float val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+}
+
+static inline uint64_t neu_get_u64(uint8_t *bytes)
+{
+    uint64_t ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+    t[4] = bytes[4];
+    t[5] = bytes[5];
+    t[6] = bytes[6];
+    t[7] = bytes[7];
+
+    return ret;
+}
+
+static inline void neu_set_u64(uint8_t *bytes, uint64_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+    bytes[4] = t[4];
+    bytes[5] = t[5];
+    bytes[6] = t[6];
+    bytes[7] = t[7];
+}
+
+static inline int64_t neu_get_i64(uint8_t *bytes)
+{
+    int64_t  ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+    t[4] = bytes[4];
+    t[5] = bytes[5];
+    t[6] = bytes[6];
+    t[7] = bytes[7];
+
+    return ret;
+}
+
+static inline void neu_set_i64(uint8_t *bytes, int64_t val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+    bytes[4] = t[4];
+    bytes[5] = t[5];
+    bytes[6] = t[6];
+    bytes[7] = t[7];
+}
+
+static inline double neu_get_f64(uint8_t *bytes)
+{
+    double   ret = 0;
+    uint8_t *t   = NULL;
+
+    t = (uint8_t *) &ret;
+
+    t[0] = bytes[0];
+    t[1] = bytes[1];
+    t[2] = bytes[2];
+    t[3] = bytes[3];
+    t[4] = bytes[4];
+    t[5] = bytes[5];
+    t[6] = bytes[6];
+    t[7] = bytes[7];
+
+    return ret;
+}
+
+static inline void neu_set_f64(uint8_t *bytes, double val)
+{
+    uint8_t *t = NULL;
+
+    t = (uint8_t *) &val;
+
+    bytes[0] = t[0];
+    bytes[1] = t[1];
+    bytes[2] = t[2];
+    bytes[3] = t[3];
+    bytes[4] = t[4];
+    bytes[5] = t[5];
+    bytes[6] = t[6];
+    bytes[7] = t[7];
+}
+
 static inline void neu_ntohs24_p(uint8_t *value)
 {
     uint8_t t = 0;
@@ -513,7 +745,8 @@ static inline uint64_t neu_ntohll(uint64_t u)
 
 static inline void neu_ntonll_p(uint64_t *pu)
 {
-    *pu = neu_htonll(*pu);
+    uint64_t ret = neu_htonll(neu_get_u64((uint8_t *) pu));
+    neu_set_u64((uint8_t *) pu, ret);
 }
 
 static inline void neu_htonll_p(uint64_t *pu)
@@ -523,7 +756,8 @@ static inline void neu_htonll_p(uint64_t *pu)
 
 static inline void neu_ntohl_p(uint32_t *pu)
 {
-    *pu = ntohl(*pu);
+    uint32_t ret = ntohl(neu_get_u32((uint8_t *) pu));
+    neu_set_u32((uint8_t *) pu, ret);
 }
 
 static inline void neu_htonl_p(uint32_t *pu)
@@ -533,140 +767,13 @@ static inline void neu_htonl_p(uint32_t *pu)
 
 static inline void neu_ntohs_p(uint16_t *pu)
 {
-    *pu = ntohs(*pu);
+    uint16_t ret = ntohs(neu_get_u16((uint8_t *) pu));
+    neu_set_u16((uint8_t *) pu, ret);
 }
 
 static inline void neu_htons_p(uint16_t *pu)
 {
     neu_ntohs_p(pu);
-}
-
-static inline uint16_t neu_get_u16(uint8_t *bytes)
-{
-    uint16_t ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-
-    return ret;
-}
-
-static inline int16_t neu_get_i16(uint8_t *bytes)
-{
-    int16_t  ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-
-    return ret;
-}
-
-static inline uint32_t neu_get_u32(uint8_t *bytes)
-{
-    uint32_t ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-
-    return ret;
-}
-
-static inline int32_t neu_get_i32(uint8_t *bytes)
-{
-    int32_t  ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-
-    return ret;
-}
-
-static inline float neu_get_f32(uint8_t *bytes)
-{
-    float    ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-
-    return ret;
-}
-
-static inline uint64_t neu_get_u64(uint8_t *bytes)
-{
-    uint64_t ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-    t[4] = bytes[4];
-    t[5] = bytes[5];
-    t[6] = bytes[6];
-    t[7] = bytes[7];
-
-    return ret;
-}
-
-static inline int64_t neu_get_i64(uint8_t *bytes)
-{
-    int64_t  ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-    t[4] = bytes[4];
-    t[5] = bytes[5];
-    t[6] = bytes[6];
-    t[7] = bytes[7];
-
-    return ret;
-}
-
-static inline double neu_get_f64(uint8_t *bytes)
-{
-    double   ret = 0;
-    uint8_t *t   = NULL;
-
-    t = (uint8_t *) &ret;
-
-    t[0] = bytes[0];
-    t[1] = bytes[1];
-    t[2] = bytes[2];
-    t[3] = bytes[3];
-    t[4] = bytes[4];
-    t[5] = bytes[5];
-    t[6] = bytes[6];
-    t[7] = bytes[7];
-
-    return ret;
 }
 
 #ifdef __cplusplus
