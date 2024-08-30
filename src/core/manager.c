@@ -29,6 +29,7 @@
 #include "event/event.h"
 #include "persist/persist.h"
 #include "utils/base64.h"
+#include "utils/http.h"
 #include "utils/log.h"
 #include "utils/time.h"
 
@@ -39,6 +40,7 @@
 #include "argparse.h"
 #include "base/msg_internal.h"
 #include "errcodes.h"
+#include "otel/otel_manager.h"
 
 #include "node_manager.h"
 #include "plugin_manager.h"
@@ -1049,6 +1051,37 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_ADD_GROUP: {
+        neu_otel_trace_ctx *trace = NULL;
+        neu_otel_scope_ctx  scope = NULL;
+        if (otel_flag &&
+            (NEU_REQ_WRITE_TAG == header->type ||
+             NEU_REQ_WRITE_TAGS == header->type ||
+             NEU_REQ_WRITE_GTAGS == header->type)) {
+            trace = neu_otel_find_trace(header->ctx);
+            if (trace) {
+                scope = neu_otel_add_span(trace);
+                if (NEU_REQ_WRITE_TAG == header->type) {
+                    neu_otel_scope_set_span_name(scope, "manager write tag");
+                } else if (NEU_REQ_WRITE_TAGS == header->type) {
+                    neu_otel_scope_set_span_name(scope, "manager write tags");
+                } else if (NEU_REQ_WRITE_GTAGS == header->type) {
+                    neu_otel_scope_set_span_name(scope, "manager write gtags");
+                }
+                char new_span_id[36] = { 0 };
+                neu_otel_new_span_id(new_span_id);
+                neu_otel_scope_set_span_id(scope, new_span_id);
+                uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+                if (p_sp_id) {
+                    neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+                }
+                neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                                 (int64_t) pthread_self());
+                neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+            }
+        }
+
+        bool re_flag = false;
+
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
             if (NEU_REQ_READ_GROUP == header->type) {
@@ -1067,8 +1100,20 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(manager, header, &e);
+            if (otel_flag && trace) {
+                neu_otel_scope_add_span_attr_int(scope, "error",
+                                                 NEU_ERR_NODE_NOT_EXIST);
+            }
         } else {
             forward_msg(manager, header, header->receiver);
+            re_flag = true;
+        }
+
+        if (otel_flag && trace) {
+            neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            if (!re_flag) {
+                neu_otel_trace_set_final(trace);
+            }
         }
 
         break;

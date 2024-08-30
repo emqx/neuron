@@ -55,3 +55,21 @@ $ tar xzf sqlite3.tar.gz --strip-components=1 -C sqlite3
 $ cd sqlite3
 $ ./configure CFLAGS=-fPIC && make && sudo make install
 ```
+
+[protobuf](https://github.com/protocolbuffers/protobuf)
+```shell
+$ wget --no-check-certificate --content-disposition https://github.com/protocolbuffers/protobuf/releases/download/v3.20.1/protobuf-cpp-3.20.1.tar.gz
+$ tar -xzvf protobuf-cpp-3.20.1.tar.gz
+$ cd protobuf-3.20.1
+$ ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
+$ make && make install
+```
+
+[protobuf-c](https://github.com/protobuf-c/protobuf-c.git)
+```shell
+$ git clone -b v1.4.0 https://github.com/protobuf-c/protobuf-c.git
+$ cd protobuf-c
+$ ./autogen.sh
+$ ./configure  --disable-protoc --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC 
+$ make && make install
+```

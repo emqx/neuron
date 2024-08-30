@@ -26,7 +26,9 @@
 #define EPSILON 1e-9
 
 #include "event/event.h"
+#include "utils/http.h"
 #include "utils/log.h"
+#include "utils/time.h"
 #include "utils/utextend.h"
 
 #include "adapter.h"
@@ -37,6 +39,8 @@
 #include "driver_internal.h"
 #include "errcodes.h"
 #include "tag.h"
+
+#include "otel/otel_manager.h"
 
 typedef struct to_be_write_tag {
     bool           single;
@@ -157,12 +161,40 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
     neu_resp_error_t    nerror = { .error = error };
 
+    neu_otel_trace_ctx *trace = NULL;
+    neu_otel_scope_ctx  scope = NULL;
+    if (otel_flag) {
+        trace = neu_otel_find_trace(req->ctx);
+        if (trace) {
+            scope                = neu_otel_add_span(trace);
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                             (int64_t) pthread_self());
+            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+        }
+    }
+
     if (NEU_REQ_WRITE_TAG == req->type) {
         neu_req_write_tag_fini((neu_req_write_tag_t *) &req[1]);
+        if (otel_flag && trace) {
+            neu_otel_scope_set_span_name(scope, "driver write tag response");
+        }
     } else if (NEU_REQ_WRITE_TAGS == req->type) {
         neu_req_write_tags_fini((neu_req_write_tags_t *) &req[1]);
+        if (otel_flag && trace) {
+            neu_otel_scope_set_span_name(scope, "driver write tags response");
+        }
     } else if (NEU_REQ_WRITE_GTAGS == req->type) {
         neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
+        if (otel_flag && trace) {
+            neu_otel_scope_set_span_name(scope, "driver write gtags response");
+        }
     }
 
     req->type = NEU_RESP_ERROR;
@@ -170,6 +202,11 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     nlog_notice("write tag response <%p>", req->ctx);
 
     adapter->cb_funs.response(adapter, req, &nerror);
+
+    if (otel_flag && trace) {
+        neu_otel_scope_add_span_attr_int(scope, "error", error);
+        neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+    }
 }
 
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
@@ -1007,21 +1044,21 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
     }
 }
 
-void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
-                                   neu_reqresp_head_t *  req)
+int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *  req)
 {
     neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
-        return;
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
-        return;
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS;
     }
 
     group_t *g = find_group(driver, cmd->group);
@@ -1029,7 +1066,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     if (g == NULL) {
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_GROUP_NOT_EXIST);
-        return;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
 
     UT_array *tags = NULL;
@@ -1086,7 +1123,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
-        return;
+        return value_err;
     }
 
     if (utarray_len(tags) != (unsigned int) cmd->n_tag) {
@@ -1097,7 +1134,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
-        return;
+        return NEU_ERR_TAG_NOT_EXIST;
     }
 
     to_be_write_tag_t wtag = { 0 };
@@ -1106,10 +1143,12 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     wtag.tvs               = tags;
 
     store_write_tag(g, &wtag);
+
+    return NEU_ERR_SUCCESS;
 }
 
-void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
-                                    neu_reqresp_head_t *  req)
+int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
+                                   neu_reqresp_head_t *  req)
 {
     neu_req_write_gtags_t *cmd     = (neu_req_write_gtags_t *) &req[1];
     group_t *              first_g = NULL;
@@ -1117,13 +1156,13 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
-        return;
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
-        return;
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS;
     }
 
     for (int i = 0; i < cmd->n_group; i++) {
@@ -1132,7 +1171,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         if (g == NULL) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_GROUP_NOT_EXIST);
-            return;
+            return NEU_ERR_GROUP_NOT_EXIST;
         }
 
         if (first_g == NULL) {
@@ -1203,7 +1242,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
-        return;
+        return value_err;
     }
 
     uint32_t n_tag = 0;
@@ -1219,7 +1258,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
-        return;
+        return NEU_ERR_TAG_NOT_EXIST;
     }
 
     to_be_write_tag_t wtag = { 0 };
@@ -1228,15 +1267,17 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.tvs               = tags;
 
     store_write_tag(first_g, &wtag);
+
+    return NEU_ERR_SUCCESS;
 }
 
-void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
-                                  neu_reqresp_head_t *  req)
+int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
+                                 neu_reqresp_head_t *  req)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
-        return;
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
     neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
@@ -1245,19 +1286,20 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     if (g == NULL) {
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_GROUP_NOT_EXIST);
-        return;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
     neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
 
     if (tag == NULL) {
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_TAG_NOT_EXIST);
+        return NEU_ERR_TAG_NOT_EXIST;
     } else {
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
             neu_tag_free(tag);
-            return;
+            return NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE;
         }
 
         int value_check = is_value_in_range(tag->type, cmd->value.value.i64,
@@ -1268,7 +1310,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                           value_check);
             neu_tag_free(tag);
-            return;
+            return value_check;
         }
 
         if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
@@ -1303,6 +1345,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         }
 
         neu_tag_free(tag);
+        return NEU_ERR_SUCCESS;
     }
 }
 
@@ -2043,19 +2086,72 @@ static int write_callback(void *usr_data)
     pthread_mutex_lock(&group->wt_mtx);
     utarray_foreach(group->wt_tags, to_be_write_tag_t *, wtag)
     {
+
+        int64_t s_time = 0;
+        int64_t e_time = 0;
+
+        neu_otel_trace_ctx *trace = NULL;
+        neu_otel_scope_ctx  scope = NULL;
+        if (otel_flag) {
+            trace =
+                neu_otel_find_trace(((neu_reqresp_head_t *) wtag->req)->ctx);
+            if (trace) {
+                scope = neu_otel_add_span(trace);
+                if (wtag->single) {
+                    neu_otel_scope_set_span_name(scope,
+                                                 "driver timer cb write tag");
+                } else {
+                    neu_otel_scope_set_span_name(scope,
+                                                 "driver timer cb write tags");
+                }
+                char new_span_id[36] = { 0 };
+                neu_otel_new_span_id(new_span_id);
+                neu_otel_scope_set_span_id(scope, new_span_id);
+                uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+                if (p_sp_id) {
+                    neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+                }
+                neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                                 (int64_t) pthread_self());
+                neu_otel_scope_add_span_attr_string(
+                    scope, "plugin name",
+                    group->driver->adapter.module->module_name);
+
+                char version[64] = { 0 };
+                sprintf(version, "%d.%d.%d",
+                        NEU_GET_VERSION_MAJOR(
+                            group->driver->adapter.module->version),
+                        NEU_GET_VERSION_MINOR(
+                            group->driver->adapter.module->version),
+                        NEU_GET_VERSION_FIX(
+                            group->driver->adapter.module->version));
+
+                neu_otel_scope_add_span_attr_string(scope, "plugin version",
+                                                    version);
+            }
+        }
+
+        s_time = neu_time_ms();
+
         if (wtag->single) {
             group->driver->adapter.module->intf_funs->driver.write_tag(
                 group->driver->adapter.plugin, (void *) wtag->req, wtag->tag,
                 wtag->value);
+            e_time = neu_time_ms();
             neu_tag_free(wtag->tag);
         } else {
             group->driver->adapter.module->intf_funs->driver.write_tags(
                 group->driver->adapter.plugin, (void *) wtag->req, wtag->tvs);
+            e_time = neu_time_ms();
             utarray_foreach(wtag->tvs, neu_plugin_tag_value_t *, tv)
             {
                 neu_tag_free(tv->tag);
             }
             utarray_free(wtag->tvs);
+        }
+        if (otel_flag && trace) {
+            neu_otel_scope_set_span_start_time(scope, s_time);
+            neu_otel_scope_set_span_end_time(scope, e_time);
         }
     }
     utarray_clear(group->wt_tags);

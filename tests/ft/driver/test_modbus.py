@@ -10,6 +10,7 @@ from neuron.common import *
 
 tcp_port = random_port()
 rtu_port = random_port()
+otel_port = random_port()
 
 
 def start_socat():
@@ -17,7 +18,7 @@ def start_socat():
     socat_proc = subprocess.Popen(
         socat_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
-    
+
     fl = fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_GETFL)
     fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
@@ -47,6 +48,10 @@ def param(request):
 
 @pytest.fixture(autouse=True, scope='class')
 def simulator_setup_teardown(param):
+
+    otel_p = subprocess.Popen(
+        ["python3", "otel_server.py", f'{otel_port}'], stderr=subprocess.PIPE, cwd="simulator")
+
     if param[0] == 'modbus-tcp':
         p = process.start_simulator(
             ['./modbus_simulator', 'tcp', f'{tcp_port}', 'ip_v4'])
@@ -77,8 +82,13 @@ def simulator_setup_teardown(param):
         response = api.modbus_rtu_node_setting(
             node=param[0], interval=1, device=modbus_neuron_dev, link=0)
 
+    api.otel_start("127.0.0.1", otel_port, "/v1/traces")
+
     yield
+    api.otel_stop()
     process.stop_simulator(p)
+    otel_p.terminate()
+    otel_p.wait()
     if param[0] == 'modbus-rtu-tty':
         socat_proc.terminate()
         time.sleep(2)
@@ -109,35 +119,35 @@ hold_double = [{"name": "hold_double", "address": "1!400050",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_DOUBLE}]
 
 hold_bit_0 = [{"name": "hold_bit_0", "address": "1!400001.0",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_1 = [{"name": "hold_bit_1", "address": "1!400001.1",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_2 = [{"name": "hold_bit_2", "address": "1!400001.2",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_3 = [{"name": "hold_bit_3", "address": "1!400001.3",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_4 = [{"name": "hold_bit_4", "address": "1!400001.4",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_5 = [{"name": "hold_bit_5", "address": "1!400001.5",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_6 = [{"name": "hold_bit_6", "address": "1!400001.6",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_7 = [{"name": "hold_bit_7", "address": "1!400001.7",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_8 = [{"name": "hold_bit_8", "address": "1!400001.8",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_9 = [{"name": "hold_bit_9", "address": "1!400001.9",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_10 = [{"name": "hold_bit_10", "address": "1!400001.10",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_11 = [{"name": "hold_bit_11", "address": "1!400001.11",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_12 = [{"name": "hold_bit_12", "address": "1!400001.12",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_13 = [{"name": "hold_bit_13", "address": "1!400001.13",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_bit_14 = [{"name": "hold_bit_14", "address": "1!400001.14",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 
 coil_bit_1 = [{"name": "coil_bit_1", "address": "1!000001",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
@@ -200,9 +210,9 @@ hold_string_s = [{"name": "hold_string_s", "address": "1!400870.2",
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!40103",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_decimal_w = [{"name": "hold_int16_decimal_w", "address": "1!40103",
-                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
+                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_decimal_neg = [{"name": "int16_decimal_neg", "address": "1!40140",
-                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": -1}]
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": -1}]
 hold_uint16_decimal = [{"name": "hold_uint16_decimal", "address": "1!400105",
                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16, "decimal": 0.2}]
 hold_int32_decimal = [{"name": "hold_int32_decimal", "address": "1!400199",
@@ -222,35 +232,35 @@ hold_double_precision = [{"name": "hold_double_precision", "address": "1!4000240
                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE, "precision": 3}]
 
 hold_int16_m1 = [{"name": "hold_int16_m1", "address": "1!400301",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m2 = [{"name": "hold_int16_m2", "address": "1!400302",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m3 = [{"name": "hold_int16_m3", "address": "1!400303",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m4 = [{"name": "hold_int16_m4", "address": "1!400304",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m5 = [{"name": "hold_int16_m5", "address": "1!400305",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m6 = [{"name": "hold_int16_m6", "address": "1!400307",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m7 = [{"name": "hold_int16_m7", "address": "1!400309",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m8 = [{"name": "hold_int16_m8", "address": "1!400311",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m9 = [{"name": "hold_int16_m9", "address": "1!400313",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m10 = [{"name": "hold_int16_m10", "address": "1!400315",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m11 = [{"name": "hold_int16_m11", "address": "1!400317",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m12 = [{"name": "hold_int16_m12", "address": "1!400319",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m13 = [{"name": "hold_int16_m13", "address": "1!400321",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m14 = [{"name": "hold_int16_m14", "address": "1!400323",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_m15 = [{"name": "hold_int16_m15", "address": "1!400325",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 
 coil_bit_m1 = [{"name": "coil_bit_m1", "address": "1!000101",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
@@ -271,55 +281,55 @@ coil_bit_m8 = [{"name": "coil_bit_m8", "address": "1!000111",
 coil_bit_m9 = [{"name": "coil_bit_m9", "address": "1!000113",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m10 = [{"name": "coil_bit_m10", "address": "1!000115",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m11 = [{"name": "coil_bit_m11", "address": "1!000117",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m12 = [{"name": "coil_bit_m12", "address": "1!000119",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m13 = [{"name": "coil_bit_m13", "address": "1!000121",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m14 = [{"name": "coil_bit_m14", "address": "1!000123",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_m15 = [{"name": "coil_bit_m15", "address": "1!000125",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 
 hold_int16_retry_1 = [{"name": "hold_int16_retry_1", "address": "1!408000",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_retry_2 = [{"name": "hold_int16_retry_2", "address": "1!408005",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 
 hold_int16_B = [{"name": "hold_int16_B", "address": "1!400401#B",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int16_L = [{"name": "hold_int16_L", "address": "1!400402#L",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 hold_int32_LL = [{"name": "hold_int32_LL", "address": "1!400403#LL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
 hold_int32_LB = [{"name": "hold_int32_LB", "address": "1!400405#LB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
 hold_int32_BL = [{"name": "hold_int32_BL", "address": "1!400407#BL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
 hold_int32_BB = [{"name": "hold_int32_BB", "address": "1!400409#BB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
 hold_uint16_B = [{"name": "hold_uint16_B", "address": "1!400411#B",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
 hold_uint16_L = [{"name": "hold_uint16_L", "address": "1!400412#L",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
 hold_uint32_LL = [{"name": "hold_uint32_LL", "address": "1!400413#LL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
 hold_uint32_LB = [{"name": "hold_uint32_LB", "address": "1!400415#LB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
 hold_uint32_BL = [{"name": "hold_uint32_BL", "address": "1!400417#BL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
 hold_uint32_BB = [{"name": "hold_uint32_BB", "address": "1!400419#BB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
 hold_float_LL = [{"name": "hold_float_LL", "address": "1!400421#LL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_float_LB = [{"name": "hold_float_LB", "address": "1!400423#LB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_float_BL = [{"name": "hold_float_BL", "address": "1!400425#BL",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_float_BB = [{"name": "hold_float_BB", "address": "1!400427#BB",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_int64_B = [{"name": "hold_int64_B", "address": "1!400429#B",
                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT64}]
 hold_int64_L = [{"name": "hold_int64_L", "address": "1!400433#L",
@@ -333,43 +343,44 @@ hold_double_B = [{"name": "hold_double_B", "address": "1!400445#B",
 hold_double_L = [{"name": "hold_double_L", "address": "1!400449#L",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
 hold_string_H = [{"name": "hold_string_H", "address": "1!400710.4H",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 hold_string_L = [{"name": "hold_string_L", "address": "1!400710.4L",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
 hold_string_l1 = [{"name": "hold_string_l1", "address": "1!400501.127",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 hold_string_l2 = [{"name": "hold_string_l2", "address": "1!400628.127",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
 hold_int16_device_err = [{"name": "hold_int16_device_err", "address": "1!409000",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+                          "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 
 hold_uint16_utf8 = [{"name": "hold_uint16_utf8", "address": "1!401100",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+                     "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
 hold_string_utf8 = [{"name": "hold_string_utf8", "address": "1!401100.4",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                     "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
-test_hold_int16         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_uint16        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400002",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_int32         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400003",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_uint32        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400015",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_float         = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400017",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_bit           = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001.15",
+test_hold_int16 = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001",
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_uint16 = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400002",
+                    "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_int32 = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400003",
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_uint32 = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400015",
+                    "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_float = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400017",
+                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_hold_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400001.15",
                            "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
-test_hold_string        = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400020.10",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING, "precision": 0, "decimal": 0, "bias": 0.0}
-test_coil_bit           = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!000001",
+test_hold_string = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!400020.10",
+                    "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING, "precision": 0, "decimal": 0, "bias": 0.0}
+test_coil_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!000001",
                            "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
-test_input_bit          = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!100001",
-                           "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+test_input_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!100001",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
 test_input_register_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!30010.0",
                            "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
+
 
 class TestModbus:
 
@@ -500,15 +511,24 @@ class TestModbus:
         response = api.get_tags(node=param[0], group="group")
         assert 200 == response.status_code
 
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int16_s[0]['name'])
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint16_s[0]['name'])
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int32_s[0]['name'])
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint32_s[0]['name'])
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int64_s[0]['name'])
-        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint64_s[0]['name'])
-        assert 1.0 == api.read_tag(node=param[0], group='group', tag=hold_float_s[0]['name'])
-        assert 1.0 == api.read_tag(node=param[0], group='group', tag=hold_double_s[0]['name'])
-        assert 'a' == api.read_tag(node=param[0], group='group', tag=hold_string_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint16_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_int32_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_int64_s[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint64_s[0]['name'])
+        assert 1.0 == api.read_tag(
+            node=param[0], group='group', tag=hold_float_s[0]['name'])
+        assert 1.0 == api.read_tag(
+            node=param[0], group='group', tag=hold_double_s[0]['name'])
+        assert 'a' == api.read_tag(
+            node=param[0], group='group', tag=hold_string_s[0]['name'])
 
     @description(given="created modbus node", when="add wrong tags", then="add failed")
     def test_add_wrong_tags(self, param):
@@ -547,46 +567,65 @@ class TestModbus:
         assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ADDRESS_FORMAT_INVALID == response.json()[
             'error']
-        
+
     @description(given="created modbus node and tags", when="write tags with invalid value", then="write failed")
     def test_write_tags_invalid_value(self, param):
-        response = api.write_tag(node=param[0], group='group', tag=hold_int16[0]['name'], value=32768)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_int16[0]['name'], value=32768)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_uint16[0]['name'], value=-1)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_uint16[0]['name'], value=-1)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_int32[0]['name'], value=2147483648)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_int32[0]['name'], value=2147483648)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_uint32[0]['name'], value=-1)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_uint32[0]['name'], value=-1)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_string[0]['name'], value=1)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_string[0]['name'], value=1)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=coil_bit_1[0]['name'], value=2)
+        response = api.write_tag(
+            node=param[0], group='group', tag=coil_bit_1[0]['name'], value=2)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=coil_bit_1[0]['name'], value=True)
+        response = api.write_tag(
+            node=param[0], group='group', tag=coil_bit_1[0]['name'], value=True)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
+            'error']
 
-        api.add_tags_check(node=param[0], group='group', tags=hold_int16_decimal_w)
+        api.add_tags_check(
+            node=param[0], group='group', tags=hold_int16_decimal_w)
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_int16_decimal_w[0]['name'], value=1.11)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_int16_decimal_w[0]['name'], value=1.11)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
+            'error']
 
-        response = api.write_tag(node=param[0], group='group', tag=hold_float[0]['name'], value=1)
+        response = api.write_tag(
+            node=param[0], group='group', tag=hold_float[0]['name'], value=1)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
+            'error']
 
         response = api.write_tags(node=param[0], group='group', tag_values=[
             {"tag": hold_int16[0]['name'], "value": 32768},
@@ -594,7 +633,8 @@ class TestModbus:
             {"tag": hold_int32[0]['name'], "value": 3},
             {"tag": hold_uint32[0]['name'], "value": 4}])
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
         response = api.write_tags(node=param[0], group='group', tag_values=[
             {"tag": hold_int16[0]['name'], "value": 1},
@@ -602,7 +642,8 @@ class TestModbus:
             {"tag": hold_int32[0]['name'], "value": 3},
             {"tag": hold_uint32[0]['name'], "value": 4}])
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
         response = api.write_tags(node=param[0], group='group', tag_values=[
             {"tag": hold_int16[0]['name'], "value": 1},
@@ -610,7 +651,8 @@ class TestModbus:
             {"tag": hold_int32[0]['name'], "value": 2147483648},
             {"tag": hold_uint32[0]['name'], "value": 4}])
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
         response = api.write_tags(node=param[0], group='group', tag_values=[
             {"tag": hold_int16[0]['name'], "value": 1},
@@ -618,31 +660,36 @@ class TestModbus:
             {"tag": hold_int32[0]['name'], "value": 3},
             {"tag": hold_uint32[0]['name'], "value": -1}])
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 32768},
-            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags": [{"tag": "hold_int16", "value": 32768},
+                                                                                       {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
         response = api.write_gtags(json=modbus_write_gtags)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
-            {"tag": "hold_uint16", "value": -1}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags": [{"tag": "hold_int16", "value": 1},
+                                                                                       {"tag": "hold_uint16", "value": -1}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
         response = api.write_gtags(json=modbus_write_gtags)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
-            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 2147483648}, {"tag": "hold_uint32", "value": 4}]}]}
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags": [{"tag": "hold_int16", "value": 1},
+                                                                                       {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 2147483648}, {"tag": "hold_uint32", "value": 4}]}]}
         response = api.write_gtags(json=modbus_write_gtags)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
-        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
-            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": -1}]}]}
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags": [{"tag": "hold_int16", "value": 1},
+                                                                                       {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": -1}]}]}
         response = api.write_gtags(json=modbus_write_gtags)
         assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()[
+            'error']
 
     @description(given="created modbus node and tags", when="write/read tags", then="write/read success")
     def test_write_read_tags(self, param):
@@ -768,31 +815,42 @@ class TestModbus:
                 "precision": 0,
                 "decimal": 0,
                 "bias": 0.0
-               }
+            }
             response = api.test_read_tag(json=body)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_NOT_SUPPORT_TEST_READ_TAG
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_NOT_SUPPORT_TEST_READ_TAG
 
             """ simulator of modbus tcp stopped """
             response = api.test_read_tag(json=test_hold_bit)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_int16)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_uint16)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_int32)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_uint32)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_float)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_hold_string)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_coil_bit)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_input_bit)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
             response = api.test_read_tag(json=test_input_register_bit)
-            assert response.json()["error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
+            assert response.json()[
+                "error"] == error.NEU_ERR_PLUGIN_READ_FAILURE
 
     @description(given="created modbus node and tags", when="read tags", then="read success")
     def test_read_tags(self, param):
@@ -983,12 +1041,14 @@ class TestModbus:
 
     @description(given="created modbus node", when="create group with invalid configuration", then="create failed")
     def test_config_group_with_invalid_configuration(self, param):
-        response = api.add_group(node=param[0], group='group_config_test', interval = 0)
+        response = api.add_group(
+            node=param[0], group='group_config_test', interval=0)
         assert 400 == response.status_code
         assert error.NEU_ERR_GROUP_PARAMETER_INVALID == response.json()[
             'error']
-        
-        response = api.add_group(node=param[0], group='group_config_test', interval = -1)
+
+        response = api.add_group(
+            node=param[0], group='group_config_test', interval=-1)
         assert 400 == response.status_code
         assert error.NEU_ERR_GROUP_PARAMETER_INVALID == response.json()[
             'error']
@@ -1120,11 +1180,13 @@ class TestModbus:
             grp = "group-bias"
             api.add_group_check(node=param[0], group=grp, interval=100)
             api.add_tags_check(node=param[0], group=grp, tags=tags)
-            api.write_tags_check(node=param[0], group=grp, tag_values=tag_values)
+            api.write_tags_check(
+                node=param[0], group=grp, tag_values=tag_values)
             # 2. read value + bias
             api.update_tags_check(node=param[0], group=grp, tags=tags_bias)
             time.sleep(0.3)
-            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            resp_values = api.read_tags(
+                node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_bias, tag_values, resp_values):
                 expected = value['value'] + tag['bias']
@@ -1133,7 +1195,8 @@ class TestModbus:
             api.update_tags_check(
                 node=param[0], group=grp, tags=tags_decimal_bias)
             time.sleep(0.3)
-            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            resp_values = api.read_tags(
+                node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_decimal_bias, tag_values, resp_values):
                 expected = value['value'] * tag['decimal'] + tag['bias']
@@ -1184,11 +1247,13 @@ class TestModbus:
             grp = "group-bias"
             api.add_group_check(node=param[0], group=grp, interval=100)
             api.add_tags_check(node=param[0], group=grp, tags=tags)
-            api.write_tags_check(node=param[0], group=grp, tag_values=tag_values)
+            api.write_tags_check(
+                node=param[0], group=grp, tag_values=tag_values)
             # 2. read value + bias
             api.update_tags_check(node=param[0], group=grp, tags=tags_bias)
             time.sleep(0.3)
-            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            resp_values = api.read_tags(
+                node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_bias, tag_values, resp_values):
                 expected = value['value'] + tag['bias']
@@ -1197,7 +1262,8 @@ class TestModbus:
             api.update_tags_check(
                 node=param[0], group=grp, tags=tags_decimal_bias)
             time.sleep(0.3)
-            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            resp_values = api.read_tags(
+                node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_decimal_bias, tag_values, resp_values):
                 expected = value['value'] * tag['decimal'] + tag['bias']
@@ -1229,16 +1295,16 @@ class TestModbus:
     def test_write_multiple_hold_tags_partially_continuous(self, param):
         api.write_tags_check(
             node=param[0], group='group', tag_values=[
-            {"tag": hold_int16_m1[0]['name'], "value": 1},
-            {"tag": hold_int16_m2[0]['name'], "value": 2},
-            {"tag": hold_int16_m3[0]['name'], "value": 3},
-            {"tag": hold_int16_m4[0]['name'], "value": 4},
-            {"tag": hold_int16_m5[0]['name'], "value": 5},
-            {"tag": hold_int16_m6[0]['name'], "value": 6},
-            {"tag": hold_int16_m7[0]['name'], "value": 7},
-            {"tag": hold_int16_m8[0]['name'], "value": 8},
-            {"tag": hold_int16_m9[0]['name'], "value": 9},
-            {"tag": hold_int16_m10[0]['name'], "value": 10}])
+                {"tag": hold_int16_m1[0]['name'], "value": 1},
+                {"tag": hold_int16_m2[0]['name'], "value": 2},
+                {"tag": hold_int16_m3[0]['name'], "value": 3},
+                {"tag": hold_int16_m4[0]['name'], "value": 4},
+                {"tag": hold_int16_m5[0]['name'], "value": 5},
+                {"tag": hold_int16_m6[0]['name'], "value": 6},
+                {"tag": hold_int16_m7[0]['name'], "value": 7},
+                {"tag": hold_int16_m8[0]['name'], "value": 8},
+                {"tag": hold_int16_m9[0]['name'], "value": 9},
+                {"tag": hold_int16_m10[0]['name'], "value": 10}])
         time.sleep(0.3)
         assert 1 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_m1[0]['name'])
@@ -1265,16 +1331,16 @@ class TestModbus:
     def test_write_multiple_hold_tags_discontinuous(self, param):
         api.write_tags_check(
             node=param[0], group='group', tag_values=[
-            {"tag": hold_int16_m6[0]['name'], "value": 11},
-            {"tag": hold_int16_m7[0]['name'], "value": 12},
-            {"tag": hold_int16_m8[0]['name'], "value": 13},
-            {"tag": hold_int16_m9[0]['name'], "value": 14},
-            {"tag": hold_int16_m10[0]['name'], "value": 15},
-            {"tag": hold_int16_m11[0]['name'], "value": 16},
-            {"tag": hold_int16_m12[0]['name'], "value": 17},
-            {"tag": hold_int16_m13[0]['name'], "value": 18},
-            {"tag": hold_int16_m14[0]['name'], "value": 19},
-            {"tag": hold_int16_m15[0]['name'], "value": 20}])
+                {"tag": hold_int16_m6[0]['name'], "value": 11},
+                {"tag": hold_int16_m7[0]['name'], "value": 12},
+                {"tag": hold_int16_m8[0]['name'], "value": 13},
+                {"tag": hold_int16_m9[0]['name'], "value": 14},
+                {"tag": hold_int16_m10[0]['name'], "value": 15},
+                {"tag": hold_int16_m11[0]['name'], "value": 16},
+                {"tag": hold_int16_m12[0]['name'], "value": 17},
+                {"tag": hold_int16_m13[0]['name'], "value": 18},
+                {"tag": hold_int16_m14[0]['name'], "value": 19},
+                {"tag": hold_int16_m15[0]['name'], "value": 20}])
         time.sleep(0.3)
         assert 11 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_m6[0]['name'])
@@ -1301,16 +1367,16 @@ class TestModbus:
     def test_write_multiple_coil_tags_partially_continuous(self, param):
         api.write_tags_check(
             node=param[0], group='group', tag_values=[
-            {"tag": coil_bit_m1[0]['name'], "value": 0},
-            {"tag": coil_bit_m2[0]['name'], "value": 1},
-            {"tag": coil_bit_m3[0]['name'], "value": 0},
-            {"tag": coil_bit_m4[0]['name'], "value": 1},
-            {"tag": coil_bit_m5[0]['name'], "value": 0},
-            {"tag": coil_bit_m6[0]['name'], "value": 1},
-            {"tag": coil_bit_m7[0]['name'], "value": 0},
-            {"tag": coil_bit_m8[0]['name'], "value": 1},
-            {"tag": coil_bit_m9[0]['name'], "value": 0},
-            {"tag": coil_bit_m10[0]['name'], "value": 1}])
+                {"tag": coil_bit_m1[0]['name'], "value": 0},
+                {"tag": coil_bit_m2[0]['name'], "value": 1},
+                {"tag": coil_bit_m3[0]['name'], "value": 0},
+                {"tag": coil_bit_m4[0]['name'], "value": 1},
+                {"tag": coil_bit_m5[0]['name'], "value": 0},
+                {"tag": coil_bit_m6[0]['name'], "value": 1},
+                {"tag": coil_bit_m7[0]['name'], "value": 0},
+                {"tag": coil_bit_m8[0]['name'], "value": 1},
+                {"tag": coil_bit_m9[0]['name'], "value": 0},
+                {"tag": coil_bit_m10[0]['name'], "value": 1}])
         time.sleep(0.3)
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=coil_bit_m1[0]['name'])
@@ -1337,16 +1403,16 @@ class TestModbus:
     def test_write_multiple_coil_tags_discontinuous(self, param):
         api.write_tags_check(
             node=param[0], group='group', tag_values=[
-            {"tag": coil_bit_m6[0]['name'], "value": 0},
-            {"tag": coil_bit_m7[0]['name'], "value": 1},
-            {"tag": coil_bit_m8[0]['name'], "value": 0},
-            {"tag": coil_bit_m9[0]['name'], "value": 1},
-            {"tag": coil_bit_m10[0]['name'], "value": 0},
-            {"tag": coil_bit_m11[0]['name'], "value": 1},
-            {"tag": coil_bit_m12[0]['name'], "value": 0},
-            {"tag": coil_bit_m13[0]['name'], "value": 1},
-            {"tag": coil_bit_m14[0]['name'], "value": 0},
-            {"tag": coil_bit_m15[0]['name'], "value": 1}])
+                {"tag": coil_bit_m6[0]['name'], "value": 0},
+                {"tag": coil_bit_m7[0]['name'], "value": 1},
+                {"tag": coil_bit_m8[0]['name'], "value": 0},
+                {"tag": coil_bit_m9[0]['name'], "value": 1},
+                {"tag": coil_bit_m10[0]['name'], "value": 0},
+                {"tag": coil_bit_m11[0]['name'], "value": 1},
+                {"tag": coil_bit_m12[0]['name'], "value": 0},
+                {"tag": coil_bit_m13[0]['name'], "value": 1},
+                {"tag": coil_bit_m14[0]['name'], "value": 0},
+                {"tag": coil_bit_m15[0]['name'], "value": 1}])
         time.sleep(0.3)
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=coil_bit_m6[0]['name'])
@@ -1405,12 +1471,12 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_BL[0]['name'], value=123.4)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_float_BB[0]['name'], value=123.4)
-        
+
         api.write_tag_check(
             node=param[0], group='group', tag=hold_string_H[0]['name'], value='abcd')
 
         time.sleep(0.3)
-        assert 1234== api.read_tag(
+        assert 1234 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_B[0]['name'])
         assert 1234 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_L[0]['name'])
@@ -1423,7 +1489,7 @@ class TestModbus:
         assert 12345678 == api.read_tag(
             node=param[0], group='group', tag=hold_int32_BB[0]['name'])
 
-        assert 1234== api.read_tag(
+        assert 1234 == api.read_tag(
             node=param[0], group='group', tag=hold_uint16_B[0]['name'])
         assert 1234 == api.read_tag(
             node=param[0], group='group', tag=hold_uint16_L[0]['name'])
@@ -1444,7 +1510,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_BL[0]['name']))
         assert compare_float(123.4, api.read_tag(
             node=param[0], group='group', tag=hold_float_BB[0]['name']))
-        
+
         assert "abcd" == api.read_tag(
             node=param[0], group='group', tag=hold_string_H[0]['name'])
         assert "badc" == api.read_tag(
@@ -1464,12 +1530,12 @@ class TestModbus:
             node=param[0], group='group', tag=hold_string_l1[0]['name'])
         assert 'b' == api.read_tag(
             node=param[0], group='group', tag=hold_string_l2[0]['name'])
-        
+
     @description(given="created modbus node ,groups and tags", when="write/read gtags", then="write/read success")
     def test_write_read_gtags(self, param):
-        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_uint16", "value": 1}, {"tag": "hold_string", "value": 'hello'},
-                                    {"tag": "coil_bit_1", "value": 1}, {"tag": "hold_double_decimal", "value": 513.11}, {"tag": "hold_bytes", "value": [0x1, 0x2, 0x3, 0x4]}]},
-                                                           {"group": "group1", "tags" : [{"tag": "hold_int16", "value": 1}]}]}
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags": [{"tag": "hold_uint16", "value": 1}, {"tag": "hold_string", "value": 'hello'},
+                                                                                       {"tag": "coil_bit_1", "value": 1}, {"tag": "hold_double_decimal", "value": 513.11}, {"tag": "hold_bytes", "value": [0x1, 0x2, 0x3, 0x4]}]},
+                                                           {"group": "group1", "tags": [{"tag": "hold_int16", "value": 1}]}]}
         response = api.write_gtags(json=modbus_write_gtags)
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
@@ -1483,7 +1549,8 @@ class TestModbus:
     def test_read_modbus_device_err(self, param):
         if param[0] == 'modbus-rtu-tty':
             pytest.skip("modbus rtu tty pass")
-        api.add_tags_check(node=param[0], group='group', tags=hold_int16_device_err)
+        api.add_tags_check(
+            node=param[0], group='group', tags=hold_int16_device_err)
         time.sleep(4.0)
         assert error.NEU_ERR_PLUGIN_READ_FAILURE == api.read_tag_err(
             node=param[0], group='group', tag=hold_int16_device_err[0]['name'])
@@ -1492,7 +1559,8 @@ class TestModbus:
     def test_read_tag_retry(self, param):
         if param[0] == 'modbus-rtu-tty':
             pytest.skip("modbus rtu tty pass")
-        api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_2)
+        api.add_tags_check(
+            node=param[0], group='group', tags=hold_int16_retry_2)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16_retry_2[0]['name'], value=222)
         time.sleep(0.5)
@@ -1515,7 +1583,8 @@ class TestModbus:
         response = api.add_group(node=param[0]+"_3002", group='group')
         assert 200 == response.status_code
 
-        api.add_tags_check(node=param[0]+"_3002", group='group', tags=hold_int16)
+        api.add_tags_check(node=param[0]+"_3002",
+                           group='group', tags=hold_int16)
         time.sleep(0.3)
         assert error.NEU_ERR_PLUGIN_DISCONNECTED == api.read_tag_err(
             node=param[0]+"_3002", group='group', tag=hold_int16[0]['name'])

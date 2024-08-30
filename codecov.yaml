@@ -1,0 +1,8 @@
+ignore:
+  - "src/otel/*.pb-c.c"
+coverage:
+  status:
+    project:
+      default:
+        target: auto    # the required coverage value
+        threshold: 0.1%  # the leniency in hitting the target
