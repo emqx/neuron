@@ -43,7 +43,8 @@ Next, please follow the [getting started guide](https://neugates.io/docs/en/late
 >
 > Neuron open source edition only includes Modbus and MQTT drivers.
 >
-> [Apply for a 15-day trial license](https://www.emqx.com/en/apply-licenses/neuron) to load all drivers.
+> If you need more driver protocol support and edge computing services, you can choose Neuron's commercial version [NeuronEX](https://www.emqx.com/en/products/neuronex).
+> NeuronEX comes with a built-in license for 30 data tags that can be applied to all southbound drivers. And NeuronEX also supports edge intelligent analysis of industrial data to enable you to quickly gain business insights. To download NeuronEX, please click [here](https://www.emqx.com/en/downloads-and-install/neuronex).
 
 #### More installation options
 
