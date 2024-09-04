@@ -53,6 +53,11 @@ typedef enum {
 
 typedef struct neu_mqtt_client_s neu_mqtt_client_t;
 
+typedef struct {
+    char *traceparent;
+    char *tracestate;
+} trace_w3c_t;
+
 /**
  * Check that `topic_filter` is a valid MQTT topic filter.
  */
@@ -74,7 +79,8 @@ typedef void (*neu_mqtt_client_publish_cb_t)(int errcode, neu_mqtt_qos_e qos,
 typedef void (*neu_mqtt_client_subscribe_cb_t)(neu_mqtt_qos_e qos,
                                                const char *   topic,
                                                const uint8_t *payload,
-                                               uint32_t len, void *data);
+                                               uint32_t len, void *data,
+                                               trace_w3c_t *trace_w3c);
 
 neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version);
 neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
@@ -140,6 +146,9 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                               neu_mqtt_client_subscribe_cb_t cb);
 
 int neu_mqtt_client_unsubscribe(neu_mqtt_client_t *client, const char *topic);
+
+bool neu_mqtt_client_check_version_change(neu_mqtt_client_t *client,
+                                          neu_mqtt_version_e version);
 
 #ifdef __cplusplus
 }

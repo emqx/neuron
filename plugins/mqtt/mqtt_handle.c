@@ -133,6 +133,11 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     plog_notice(plugin, "read uuid:%s, group:%s, node:%s", mqtt->uuid,
                 req->group, req->node);
 
+    if (mqtt->traceparent && mqtt->tracestate) {
+        plog_notice(plugin, "read, traceparent:%s, tracestate:%s",
+                    mqtt->traceparent, mqtt->tracestate);
+    }
+
     neu_reqresp_head_t header = { 0 };
     header.ctx                = mqtt;
     header.type               = NEU_REQ_READ_GROUP;
@@ -186,8 +191,13 @@ static int json_value_to_tag_value(union neu_json_value *req,
 static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                               neu_json_write_req_t *req)
 {
-    plog_notice(plugin, "write tag uuid:%s, group:%s, node:%s", mqtt->uuid,
+    plog_notice(plugin, "write tag, uuid:%s, group:%s, node:%s", mqtt->uuid,
                 req->group, req->node);
+
+    if (mqtt->traceparent && mqtt->tracestate) {
+        plog_notice(plugin, "write tag, traceparent:%s, tracestate:%s",
+                    mqtt->traceparent, mqtt->tracestate);
+    }
 
     neu_reqresp_head_t  header = { 0 };
     neu_req_write_tag_t cmd    = { 0 };
@@ -220,6 +230,11 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 {
     plog_notice(plugin, "write tags uuid:%s, group:%s, node:%s", mqtt->uuid,
                 req->group, req->node);
+
+    if (mqtt->traceparent && mqtt->tracestate) {
+        plog_notice(plugin, "write tag, traceparent:%s, tracestate:%s",
+                    mqtt->traceparent, mqtt->tracestate);
+    }
 
     for (int i = 0; i < req->n_tag; i++) {
         if (req->tags[i].t == NEU_JSON_STR) {
@@ -307,7 +322,8 @@ int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
 }
 
 void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
-                      const uint8_t *payload, uint32_t len, void *data)
+                      const uint8_t *payload, uint32_t len, void *data,
+                      trace_w3c_t *trace_w3c)
 {
     int               rv     = 0;
     neu_plugin_t *    plugin = data;
@@ -338,6 +354,13 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         plog_error(plugin, "neu_json_decode_mqtt_req failed");
         free(json_str);
         return;
+    }
+
+    if (trace_w3c && trace_w3c->traceparent) {
+        mqtt->traceparent = strdup(trace_w3c->traceparent);
+    }
+    if (trace_w3c && trace_w3c->tracestate) {
+        mqtt->tracestate = strdup(trace_w3c->tracestate);
     }
 
     rv = neu_json_decode_write(json_str, &req);
@@ -398,7 +421,8 @@ end:
 }
 
 void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
-                     const uint8_t *payload, uint32_t len, void *data)
+                     const uint8_t *payload, uint32_t len, void *data,
+                     trace_w3c_t *trace_w3c)
 {
     int                  rv     = 0;
     neu_plugin_t *       plugin = data;
@@ -429,6 +453,13 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
         plog_error(plugin, "neu_json_decode_mqtt_req failed");
         free(json_str);
         return;
+    }
+
+    if (trace_w3c && trace_w3c->traceparent) {
+        mqtt->traceparent = strdup(trace_w3c->traceparent);
+    }
+    if (trace_w3c && trace_w3c->tracestate) {
+        mqtt->tracestate = strdup(trace_w3c->tracestate);
     }
 
     rv = neu_json_decode_read_req(json_str, &req);
