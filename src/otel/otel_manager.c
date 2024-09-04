@@ -23,6 +23,7 @@
 
 #include "define.h"
 #include "event/event.h"
+#include "metrics.h"
 #include "plugin.h"
 #include "utils/http.h"
 #include "utils/utarray.h"
@@ -34,10 +35,11 @@
 #define SPAN_ID_LENGTH 16
 #define SPAN_ID_CHARSET "0123456789abcdef"
 
-bool otel_flag           = false;
-char otel_host[32]       = { 0 };
-int  otel_port           = 0;
-char otel_traces_url[32] = { 0 };
+bool   otel_flag               = false;
+char   otel_collector_url[128] = { 0 };
+bool   otel_control_flag       = false;
+bool   otel_data_flag          = false;
+double otel_data_sample_rate   = 0.0;
 
 typedef struct {
     Opentelemetry__Proto__Trace__V1__TracesData trace_data;
@@ -60,6 +62,11 @@ typedef struct {
     trace_ctx_t *  ctx;
     UT_hash_handle hh;
 } trace_ctx_table_ele_t;
+
+typedef struct {
+    char key[128];
+    char value[256];
+} trace_kv_t;
 
 trace_ctx_table_ele_t *traces_table = NULL;
 
@@ -102,6 +109,45 @@ static int hex_string_to_binary(const char *   hex_string,
     return binary_length;
 }
 
+static int parse_tracestate(const char *tracestate, trace_kv_t *kvs,
+                            int kvs_len, int *count)
+{
+    if (!tracestate) {
+        return -1;
+    }
+    const char *delim = ",";
+    char *      token;
+    char *      saveptr;
+    char *      tracestate_copy = strdup(tracestate);
+    if (!tracestate_copy) {
+        return -1;
+    }
+
+    *count = 0;
+    token  = strtok_r(tracestate_copy, delim, &saveptr);
+
+    while (token != NULL && *count < kvs_len) {
+        char *equal_sign = strchr(token, '=');
+        if (equal_sign == NULL) {
+            free(tracestate_copy);
+            return -1;
+        }
+
+        *equal_sign = '\0';
+        strncpy(kvs[*count].key, token, 127);
+        kvs[*count].key[127] = '\0';
+
+        strncpy(kvs[*count].value, equal_sign + 1, 255);
+        kvs[*count].value[255] = '\0';
+
+        (*count)++;
+        token = strtok_r(NULL, delim, &saveptr);
+    }
+
+    free(tracestate_copy);
+    return 1;
+}
+
 void neu_otel_free_span(Opentelemetry__Proto__Trace__V1__Span *span)
 {
     for (size_t i = 0; i < span->n_attributes; i++) {
@@ -123,7 +169,7 @@ void neu_otel_free_span(Opentelemetry__Proto__Trace__V1__Span *span)
 }
 
 neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
-                                         uint32_t flags)
+                                         uint32_t flags, const char *tracestate)
 {
     trace_ctx_t *ctx = calloc(1, sizeof(trace_ctx_t));
     opentelemetry__proto__trace__v1__traces_data__init(&ctx->trace_data);
@@ -142,10 +188,43 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
     opentelemetry__proto__resource__v1__resource__init(
         ctx->trace_data.resource_spans[0]->resource);
 
-    ctx->trace_data.resource_spans[0]->resource->n_attributes = 2;
-    ctx->trace_data.resource_spans[0]->resource->attributes =
-        calloc(2, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
+    trace_kv_t tracestate_kvs[64] = { 0 };
+    int        count              = 0;
+    if (parse_tracestate(tracestate, tracestate_kvs, 64, &count)) {
+        ctx->trace_data.resource_spans[0]->resource->n_attributes = 7 + count;
+        ctx->trace_data.resource_spans[0]->resource->attributes   = calloc(
+            7 + count, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
+        for (int i = 7; i < count + 7; i++) {
+            ctx->trace_data.resource_spans[0]->resource->attributes[i] =
+                calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
 
+            opentelemetry__proto__common__v1__key_value__init(
+                ctx->trace_data.resource_spans[0]->resource->attributes[i]);
+
+            ctx->trace_data.resource_spans[0]->resource->attributes[i]->key =
+                strdup(tracestate_kvs[i - 7].key);
+
+            ctx->trace_data.resource_spans[0]->resource->attributes[i]->value =
+                calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+            opentelemetry__proto__common__v1__any_value__init(
+                ctx->trace_data.resource_spans[0]
+                    ->resource->attributes[i]
+                    ->value);
+            ctx->trace_data.resource_spans[0]
+                ->resource->attributes[i]
+                ->value->value_case =
+                OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+            ctx->trace_data.resource_spans[0]
+                ->resource->attributes[i]
+                ->value->string_value = strdup(tracestate_kvs[i - 7].value);
+        }
+    } else {
+        ctx->trace_data.resource_spans[0]->resource->n_attributes = 7;
+        ctx->trace_data.resource_spans[0]->resource->attributes =
+            calloc(7, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
+    }
+
+    // 0
     ctx->trace_data.resource_spans[0]->resource->attributes[0] =
         calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
 
@@ -153,7 +232,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
         ctx->trace_data.resource_spans[0]->resource->attributes[0]);
 
     ctx->trace_data.resource_spans[0]->resource->attributes[0]->key =
-        strdup("service.name");
+        strdup("app.name");
 
     ctx->trace_data.resource_spans[0]->resource->attributes[0]->value =
         calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
@@ -167,6 +246,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
         ->resource->attributes[0]
         ->value->string_value = strdup("neuron");
 
+    // 1
     ctx->trace_data.resource_spans[0]->resource->attributes[1] =
         calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
 
@@ -174,7 +254,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
         ctx->trace_data.resource_spans[0]->resource->attributes[1]);
 
     ctx->trace_data.resource_spans[0]->resource->attributes[1]->key =
-        strdup("service.version");
+        strdup("app.version");
 
     ctx->trace_data.resource_spans[0]->resource->attributes[1]->value =
         calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
@@ -191,6 +271,117 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
         ->resource->attributes[1]
         ->value->string_value = version;
 
+    // 2
+    ctx->trace_data.resource_spans[0]->resource->attributes[2] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[2]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[2]->key =
+        strdup("distro");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[2]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[2]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[2]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[2]
+        ->value->string_value = strdup(neu_get_global_metrics()->distro);
+
+    // 3
+    ctx->trace_data.resource_spans[0]->resource->attributes[3] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[3]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[3]->key =
+        strdup("kernel");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[3]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[3]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[3]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[3]
+        ->value->string_value = strdup(neu_get_global_metrics()->kernel);
+
+    // 4
+    ctx->trace_data.resource_spans[0]->resource->attributes[4] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[4]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[4]->key =
+        strdup("machine");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[4]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[4]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[4]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[4]
+        ->value->string_value = strdup(neu_get_global_metrics()->machine);
+
+    // 5
+    ctx->trace_data.resource_spans[0]->resource->attributes[5] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[5]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[5]->key =
+        strdup("clib");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[5]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[5]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[5]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[5]
+        ->value->string_value = strdup(neu_get_global_metrics()->clib);
+
+    // 6
+    ctx->trace_data.resource_spans[0]->resource->attributes[6] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[6]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[6]->key =
+        strdup("clib_version");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[6]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[6]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[6]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[6]
+        ->value->string_value = strdup(neu_get_global_metrics()->clib_version);
+
+    //
     ctx->trace_data.resource_spans[0]->n_scope_spans = 1;
     ctx->trace_data.resource_spans[0]->scope_spans =
         calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__ScopeSpans *));
@@ -350,8 +541,7 @@ neu_otel_scope_ctx neu_otel_add_span(neu_otel_trace_ctx ctx)
     opentelemetry__proto__trace__v1__span__init(scope->span);
     scope->span->kind =
         OPENTELEMETRY__PROTO__TRACE__V1__SPAN__SPAN_KIND__SPAN_KIND_SERVER;
-    scope->span->flags = otel_flag; // random
-    uint8_t *t_id      = calloc(1, 16);
+    uint8_t *t_id = calloc(1, 16);
     hex_string_to_binary((char *) trace_ctx->trace_id, t_id, 16);
     scope->span->trace_id.data = t_id;
     scope->span->trace_id.len  = 16;

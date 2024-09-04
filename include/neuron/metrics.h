@@ -551,6 +551,8 @@ static inline void neu_node_metrics_del_group(neu_node_metrics_t *node_metrics,
     pthread_mutex_unlock(&node_metrics->lock);
 }
 
+neu_metrics_t *neu_get_global_metrics();
+
 #ifdef __cplusplus
 }
 #endif

@@ -36,11 +36,8 @@ void neu_json_decode_otel_conf_req_free(neu_json_otel_conf_req_t *req)
     if (req->action != NULL) {
         free(req->action);
     }
-    if (req->host != NULL) {
-        free(req->host);
-    }
-    if (req->traces_url != NULL) {
-        free(req->traces_url);
+    if (req->collector_url != NULL) {
+        free(req->collector_url);
     }
     if (req != NULL) {
         free(req);
@@ -62,18 +59,23 @@ int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result)
             .t    = NEU_JSON_STR,
         },
         {
-            .name      = "host",
+            .name      = "collector_url",
             .t         = NEU_JSON_STR,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
         {
-            .name      = "port",
-            .t         = NEU_JSON_INT,
+            .name      = "control",
+            .t         = NEU_JSON_BOOL,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
         {
-            .name      = "traces_url",
-            .t         = NEU_JSON_STR,
+            .name      = "data",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "data_sample_rate",
+            .t         = NEU_JSON_DOUBLE,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         }
     };
@@ -88,13 +90,12 @@ int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result)
         return -1;
     }
 
-    if (req_elems[0].v.val_str != NULL) {
-        req->action = req_elems[0].v.val_str;
-    }
-    req->host       = req_elems[1].v.val_str;
-    req->port       = req_elems[2].v.val_int;
-    req->traces_url = req_elems[3].v.val_str;
-    *result         = req;
+    req->action           = req_elems[0].v.val_str;
+    req->collector_url    = req_elems[1].v.val_str;
+    req->control_flag     = req_elems[2].v.val_bool;
+    req->data_flag        = req_elems[3].v.val_bool;
+    req->data_sample_rate = req_elems[4].v.val_double;
+    *result               = req;
 
     if (json_obj != NULL) {
         neu_json_decode_free(json_obj);
