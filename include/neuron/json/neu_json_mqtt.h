@@ -35,6 +35,7 @@ typedef struct {
     char *uuid;
     char *traceparent;
     char *tracestate;
+    char *payload;
 } neu_json_mqtt_t;
 
 typedef struct {

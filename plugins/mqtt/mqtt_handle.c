@@ -141,6 +141,7 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_reqresp_head_t header = { 0 };
     header.ctx                = mqtt;
     header.type               = NEU_REQ_READ_GROUP;
+    // header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_MQTT;
     neu_req_read_group_t cmd  = { 0 };
     cmd.driver                = req->node;
     cmd.group                 = req->group;
@@ -202,8 +203,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_reqresp_head_t  header = { 0 };
     neu_req_write_tag_t cmd    = { 0 };
 
-    header.ctx  = mqtt;
-    header.type = NEU_REQ_WRITE_TAG;
+    header.ctx             = mqtt;
+    header.type            = NEU_REQ_WRITE_TAG;
+    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_MQTT;
 
     cmd.driver = req->node;
     cmd.group  = req->group;
@@ -245,8 +247,9 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     neu_reqresp_head_t header = {
-        .ctx  = mqtt,
-        .type = NEU_REQ_WRITE_TAGS,
+        .ctx             = mqtt,
+        .type            = NEU_REQ_WRITE_TAGS,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_MQTT,
     };
 
     neu_req_write_tags_t cmd = { 0 };
@@ -358,9 +361,8 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 
     if (trace_w3c && trace_w3c->traceparent) {
         mqtt->traceparent = strdup(trace_w3c->traceparent);
-    }
-    if (trace_w3c && trace_w3c->tracestate) {
-        mqtt->tracestate = strdup(trace_w3c->tracestate);
+        mqtt->tracestate  = strdup(trace_w3c->tracestate);
+        mqtt->payload     = json_str;
     }
 
     rv = neu_json_decode_write(json_str, &req);
@@ -457,9 +459,8 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 
     if (trace_w3c && trace_w3c->traceparent) {
         mqtt->traceparent = strdup(trace_w3c->traceparent);
-    }
-    if (trace_w3c && trace_w3c->tracestate) {
-        mqtt->tracestate = strdup(trace_w3c->tracestate);
+        mqtt->tracestate  = strdup(trace_w3c->tracestate);
+        mqtt->payload     = json_str;
     }
 
     rv = neu_json_decode_read_req(json_str, &req);
