@@ -33,6 +33,8 @@ extern "C" {
 
 typedef struct {
     char *uuid;
+    char *traceparent;
+    char *tracestate;
 } neu_json_mqtt_t;
 
 typedef struct {

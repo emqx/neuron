@@ -260,7 +260,7 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
 
     if (NULL == plugin->client) {
-        plugin->client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
+        plugin->client = neu_mqtt_client_new(config.version);
         if (NULL == plugin->client) {
             plog_error(plugin, "neu_mqtt_client_new fail");
             rv = NEU_ERR_EINTERNAL;
@@ -275,6 +275,16 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
             rv = NEU_ERR_EINTERNAL;
             goto error;
         }
+        if (neu_mqtt_client_check_version_change(plugin->client,
+                                                 config.version)) {
+            neu_mqtt_client_free(plugin->client);
+            plugin->client = neu_mqtt_client_new(config.version);
+        }
+    } else if (neu_mqtt_client_check_version_change(plugin->client,
+                                                    config.version)) {
+        // plugin stopped and version changed
+        neu_mqtt_client_free(plugin->client);
+        plugin->client = neu_mqtt_client_new(config.version);
     }
 
     rv = config_mqtt_client(plugin, plugin->client, &config);

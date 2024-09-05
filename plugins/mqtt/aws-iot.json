@@ -1,4 +1,23 @@
 {
+  "version": {
+    "name": "MQTT Version",
+    "name_zh": "MQTT 版本",
+    "type": "map",
+    "attribute": "optional",
+    "default": 5,
+    "valid": {
+      "map": [
+        {
+          "key": "3.1.1",
+          "value": 4
+        },
+        {
+          "key": "5.0",
+          "value": 5
+        }
+      ]
+    }
+  },
   "client-id": {
     "name": "Client ID",
     "name_zh": "客户端 ID",

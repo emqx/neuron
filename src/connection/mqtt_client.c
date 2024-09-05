@@ -427,6 +427,45 @@ end:
     return;
 }
 
+void neu_mqtt_property_foreach(property *prop,
+                               void (*cb)(property *, trace_w3c_t *),
+                               trace_w3c_t *trace_w3c)
+{
+    for (property *p = prop->next; p != NULL; p = p->next) {
+        cb(p, trace_w3c);
+    }
+}
+
+void neu_mqtt_decode_property_trace(property *prop, trace_w3c_t *trace_w3c)
+{
+    if (prop == NULL) {
+        return;
+    }
+
+    uint8_t type = prop->data.p_type;
+
+    switch (type) {
+    case STR_PAIR:
+        if (strncmp((const char *) prop->data.p_value.strpair.key.buf,
+                    "traceparent",
+                    prop->data.p_value.strpair.key.length) == 0) {
+            trace_w3c->traceparent =
+                strndup((const char *) prop->data.p_value.strpair.value.buf,
+                        prop->data.p_value.strpair.value.length);
+        } else if (strncmp((const char *) prop->data.p_value.strpair.key.buf,
+                           "tracestate",
+                           prop->data.p_value.strpair.key.length) == 0) {
+            trace_w3c->tracestate =
+                strndup((const char *) prop->data.p_value.strpair.value.buf,
+                        prop->data.p_value.strpair.value.length);
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
 {
     (void) client;
@@ -435,10 +474,28 @@ static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
     uint32_t payload_len;
     uint8_t *payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
 
+    trace_w3c_t trace_w3c = { NULL, NULL };
+
+    if (client->version == MQTT_PROTOCOL_VERSION_v5) {
+        property *plist = nng_mqtt_msg_get_publish_property(msg);
+        if (plist != NULL) {
+            neu_mqtt_property_foreach(plist, neu_mqtt_decode_property_trace,
+                                      &trace_w3c);
+        }
+    }
+
     task->recv.sub->cb(task->recv.sub->qos, task->recv.sub->topic, payload,
-                       payload_len, task->recv.sub->data);
+                       payload_len, task->recv.sub->data, &trace_w3c);
 
     nng_msg_free(msg);
+    if (trace_w3c.traceparent) {
+        free(trace_w3c.traceparent);
+        trace_w3c.traceparent = NULL;
+    }
+    if (trace_w3c.tracestate) {
+        free(trace_w3c.tracestate);
+        trace_w3c.tracestate = NULL;
+    }
 }
 
 static subscription_t *subscription_new(neu_mqtt_client_t *client,
@@ -756,6 +813,23 @@ static int client_send_sub_msg(neu_mqtt_client_t *client,
 
     nng_mqtt_msg_set_packet_type(sub_msg, NNG_MQTT_SUBSCRIBE);
     nng_mqtt_msg_set_subscribe_topics(sub_msg, topic_qos, topic_qos_count);
+
+    /*if (client->version == MQTT_PROTOCOL_VERSION_v5) {
+        property *plist = mqtt_property_alloc();
+        property *p1 = mqtt_property_set_value_strpair(USER_PROPERTY,
+    "traceparent", strlen("traceparent"), "abcde", strlen("abcde"), true);
+            mqtt_property_append(plist, p1);
+        property *p2 = mqtt_property_set_value_strpair(USER_PROPERTY,
+    "tracestate", strlen("tracestate"), "abcde", strlen("abcde"), true);
+            mqtt_property_append(plist, p2);
+
+        nng_mqtt_msg_set_subscribe_property(sub_msg, plist);
+    }*/
+
+    /*nng_mqttv5_msg_encode(sub_msg);
+    uint8_t print[1024] = {0};
+    nng_mqtt_msg_dump(sub_msg, print, 1024, true);
+        printf("%s\n", print);*/
 
     task_t *task = client_alloc_task(client);
     if (NULL == task) {
@@ -1367,15 +1441,20 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         return 0;
     }
 
-    if (NEU_MQTT_VERSION_V5 == client->version &&
-        (rv = nng_mqttv5_client_open(&client->sock)) != 0) {
-        log(error, "nng_mqttv5_client_open fail: %s", nng_strerror(rv));
-        nng_mtx_unlock(client->mtx);
-        return -1;
-    } else if ((rv = nng_mqtt_client_open(&client->sock)) != 0) {
-        log(error, "nng_mqtt_client_open fail: %s", nng_strerror(rv));
-        nng_mtx_unlock(client->mtx);
-        return -1;
+    if (NEU_MQTT_VERSION_V5 == client->version) {
+        rv = nng_mqttv5_client_open(&client->sock);
+        if (rv != 0) {
+            log(error, "nng_mqttv5_client_open fail: %s", nng_strerror(rv));
+            nng_mtx_unlock(client->mtx);
+            return -1;
+        }
+    } else {
+        rv = nng_mqtt_client_open(&client->sock);
+        if (rv != 0) {
+            log(error, "nng_mqtt_client_open fail: %s", nng_strerror(rv));
+            nng_mtx_unlock(client->mtx);
+            return -1;
+        }
     }
 
     if (0 != client_make_url(client)) {
@@ -1516,6 +1595,18 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     nng_mqtt_msg_set_publish_payload(pub_msg, (uint8_t *) payload, len);
     nng_mqtt_msg_set_publish_qos(pub_msg, qos);
 
+    /*if (client->version == MQTT_PROTOCOL_VERSION_v5) {
+        property *plist = mqtt_property_alloc();
+        property *p1 = mqtt_property_set_value_strpair(USER_PROPERTY,
+    "traceparent", strlen("traceparent"), "abcde", strlen("abcde"), true);
+            mqtt_property_append(plist, p1);
+        property *p2 = mqtt_property_set_value_strpair(USER_PROPERTY,
+    "tracestate", strlen("tracestate"), "12345", strlen("12345"), true);
+            mqtt_property_append(plist, p2);
+
+        nng_mqtt_msg_set_publish_property(pub_msg, plist);
+    }*/
+
     nng_mtx_lock(client->mtx);
     task = client_alloc_task(client);
     nng_mtx_unlock(client->mtx);
@@ -1625,4 +1716,13 @@ int neu_mqtt_client_unsubscribe(neu_mqtt_client_t *client, const char *topic)
 error:
     nng_mtx_unlock(client->mtx);
     return -1;
+}
+
+bool neu_mqtt_client_check_version_change(neu_mqtt_client_t *client,
+                                          neu_mqtt_version_e version)
+{
+    if (client != NULL) {
+        return client->version != version;
+    }
+    return true;
 }

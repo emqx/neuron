@@ -66,6 +66,12 @@ void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req)
     if (NULL != req->uuid) {
         free(req->uuid);
     }
+    if (NULL != req->traceparent) {
+        free(req->traceparent);
+    }
+    if (NULL != req->tracestate) {
+        free(req->tracestate);
+    }
 
     free(req);
 }
