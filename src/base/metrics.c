@@ -433,3 +433,8 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
     cb(&g_metrics_, data);
     pthread_rwlock_unlock(&g_metrics_mtx_);
 }
+
+neu_metrics_t *neu_get_global_metrics()
+{
+    return &g_metrics_;
+}

@@ -20,11 +20,15 @@
 #ifndef NEU_OTEL_MANAGER_H
 #define NEU_OTEL_MANAGER_H
 
+#include <stdbool.h>
+#include <stdint.h>
+
 typedef void *neu_otel_trace_ctx;
 typedef void *neu_otel_scope_ctx;
 
 neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
-                                         uint32_t flags);
+                                         uint32_t    flags,
+                                         const char *tracestate);
 
 neu_otel_trace_ctx neu_otel_find_trace(void *req_ctx);
 

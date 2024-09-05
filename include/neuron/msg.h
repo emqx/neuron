@@ -211,11 +211,20 @@ inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
     return neu_reqresp_type_string_t[type];
 }
 
+typedef enum {
+    NEU_OTEL_TRACE_TYPE_UNSET = 0,
+    NEU_OTEL_TRACE_TYPE_REST_COMM,
+    NEU_OTEL_TRACE_TYPE_REST_SPEC,
+    NEU_OTEL_TRACE_TYPE_MQTT,
+    NEU_OTEL_TRACE_TYPE_EKUIPER,
+} neu_otel_trace_type_e;
+
 typedef struct neu_reqresp_head {
     neu_reqresp_type_e type;
     void *             ctx;
     char               sender[NEU_NODE_NAME_LEN];
     char               receiver[NEU_NODE_NAME_LEN];
+    uint8_t            otel_trace_type;
     uint32_t           len;
 } neu_reqresp_head_t;
 

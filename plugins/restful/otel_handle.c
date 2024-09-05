@@ -50,9 +50,10 @@ void handle_otel(nng_aio *aio)
         aio, neu_json_otel_conf_req_t, neu_json_decode_otel_conf_req, {
             if (strcmp(req->action, "start") == 0) {
                 otel_flag = true;
-                strcpy(otel_host, req->host);
-                otel_port = req->port;
-                strcpy(otel_traces_url, req->traces_url);
+                strcpy(otel_collector_url, req->collector_url);
+                otel_control_flag     = req->control_flag;
+                otel_data_flag        = req->data_flag;
+                otel_data_sample_rate = req->data_sample_rate;
                 neu_http_ok(aio, "{\"error\": 0 }");
                 neu_otel_start();
             } else if (strcmp(req->action, "stop") == 0) {

@@ -30,10 +30,11 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *action;
-    char *host;
-    int   port;
-    char *traces_url;
+    char * action;
+    char * collector_url;
+    bool   control_flag;
+    bool   data_flag;
+    double data_sample_rate;
 
 } neu_json_otel_conf_req_t;
 

@@ -47,6 +47,7 @@ void handle_add_group_config(nng_aio *aio)
                 neu_req_add_group_t cmd    = { 0 };
                 header.ctx                 = aio;
                 header.type                = NEU_REQ_ADD_GROUP;
+                header.otel_trace_type     = NEU_OTEL_TRACE_TYPE_REST_COMM;
                 strcpy(cmd.driver, req->node);
                 strcpy(cmd.group, req->group);
                 cmd.interval = req->interval;
@@ -102,8 +103,9 @@ static inline int send_update_group(nng_aio *                           aio,
     cmd.interval = req->set_interval ? req->interval : 0;
 
     neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = NEU_REQ_UPDATE_GROUP,
+        .ctx             = aio,
+        .type            = NEU_REQ_UPDATE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
@@ -141,8 +143,9 @@ void handle_del_group_config(nng_aio *aio)
                 neu_reqresp_head_t  header = { 0 };
                 neu_req_del_group_t cmd    = { 0 };
 
-                header.ctx  = aio;
-                header.type = NEU_REQ_DEL_GROUP;
+                header.ctx             = aio;
+                header.type            = NEU_REQ_DEL_GROUP;
+                header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
                 strcpy(cmd.driver, req->node);
                 strcpy(cmd.group, req->group);
                 ret = neu_plugin_op(plugin, header, &cmd);
@@ -162,8 +165,9 @@ void handle_get_group_config(nng_aio *aio)
     int                 ret                          = 0;
     neu_req_get_group_t cmd                          = { 0 };
     neu_reqresp_head_t  header                       = {
-        .ctx  = aio,
-        .type = NEU_REQ_GET_GROUP,
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     NEU_VALIDATE_JWT(aio);
@@ -245,8 +249,9 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = type,
+        .ctx             = aio,
+        .type            = type,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     if (strlen(req->app) >= NEU_NODE_NAME_LEN) {
@@ -308,8 +313,9 @@ void handle_grp_unsubscribe(nng_aio *aio)
             neu_req_unsubscribe_t cmd    = { 0 };
             neu_reqresp_head_t    header = { 0 };
             int                   err_type;
-            header.ctx  = aio;
-            header.type = NEU_REQ_UNSUBSCRIBE_GROUP;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_UNSUBSCRIBE_GROUP;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (strlen(req->app) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -350,8 +356,9 @@ static inline int send_subscribe_groups(nng_aio *                        aio,
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = NEU_REQ_SUBSCRIBE_GROUPS,
+        .ctx             = aio,
+        .type            = NEU_REQ_SUBSCRIBE_GROUPS,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     if (strlen(req->app) >= NEU_NODE_NAME_LEN) {

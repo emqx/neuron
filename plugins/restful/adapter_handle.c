@@ -48,6 +48,7 @@ void handle_add_adapter(nng_aio *aio)
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
                 neu_req_add_node_t cmd    = { 0 };
+                header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_ADD_NODE;
@@ -88,8 +89,9 @@ static inline int send_node_update_req(nng_aio *                   aio,
     strcpy(cmd.new_name, req->new_name);
 
     neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = NEU_REQ_UPDATE_NODE,
+        .ctx             = aio,
+        .type            = NEU_REQ_UPDATE_NODE,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
@@ -123,6 +125,7 @@ void handle_del_adapter(nng_aio *aio)
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
                 neu_req_del_node_t cmd    = { 0 };
+                header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_DEL_NODE;
@@ -147,8 +150,9 @@ void handle_get_adapter(nng_aio *aio)
     neu_node_type_e    node_type = { 0 };
     neu_req_get_node_t cmd       = { 0 };
     neu_reqresp_head_t header    = {
-        .ctx  = aio,
-        .type = NEU_REQ_GET_NODE,
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_NODE,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     NEU_VALIDATE_JWT(aio);
@@ -216,6 +220,7 @@ void handle_set_node_setting(nng_aio *aio)
                 int                    ret    = 0;
                 neu_reqresp_head_t     header = { 0 };
                 neu_req_node_setting_t cmd    = { 0 };
+                header.otel_trace_type        = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_NODE_SETTING;
@@ -250,8 +255,9 @@ void handle_get_node_setting(nng_aio *aio)
         return;
     }
 
-    header.ctx  = aio;
-    header.type = NEU_REQ_GET_NODE_SETTING;
+    header.ctx             = aio;
+    header.type            = NEU_REQ_GET_NODE_SETTING;
+    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
     strcpy(cmd.node, node_name);
 
     ret = neu_plugin_op(plugin, header, &cmd);
@@ -297,6 +303,7 @@ void handle_node_ctl(nng_aio *aio)
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
                 neu_req_node_ctl_t cmd    = { 0 };
+                header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_NODE_CTL;
@@ -323,7 +330,8 @@ void handle_get_node_state(nng_aio *aio)
 
     NEU_VALIDATE_JWT(aio);
 
-    header.ctx = aio;
+    header.ctx             = aio;
+    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
     if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) <=
         0) {
@@ -531,8 +539,9 @@ check_end:
     }
 
     neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = NEU_REQ_ADD_DRIVERS,
+        .ctx             = aio,
+        .type            = NEU_REQ_ADD_DRIVERS,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_driver_array_t cmd = { 0 };

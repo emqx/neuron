@@ -44,6 +44,7 @@ void handle_add_tags(nng_aio *aio)
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
                 neu_req_add_tag_t  cmd    = { 0 };
+                header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_ADD_TAG;
@@ -107,8 +108,9 @@ void handle_add_gtags(nng_aio *aio)
             neu_reqresp_head_t header = { 0 };
             neu_req_add_gtag_t cmd    = { 0 };
             int                err_type;
-            header.ctx  = aio;
-            header.type = NEU_REQ_ADD_GTAG;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_ADD_GTAG;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -203,8 +205,9 @@ void handle_del_tags(nng_aio *aio)
             neu_req_del_tag_t  cmd    = { 0 };
             int                err_type;
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_DEL_TAG;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_DEL_TAG;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -258,8 +261,9 @@ void handle_update_tags(nng_aio *aio)
             neu_reqresp_head_t header = { 0 };
             neu_req_add_tag_t  cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_UPDATE_TAG;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_UPDATE_TAG;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             strcpy(cmd.driver, req->node);
             strcpy(cmd.group, req->group);
@@ -308,8 +312,9 @@ void handle_get_tags(nng_aio *aio)
     int                ret                        = 0;
     neu_req_get_tag_t  cmd                        = { 0 };
     neu_reqresp_head_t header                     = {
-        .ctx  = aio,
-        .type = NEU_REQ_GET_TAG,
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_TAG,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     NEU_VALIDATE_JWT(aio);

@@ -1053,7 +1053,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GROUP: {
         neu_otel_trace_ctx *trace = NULL;
         neu_otel_scope_ctx  scope = NULL;
-        if (otel_flag &&
+        if (otel_flag && otel_control_flag &&
             (NEU_REQ_WRITE_TAG == header->type ||
              NEU_REQ_WRITE_TAGS == header->type ||
              NEU_REQ_WRITE_GTAGS == header->type)) {
@@ -1100,7 +1100,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(manager, header, &e);
-            if (otel_flag && trace) {
+            if (otel_flag && otel_control_flag && trace) {
                 neu_otel_scope_add_span_attr_int(scope, "error",
                                                  NEU_ERR_NODE_NOT_EXIST);
             }
@@ -1109,7 +1109,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             re_flag = true;
         }
 
-        if (otel_flag && trace) {
+        if (otel_flag && otel_control_flag && trace) {
             neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             if (!re_flag) {
                 neu_otel_trace_set_final(trace);

@@ -130,7 +130,7 @@ def get_group(node=""):
 
 @gen_check
 def add_tags(node, group, tags):
-    return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
+    return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01", "tracestate": "service.name=neuron,a=b,c=d"}, json={"node": node, "group": group, "tags": tags})
 
 
 @gen_check
@@ -228,16 +228,16 @@ def read_tag_err(node, group, tag, sync=False):
 
 @gen_check
 def write_tag(node, group, tag, value):
-    return requests.post(url=config.BASE_URL + "/api/v2/write", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01"}, json={"node": node, "group": group, "tag": tag, "value": value})
+    return requests.post(url=config.BASE_URL + "/api/v2/write", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01", "tracestate": "service.name=neuron,a=b,c=d"}, json={"node": node, "group": group, "tag": tag, "value": value})
 
 
 @gen_check
 def write_tags(node, group, tag_values):
-    return requests.post(url=config.BASE_URL + "/api/v2/write/tags", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01"}, json={"node": node, "group": group, "tags": tag_values})
+    return requests.post(url=config.BASE_URL + "/api/v2/write/tags", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01", "tracestate": "service.name=neuron,a=b,c=d"}, json={"node": node, "group": group, "tags": tag_values})
 
 
 def write_gtags(json):
-    return requests.post(url=config.BASE_URL + "/api/v2/write/gtags", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01"}, json=json)
+    return requests.post(url=config.BASE_URL + "/api/v2/write/gtags", headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01", "tracestate": "service.name=neuron,a=b,c=d"}, json=json)
 
 
 def add_plugin(library_name, so_file, schema_file):
@@ -391,7 +391,7 @@ def scan_tags(node, id, ctx=""):
 
 
 def otel_start(host, port, traces_url):
-    return requests.post(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt}, json={"action": "start", "host": host, "port": port, "traces_url": traces_url})
+    return requests.post(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt}, json={"action": "start", "collector_url": f"http://{host}:{port}{traces_url}", "control": True, "data": True, "data_sample_rate": 0.02})
 
 
 def otel_stop():
