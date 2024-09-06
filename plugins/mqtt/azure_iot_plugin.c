@@ -198,6 +198,7 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     config->cert                = cert.v.val_str;
     config->key                 = key.v.val_str;
 
+    plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
     plog_notice(plugin, "config qos             : %d", config->qos);
     plog_notice(plugin, "config format          : %s",
