@@ -221,7 +221,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t version = {
         .name      = "version",
         .t         = NEU_JSON_INT,
-        .v.val_int = NEU_MQTT_VERSION_V5,         // default to V5
+        .v.val_int = NEU_MQTT_VERSION_V311,         // default to V311
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };

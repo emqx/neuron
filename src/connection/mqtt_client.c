@@ -814,23 +814,6 @@ static int client_send_sub_msg(neu_mqtt_client_t *client,
     nng_mqtt_msg_set_packet_type(sub_msg, NNG_MQTT_SUBSCRIBE);
     nng_mqtt_msg_set_subscribe_topics(sub_msg, topic_qos, topic_qos_count);
 
-    /*if (client->version == MQTT_PROTOCOL_VERSION_v5) {
-        property *plist = mqtt_property_alloc();
-        property *p1 = mqtt_property_set_value_strpair(USER_PROPERTY,
-    "traceparent", strlen("traceparent"), "abcde", strlen("abcde"), true);
-            mqtt_property_append(plist, p1);
-        property *p2 = mqtt_property_set_value_strpair(USER_PROPERTY,
-    "tracestate", strlen("tracestate"), "abcde", strlen("abcde"), true);
-            mqtt_property_append(plist, p2);
-
-        nng_mqtt_msg_set_subscribe_property(sub_msg, plist);
-    }*/
-
-    /*nng_mqttv5_msg_encode(sub_msg);
-    uint8_t print[1024] = {0};
-    nng_mqtt_msg_dump(sub_msg, print, 1024, true);
-        printf("%s\n", print);*/
-
     task_t *task = client_alloc_task(client);
     if (NULL == task) {
         log(error, "client_alloc_task fail");
@@ -1594,18 +1577,6 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     nng_mqtt_msg_set_packet_type(pub_msg, NNG_MQTT_PUBLISH);
     nng_mqtt_msg_set_publish_payload(pub_msg, (uint8_t *) payload, len);
     nng_mqtt_msg_set_publish_qos(pub_msg, qos);
-
-    /*if (client->version == MQTT_PROTOCOL_VERSION_v5) {
-        property *plist = mqtt_property_alloc();
-        property *p1 = mqtt_property_set_value_strpair(USER_PROPERTY,
-    "traceparent", strlen("traceparent"), "abcde", strlen("abcde"), true);
-            mqtt_property_append(plist, p1);
-        property *p2 = mqtt_property_set_value_strpair(USER_PROPERTY,
-    "tracestate", strlen("tracestate"), "12345", strlen("12345"), true);
-            mqtt_property_append(plist, p2);
-
-        nng_mqtt_msg_set_publish_property(pub_msg, plist);
-    }*/
 
     nng_mtx_lock(client->mtx);
     task = client_alloc_task(client);
