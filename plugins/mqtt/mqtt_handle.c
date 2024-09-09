@@ -142,12 +142,12 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     header.ctx                = mqtt;
     header.type               = NEU_REQ_READ_GROUP;
     // header.otel_trace_type    = NEU_OTEL_TRACE_TYPE_MQTT;
-    neu_req_read_group_t cmd  = { 0 };
-    cmd.driver                = req->node;
-    cmd.group                 = req->group;
-    cmd.sync                  = req->sync;
-    req->node                 = NULL; // ownership moved
-    req->group                = NULL; // ownership moved
+    neu_req_read_group_t cmd = { 0 };
+    cmd.driver               = req->node;
+    cmd.group                = req->group;
+    cmd.sync                 = req->sync;
+    req->node                = NULL; // ownership moved
+    req->group               = NULL; // ownership moved
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         neu_req_read_group_fini(&cmd);
         plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail");

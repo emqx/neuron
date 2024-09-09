@@ -18,12 +18,12 @@ jobs:
           submodules: recursive
 
       - name: Run clang-format style check for C/C++ programs.
-        uses: DoozyX/clang-format-lint-action@v0.12
+        uses: DoozyX/clang-format-lint-action@v0.18
         with:
           source: 'src plugins include tests'
           exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h src/otel/trace.pb-c.h src/otel/trace.pb-c.c src/otel/resource.pb-c.h src/otel/resource.pb-c.c src/otel/common.pb-c.c src/otel/common.pb-c.h' 
-          clangFormatVersion: 10
           style: file
+          clangFormatVersion: 10
 
   cppcheck:
     runs-on: ubuntu-20.04
