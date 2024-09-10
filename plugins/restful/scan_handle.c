@@ -23,8 +23,9 @@ void handle_scan_tags(nng_aio *aio)
             nng_http_req *nng_req = nng_aio_get_input(aio, 0);
             nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
                         nng_http_req_get_uri(nng_req));
-            header.ctx  = aio;
-            header.type = NEU_REQ_SCAN_TAGS;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_SCAN_TAGS;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (NULL != req->node && NEU_NODE_NAME_LEN <= strlen(req->node)) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;

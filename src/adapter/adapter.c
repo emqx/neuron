@@ -595,7 +595,7 @@ static int adapter_responseto(neu_adapter_t *     adapter,
 
     neu_otel_trace_ctx *trace = NULL;
     neu_otel_scope_ctx  scope = NULL;
-    if (otel_flag && otel_control_flag) {
+    if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(header->ctx);
         if (trace) {
             scope = neu_otel_add_span(trace);
@@ -621,7 +621,7 @@ static int adapter_responseto(neu_adapter_t *     adapter,
         neu_msg_free(msg);
     }
 
-    if (otel_flag && otel_control_flag && trace) {
+    if (neu_otel_control_is_started() && trace) {
         neu_otel_scope_set_span_end_time(scope, neu_time_ms());
     }
 
@@ -800,7 +800,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_otel_trace_ctx *trace = NULL;
         neu_otel_scope_ctx  scope = NULL;
-        if (otel_flag && otel_control_flag) {
+        if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {
                 scope = neu_otel_add_span(trace);
@@ -826,7 +826,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             if (NEU_ERR_SUCCESS == w_error) {
                 re_flag = true;
             } else {
-                if (otel_flag && otel_control_flag && trace) {
+                if (neu_otel_control_is_started() && trace) {
                     neu_otel_scope_add_span_attr_int(scope, "error", w_error);
                 }
             }
@@ -836,13 +836,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(adapter, header, &error);
-            if (otel_flag && otel_control_flag && trace) {
+            if (neu_otel_control_is_started() && trace) {
                 neu_otel_scope_add_span_attr_int(scope, "error",
                                                  NEU_ERR_GROUP_NOT_ALLOW);
             }
         }
 
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             if (!re_flag) {
                 neu_otel_trace_set_final(trace);
@@ -856,7 +856,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_otel_trace_ctx *trace = NULL;
         neu_otel_scope_ctx  scope = NULL;
-        if (otel_flag && otel_control_flag) {
+        if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {
                 scope = neu_otel_add_span(trace);
@@ -882,7 +882,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(adapter, header, &error);
-            if (otel_flag && otel_control_flag && trace) {
+            if (neu_otel_control_is_started() && trace) {
                 neu_otel_scope_add_span_attr_int(scope, "error",
                                                  NEU_ERR_GROUP_NOT_ALLOW);
             }
@@ -893,13 +893,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             if (NEU_ERR_SUCCESS == w_error) {
                 re_flag = true;
             } else {
-                if (otel_flag && otel_control_flag && trace) {
+                if (neu_otel_control_is_started() && trace) {
                     neu_otel_scope_add_span_attr_int(scope, "error", w_error);
                 }
             }
         }
 
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             if (!re_flag) {
                 neu_otel_trace_set_final(trace);
@@ -913,7 +913,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_otel_trace_ctx *trace = NULL;
         neu_otel_scope_ctx  scope = NULL;
-        if (otel_flag && otel_control_flag) {
+        if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {
                 scope = neu_otel_add_span(trace);
@@ -940,7 +940,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(adapter, header, &error);
 
-            if (otel_flag && otel_control_flag && trace) {
+            if (neu_otel_control_is_started() && trace) {
                 neu_otel_scope_add_span_attr_int(scope, "error",
                                                  NEU_ERR_GROUP_NOT_ALLOW);
             }
@@ -951,13 +951,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             if (NEU_ERR_SUCCESS == w_error) {
                 re_flag = true;
             } else {
-                if (otel_flag && otel_control_flag && trace) {
+                if (neu_otel_control_is_started() && trace) {
                     neu_otel_scope_add_span_attr_int(scope, "error", w_error);
                 }
             }
         }
 
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             if (!re_flag) {
                 neu_otel_trace_set_final(trace);

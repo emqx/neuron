@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "otel/otel_manager.h"
 #include "utils/asprintf.h"
 #include "utils/time.h"
 
@@ -376,6 +377,26 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         plugin->cache_metric_update_ts = global_timestamp;
     }
 
+    neu_otel_trace_ctx *trace = NULL;
+    neu_otel_scope_ctx  scope = NULL;
+    if (neu_otel_control_is_started()) {
+        trace = neu_otel_find_trace(head->ctx);
+        if (trace) {
+            scope = neu_otel_add_span(trace);
+            neu_otel_scope_set_span_name(scope, "mqtt response");
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+        }
+    }
+
     switch (head->type) {
     case NEU_RESP_ERROR:
         error = handle_write_response(plugin, head->ctx, data);
@@ -426,6 +447,12 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     default:
         error = NEU_ERR_MQTT_FAILURE;
         break;
+    }
+
+    if (trace) {
+        neu_otel_scope_add_span_attr_int(scope, "error", error);
+        neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+        neu_otel_trace_set_final(trace);
     }
 
     return error;

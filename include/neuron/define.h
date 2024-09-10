@@ -91,15 +91,10 @@
         });                                                         \
     } while (0)
 
-extern int    default_log_level;
-extern bool   disable_jwt;
-extern char   host_port[32];
-extern char   g_status[32];
-extern bool   otel_flag;
-extern char   otel_collector_url[128];
-extern bool   otel_control_flag;
-extern bool   otel_data_flag;
-extern double otel_data_sample_rate;
+extern int  default_log_level;
+extern bool disable_jwt;
+extern char host_port[32];
+extern char g_status[32];
 
 typedef enum neu_plugin_kind {
     NEU_PLUGIN_KIND_STATIC = 0,

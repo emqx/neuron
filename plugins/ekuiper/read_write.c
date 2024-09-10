@@ -26,9 +26,27 @@
 #include "json_rw.h"
 #include "read_write.h"
 
-static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req);
+static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req,
+                              char *playload, bool trace_flag,
+                              uint8_t *trace_id, uint8_t *span_id);
 static int send_write_tags_req(neu_plugin_t *             plugin,
-                               neu_json_write_tags_req_t *req);
+                               neu_json_write_tags_req_t *req, char *playload,
+                               bool trace_flag, uint8_t *trace_id,
+                               uint8_t *span_id);
+
+static void byte_to_hex(unsigned char byte, char *hex)
+{
+    static const char hex_chars[] = "0123456789ABCDEF";
+    hex[0]                        = hex_chars[(byte >> 4) & 0x0F];
+    hex[1]                        = hex_chars[byte & 0x0F];
+}
+
+static void binary_to_hex(const unsigned char *binary, size_t length, char *hex)
+{
+    for (size_t i = 0; i < length; i++) {
+        byte_to_hex(binary[i], &hex[i * 2]);
+    }
+}
 
 void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
@@ -77,12 +95,17 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 
 void recv_data_callback(void *arg)
 {
-    int               rv       = 0;
-    neu_plugin_t *    plugin   = arg;
-    nng_msg *         msg      = NULL;
-    size_t            json_len = 0;
-    char *            json_str = NULL;
-    neu_json_write_t *req      = NULL;
+    int               rv         = 0;
+    neu_plugin_t *    plugin     = arg;
+    nng_msg *         msg        = NULL;
+    size_t            body_len   = 0;
+    size_t            json_len   = 0;
+    char *            body_str   = NULL;
+    char *            json_str   = NULL;
+    neu_json_write_t *req        = NULL;
+    bool              trace_flag = false;
+    uint8_t *         trace_id   = NULL;
+    uint8_t *         span_id    = NULL;
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
@@ -94,8 +117,22 @@ void recv_data_callback(void *arg)
     }
 
     msg      = nng_aio_get_msg(plugin->recv_aio);
-    json_str = nng_msg_body(msg);
-    json_len = nng_msg_len(msg);
+    body_str = nng_msg_body(msg);
+    body_len = nng_msg_len(msg);
+
+    if (*(uint8_t *) body_str == 0x0A && *(uint8_t *) (body_str + 1) == 0xCE) {
+        // trace
+        trace_id   = (uint8_t *) (body_str + 2);
+        span_id    = (uint8_t *) (body_str + 18);
+        trace_flag = true;
+        json_str   = body_str + 26;
+        json_len   = body_len - 26;
+    } else {
+        // no trace flag
+        json_str = body_str;
+        json_len = body_len;
+    }
+
     plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_5S, json_len, NULL);
@@ -111,9 +148,11 @@ void recv_data_callback(void *arg)
     }
 
     if (req->singular) {
-        rv = send_write_tag_req(plugin, &req->single);
+        rv = send_write_tag_req(plugin, &req->single, json_str, trace_flag,
+                                trace_id, span_id);
     } else {
-        rv = send_write_tags_req(plugin, &req->plural);
+        rv = send_write_tags_req(plugin, &req->plural, json_str, trace_flag,
+                                 trace_id, span_id);
     }
 
     if (0 != rv) {
@@ -159,11 +198,22 @@ static int json_value_to_tag_value(union neu_json_value *req,
     return 0;
 }
 
-static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req)
+static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req,
+                              char *playload, bool trace_flag,
+                              uint8_t *trace_id, uint8_t *span_id)
 {
+
     neu_reqresp_head_t header = {
         .type = NEU_REQ_WRITE_TAG,
     };
+
+    if (trace_flag) {
+        header.otel_trace_type = NEU_OTEL_TRACE_TYPE_EKUIPER;
+        header.ctx             = calloc(1, 48 + strlen(playload) + 1);
+        binary_to_hex(trace_id, 16, header.ctx);
+        binary_to_hex(span_id, 8, header.ctx + 32);
+        strcpy(header.ctx + 48, playload);
+    }
 
     neu_req_write_tag_t cmd = {
         .driver = req->node,
@@ -188,7 +238,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req)
 }
 
 static int send_write_tags_req(neu_plugin_t *             plugin,
-                               neu_json_write_tags_req_t *req)
+                               neu_json_write_tags_req_t *req, char *playload,
+                               bool trace_flag, uint8_t *trace_id,
+                               uint8_t *span_id)
 {
     for (int i = 0; i < req->n_tag; i++) {
         if (req->tags[i].t == NEU_JSON_STR) {
@@ -201,6 +253,14 @@ static int send_write_tags_req(neu_plugin_t *             plugin,
     neu_reqresp_head_t header = {
         .type = NEU_REQ_WRITE_TAGS,
     };
+
+    if (trace_flag) {
+        header.otel_trace_type = NEU_OTEL_TRACE_TYPE_EKUIPER;
+        header.ctx             = calloc(1, 48 + strlen(playload) + 1);
+        binary_to_hex(trace_id, 16, header.ctx);
+        binary_to_hex(span_id, 8, header.ctx + 32);
+        strcpy(header.ctx + 48, playload);
+    }
 
     neu_req_write_tags_t cmd = { 0 };
     cmd.driver               = req->node;

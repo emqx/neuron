@@ -24,12 +24,13 @@
 #include "define.h"
 #include "event/event.h"
 #include "metrics.h"
+#include "parser/neu_json_otel.h"
 #include "plugin.h"
 #include "utils/http.h"
 #include "utils/utarray.h"
 #include "utils/uthash.h"
 
-#include "otel_manager.h"
+#include "otel/otel_manager.h"
 #include "trace.pb-c.h"
 
 #define SPAN_ID_LENGTH 16
@@ -893,4 +894,34 @@ void neu_otel_stop()
     }
 
     pthread_mutex_unlock(&table_mutex);
+}
+
+bool neu_otel_control_is_started()
+{
+    return otel_flag && otel_control_flag;
+}
+bool neu_otel_data_is_started()
+{
+    return otel_flag && otel_data_flag;
+}
+void neu_otel_set_config(void *config)
+{
+    neu_json_otel_conf_req_t *req = (neu_json_otel_conf_req_t *) config;
+    otel_flag         = strcmp(req->action, "start") == 0 ? true : false;
+    otel_control_flag = req->control_flag;
+    otel_data_flag    = req->data_flag;
+    if (req->collector_url) {
+        strcpy(otel_collector_url, req->collector_url);
+    }
+    otel_data_sample_rate = req->data_sample_rate;
+}
+
+double neu_otel_data_sample_rate()
+{
+    return otel_data_sample_rate;
+}
+
+const char *neu_otel_collector_url()
+{
+    return otel_collector_url;
 }

@@ -3,7 +3,7 @@ import time
 from collections import defaultdict, deque
 
 from gmqtt import Client as MQTTClient, Subscription
-from gmqtt.mqtt.constants import MQTTv311
+from gmqtt.mqtt.constants import MQTTv311, MQTTv50
 
 
 def info(msg):
@@ -79,7 +79,7 @@ class Client:
         )
         self._client = client
 
-        self._run(self._client.connect(host, port, version=MQTTv311))
+        self._run(self._client.connect(host, port, version=MQTTv50))
 
     def disconnect(self):
         """Disconnect from MQTT Broker."""
@@ -161,7 +161,8 @@ class Client:
         `retain` retained flag
 
         """
-        self._client.publish(topic, payload, qos=qos, retain=retain)
+        self._client.publish(topic, payload, qos=qos,
+                             retain=retain, user_property=[('traceparent', '00-8fb7651916cd43dd8448eb211c80319c-0000000000000000-01'), ('tracestate', 'service.name=ex,a=b,c=d,e=f,g=h')])
 
     def listen(self, topic, timeout=1):
         """Listen to a topic and return a message payload received within the

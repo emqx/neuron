@@ -361,8 +361,11 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 
     if (trace_w3c && trace_w3c->traceparent) {
         mqtt->traceparent = strdup(trace_w3c->traceparent);
-        mqtt->tracestate  = strdup(trace_w3c->tracestate);
         mqtt->payload     = json_str;
+    }
+
+    if (trace_w3c && trace_w3c->tracestate) {
+        mqtt->tracestate = strdup(trace_w3c->tracestate);
     }
 
     rv = neu_json_decode_write(json_str, &req);
@@ -459,8 +462,11 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 
     if (trace_w3c && trace_w3c->traceparent) {
         mqtt->traceparent = strdup(trace_w3c->traceparent);
-        mqtt->tracestate  = strdup(trace_w3c->tracestate);
         mqtt->payload     = json_str;
+    }
+
+    if (trace_w3c && trace_w3c->tracestate) {
+        mqtt->tracestate = strdup(trace_w3c->tracestate);
     }
 
     rv = neu_json_decode_read_req(json_str, &req);

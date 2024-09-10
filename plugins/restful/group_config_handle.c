@@ -412,8 +412,9 @@ void handle_grp_get_subscribe(nng_aio *aio)
     neu_plugin_t *                plugin = neu_rest_get_plugin();
     neu_req_get_subscribe_group_t cmd    = { 0 };
     neu_reqresp_head_t            header = {
-        .ctx  = aio,
-        .type = NEU_REQ_GET_SUBSCRIBE_GROUP,
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     NEU_VALIDATE_JWT(aio);

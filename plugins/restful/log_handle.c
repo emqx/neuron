@@ -80,10 +80,11 @@ void handle_log_level(nng_aio *aio)
                         neu_http_response(aio, error_code.error, result_error);
                     });
                 } else {
-                    header.ctx    = aio;
-                    header.type   = NEU_REQ_UPDATE_LOG_LEVEL;
-                    cmd.core      = req->core;
-                    cmd.log_level = log_level;
+                    header.ctx             = aio;
+                    header.type            = NEU_REQ_UPDATE_LOG_LEVEL;
+                    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+                    cmd.core               = req->core;
+                    cmd.log_level          = log_level;
                     if (req->node_name != NULL) {
                         strcpy(cmd.node, req->node_name);
                     }

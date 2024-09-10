@@ -38,8 +38,9 @@ void handle_add_plugin(nng_aio *aio)
             neu_reqresp_head_t   header = { 0 };
             neu_req_add_plugin_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_ADD_PLUGIN;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_ADD_PLUGIN;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
             strcpy(cmd.library, req->library);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
@@ -62,8 +63,9 @@ void handle_update_plugin(nng_aio *aio)
             neu_reqresp_head_t      header = { 0 };
             neu_req_update_plugin_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_UPDATE_PLUGIN;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_UPDATE_PLUGIN;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
             strcpy(cmd.library, req->library);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
@@ -85,8 +87,9 @@ void handle_del_plugin(nng_aio *aio)
             neu_reqresp_head_t   header = { 0 };
             neu_req_del_plugin_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_DEL_PLUGIN;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_DEL_PLUGIN;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
             if (strlen(req->plugin) <= sizeof(cmd.plugin)) {
                 strcpy(cmd.plugin, req->plugin);
                 int ret = neu_plugin_op(plugin, header, &cmd);
@@ -111,8 +114,9 @@ void handle_get_plugin(nng_aio *aio)
 
     NEU_VALIDATE_JWT(aio);
 
-    header.ctx  = aio;
-    header.type = NEU_REQ_GET_PLUGIN;
+    header.ctx             = aio;
+    header.type            = NEU_REQ_GET_PLUGIN;
+    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
     ret = neu_plugin_op(plugin, header, NULL);
     if (ret != 0) {

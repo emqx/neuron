@@ -576,8 +576,9 @@ static int get_nodes(context_t *ctx, neu_node_type_e type)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_GET_NODE,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_NODE,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_get_node_t cmd = {
@@ -670,8 +671,9 @@ static int get_groups(context_t *ctx, int unused)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_GET_DRIVER_GROUP,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_DRIVER_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
     neu_req_get_group_t cmd = { 0 };
 
@@ -765,8 +767,9 @@ static int get_tags(context_t *ctx, neu_resp_driver_group_info_t *info)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_GET_TAG,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_TAG,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_get_tag_t cmd = { 0 };
@@ -928,8 +931,9 @@ static int get_subscriptions(context_t *ctx, neu_resp_node_info_t *info)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_GET_SUBSCRIBE_GROUP,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_get_subscribe_group_t cmd = { 0 };
@@ -1011,8 +1015,9 @@ static int get_setting(context_t *ctx, neu_resp_node_info_t *info)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_GET_NODE_SETTING,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_NODE_SETTING,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_get_node_setting_t cmd = { 0 };
@@ -1090,8 +1095,9 @@ static int del_node(context_t *ctx, neu_resp_node_info_t *info)
 {
     neu_plugin_t *     plugin = neu_rest_get_plugin();
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_DEL_NODE,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_DEL_NODE,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_del_node_t cmd = { 0 };
@@ -1109,8 +1115,9 @@ static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .type = NEU_REQ_ADD_NODE,
-        .ctx  = ctx->aio,
+        .type            = NEU_REQ_ADD_NODE,
+        .ctx             = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_add_node_t cmd = { 0 };
@@ -1130,8 +1137,9 @@ static int add_group(context_t *                             ctx,
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .type = NEU_REQ_ADD_GROUP,
-        .ctx  = ctx->aio,
+        .type            = NEU_REQ_ADD_GROUP,
+        .ctx             = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_add_group_t cmd = { 0 };
@@ -1152,8 +1160,9 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .type = NEU_REQ_ADD_TAG,
-        .ctx  = ctx->aio,
+        .type            = NEU_REQ_ADD_TAG,
+        .ctx             = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_add_tag_t cmd = { 0 };
@@ -1209,8 +1218,9 @@ static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_SUBSCRIBE_GROUP,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_subscribe_t cmd = { 0 };
@@ -1232,8 +1242,9 @@ static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .ctx  = ctx->aio,
-        .type = NEU_REQ_NODE_SETTING,
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_NODE_SETTING,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
     };
 
     neu_req_node_setting_t cmd = { 0 };
