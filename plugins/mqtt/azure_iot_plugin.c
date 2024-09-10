@@ -73,12 +73,6 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     char *      write_resp_topic = NULL;
     char *      username         = NULL;
 
-    neu_json_elem_t version = {
-        .name      = "version",
-        .t         = NEU_JSON_INT,
-        .v.val_int = NEU_MQTT_VERSION_V5,         // default to V5
-        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
-    };
     neu_json_elem_t client_id = { .name = "device-id", .t = NEU_JSON_STR };
     neu_json_elem_t qos       = { .name = "qos", .t = NEU_JSON_INT };
     neu_json_elem_t format    = { .name = "format", .t = NEU_JSON_INT };
@@ -99,14 +93,6 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
-    }
-
-    ret = neu_parse_param(setting, &err_param, 1, &version);
-    if (0 != ret) {
-        plog_error(
-            plugin,
-            "parsing mqtt version fail, key: `%s`. Set default version: mqttv5",
-            err_param);
     }
 
     // client-id, required
@@ -179,7 +165,7 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->version             = version.v.val_int;
+    config->version             = NEU_MQTT_VERSION_V311;
     config->client_id           = client_id.v.val_str;
     config->qos                 = qos.v.val_int;
     config->format              = format.v.val_int;

@@ -221,7 +221,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t version = {
         .name      = "version",
         .t         = NEU_JSON_INT,
-        .v.val_int = NEU_MQTT_VERSION_V5,         // default to V5
+        .v.val_int = NEU_MQTT_VERSION_V311,       // default to V311
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
@@ -276,10 +276,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     ret = neu_parse_param(setting, &err_param, 1, &version);
     if (0 != ret) {
-        plog_error(
-            plugin,
-            "parsing mqtt version fail, key: `%s`. Set default version: mqttv5",
-            err_param);
+        plog_error(plugin, "parsing mqtt version fail, key: `%s`.", err_param);
+        goto error;
     }
 
     // client-id, required
