@@ -39,6 +39,9 @@ void neu_json_decode_otel_conf_req_free(neu_json_otel_conf_req_t *req)
     if (req->collector_url != NULL) {
         free(req->collector_url);
     }
+    if (req->service_name != NULL) {
+        free(req->service_name);
+    }
     if (req != NULL) {
         free(req);
     }
@@ -77,7 +80,12 @@ int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result)
             .name      = "data_sample_rate",
             .t         = NEU_JSON_DOUBLE,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-        }
+        },
+        {
+            .name      = "service_name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
 
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -95,6 +103,7 @@ int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result)
     req->control_flag     = req_elems[2].v.val_bool;
     req->data_flag        = req_elems[3].v.val_bool;
     req->data_sample_rate = req_elems[4].v.val_double;
+    req->service_name     = req_elems[5].v.val_str;
     *result               = req;
 
     if (json_obj != NULL) {

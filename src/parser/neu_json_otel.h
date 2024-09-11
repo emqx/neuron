@@ -32,6 +32,7 @@ extern "C" {
 typedef struct {
     char * action;
     char * collector_url;
+    char * service_name;
     bool   control_flag;
     bool   data_flag;
     double data_sample_rate;
