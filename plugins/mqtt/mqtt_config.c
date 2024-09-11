@@ -122,6 +122,37 @@ static int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
+static int parse_heartbeat_params(neu_plugin_t *plugin, const char *setting,
+                                  neu_json_elem_t *upload_drv_state,
+                                  neu_json_elem_t *upload_drv_state_topic,
+                                  neu_json_elem_t *upload_drv_state_interval)
+{
+    int ret = neu_parse_param(setting, NULL, 1, upload_drv_state);
+    if (0 != ret) {
+        plog_notice(plugin, "setting upload_drv_state failed");
+        return -1;
+    }
+
+    if (false == upload_drv_state->v.val_bool) {
+        plog_notice(plugin, "setting upload_drv_state disabled");
+        return 0;
+    }
+
+    ret = neu_parse_param(setting, NULL, 1, upload_drv_state_topic);
+    if (0 != ret) {
+        plog_error(plugin, "setting no upload_drv_state_topic");
+        return -1;
+    }
+
+    ret = neu_parse_param(setting, NULL, 1, upload_drv_state_interval);
+    if (0 != ret) {
+        plog_error(plugin, "setting no upload_drv_state_interval");
+        return -1;
+    }
+
+    return 0;
+}
+
 static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
                               neu_json_elem_t *offline_cache,
                               neu_json_elem_t *cache_mem_size,
@@ -221,7 +252,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t version = {
         .name      = "version",
         .t         = NEU_JSON_INT,
-        .v.val_int = NEU_MQTT_VERSION_V5,         // default to V5
+        .v.val_int = NEU_MQTT_VERSION_V311,       // default to V311
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
@@ -261,6 +292,17 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
     neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
     neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
+    neu_json_elem_t upload_drv_state = {
+        .name       = "upload_drv_state",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = false,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
+    neu_json_elem_t upload_drv_state_topic = { .name = "upload_drv_state_topic",
+                                               .t    = NEU_JSON_STR };
+    neu_json_elem_t upload_drv_state_interval = {
+        .name = "upload_drv_state_interval", .t = NEU_JSON_INT
+    };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -276,10 +318,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     ret = neu_parse_param(setting, &err_param, 1, &version);
     if (0 != ret) {
-        plog_error(
-            plugin,
-            "parsing mqtt version fail, key: `%s`. Set default version: mqttv5",
-            err_param);
+        plog_error(plugin, "parsing mqtt version fail, key: `%s`.", err_param);
+        goto error;
     }
 
     // client-id, required
@@ -354,6 +394,13 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    ret = parse_heartbeat_params(plugin, setting, &upload_drv_state,
+                                 &upload_drv_state_topic,
+                                 &upload_drv_state_interval);
+    if (0 != ret) {
+        goto error;
+    }
+
     config->version             = version.v.val_int;
     config->client_id           = client_id.v.val_str;
     config->qos                 = qos.v.val_int;
@@ -373,6 +420,9 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->cert                = cert.v.val_str;
     config->key                 = key.v.val_str;
     config->keypass             = keypass.v.val_str;
+    config->upload_drv_state    = upload_drv_state.v.val_bool;
+    config->heartbeat_topic     = upload_drv_state_topic.v.val_str;
+    config->heartbeat_interval  = upload_drv_state_interval.v.val_int;
 
     plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
@@ -382,6 +432,16 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config write-req-topic : %s", config->write_req_topic);
     plog_notice(plugin, "config write-resp-topic: %s",
                 config->write_resp_topic);
+    plog_notice(plugin, "config upload-drv-state: %d",
+                config->upload_drv_state);
+    if (config->upload_drv_state) {
+        if (config->heartbeat_topic) {
+            plog_notice(plugin, "config upload-drv-state-topic: %s",
+                        config->heartbeat_topic);
+        }
+        plog_notice(plugin, "config upload-drv-state-interval: %d",
+                    config->heartbeat_interval);
+    }
     plog_notice(plugin, "config cache           : %zu", config->cache);
     plog_notice(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
     plog_notice(plugin, "config cache-disk-size : %zu",
@@ -427,6 +487,7 @@ error:
     free(cert.v.val_str);
     free(key.v.val_str);
     free(keypass.v.val_str);
+    free(upload_drv_state_topic.v.val_str);
     return -1;
 }
 
@@ -442,6 +503,7 @@ void mqtt_config_fini(mqtt_config_t *config)
     free(config->cert);
     free(config->key);
     free(config->keypass);
+    free(config->heartbeat_topic);
 
     memset(config, 0, sizeof(*config));
 }

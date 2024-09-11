@@ -4,7 +4,7 @@
     "name_zh": "MQTT 版本",
     "type": "map",
     "attribute": "optional",
-    "default": 5,
+    "default": 4,
     "valid": {
       "map": [
         {
@@ -96,6 +96,43 @@
     "default": "/neuron/${random_str}/write/resp",
     "valid": {
       "length": 255
+    }
+  },
+  "upload_drv_state": {
+    "name": "Upload Driver State",
+    "name_zh": "驱动状态上报",
+    "attribute": "optional",
+    "type": "bool",
+    "default": false,
+    "valid": {}
+  },
+  "upload_drv_state_topic": {
+    "name": "Status Reporting Topic",
+    "name_zh": "状态上报主题",
+    "attribute": "required",
+    "type": "string",
+    "condition": {
+      "field": "upload_drv_state",
+      "value": true
+    },
+    "default": "/neuron/${random_str}/state/update",
+    "valid": {
+      "length": 255
+    }
+  },
+  "upload_drv_state_interval": {
+    "name": "Status Reporting Interval(S)",
+    "name_zh": "状态上报间隔(S)",
+    "attribute": "required",
+    "type": "int",
+    "condition": {
+      "field": "upload_drv_state",
+      "value": true
+    },
+    "default": 1,
+    "valid": {
+      "min": 1,
+      "max": 3600
     }
   },
   "offline-cache": {
