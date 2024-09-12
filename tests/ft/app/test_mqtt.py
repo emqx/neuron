@@ -61,6 +61,7 @@ WRITE_REQ_TOPIC = f"/neuron/{NODE}/write/req"
 WRITE_RESP_TOPIC = f"/neuron/{NODE}/write/resp"
 READ_REQ_TOPIC = f"/neuron/{NODE}/read/req"
 READ_RESP_TOPIC = f"/neuron/{NODE}/read/resp"
+UPLOAD_DRV_STATE_TOPIC = f"/neuron/{NODE}/state/update"
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -190,6 +191,16 @@ def conf_cache(conf_fmt_tags):
     }
     del conf["offline-cache"]
     return conf
+
+
+@pytest.fixture(scope="function")
+def conf_upload_driver_state(conf_base):
+    return {
+        **conf_base,
+        "upload_drv_state": True,
+        "upload_drv_state_topic": f"/neuron/{NODE}/state/update",
+        "upload_drv_state_interval": 1,
+    }
 
 
 @pytest.fixture(scope="function")
@@ -705,3 +716,28 @@ class TestMQTT:
             assert req_tags[4]["value"] == resp_tags[4]["value"]
         finally:
             api.del_tags(DRIVER, GROUP, [tag["name"] for tag in TAGS])
+
+    @description(
+        given="MQTT node",
+        when="after configuration of upload_driver_state",
+        then="broker should receive data on upload driver state topic",
+    )
+    def test_mqtt_upload_driver_state(self, mocker, conf_upload_driver_state):
+        api.node_setting_check(NODE, conf_upload_driver_state)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+
+        msg = mocker.get(UPLOAD_DRV_STATE_TOPIC, timeout=3)
+        assert msg is not None
+
+    @description(
+        given="MQTT node and delete all drivers",
+        when="after configuration of upload_driver_state",
+        then="broker should not receive any data on upload driver state topic",
+    )
+    def test_mqtt_upload_driver_state_none(self, mocker, conf_upload_driver_state):
+        api.del_node_check(DRIVER)
+        api.node_setting_check(NODE, conf_upload_driver_state)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+
+        msg = mocker.get(UPLOAD_DRV_STATE_TOPIC, timeout=3)
+        assert msg is None
