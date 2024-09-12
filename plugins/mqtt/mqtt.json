@@ -4,7 +4,7 @@
     "name_zh": "MQTT 版本",
     "type": "map",
     "attribute": "optional",
-    "default": 5,
+    "default": 4,
     "valid": {
       "map": [
         {
