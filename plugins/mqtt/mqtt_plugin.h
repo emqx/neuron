@@ -44,6 +44,8 @@ typedef struct {
 
 struct neu_plugin {
     neu_plugin_common_t common;
+    neu_events_t *      events;
+    neu_event_timer_t * heartbeat_timer;
     mqtt_config_t       config;
     neu_mqtt_client_t * client;
     int64_t             cache_metric_update_ts;

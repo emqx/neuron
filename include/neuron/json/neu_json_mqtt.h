@@ -59,6 +59,9 @@ void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req);
 
 int neu_json_encode_mqtt_resp(void *json_object, void *param);
 
+int neu_json_encode_state_header_resp(void *json_object, void *param);
+int neu_json_encode_states_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

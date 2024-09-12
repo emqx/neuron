@@ -30,6 +30,69 @@ extern const neu_plugin_module_t neu_plugin_module;
 static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config);
 static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config);
 
+static int heartbeat_timer_cb(void *data)
+{
+    neu_plugin_t *plugin = data;
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_GET_NODES_STATE,
+        .ctx  = plugin,
+    };
+    neu_req_get_nodes_state_t cmd = {};
+
+    return neu_plugin_op(plugin, header, &cmd);
+}
+
+static inline void stop_heartbeart_timer(neu_plugin_t *plugin)
+{
+    if (plugin->heartbeat_timer) {
+        neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
+        plugin->heartbeat_timer = NULL;
+        plog_notice(plugin, "heartbeat timer stopped");
+    }
+}
+
+static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
+{
+    neu_event_timer_t *timer = NULL;
+
+    if (0 == interval) {
+        plog_info(plugin, "heartbeat disabled");
+        goto end;
+    }
+
+    if (NULL == plugin->events) {
+        plugin->events = neu_event_new();
+        if (NULL == plugin->events) {
+            plog_error(plugin, "neu_event_new fail");
+            return NEU_ERR_EINTERNAL;
+        }
+    }
+
+    neu_event_timer_param_t param = {
+        .second      = interval,
+        .millisecond = 0,
+        .cb          = heartbeat_timer_cb,
+        .usr_data    = plugin,
+    };
+
+    timer = neu_event_add_timer(plugin->events, param);
+    if (NULL == timer) {
+        plog_error(plugin, "neu_event_add_timer fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+end:
+    if (plugin->heartbeat_timer) {
+        neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
+    }
+    plugin->heartbeat_timer = timer;
+
+    plog_notice(plugin, "start_hearbeat_timer interval: %" PRIu64, interval);
+
+    return 0;
+}
+
 static void connect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
@@ -95,6 +158,13 @@ int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
 
 int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    stop_heartbeart_timer(plugin);
+
+    if (NULL != plugin->events) {
+        neu_event_close(plugin->events);
+        plugin->events = NULL;
+    }
+
     mqtt_config_fini(&plugin->config);
     if (plugin->client) {
         neu_mqtt_client_close(plugin->client);
@@ -300,6 +370,11 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
             rv = NEU_ERR_MQTT_CONNECT_FAILURE;
             goto error;
         }
+        if (0 != start_hearbeat_timer(plugin, config.heartbeat_interval)) {
+            plog_error(plugin, "start hearbeat_timer failed");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
         if (0 != (rv = plugin->subscribe(plugin, &config))) {
             goto error;
         }
@@ -337,6 +412,12 @@ int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
+    if (0 != start_hearbeat_timer(plugin, plugin->config.heartbeat_interval)) {
+        plog_error(plugin, "start hearbeat_timer failed");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
     rv = plugin->subscribe(plugin, &plugin->config);
 
 end:
@@ -357,6 +438,8 @@ int mqtt_plugin_stop(neu_plugin_t *plugin)
         neu_mqtt_client_close(plugin->client);
         plog_notice(plugin, "mqtt client closed");
     }
+
+    stop_heartbeart_timer(plugin);
 
     plog_notice(plugin, "stop plugin `%s` success",
                 neu_plugin_module.module_name);
@@ -401,6 +484,10 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_RESP_ERROR:
         error = handle_write_response(plugin, head->ctx, data);
         break;
+    case NEU_RESP_GET_NODES_STATE: {
+        handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);
+        break;
+    }
     case NEU_RESP_READ_GROUP:
         error = handle_read_response(plugin, head->ctx, data);
         break;

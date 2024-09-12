@@ -62,6 +62,8 @@ int handle_del_group(neu_plugin_t *plugin, neu_req_del_group_t *cmd);
 int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req);
 int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req);
 
+int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states);
+
 #ifdef __cplusplus
 }
 #endif

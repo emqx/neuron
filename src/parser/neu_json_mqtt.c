@@ -92,3 +92,58 @@ int neu_json_encode_mqtt_resp(void *json_object, void *param)
 
     return ret;
 }
+
+int neu_json_encode_state_header_resp(void *json_object, void *param)
+{
+    int                     ret  = 0;
+    neu_json_states_head_t *resp = (neu_json_states_head_t *) param;
+
+    neu_json_elem_t resp_elems[] = { {
+        .name      = "timestamp",
+        .t         = NEU_JSON_INT,
+        .v.val_int = resp->timpstamp,
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
+int neu_json_encode_states_resp(void *json_object, void *param)
+{
+    int                ret  = 0;
+    neu_json_states_t *resp = (neu_json_states_t *) param;
+
+    void *                 state_array = neu_json_array();
+    neu_json_node_state_t *states      = resp->states;
+    for (int i = 0; i < resp->n_state; i++) {
+        neu_json_elem_t state_elems[] = { {
+                                              .name      = "node",
+                                              .t         = NEU_JSON_STR,
+                                              .v.val_str = states[i].node,
+                                          },
+                                          {
+                                              .name      = "link",
+                                              .t         = NEU_JSON_INT,
+                                              .v.val_int = states[i].link,
+                                          },
+                                          {
+                                              .name      = "running",
+                                              .t         = NEU_JSON_INT,
+                                              .v.val_int = states[i].running,
+                                          } };
+        state_array = neu_json_encode_array(state_array, state_elems,
+                                            NEU_JSON_ELEM_SIZE(state_elems));
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "states",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = state_array,
+    } };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}

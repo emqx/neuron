@@ -183,6 +183,7 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     config->ca                  = ca.v.val_str;
     config->cert                = cert.v.val_str;
     config->key                 = key.v.val_str;
+    config->upload_drv_state    = false;
 
     plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
@@ -192,6 +193,8 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config write-req-topic : %s", config->write_req_topic);
     plog_notice(plugin, "config write-resp-topic: %s",
                 config->write_resp_topic);
+    plog_notice(plugin, "config upload-drv-state: %d",
+                config->upload_drv_state);
     plog_notice(plugin, "config cache           : %zu", config->cache);
     plog_notice(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
     plog_notice(plugin, "config cache-disk-size : %zu",

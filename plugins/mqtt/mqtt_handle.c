@@ -127,6 +127,46 @@ static char *generate_write_resp_json(neu_plugin_t *    plugin,
     return json_str;
 }
 
+static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states,
+                                     bool *drv_none)
+{
+    (void) plugin;
+    neu_json_states_head_t header   = { .timpstamp = global_timestamp };
+    neu_json_states_t      json     = { 0 };
+    char *                 json_str = NULL;
+
+    json.states = calloc(utarray_len(states), sizeof(neu_json_node_state_t));
+    if (json.states == NULL) {
+        return NULL;
+    }
+
+    int index = 0;
+    utarray_foreach(states, neu_nodes_state_t *, state)
+    {
+        if (!state->is_driver) {
+            continue;
+        }
+        json.states[index].node    = state->node;
+        json.states[index].link    = state->state.link;
+        json.states[index].running = state->state.running;
+        index++;
+    }
+
+    json.n_state = index;
+
+    if (index == 0) {
+        *drv_none = true;
+        free(json.states);
+        return NULL;
+    }
+
+    neu_json_encode_with_mqtt(&json, neu_json_encode_states_resp, &header,
+                              neu_json_encode_state_header_resp, &json_str);
+
+    free(json.states);
+    return json_str;
+}
+
 static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                 neu_json_read_req_t *req)
 {
@@ -673,4 +713,44 @@ int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req)
     route_tbl_del_driver(&plugin->route_tbl, req->node);
     plog_notice(plugin, "delete route driver:%s", req->node);
     return 0;
+}
+
+int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
+{
+    int   rv       = 0;
+    char *json_str = NULL;
+
+    if (NULL == plugin->client) {
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
+    }
+
+    if (!neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
+        rv = NEU_ERR_MQTT_FAILURE;
+        goto end;
+    }
+
+    bool driver_none = false;
+    json_str = generate_heartbeat_json(plugin, states->states, &driver_none);
+    if (driver_none == true) {
+        plog_notice(plugin, "no driver found");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+    if (NULL == json_str) {
+        plog_error(plugin, "generate heartbeat json fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    char *         topic = plugin->config.heartbeat_topic;
+    neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
+
+end:
+    utarray_free(states->states);
+
+    return rv;
 }

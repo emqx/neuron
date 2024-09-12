@@ -54,6 +54,9 @@ typedef struct {
     mqtt_upload_format_e format;              // upload format
     char *               write_req_topic;     // write request topic
     char *               write_resp_topic;    // write response topic
+    bool                 upload_drv_state;    // upload driver state flag
+    char *               heartbeat_topic;     // upload driver state topic
+    uint16_t             heartbeat_interval;  // upload driver state interval
     size_t               cache;               // cache enable flag
     size_t               cache_mem_size;      // cache memory size in bytes
     size_t               cache_disk_size;     // cache disk size in bytes
