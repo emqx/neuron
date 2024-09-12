@@ -1,5 +1,5 @@
 import time
-
+import subprocess
 import pytest
 
 import neuron.api as api
@@ -14,6 +14,8 @@ from neuron.common import (
     random_port,
 )
 from neuron.mqtt import Mock
+
+otel_port = random_port()
 
 
 NODE = "mqtt"
@@ -63,9 +65,15 @@ READ_RESP_TOPIC = f"/neuron/{NODE}/read/resp"
 
 @pytest.fixture(autouse=True, scope="class")
 def mqtt_node():
+    otel_p = subprocess.Popen(
+        ["python3", "otel_server.py", f'{otel_port}'], stderr=subprocess.PIPE, cwd="simulator")
     api.add_node_check(NODE, "MQTT")
+    api.otel_start("127.0.0.1", otel_port, "/v1/traces")
     yield
     api.del_node(NODE)
+    api.otel_stop()
+    otel_p.terminate()
+    otel_p.wait()
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -108,6 +116,7 @@ def conf_base(mocker):
         "host": "127.0.0.1",
         "port": mocker.port,
         "ssl": False,
+        "version": 5
     }
 
 

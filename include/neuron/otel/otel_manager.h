@@ -77,7 +77,13 @@ void neu_otel_new_span_id(char *id);
 void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
                                 uint32_t *flags);
 
-void neu_otel_start();
-void neu_otel_stop();
+void        neu_otel_start();
+void        neu_otel_stop();
+bool        neu_otel_control_is_started();
+bool        neu_otel_data_is_started();
+double      neu_otel_data_sample_rate();
+const char *neu_otel_collector_url();
+void        neu_otel_set_config(void *config);
+const char *neu_otel_service_name();
 
 #endif // NEU_OTEL_MANAGER_H

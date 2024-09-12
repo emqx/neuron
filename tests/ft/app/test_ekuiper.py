@@ -1,5 +1,6 @@
 import json
 import time
+import subprocess
 
 import pytest
 import pynng
@@ -15,6 +16,8 @@ from neuron.common import (
     process,
     random_port,
 )
+
+otel_port = random_port()
 
 
 NODE = "ekuiper"
@@ -59,9 +62,15 @@ TAGS = [
 
 @pytest.fixture(autouse=True, scope="class")
 def ekuiper_node():
+    otel_p = subprocess.Popen(
+        ["python3", "otel_server.py", f'{otel_port}'], stderr=subprocess.PIPE, cwd="simulator")
     api.add_node_check(NODE, PLUGIN)
+    api.otel_start("127.0.0.1", otel_port, "/v1/traces")
     yield NODE
     api.del_node(NODE)
+    api.otel_stop()
+    otel_p.terminate()
+    otel_p.wait()
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -154,7 +163,8 @@ class Mocker:
 
     def send(self, data):
         msg = json.dumps(data).encode()
-        self.sock.send(msg)
+        trace = b'\x0A\xCE\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x21\x22\x23\x24\x25\x26\x27\x28'
+        self.sock.send(trace + msg)
 
 
 class TesteKuiper:

@@ -23,6 +23,7 @@
 
 #include "errcodes.h"
 #include "neuron.h"
+#include "otel/otel_manager.h"
 #include "utils/asprintf.h"
 
 #include "plugin_ekuiper.h"
@@ -313,10 +314,38 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         NEU_NODE_LINK_STATE_DISCONNECTED == plugin->common.link_state;
     nng_mtx_unlock(plugin->mtx);
 
+    neu_otel_trace_ctx *trace = NULL;
+    neu_otel_scope_ctx  scope = NULL;
+    if (neu_otel_control_is_started()) {
+        trace = neu_otel_find_trace(header->ctx);
+        if (trace) {
+            scope = neu_otel_add_span(trace);
+            neu_otel_scope_set_span_name(scope, "ekuiper response");
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+        }
+    }
+
     switch (header->type) {
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
         plog_debug(plugin, "receive resp errcode: %d", error->error);
+        if (trace) {
+            neu_otel_scope_add_span_attr_int(scope, "error", error->error);
+            neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+            neu_otel_trace_set_final(trace);
+        }
+        if (header->ctx) {
+            free(header->ctx);
+        }
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {

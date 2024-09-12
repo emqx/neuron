@@ -41,8 +41,9 @@ void handle_read(nng_aio *aio)
             neu_reqresp_head_t   header = { 0 };
             neu_req_read_group_t cmd    = { 0 };
             int                  err_type;
-            header.ctx  = aio;
-            header.type = NEU_REQ_READ_GROUP;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_READ_GROUP;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -93,8 +94,9 @@ void handle_read_paginate(nng_aio *aio)
             neu_reqresp_head_t            header = { 0 };
             neu_req_read_group_paginate_t cmd    = { 0 };
             int                           err_type;
-            header.ctx  = aio;
-            header.type = NEU_REQ_READ_GROUP_PAGINATE;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_READ_GROUP_PAGINATE;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (req->node && strlen(req->node) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -148,8 +150,9 @@ void handle_test_read_tag(nng_aio *aio)
             neu_reqresp_head_t      header = { 0 };
             neu_req_test_read_tag_t cmd    = { 0 };
             int                     err_type;
-            header.ctx  = aio;
-            header.type = NEU_REQ_TEST_READ_TAG;
+            header.ctx             = aio;
+            header.type            = NEU_REQ_TEST_READ_TAG;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
             if (req->driver && strlen(req->driver) >= NEU_NODE_NAME_LEN) {
                 err_type = NEU_ERR_NODE_NAME_TOO_LONG;
@@ -216,7 +219,7 @@ void handle_write(nng_aio *aio)
             neu_otel_trace_ctx trace      = NULL;
             neu_otel_scope_ctx scope      = NULL;
 
-            if (otel_flag && otel_control_flag) {
+            if (neu_otel_control_is_started()) {
                 const char *trace_parent =
                     nng_http_req_get_header(nng_req, "traceparent");
                 const char *trace_state =
@@ -271,7 +274,7 @@ void handle_write(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
                 });
-                if (otel_flag && otel_control_flag && trace_flag) {
+                if (neu_otel_control_is_started() && trace_flag) {
                     neu_otel_scope_add_span_attr_int(scope, "error type",
                                                      NEU_ERR_STRING_TOO_LONG);
                     neu_otel_scope_set_span_end_time(scope, neu_time_ms());
@@ -286,7 +289,7 @@ void handle_write(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
                 });
-                if (otel_flag && otel_control_flag && trace_flag) {
+                if (neu_otel_control_is_started() && trace_flag) {
                     neu_otel_scope_add_span_attr_int(scope, "error type",
                                                      NEU_ERR_STRING_TOO_LONG);
                     neu_otel_scope_set_span_end_time(scope, neu_time_ms());
@@ -349,7 +352,7 @@ void handle_write(nng_aio *aio)
             }
 
             int ret = 0;
-            if (otel_flag && otel_control_flag && trace_flag) {
+            if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
 
                 neu_otel_scope_set_span_end_time(scope, neu_time_ms());
@@ -362,7 +365,7 @@ void handle_write(nng_aio *aio)
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
-                if (otel_flag && otel_control_flag && trace_flag) {
+                if (neu_otel_control_is_started() && trace_flag) {
                     neu_otel_scope_add_span_attr_int(scope, "error type",
                                                      NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);
@@ -373,7 +376,7 @@ void handle_write(nng_aio *aio)
         error:
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
-            if (otel_flag && otel_control_flag && trace_flag) {
+            if (neu_otel_control_is_started() && trace_flag) {
                 neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
                 neu_otel_trace_set_final(trace);
             }
@@ -403,7 +406,7 @@ void handle_write_tags(nng_aio *aio)
             neu_otel_trace_ctx trace      = NULL;
             neu_otel_scope_ctx scope      = NULL;
 
-            if (otel_flag && otel_control_flag) {
+            if (neu_otel_control_is_started()) {
                 const char *trace_parent =
                     nng_http_req_get_header(nng_req, "traceparent");
                 const char *trace_state =
@@ -459,7 +462,7 @@ void handle_write_tags(nng_aio *aio)
                             neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                               result_error);
                         });
-                        if (otel_flag && otel_control_flag && trace_flag) {
+                        if (neu_otel_control_is_started() && trace_flag) {
                             neu_otel_scope_add_span_attr_int(
                                 scope, "error type", NEU_ERR_STRING_TOO_LONG);
                             neu_otel_scope_set_span_end_time(scope,
@@ -525,7 +528,7 @@ void handle_write_tags(nng_aio *aio)
 
             int ret = 0;
 
-            if (otel_flag && otel_control_flag && trace_flag) {
+            if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
                 neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             } else {
@@ -537,7 +540,7 @@ void handle_write_tags(nng_aio *aio)
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
-                if (otel_flag && otel_control_flag && trace_flag) {
+                if (neu_otel_control_is_started() && trace_flag) {
                     neu_otel_scope_add_span_attr_int(scope, "error type",
                                                      NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);
@@ -548,7 +551,7 @@ void handle_write_tags(nng_aio *aio)
         error:
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
-            if (otel_flag && otel_control_flag && trace_flag) {
+            if (neu_otel_control_is_started() && trace_flag) {
                 neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
                 neu_otel_trace_set_final(trace);
             }
@@ -630,7 +633,7 @@ void handle_write_gtags(nng_aio *aio)
             neu_otel_trace_ctx trace      = NULL;
             neu_otel_scope_ctx scope      = NULL;
 
-            if (otel_flag && otel_control_flag) {
+            if (neu_otel_control_is_started()) {
                 const char *trace_parent =
                     nng_http_req_get_header(nng_req, "traceparent");
                 const char *trace_state =
@@ -683,7 +686,7 @@ void handle_write_gtags(nng_aio *aio)
 
             int ret = 0;
 
-            if (otel_flag && otel_control_flag && trace_flag) {
+            if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
                 neu_otel_scope_set_span_end_time(scope, neu_time_ms());
             } else {
@@ -695,7 +698,7 @@ void handle_write_gtags(nng_aio *aio)
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
-                if (otel_flag && otel_control_flag && trace_flag) {
+                if (neu_otel_control_is_started() && trace_flag) {
                     neu_otel_scope_add_span_attr_int(scope, "error type",
                                                      NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);

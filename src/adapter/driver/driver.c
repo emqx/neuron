@@ -163,7 +163,7 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     neu_otel_trace_ctx *trace = NULL;
     neu_otel_scope_ctx  scope = NULL;
-    if (otel_flag && otel_control_flag) {
+    if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(req->ctx);
         if (trace) {
             scope                = neu_otel_add_span(trace);
@@ -182,17 +182,17 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     if (NEU_REQ_WRITE_TAG == req->type) {
         neu_req_write_tag_fini((neu_req_write_tag_t *) &req[1]);
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write tag response");
         }
     } else if (NEU_REQ_WRITE_TAGS == req->type) {
         neu_req_write_tags_fini((neu_req_write_tags_t *) &req[1]);
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write tags response");
         }
     } else if (NEU_REQ_WRITE_GTAGS == req->type) {
         neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write gtags response");
         }
     }
@@ -203,7 +203,7 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     adapter->cb_funs.response(adapter, req, &nerror);
 
-    if (otel_flag && otel_control_flag && trace) {
+    if (neu_otel_control_is_started() && trace) {
         neu_otel_scope_add_span_attr_int(scope, "error", error);
         neu_otel_scope_set_span_end_time(scope, neu_time_ms());
     }
@@ -2092,7 +2092,7 @@ static int write_callback(void *usr_data)
 
         neu_otel_trace_ctx *trace = NULL;
         neu_otel_scope_ctx  scope = NULL;
-        if (otel_flag && otel_control_flag) {
+        if (neu_otel_control_is_started()) {
             trace =
                 neu_otel_find_trace(((neu_reqresp_head_t *) wtag->req)->ctx);
             if (trace) {
@@ -2149,7 +2149,7 @@ static int write_callback(void *usr_data)
             }
             utarray_free(wtag->tvs);
         }
-        if (otel_flag && otel_control_flag && trace) {
+        if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_start_time(scope, s_time);
             neu_otel_scope_set_span_end_time(scope, e_time);
         }

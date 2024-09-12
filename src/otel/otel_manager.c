@@ -24,12 +24,13 @@
 #include "define.h"
 #include "event/event.h"
 #include "metrics.h"
+#include "parser/neu_json_otel.h"
 #include "plugin.h"
 #include "utils/http.h"
 #include "utils/utarray.h"
 #include "utils/uthash.h"
 
-#include "otel_manager.h"
+#include "otel/otel_manager.h"
 #include "trace.pb-c.h"
 
 #define SPAN_ID_LENGTH 16
@@ -40,6 +41,7 @@ char   otel_collector_url[128] = { 0 };
 bool   otel_control_flag       = false;
 bool   otel_data_flag          = false;
 double otel_data_sample_rate   = 0.0;
+char   otel_service_name[128]  = { 0 };
 
 typedef struct {
     Opentelemetry__Proto__Trace__V1__TracesData trace_data;
@@ -191,10 +193,10 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
     trace_kv_t tracestate_kvs[64] = { 0 };
     int        count              = 0;
     if (parse_tracestate(tracestate, tracestate_kvs, 64, &count)) {
-        ctx->trace_data.resource_spans[0]->resource->n_attributes = 7 + count;
+        ctx->trace_data.resource_spans[0]->resource->n_attributes = 8 + count;
         ctx->trace_data.resource_spans[0]->resource->attributes   = calloc(
-            7 + count, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
-        for (int i = 7; i < count + 7; i++) {
+            8 + count, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
+        for (int i = 8; i < count + 8; i++) {
             ctx->trace_data.resource_spans[0]->resource->attributes[i] =
                 calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
 
@@ -202,7 +204,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
                 ctx->trace_data.resource_spans[0]->resource->attributes[i]);
 
             ctx->trace_data.resource_spans[0]->resource->attributes[i]->key =
-                strdup(tracestate_kvs[i - 7].key);
+                strdup(tracestate_kvs[i - 8].key);
 
             ctx->trace_data.resource_spans[0]->resource->attributes[i]->value =
                 calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
@@ -216,12 +218,12 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
                 OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
             ctx->trace_data.resource_spans[0]
                 ->resource->attributes[i]
-                ->value->string_value = strdup(tracestate_kvs[i - 7].value);
+                ->value->string_value = strdup(tracestate_kvs[i - 8].value);
         }
     } else {
-        ctx->trace_data.resource_spans[0]->resource->n_attributes = 7;
+        ctx->trace_data.resource_spans[0]->resource->n_attributes = 8;
         ctx->trace_data.resource_spans[0]->resource->attributes =
-            calloc(7, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
+            calloc(8, sizeof(Opentelemetry__Proto__Common__V1__KeyValue *));
     }
 
     // 0
@@ -380,6 +382,28 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
     ctx->trace_data.resource_spans[0]
         ->resource->attributes[6]
         ->value->string_value = strdup(neu_get_global_metrics()->clib_version);
+
+    // 7
+    ctx->trace_data.resource_spans[0]->resource->attributes[7] =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__KeyValue));
+
+    opentelemetry__proto__common__v1__key_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[7]);
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[7]->key =
+        strdup("service.name");
+
+    ctx->trace_data.resource_spans[0]->resource->attributes[7]->value =
+        calloc(1, sizeof(Opentelemetry__Proto__Common__V1__AnyValue));
+    opentelemetry__proto__common__v1__any_value__init(
+        ctx->trace_data.resource_spans[0]->resource->attributes[7]->value);
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[7]
+        ->value->value_case =
+        OPENTELEMETRY__PROTO__COMMON__V1__ANY_VALUE__VALUE_STRING_VALUE;
+    ctx->trace_data.resource_spans[0]
+        ->resource->attributes[7]
+        ->value->string_value = strdup(neu_otel_service_name());
 
     //
     ctx->trace_data.resource_spans[0]->n_scope_spans = 1;
@@ -893,4 +917,42 @@ void neu_otel_stop()
     }
 
     pthread_mutex_unlock(&table_mutex);
+}
+
+bool neu_otel_control_is_started()
+{
+    return otel_flag && otel_control_flag;
+}
+bool neu_otel_data_is_started()
+{
+    return otel_flag && otel_data_flag;
+}
+void neu_otel_set_config(void *config)
+{
+    neu_json_otel_conf_req_t *req = (neu_json_otel_conf_req_t *) config;
+    otel_flag         = strcmp(req->action, "start") == 0 ? true : false;
+    otel_control_flag = req->control_flag;
+    otel_data_flag    = req->data_flag;
+    if (req->collector_url) {
+        strcpy(otel_collector_url, req->collector_url);
+    }
+    if (req->service_name) {
+        strcpy(otel_service_name, req->service_name);
+    }
+    otel_data_sample_rate = req->data_sample_rate;
+}
+
+double neu_otel_data_sample_rate()
+{
+    return otel_data_sample_rate;
+}
+
+const char *neu_otel_collector_url()
+{
+    return otel_collector_url;
+}
+
+const char *neu_otel_service_name()
+{
+    return otel_service_name;
 }
