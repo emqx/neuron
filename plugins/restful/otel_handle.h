@@ -24,4 +24,6 @@
 
 void handle_otel(nng_aio *aio);
 
+void handle_otel_get(nng_aio *aio);
+
 #endif

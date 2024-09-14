@@ -84,6 +84,7 @@ bool        neu_otel_data_is_started();
 double      neu_otel_data_sample_rate();
 const char *neu_otel_collector_url();
 void        neu_otel_set_config(void *config);
+void *      neu_otel_get_config();
 const char *neu_otel_service_name();
 
 #endif // NEU_OTEL_MANAGER_H

@@ -41,7 +41,7 @@ typedef struct {
 
 void neu_json_decode_otel_conf_req_free(neu_json_otel_conf_req_t *req);
 int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result);
-
+int neu_json_encode_otel_conf_req(void *json_object, void *param);
 #ifdef __cplusplus
 }
 #endif
