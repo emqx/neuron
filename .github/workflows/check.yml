@@ -41,7 +41,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.10
 
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
 
   pft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.10
     strategy:
       matrix:
         plugin: [core, ekuiper, modbus, mqtt, azure, metrics]
