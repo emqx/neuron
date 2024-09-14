@@ -65,7 +65,7 @@ def ekuiper_node():
     otel_p = subprocess.Popen(
         ["python3", "otel_server.py", f'{otel_port}'], stderr=subprocess.PIPE, cwd="simulator")
     api.add_node_check(NODE, PLUGIN)
-    api.otel_start("127.0.0.1", otel_port, "/v1/traces")
+    api.otel_start("127.0.0.1", otel_port)
     yield NODE
     api.del_node(NODE)
     api.otel_stop()

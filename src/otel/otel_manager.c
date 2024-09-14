@@ -27,6 +27,7 @@
 #include "parser/neu_json_otel.h"
 #include "plugin.h"
 #include "utils/http.h"
+#include "utils/log.h"
 #include "utils/utarray.h"
 #include "utils/uthash.h"
 
@@ -860,6 +861,8 @@ static int otel_timer_cb(void *data)
             neu_otel_trace_pack(el->ctx, data_buf);
             int status = neu_http_post_otel_trace(data_buf, data_size);
             free(data_buf);
+            nlog_debug("send trace:%s status:%d", (char *) el->ctx->trace_id,
+                       status);
             if (status == 200 || status == 400) {
                 HASH_DEL(traces_table, el);
                 neu_otel_free_trace(el->ctx);
@@ -891,6 +894,8 @@ void neu_otel_start()
 
         otel_timer = neu_event_add_timer(otel_event, param);
     }
+
+    nlog_debug("otel_start");
 }
 
 void neu_otel_stop()
@@ -917,6 +922,8 @@ void neu_otel_stop()
     }
 
     pthread_mutex_unlock(&table_mutex);
+
+    nlog_debug("otel_stop");
 }
 
 bool neu_otel_control_is_started()
@@ -940,6 +947,27 @@ void neu_otel_set_config(void *config)
         strcpy(otel_service_name, req->service_name);
     }
     otel_data_sample_rate = req->data_sample_rate;
+
+    nlog_debug("otel config: %s %s %s %.2f %d %d", req->action,
+               req->collector_url, req->service_name, req->data_sample_rate,
+               req->data_flag, req->control_flag);
+}
+
+void *neu_otel_get_config()
+{
+    neu_json_otel_conf_req_t *req = calloc(1, sizeof(neu_json_otel_conf_req_t));
+    if (otel_flag) {
+        req->action = strdup("start");
+    } else {
+        req->action = strdup("stop");
+    }
+
+    req->collector_url    = strdup(otel_collector_url);
+    req->control_flag     = otel_control_flag;
+    req->data_flag        = otel_data_flag;
+    req->service_name     = strdup(otel_service_name);
+    req->data_sample_rate = otel_data_sample_rate;
+    return req;
 }
 
 double neu_otel_data_sample_rate()

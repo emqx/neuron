@@ -64,3 +64,14 @@ void handle_otel(nng_aio *aio)
             }
         })
 }
+
+void handle_otel_get(nng_aio *aio)
+{
+    char *result = NULL;
+    NEU_VALIDATE_JWT(aio);
+    neu_json_otel_conf_req_t *req = neu_otel_get_config();
+    neu_json_encode_by_fn(req, neu_json_encode_otel_conf_req, &result);
+    neu_http_ok(aio, result);
+    free(result);
+    neu_json_decode_otel_conf_req_free(req);
+}

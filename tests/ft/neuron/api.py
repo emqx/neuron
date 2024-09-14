@@ -390,9 +390,13 @@ def scan_tags(node, id, ctx=""):
     return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx})
 
 
-def otel_start(host, port, traces_url):
-    return requests.post(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt}, json={"action": "start", "collector_url": f"http://{host}:{port}{traces_url}", "control": True, "data": True, "data_sample_rate": 0.02})
+def otel_start(host, port):
+    return requests.post(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt}, json={"action": "start", "collector_url": f"{host}:{port}", "control": True, "data": True, "data_sample_rate": 0.02})
 
 
 def otel_stop():
     return requests.post(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt}, json={"action": "stop"})
+
+
+def otel_get():
+    return requests.get(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt})

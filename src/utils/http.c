@@ -426,7 +426,11 @@ int neu_http_post_otel_trace(uint8_t *data, int len)
     nng_aio_alloc(&aio, NULL, NULL);
     nng_aio_set_timeout(aio, 1000);
 
-    if (nng_url_parse(&url, neu_otel_collector_url()) != 0) {
+    char url_buf[128] = { 0 };
+
+    sprintf(url_buf, "http://%s/v1/traces", neu_otel_collector_url());
+
+    if (nng_url_parse(&url, url_buf) != 0) {
         nng_aio_free(aio);
         return -1;
     }
@@ -438,8 +442,7 @@ int neu_http_post_otel_trace(uint8_t *data, int len)
 
     int rv = -1;
     if ((rv = nng_aio_result(aio)) != 0) {
-        nlog_error("(%s)nng error: %s", neu_otel_collector_url(),
-                   nng_strerror(rv));
+        nlog_error("(%s)nng error: %s", url_buf, nng_strerror(rv));
         nng_url_free(url);
         nng_http_client_free(client);
         nng_aio_free(aio);

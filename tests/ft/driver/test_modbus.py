@@ -82,8 +82,14 @@ def simulator_setup_teardown(param):
         response = api.modbus_rtu_node_setting(
             node=param[0], interval=1, device=modbus_neuron_dev, link=0)
 
-    api.otel_start("127.0.0.1", otel_port, "/v1/traces")
-
+    api.otel_start("127.0.0.1", otel_port)
+    resp = api.otel_get()
+    assert 200 == resp.status_code
+    assert resp.json()['action'] == 'start'
+    assert resp.json()['collector_url'] == f"127.0.0.1:{otel_port}"
+    assert resp.json()['control'] == True
+    assert resp.json()['data'] == True
+    compare_float(0.02, resp.json()['data_sample_rate'])
     yield
     api.otel_stop()
     process.stop_simulator(p)

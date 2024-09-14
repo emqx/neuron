@@ -111,3 +111,43 @@ int neu_json_decode_otel_conf_req(char *buf, neu_json_otel_conf_req_t **result)
     }
     return ret;
 }
+
+int neu_json_encode_otel_conf_req(void *json_object, void *param)
+{
+    int                       ret          = 0;
+    neu_json_otel_conf_req_t *req          = (neu_json_otel_conf_req_t *) param;
+    neu_json_elem_t           resp_elems[] = { {
+                                         .name      = "action",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = req->action,
+                                     },
+                                     {
+                                         .name      = "collector_url",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = req->collector_url,
+                                     },
+                                     {
+                                         .name       = "control",
+                                         .t          = NEU_JSON_BOOL,
+                                         .v.val_bool = req->control_flag,
+                                     },
+                                     {
+                                         .name       = "data",
+                                         .t          = NEU_JSON_BOOL,
+                                         .v.val_bool = req->data_flag,
+                                     },
+                                     {
+                                         .name = "data_sample_rate",
+                                         .t    = NEU_JSON_DOUBLE,
+                                         .v.val_double = req->data_sample_rate,
+                                     },
+                                     {
+                                         .name      = "service_name",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = req->service_name,
+                                     } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
