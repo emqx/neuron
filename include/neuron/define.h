@@ -53,7 +53,7 @@
 #define NEU_MSG_MAX_SIZE 2048
 
 #define NEU_TAG_META_LENGTH 20
-#define NEU_TAG_META_SIZE 3
+#define NEU_TAG_META_SIZE 8
 
 #define NEU_LOG_LEVEL_DEBUG "debug"
 #define NEU_LOG_LEVEL_INFO "info"
