@@ -315,8 +315,8 @@ UT_array *neu_group_query_read_tag_paginate(neu_group_t *group,
     };
 
     pthread_mutex_lock(&group->mtx);
-    array = filter_tags_by_page(group->tags, is_readable_and_match_query, &q,
-                                current_page, page_size, total_count);
+    array = filter_tags_by_page(group->tags, match_query, &q, current_page,
+                                page_size, total_count);
     pthread_mutex_unlock(&group->mtx);
 
     return array;
