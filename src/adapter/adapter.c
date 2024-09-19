@@ -593,8 +593,8 @@ static int adapter_responseto(neu_adapter_t *     adapter,
     neu_reqresp_head_t *pheader = neu_msg_get_header(msg);
     strcpy(pheader->sender, adapter->name);
 
-    neu_otel_trace_ctx *trace = NULL;
-    neu_otel_scope_ctx  scope = NULL;
+    neu_otel_trace_ctx trace = NULL;
+    neu_otel_scope_ctx scope = NULL;
     if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(header->ctx);
         if (trace) {
@@ -798,8 +798,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_TAG: {
         neu_resp_error_t error = { 0 };
 
-        neu_otel_trace_ctx *trace = NULL;
-        neu_otel_scope_ctx  scope = NULL;
+        neu_otel_trace_ctx trace = NULL;
+        neu_otel_scope_ctx scope = NULL;
         if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {
@@ -854,8 +854,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_TAGS: {
         neu_resp_error_t error = { 0 };
 
-        neu_otel_trace_ctx *trace = NULL;
-        neu_otel_scope_ctx  scope = NULL;
+        neu_otel_trace_ctx trace = NULL;
+        neu_otel_scope_ctx scope = NULL;
         if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {
@@ -911,8 +911,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_GTAGS: {
         neu_resp_error_t error = { 0 };
 
-        neu_otel_trace_ctx *trace = NULL;
-        neu_otel_scope_ctx  scope = NULL;
+        neu_otel_trace_ctx trace = NULL;
+        neu_otel_scope_ctx scope = NULL;
         if (neu_otel_control_is_started()) {
             trace = neu_otel_find_trace(header->ctx);
             if (trace) {

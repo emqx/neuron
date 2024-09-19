@@ -1601,6 +1601,64 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     return 0;
 }
 
+int neu_mqtt_client_publish_with_trace(neu_mqtt_client_t *client,
+                                       neu_mqtt_qos_e qos, char *topic,
+                                       uint8_t *payload, uint32_t len,
+                                       void *                       data,
+                                       neu_mqtt_client_publish_cb_t cb,
+                                       const char *                 traceparent)
+{
+    int      rv      = 0;
+    nng_msg *pub_msg = NULL;
+    task_t * task    = NULL;
+
+    if (0 != (rv = nng_mqtt_msg_alloc(&pub_msg, 0))) {
+        log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
+        return -1;
+    }
+
+    if (0 != (rv = nng_mqtt_msg_set_publish_topic(pub_msg, topic))) {
+        nng_msg_free(pub_msg);
+        log(error, "nng_mqtt_msg_set_publish_topic fail: %s", nng_strerror(rv));
+        return -1;
+    }
+
+    nng_mqtt_msg_set_packet_type(pub_msg, NNG_MQTT_PUBLISH);
+    nng_mqtt_msg_set_publish_payload(pub_msg, (uint8_t *) payload, len);
+    nng_mqtt_msg_set_publish_qos(pub_msg, qos);
+
+    if (client->version == MQTT_PROTOCOL_VERSION_v5) {
+        property *plist = mqtt_property_alloc();
+        property *p     = mqtt_property_set_value_strpair(
+            USER_PROPERTY, "traceparent", strlen("traceparent"), traceparent,
+            strlen(traceparent), true);
+        mqtt_property_append(plist, p);
+        nng_mqtt_msg_set_publish_property(pub_msg, plist);
+    }
+
+    nng_mtx_lock(client->mtx);
+    task = client_alloc_task(client);
+    nng_mtx_unlock(client->mtx);
+
+    if (NULL == task) {
+        nng_msg_free(pub_msg);
+        log(error, "client_alloc_task fail");
+        return -1;
+    }
+
+    task->kind        = TASK_PUB;
+    task->pub.cb      = cb;
+    task->pub.qos     = qos;
+    task->pub.topic   = topic;
+    task->pub.payload = payload;
+    task->pub.len     = len;
+    task->pub.data    = data;
+    nng_aio_set_msg(task->aio, pub_msg);
+    nng_send_aio(client->sock, task->aio);
+
+    return 0;
+}
+
 int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                               const char *topic, void *data,
                               neu_mqtt_client_subscribe_cb_t cb)

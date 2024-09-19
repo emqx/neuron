@@ -20,6 +20,7 @@
 #include <nng/nng.h>
 
 #include "neuron.h"
+#include "otel/otel_manager.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_rw.h"
 
@@ -33,6 +34,40 @@ static int send_write_tags_req(neu_plugin_t *             plugin,
                                neu_json_write_tags_req_t *req, char *playload,
                                bool trace_flag, uint8_t *trace_id,
                                uint8_t *span_id);
+
+static int hex_char_to_int(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+static int hex_string_to_binary(const char *   hex_string,
+                                unsigned char *binary_array, int max_length)
+{
+    int length = strlen(hex_string);
+    if (length % 2 != 0 || length <= 0)
+        return -1;
+
+    int binary_length = length / 2;
+    if (binary_length > max_length)
+        return -1;
+
+    for (int i = 0; i < binary_length; i++) {
+        int high_nibble = hex_char_to_int(hex_string[2 * i]);
+        int low_nibble  = hex_char_to_int(hex_string[2 * i + 1]);
+        if (high_nibble == -1 || low_nibble == -1)
+            return -1;
+
+        binary_array[i] = (high_nibble << 4) | low_nibble;
+    }
+
+    return binary_length;
+}
 
 static void byte_to_hex(unsigned char byte, char *hex)
 {
@@ -57,39 +92,89 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
         .plugin     = plugin,
         .trans_data = trans_data,
     };
-    rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
-    if (0 != rv) {
-        plog_error(plugin, "fail encode trans data to json");
-        return;
+
+    neu_otel_trace_ctx trans_trace     = NULL;
+    neu_otel_scope_ctx trans_scope     = NULL;
+    uint8_t *          trace_id        = NULL;
+    char               new_span_id[36] = { 0 };
+    if (neu_otel_data_is_started() && trans_data->trace_ctx) {
+        trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
+        if (trans_trace) {
+            trans_scope = neu_otel_add_span(trans_trace);
+            neu_otel_scope_set_span_name(trans_scope, "ekuiper send");
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(trans_scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+        }
     }
 
-    nng_msg *msg      = NULL;
-    size_t   json_len = strlen(json_str);
-    rv                = nng_msg_alloc(&msg, json_len);
-    if (0 != rv) {
-        plog_error(plugin, "nng cannot allocate msg");
+    do {
+
+        rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
+        if (0 != rv) {
+            plog_error(plugin, "fail encode trans data to json");
+            break;
+        }
+
+        nng_msg *msg              = NULL;
+        size_t   json_len         = strlen(json_str);
+        size_t   trace_header_len = 0;
+        if (neu_otel_data_is_started() && trans_data->trace_ctx) {
+            trace_header_len = 26;
+        }
+
+        rv = nng_msg_alloc(&msg, json_len + trace_header_len);
+        if (0 != rv) {
+            plog_error(plugin, "nng cannot allocate msg");
+            free(json_str);
+            break;
+        }
+
+        if (trans_trace) {
+            neu_otel_scope_add_span_attr_string(trans_scope, "playload",
+                                                json_str);
+            trace_id           = neu_otel_get_trace_id(trans_trace);
+            uint8_t span_id[8] = { 0 };
+            hex_string_to_binary(new_span_id, span_id, 8);
+            uint16_t tarce_header_magic = 0xCE0A;
+            memcpy(nng_msg_body(msg), &tarce_header_magic, 2);
+            memcpy(nng_msg_body(msg) + 2, trace_id, 16);
+            memcpy(nng_msg_body(msg) + 2 + 16, span_id, 8);
+        }
+
+        memcpy(nng_msg_body(msg) + trace_header_len, json_str,
+               json_len); // no null byte
+        plog_debug(plugin, ">> %s", json_str);
         free(json_str);
-        return;
-    }
+        rv = nng_sendmsg(plugin->sock, msg,
+                         NNG_FLAG_NONBLOCK); // TODO: use aio to send message
+        if (0 == rv) {
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSGS_TOTAL, 1,
+                                     NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_5S, json_len,
+                                     NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_30S,
+                                     json_len, NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_60S,
+                                     json_len, NULL);
+        } else {
+            plog_error(plugin, "nng cannot send msg: %s", nng_strerror(rv));
+            nng_msg_free(msg);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                                     1, NULL);
+        }
+    } while (0);
 
-    memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
-    plog_debug(plugin, ">> %s", json_str);
-    free(json_str);
-    rv = nng_sendmsg(plugin->sock, msg,
-                     NNG_FLAG_NONBLOCK); // TODO: use aio to send message
-    if (0 == rv) {
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSGS_TOTAL, 1, NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_5S, json_len,
-                                 NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_30S, json_len,
-                                 NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_60S, json_len,
-                                 NULL);
-    } else {
-        plog_error(plugin, "nng cannot send msg: %s", nng_strerror(rv));
-        nng_msg_free(msg);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 1,
-                                 NULL);
+    if (trans_trace) {
+        neu_otel_scope_add_span_attr_int(trans_scope, "error", rv);
+        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+        neu_otel_trace_set_final(trans_trace);
     }
 }
 

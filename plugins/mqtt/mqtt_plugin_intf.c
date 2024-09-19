@@ -460,8 +460,8 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         plugin->cache_metric_update_ts = global_timestamp;
     }
 
-    neu_otel_trace_ctx *trace = NULL;
-    neu_otel_scope_ctx  scope = NULL;
+    neu_otel_trace_ctx trace = NULL;
+    neu_otel_scope_ctx scope = NULL;
     if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(head->ctx);
         if (trace) {

@@ -57,6 +57,10 @@ typedef struct adapter_callbacks {
         struct {
             void (*update)(neu_adapter_t *adapter, const char *group,
                            const char *tag, neu_dvalue_t value);
+            void (*update_with_trace)(neu_adapter_t *adapter, const char *group,
+                                      const char *tag, neu_dvalue_t value,
+                                      neu_tag_meta_t *metas, int n_meta,
+                                      void *trace_ctx);
             void (*update_with_meta)(neu_adapter_t *adapter, const char *group,
                                      const char *tag, neu_dvalue_t value,
                                      neu_tag_meta_t *metas, int n_meta);
