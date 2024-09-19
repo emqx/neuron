@@ -675,6 +675,8 @@ typedef struct neu_resp_tag_value {
     neu_dvalue_t value;
 } neu_resp_tag_value_t;
 
+typedef neu_resp_tag_value_t neu_tag_value_t;
+
 typedef struct neu_resp_tag_value_meta {
     char           tag[NEU_TAG_NAME_LEN];
     neu_dvalue_t   value;
@@ -799,6 +801,7 @@ typedef struct {
 typedef struct {
     char *driver;
     char *group;
+    void *trace_ctx;
 
     neu_reqresp_trans_data_ctx_t *ctx;
     UT_array *                    tags; // neu_resp_tag_value_meta_t

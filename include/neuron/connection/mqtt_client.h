@@ -134,6 +134,13 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                             char *topic, uint8_t *payload, uint32_t len,
                             void *data, neu_mqtt_client_publish_cb_t cb);
 
+int neu_mqtt_client_publish_with_trace(neu_mqtt_client_t *client,
+                                       neu_mqtt_qos_e qos, char *topic,
+                                       uint8_t *payload, uint32_t len,
+                                       void *                       data,
+                                       neu_mqtt_client_publish_cb_t cb,
+                                       const char *traceparent);
+
 /** Subscribe to `topic` with service quality `qos`.
  *
  * This function tries to send a `SUBSCRIBE` packet with the given `qos` and
