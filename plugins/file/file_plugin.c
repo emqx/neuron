@@ -190,18 +190,13 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
             }
         } else {
             char *buf = calloc(1, 1024);
-            int   ret = fread(buf, 1024, 1, fp);
+            int   ret = fread(buf, 1, 1024, fp);
             if (ret < 0) {
                 dvalue.type      = NEU_TYPE_ERROR;
                 dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
-            } else if (ret < NEU_VALUE_SIZE) {
-                dvalue.type = NEU_TYPE_STRING;
-                strcpy(dvalue.value.str, buf);
             } else {
-                dvalue.type             = NEU_TYPE_PTR;
-                dvalue.value.ptr.type   = NEU_TYPE_STRING;
-                dvalue.value.ptr.length = ret;
-                dvalue.value.ptr.ptr    = (uint8_t *) strdup(buf);
+                dvalue.type = NEU_TYPE_STRING;
+                strncpy(dvalue.value.str, buf, NEU_VALUE_SIZE - 1);
             }
 
             fclose(fp);
