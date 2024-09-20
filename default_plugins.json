@@ -5,7 +5,6 @@
 		"libplugin-azure-iot.so",
 		"libplugin-ekuiper.so",
 		"libplugin-modbus-tcp.so",
-		"libplugin-modbus-rtu.so",
-		"libplugin-file.so"
+		"libplugin-modbus-rtu.so"
 	]
 }
