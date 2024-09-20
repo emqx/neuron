@@ -1,9 +1,0 @@
-{
-	"tag_regex": [
-		{
-			"type": 13,
-			"regex": ""
-		}
-	],
-	"group_interval": 1000
-}
