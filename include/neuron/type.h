@@ -52,6 +52,7 @@ typedef enum {
     NEU_TYPE_PTR           = 19,
     NEU_TYPE_TIME          = 20,
     NEU_TYPE_DATA_AND_TIME = 21,
+    NEU_TYPE_CUSTOM        = 22,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -99,6 +100,8 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_TIME";
     case NEU_TYPE_DATA_AND_TIME:
         return "NEU_TYPE_DATA_AND_TIME";
+    case NEU_TYPE_CUSTOM:
+        return "NEU_TYPE_CUSTOM";
     }
 
     return "";
