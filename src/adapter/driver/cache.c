@@ -49,10 +49,16 @@ struct elem {
     UT_hash_handle hh;
 };
 
+typedef struct {
+    char           key[NEU_GROUP_NAME_LEN];
+    void *         trace_ctx;
+    UT_hash_handle hh;
+} group_trace_t;
+
 struct neu_driver_cache {
     pthread_mutex_t mtx;
-
-    struct elem *table;
+    group_trace_t * trace_table;
+    struct elem *   table;
 };
 
 // static void update_tag_error(neu_driver_cache_t *cache, const char *group,
@@ -130,6 +136,52 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     elem->value     = value;
 
     pthread_mutex_unlock(&cache->mtx);
+}
+
+void neu_driver_cache_update_trace(neu_driver_cache_t *cache, const char *group,
+                                   void *trace_ctx)
+{
+    group_trace_t *elem                    = NULL;
+    char           key[NEU_GROUP_NAME_LEN] = { 0 };
+
+    strcpy(key, group);
+
+    pthread_mutex_lock(&cache->mtx);
+    HASH_FIND(hh, cache->trace_table, &key, sizeof(key), elem);
+
+    if (elem == NULL) {
+        elem = calloc(1, sizeof(group_trace_t));
+
+        strcpy(elem->key, group);
+        elem->trace_ctx = trace_ctx;
+
+        HASH_ADD(hh, cache->trace_table, key, sizeof(key), elem);
+    }
+
+    elem->trace_ctx = trace_ctx;
+
+    pthread_mutex_unlock(&cache->mtx);
+}
+
+void *neu_driver_cache_get_trace(neu_driver_cache_t *cache, const char *group)
+{
+    group_trace_t *elem                    = NULL;
+    char           key[NEU_GROUP_NAME_LEN] = { 0 };
+
+    void *trace = NULL;
+
+    strcpy(key, group);
+
+    pthread_mutex_lock(&cache->mtx);
+    HASH_FIND(hh, cache->trace_table, &key, sizeof(key), elem);
+
+    if (elem != NULL) {
+        trace = elem->trace_ctx;
+    }
+
+    pthread_mutex_unlock(&cache->mtx);
+
+    return trace;
 }
 
 void neu_driver_cache_update_change(neu_driver_cache_t *cache,

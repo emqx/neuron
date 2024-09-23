@@ -19,6 +19,7 @@
 
 #include "connection/mqtt_client.h"
 #include "errcodes.h"
+#include "otel/otel_manager.h"
 #include "utils/asprintf.h"
 #include "version.h"
 #include "json/neu_json_mqtt.h"
@@ -26,6 +27,17 @@
 
 #include "mqtt_handle.h"
 #include "mqtt_plugin.h"
+
+static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
+{
+    int size = 0;
+    size     = sprintf(out, "00-");
+    for (size_t i = 0; i < 16; i++) {
+        size += sprintf(out + size, "%02x", trace_id[i]);
+    }
+
+    sprintf(out + size, "-%s-00", span_id);
+}
 
 static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
 {
@@ -364,6 +376,24 @@ int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
     return rv;
 }
 
+int publish_with_trace(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
+                       char *payload, size_t payload_len,
+                       const char *traceparent)
+{
+    int rv = neu_mqtt_client_publish_with_trace(
+        plugin->client, qos, topic, (uint8_t *) payload, (uint32_t) payload_len,
+        plugin, publish_cb, traceparent);
+    if (0 != rv) {
+        plog_error(plugin, "pub [%s, QoS%d] fail", topic, qos);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 1,
+                                 NULL);
+        free(payload);
+        rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
+    }
+
+    return rv;
+}
+
 void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       const uint8_t *payload, uint32_t len, void *data,
                       trace_w3c_t *trace_w3c)
@@ -566,35 +596,87 @@ int handle_trans_data(neu_plugin_t *            plugin,
 {
     int rv = 0;
 
-    if (NULL == plugin->client) {
-        return NEU_ERR_MQTT_IS_NULL;
+    neu_otel_trace_ctx trans_trace       = NULL;
+    neu_otel_scope_ctx trans_scope       = NULL;
+    uint8_t *          trace_id          = NULL;
+    char               trace_parent[128] = { 0 };
+    if (neu_otel_data_is_started() && trans_data->trace_ctx) {
+        trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
+        if (trans_trace) {
+            trans_scope = neu_otel_add_span(trans_trace);
+            neu_otel_scope_set_span_name(trans_scope, "mqtt publish");
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            neu_otel_scope_set_span_id(trans_scope, new_span_id);
+            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
+            if (p_sp_id) {
+                neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
+            }
+            neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+
+            trace_id = neu_otel_get_trace_id(trans_trace);
+
+            to_traceparent(trace_id, new_span_id, trace_parent);
+        }
     }
 
-    if (0 == plugin->config.cache &&
-        !neu_mqtt_client_is_connected(plugin->client)) {
-        // cache disable and we are disconnected
-        return NEU_ERR_MQTT_FAILURE;
-    }
+    do {
 
-    const route_entry_t *route = route_tbl_get(
-        &plugin->route_tbl, trans_data->driver, trans_data->group);
-    if (NULL == route) {
-        plog_error(plugin, "no route for driver:%s group:%s",
-                   trans_data->driver, trans_data->group);
-        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
-    }
+        if (NULL == plugin->client) {
+            rv = NEU_ERR_MQTT_IS_NULL;
+            break;
+        }
 
-    char *json_str =
-        generate_upload_json(plugin, trans_data, plugin->config.format);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate upload json fail");
-        return NEU_ERR_EINTERNAL;
-    }
+        if (0 == plugin->config.cache &&
+            !neu_mqtt_client_is_connected(plugin->client)) {
+            // cache disable and we are disconnected
+            rv = NEU_ERR_MQTT_FAILURE;
+            break;
+        }
 
-    char *         topic = route->topic;
-    neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+        const route_entry_t *route = route_tbl_get(
+            &plugin->route_tbl, trans_data->driver, trans_data->group);
+        if (NULL == route) {
+            plog_error(plugin, "no route for driver:%s group:%s",
+                       trans_data->driver, trans_data->group);
+            rv = NEU_ERR_GROUP_NOT_SUBSCRIBE;
+            break;
+        }
+
+        char *json_str =
+            generate_upload_json(plugin, trans_data, plugin->config.format);
+        if (NULL == json_str) {
+            plog_error(plugin, "generate upload json fail");
+            rv = NEU_ERR_EINTERNAL;
+            break;
+        }
+
+        char *         topic = route->topic;
+        neu_mqtt_qos_e qos   = plugin->config.qos;
+
+        if (plugin->config.version == NEU_MQTT_VERSION_V5 && trans_trace) {
+            neu_otel_scope_add_span_attr_string(trans_scope, "playload",
+                                                json_str);
+            rv = publish_with_trace(plugin, qos, topic, json_str,
+                                    strlen(json_str), trace_parent);
+        } else {
+            if (trans_trace) {
+                neu_otel_scope_add_span_attr_string(trans_scope, "playload",
+                                                    json_str);
+            }
+            rv = publish(plugin, qos, topic, json_str, strlen(json_str));
+        }
+
+        json_str = NULL;
+    } while (0);
+
+    if (trans_trace) {
+        neu_otel_scope_add_span_attr_int(trans_scope, "error", rv);
+        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+        neu_otel_trace_set_final(trans_trace);
+    }
 
     return rv;
 }
