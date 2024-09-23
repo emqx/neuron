@@ -100,6 +100,16 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
         }
         free(elem);
     }
+
+    group_trace_t *elem1 = NULL;
+    group_trace_t *tmp1  = NULL;
+
+    HASH_ITER(hh, cache->trace_table, elem1, tmp1)
+    {
+        HASH_DEL(cache->trace_table, elem1);
+        free(elem1);
+    }
+
     pthread_mutex_unlock(&cache->mtx);
 
     pthread_mutex_destroy(&cache->mtx);
