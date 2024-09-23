@@ -207,8 +207,6 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     adapter->cb_funs.response(adapter, req, &nerror);
 
-    nlog_notice("write tag response end <%p>", req->ctx);
-
     if (neu_otel_control_is_started() && trace) {
         neu_otel_scope_add_span_attr_int(scope, "error", error);
         neu_otel_scope_set_span_end_time(scope, neu_time_ms());
