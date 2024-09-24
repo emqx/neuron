@@ -30,6 +30,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
+#include <jansson.h>
+
 typedef enum {
     NEU_TYPE_INT8          = 1,
     NEU_TYPE_UINT8         = 2,
@@ -52,6 +54,7 @@ typedef enum {
     NEU_TYPE_PTR           = 19,
     NEU_TYPE_TIME          = 20,
     NEU_TYPE_DATA_AND_TIME = 21,
+    NEU_TYPE_CUSTOM        = 22,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -99,6 +102,8 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_TIME";
     case NEU_TYPE_DATA_AND_TIME:
         return "NEU_TYPE_DATA_AND_TIME";
+    case NEU_TYPE_CUSTOM:
+        return "NEU_TYPE_CUSTOM";
     }
 
     return "";
@@ -132,6 +137,7 @@ typedef union {
     char              str[NEU_VALUE_SIZE];
     neu_value_bytes_t bytes;
     neu_value_ptr_t   ptr;
+    json_t *          json;
 } neu_value_u;
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)
@@ -200,6 +206,12 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
         snprintf(str, sizeof(str), "type: %s, value: %c%c%c",
                  neu_type_string(type), value.str[0], value.str[1],
                  value.str[2]);
+        break;
+    }
+    case NEU_TYPE_CUSTOM: {
+        char *result = json_dumps(value.json, JSON_REAL_PRECISION(16));
+        snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
+                 result);
         break;
     }
     default:

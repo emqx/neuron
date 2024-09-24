@@ -1987,6 +1987,8 @@ static int report_callback(void *usr_data)
             {
                 if (tag_value->value.type == NEU_TYPE_PTR) {
                     free(tag_value->value.value.ptr.ptr);
+                } else if (tag_value->value.type == NEU_TYPE_CUSTOM) {
+                    json_decref(tag_value->value.value.json);
                 }
             }
             utarray_free(data->tags);
@@ -2299,6 +2301,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout && timeout > 0) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else if (value.value.type == NEU_TYPE_CUSTOM) {
+                json_decref(value.value.value.json);
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
