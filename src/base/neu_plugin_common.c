@@ -55,12 +55,11 @@ int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data)
     neu_otel_scope_ctx scope = NULL;
 
     if (head.otel_trace_type == NEU_OTEL_TRACE_TYPE_REST_COMM) {
-        nng_aio *     aio         = (nng_aio *) head.ctx;
-        nng_http_req *nng_req     = nng_aio_get_input(aio, 0);
-        const char *  http_method = nng_http_req_get_method(nng_req);
-
         if (neu_otel_control_is_started()) {
-            const char *trace_parent =
+            nng_aio *     aio         = (nng_aio *) head.ctx;
+            nng_http_req *nng_req     = nng_aio_get_input(aio, 0);
+            const char *  http_method = nng_http_req_get_method(nng_req);
+            const char *  trace_parent =
                 nng_http_req_get_header(nng_req, "traceparent");
             const char *trace_state =
                 nng_http_req_get_header(nng_req, "tracestate");
