@@ -851,6 +851,8 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
         {
             if (tag_value->value.type == NEU_TYPE_PTR) {
                 free(tag_value->value.value.ptr.ptr);
+            } else if (tag_value->value.type == NEU_TYPE_CUSTOM) {
+                json_decref(tag_value->value.value.json);
             }
         }
         utarray_free(data->tags);
@@ -970,6 +972,10 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         tag_json->t                      = NEU_JSON_BYTES;
         tag_json->value.val_bytes.length = tag_value->value.value.bytes.length;
         tag_json->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        break;
+    case NEU_TYPE_CUSTOM:
+        tag_json->t                = NEU_JSON_OBJECT;
+        tag_json->value.val_object = tag_value->value.value.json;
         break;
     default:
         break;

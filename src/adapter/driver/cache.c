@@ -22,6 +22,8 @@
 #include <pthread.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "utils/uthash.h"
 
 #include "define.h"
@@ -91,7 +93,13 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
                 free(elem->value.value.ptr.ptr);
                 elem->value.value.ptr.ptr = NULL;
             }
+        } else if (elem->value.type == NEU_TYPE_CUSTOM) {
+            if (elem->value.value.json != NULL) {
+                json_decref(elem->value.value.json);
+                elem->value.value.json = NULL;
+            }
         }
+
         free(elem);
     }
     pthread_mutex_unlock(&cache->mtx);
@@ -190,6 +198,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     }
                 }
                 break;
+            case NEU_TYPE_CUSTOM: {
+                if (json_equal(elem->value_old.value.json, value.value.json) !=
+                    0) {
+                    elem->changed = true;
+                }
+                break;
+            }
             case NEU_TYPE_PTR: {
                 if (elem->value_old.value.ptr.length !=
                     value.value.ptr.length) {
@@ -277,6 +292,12 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
 
                 break;
             }
+            case NEU_TYPE_CUSTOM: {
+                if (json_equal(elem->value.value.json, value.value.json) != 0) {
+                    elem->changed = true;
+                }
+                break;
+            }
             case NEU_TYPE_FLOAT:
                 if (elem->value.precision == 0) {
                     elem->changed = elem->value.value.f32 != value.value.f32;
@@ -316,8 +337,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->changed = true;
         }
 
-        elem->value.type = value.type;
-        if (elem->value.type == NEU_TYPE_PTR) {
+        if (value.type == NEU_TYPE_PTR) {
             elem->value.value.ptr.length = value.value.ptr.length;
             elem->value.value.ptr.type   = value.value.ptr.type;
             if (elem->value.value.ptr.ptr != NULL) {
@@ -326,9 +346,17 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
             memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
                    value.value.ptr.length);
+        } else if (value.type == NEU_TYPE_CUSTOM) {
+            if (elem->value.type == NEU_TYPE_CUSTOM &&
+                elem->value.value.json != NULL) {
+                json_decref(elem->value.value.json);
+                elem->value.value.json = NULL;
+            }
+            elem->value.value.json = value.value.json;
         } else {
             elem->value.value = value.value;
         }
+        elem->value.type = value.type;
 
         memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
         for (int i = 0; i < n_meta; i++) {
@@ -414,6 +442,9 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
                    elem->value.value.ptr.length);
             break;
+        case NEU_TYPE_CUSTOM:
+            value->value.value.json = json_deep_copy(elem->value.value.json);
+            break;
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
@@ -498,6 +529,9 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
                    elem->value.value.ptr.length);
             break;
+        case NEU_TYPE_CUSTOM:
+            value->value.value.json = json_deep_copy(elem->value.value.json);
+            break;
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
@@ -533,6 +567,11 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
             if (elem->value.value.ptr.ptr != NULL) {
                 free(elem->value.value.ptr.ptr);
                 elem->value.value.ptr.ptr = NULL;
+            }
+        } else if (elem->value.type == NEU_TYPE_CUSTOM) {
+            if (elem->value.value.json != NULL) {
+                json_decref(elem->value.value.json);
+                elem->value.value.json = NULL;
             }
         }
         free(elem);
