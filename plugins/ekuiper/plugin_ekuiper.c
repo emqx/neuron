@@ -314,8 +314,8 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         NEU_NODE_LINK_STATE_DISCONNECTED == plugin->common.link_state;
     nng_mtx_unlock(plugin->mtx);
 
-    neu_otel_trace_ctx *trace = NULL;
-    neu_otel_scope_ctx  scope = NULL;
+    neu_otel_trace_ctx trace = NULL;
+    neu_otel_scope_ctx scope = NULL;
     if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(header->ctx);
         if (trace) {
@@ -361,6 +361,35 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 
         if (disconnected) {
             plog_debug(plugin, "not connected");
+
+            neu_otel_trace_ctx trans_trace = NULL;
+            neu_otel_scope_ctx trans_scope = NULL;
+            if (neu_otel_data_is_started() && trans_data->trace_ctx) {
+                trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
+                if (trans_trace) {
+                    trans_scope = neu_otel_add_span(trans_trace);
+                    neu_otel_scope_set_span_name(trans_scope, "ekuiper send");
+                    char new_span_id[36] = { 0 };
+                    neu_otel_new_span_id(new_span_id);
+                    neu_otel_scope_set_span_id(trans_scope, new_span_id);
+                    uint8_t *p_sp_id =
+                        neu_otel_scope_get_pre_span_id(trans_scope);
+                    if (p_sp_id) {
+                        neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id,
+                                                           8);
+                    }
+                    neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
+                                                     (int64_t)(pthread_self()));
+                    neu_otel_scope_add_span_attr_int(
+                        trans_scope, "error", NEU_ERR_PLUGIN_DISCONNECTED);
+                    neu_otel_scope_set_span_start_time(trans_scope,
+                                                       neu_time_ms());
+                    neu_otel_scope_set_span_end_time(trans_scope,
+                                                     neu_time_ms());
+                    neu_otel_trace_set_final(trans_trace);
+                }
+            }
+
         } else {
             send_data(plugin, trans_data);
         }

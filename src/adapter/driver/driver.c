@@ -104,6 +104,10 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values);
+static void update_with_trace(neu_adapter_t *adapter, const char *group,
+                              const char *tag, neu_dvalue_t value,
+                              neu_tag_meta_t *metas, int n_meta,
+                              void *trace_ctx);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void update_im(neu_adapter_t *adapter, const char *group,
@@ -161,8 +165,8 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
     neu_resp_error_t    nerror = { .error = error };
 
-    neu_otel_trace_ctx *trace = NULL;
-    neu_otel_scope_ctx  scope = NULL;
+    neu_otel_trace_ctx trace = NULL;
+    neu_otel_scope_ctx scope = NULL;
     if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(req->ctx);
         if (trace) {
@@ -199,7 +203,7 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     req->type = NEU_RESP_ERROR;
 
-    nlog_notice("write tag response <%p>", req->ctx);
+    nlog_notice("write tag response start <%p>", req->ctx);
 
     adapter->cb_funs.response(adapter, req, &nerror);
 
@@ -257,6 +261,18 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
         " n_meta: %d",
         driver->adapter.name, group, tag, neu_type_string(value.type),
         global_timestamp, n_meta);
+}
+
+static void update_with_trace(neu_adapter_t *adapter, const char *group,
+                              const char *tag, neu_dvalue_t value,
+                              neu_tag_meta_t *metas, int n_meta,
+                              void *trace_ctx)
+{
+    update_with_meta(adapter, group, tag, value, metas, n_meta);
+    if (trace_ctx) {
+        neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
+        neu_driver_cache_update_trace(driver->cache, group, trace_ctx);
+    }
 }
 
 static void update_im(neu_adapter_t *adapter, const char *group,
@@ -409,6 +425,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->adapter.cb_funs.driver.update             = update;
     driver->adapter.cb_funs.driver.write_response     = write_response;
     driver->adapter.cb_funs.driver.update_im          = update_im;
+    driver->adapter.cb_funs.driver.update_with_trace  = update_with_trace;
     driver->adapter.cb_funs.driver.update_with_meta   = update_with_meta;
     driver->adapter.cb_funs.driver.scan_tags_response = scan_tags_response;
     driver->adapter.cb_funs.driver.test_read_tag_response =
@@ -1960,6 +1977,32 @@ static int report_callback(void *usr_data)
     data->group  = strdup(group->name);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
+    void *trace_ctx =
+        neu_driver_cache_get_trace(group->driver->cache, group->name);
+
+    neu_otel_trace_ctx trans_trace = NULL;
+    neu_otel_scope_ctx trans_scope = NULL;
+    if (trace_ctx) {
+        data->trace_ctx = trace_ctx;
+        if (neu_otel_data_is_started() && data->trace_ctx) {
+            trans_trace = neu_otel_find_trace(data->trace_ctx);
+            if (trans_trace) {
+                trans_scope = neu_otel_add_span(trans_trace);
+                neu_otel_scope_set_span_name(trans_scope, "report cb");
+                char new_span_id[36] = { 0 };
+                neu_otel_new_span_id(new_span_id);
+                neu_otel_scope_set_span_id(trans_scope, new_span_id);
+                uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
+                if (p_sp_id) {
+                    neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
+                }
+                neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
+                                                 (int64_t)(pthread_self()));
+                neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+            }
+        }
+    }
+
     read_report_group(global_timestamp,
                       neu_group_get_interval(group->group) *
                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
@@ -1970,6 +2013,7 @@ static int report_callback(void *usr_data)
         pthread_mutex_lock(&group->apps_mtx);
 
         if (utarray_len(group->apps) > 0) {
+            int app_num      = 0;
             data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
             data->ctx->index = utarray_len(group->apps);
             pthread_mutex_init(&data->ctx->mtx, NULL);
@@ -1980,8 +2024,27 @@ static int report_callback(void *usr_data)
                         &group->driver->adapter, &header, data, app->addr) !=
                     0) {
                     neu_trans_data_free(data);
+                    if (trans_trace) {
+                        neu_otel_scope_add_span_attr_int(trans_scope, app->app,
+                                                         0);
+                    }
+                } else {
+                    app_num += 1;
+                    if (trans_trace) {
+                        neu_otel_scope_add_span_attr_int(trans_scope, app->app,
+                                                         1);
+                    }
                 }
             }
+
+            if (trans_trace) {
+                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+                neu_otel_trace_set_expected_span_num(trans_trace, app_num);
+                if (app_num == 0) {
+                    neu_otel_trace_set_final(trans_trace);
+                }
+            }
+
         } else {
             utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
             {
@@ -1994,6 +2057,12 @@ static int report_callback(void *usr_data)
             utarray_free(data->tags);
             free(data->group);
             free(data->driver);
+
+            if (trans_trace) {
+                neu_otel_scope_add_span_attr_int(trans_scope, "no sub app", 1);
+                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+                neu_otel_trace_set_final(trans_trace);
+            }
         }
 
         pthread_mutex_unlock(&group->apps_mtx);
@@ -2001,6 +2070,11 @@ static int report_callback(void *usr_data)
         utarray_free(data->tags);
         free(data->group);
         free(data->driver);
+        if (trans_trace) {
+            neu_otel_scope_add_span_attr_int(trans_scope, "no tags", 1);
+            neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+            neu_otel_trace_set_final(trans_trace);
+        }
     }
     utarray_free(tags);
     free(data);
@@ -2092,8 +2166,8 @@ static int write_callback(void *usr_data)
         int64_t s_time = 0;
         int64_t e_time = 0;
 
-        neu_otel_trace_ctx *trace = NULL;
-        neu_otel_scope_ctx  scope = NULL;
+        neu_otel_trace_ctx trace = NULL;
+        neu_otel_scope_ctx scope = NULL;
         if (neu_otel_control_is_started()) {
             trace =
                 neu_otel_find_trace(((neu_reqresp_head_t *) wtag->req)->ctx);

@@ -34,6 +34,9 @@ neu_otel_trace_ctx neu_otel_find_trace(void *req_ctx);
 
 void neu_otel_trace_set_final(neu_otel_trace_ctx ctx);
 
+void neu_otel_trace_set_expected_span_num(neu_otel_trace_ctx ctx, uint32_t num);
+uint8_t *neu_otel_get_trace_id(neu_otel_trace_ctx ctx);
+
 neu_otel_trace_ctx neu_otel_find_trace_by_id(const char *trace_id);
 
 void neu_otel_free_trace(neu_otel_trace_ctx ctx);
@@ -73,6 +76,7 @@ int neu_otel_trace_pack_size(neu_otel_trace_ctx ctx);
 int neu_otel_trace_pack(neu_otel_trace_ctx ctx, uint8_t *out);
 
 void neu_otel_new_span_id(char *id);
+void neu_otel_new_trace_id(char *id);
 
 void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
                                 uint32_t *flags);

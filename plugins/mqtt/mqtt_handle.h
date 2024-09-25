@@ -31,6 +31,10 @@ extern "C" {
 int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
             char *payload, size_t payload_len);
 
+int publish_with_trace(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
+                       char *payload, size_t payload_len,
+                       const char *traceparent);
+
 void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       const uint8_t *payload, uint32_t len, void *data,
                       trace_w3c_t *trace_w3c);

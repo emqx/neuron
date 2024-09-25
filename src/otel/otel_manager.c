@@ -28,6 +28,7 @@
 #include "plugin.h"
 #include "utils/http.h"
 #include "utils/log.h"
+#include "utils/time.h"
 #include "utils/utarray.h"
 #include "utils/uthash.h"
 
@@ -35,7 +36,8 @@
 #include "trace.pb-c.h"
 
 #define SPAN_ID_LENGTH 16
-#define SPAN_ID_CHARSET "0123456789abcdef"
+#define ID_CHARSET "0123456789abcdef"
+#define TRACE_TIME_OUT (3 * 60 * 1000)
 
 bool   otel_flag               = false;
 char   otel_collector_url[128] = { 0 };
@@ -50,6 +52,8 @@ typedef struct {
     uint32_t                                    flags;
     bool                                        final;
     size_t                                      span_num;
+    int32_t                                     expected_span_num;
+    int64_t                                     ts;
     UT_array *                                  scopes;
     pthread_mutex_t                             mutex;
 } trace_ctx_t;
@@ -177,6 +181,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
     trace_ctx_t *ctx = calloc(1, sizeof(trace_ctx_t));
     opentelemetry__proto__trace__v1__traces_data__init(&ctx->trace_data);
     strncpy((char *) ctx->trace_id, trace_id, 64);
+    ctx->expected_span_num = 0;
 
     ctx->trace_data.n_resource_spans = 1;
     ctx->trace_data.resource_spans =
@@ -417,6 +422,8 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
 
     ctx->flags = flags;
 
+    ctx->ts = neu_time_ms();
+
     trace_ctx_table_ele_t *ele = calloc(1, sizeof(trace_ctx_table_ele_t));
     ele->key                   = req_ctx;
     ele->ctx                   = ctx;
@@ -453,6 +460,24 @@ void neu_otel_trace_set_final(neu_otel_trace_ctx ctx)
 {
     trace_ctx_t *trace_ctx = (trace_ctx_t *) ctx;
     trace_ctx->final       = true;
+}
+
+void neu_otel_trace_set_expected_span_num(neu_otel_trace_ctx ctx, uint32_t num)
+{
+    trace_ctx_t *trace_ctx       = (trace_ctx_t *) ctx;
+    trace_ctx->expected_span_num = num;
+}
+
+uint8_t *neu_otel_get_trace_id(neu_otel_trace_ctx ctx)
+{
+    trace_ctx_t *trace_ctx = (trace_ctx_t *) ctx;
+    pthread_mutex_lock(&trace_ctx->mutex);
+    uint8_t *id = trace_ctx->trace_data.resource_spans[0]
+                      ->scope_spans[0]
+                      ->spans[0]
+                      ->trace_id.data;
+    pthread_mutex_unlock(&trace_ctx->mutex);
+    return id;
 }
 
 neu_otel_trace_ctx neu_otel_find_trace_by_id(const char *trace_id)
@@ -758,19 +783,24 @@ void neu_otel_scope_set_span_end_time(neu_otel_scope_ctx ctx, int64_t ms)
     scope->span->end_time_unix_nano = ((uint64_t) ms) * 1000000;
     trace_ctx_t *trace_ctx          = (trace_ctx_t *) scope->trace_ctx;
     trace_ctx->span_num += 1;
+    trace_ctx->expected_span_num -= 1;
 }
 
 uint8_t *neu_otel_scope_get_pre_span_id(neu_otel_scope_ctx ctx)
 {
     trace_scope_t *scope     = (trace_scope_t *) ctx;
     trace_ctx_t *  trace_ctx = (trace_ctx_t *) scope->trace_ctx;
+    pthread_mutex_lock(&trace_ctx->mutex);
     if (scope->span_index <= 0) {
+        pthread_mutex_unlock(&trace_ctx->mutex);
         return NULL;
     }
-    return trace_ctx->trace_data.resource_spans[0]
-        ->scope_spans[0]
-        ->spans[scope->span_index - 1]
-        ->span_id.data;
+    uint8_t *id = trace_ctx->trace_data.resource_spans[0]
+                      ->scope_spans[0]
+                      ->spans[scope->span_index - 1]
+                      ->span_id.data;
+    pthread_mutex_unlock(&trace_ctx->mutex);
+    return id;
 }
 
 int neu_otel_trace_pack_size(neu_otel_trace_ctx ctx)
@@ -789,18 +819,16 @@ int neu_otel_trace_pack(neu_otel_trace_ctx ctx, uint8_t *out)
 
 void neu_otel_new_span_id(char *id)
 {
-    static uint64_t counter   = 0;
-    uint64_t        timestamp = time(NULL);
-    uint64_t        random    = rand();
-
-    uint64_t combined = (timestamp << 24) | (counter << 12) | random;
-    counter++;
-
     for (int i = SPAN_ID_LENGTH - 1; i >= 0; i--) {
-        id[i] = SPAN_ID_CHARSET[combined % 16];
-        combined /= 16;
+        id[i] = ID_CHARSET[rand() % 16];
     }
     id[SPAN_ID_LENGTH] = '\0';
+}
+
+void neu_otel_new_trace_id(char *id)
+{
+    neu_otel_new_span_id(id);
+    neu_otel_new_span_id(id + SPAN_ID_LENGTH);
 }
 
 void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
@@ -854,7 +882,8 @@ static int otel_timer_cb(void *data)
             el->ctx->span_num ==
                 el->ctx->trace_data.resource_spans[0]
                     ->scope_spans[0]
-                    ->n_spans) {
+                    ->n_spans &&
+            el->ctx->expected_span_num <= 0) {
             int data_size = neu_otel_trace_pack_size(el->ctx);
 
             uint8_t *data_buf = calloc(1, data_size);
@@ -868,6 +897,11 @@ static int otel_timer_cb(void *data)
                 neu_otel_free_trace(el->ctx);
                 free(el);
             }
+        } else if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
+            nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
+            HASH_DEL(traces_table, el);
+            neu_otel_free_trace(el->ctx);
+            free(el);
         }
     }
 
