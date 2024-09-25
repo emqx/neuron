@@ -36,7 +36,7 @@ static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
         size += sprintf(out + size, "%02x", trace_id[i]);
     }
 
-    sprintf(out + size, "-%s-00", span_id);
+    sprintf(out + size, "-%s-01", span_id);
 }
 
 static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
