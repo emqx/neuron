@@ -819,16 +819,8 @@ int neu_otel_trace_pack(neu_otel_trace_ctx ctx, uint8_t *out)
 
 void neu_otel_new_span_id(char *id)
 {
-    static uint64_t counter   = 0;
-    uint64_t        timestamp = time(NULL);
-    uint64_t        random    = rand();
-
-    uint64_t combined = (timestamp << 24) | (counter << 12) | random;
-    counter++;
-
     for (int i = SPAN_ID_LENGTH - 1; i >= 0; i--) {
-        id[i] = ID_CHARSET[combined % 16];
-        combined /= 16;
+        id[i] = ID_CHARSET[rand() % 16];
     }
     id[SPAN_ID_LENGTH] = '\0';
 }
