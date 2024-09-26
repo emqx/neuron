@@ -99,15 +99,17 @@
     }
   },
   "upload_drv_state": {
-    "name": "Upload Driver State",
+    "name": "Driver Status Report",
     "name_zh": "驱动状态上报",
+    "description": "Reports status of all the southbound nodes to the specified topic.",
+    "description_zh": "上报所有南向驱动状态到指定的 MQTT 主题。",
     "attribute": "optional",
     "type": "bool",
     "default": false,
     "valid": {}
   },
   "upload_drv_state_topic": {
-    "name": "Status Reporting Topic",
+    "name": "Status Report Topic",
     "name_zh": "状态上报主题",
     "attribute": "required",
     "type": "string",
@@ -121,8 +123,8 @@
     }
   },
   "upload_drv_state_interval": {
-    "name": "Status Reporting Interval(S)",
-    "name_zh": "状态上报间隔(S)",
+    "name": "Status Report Interval (Second)",
+    "name_zh": "状态上报间隔（秒）",
     "attribute": "required",
     "type": "int",
     "condition": {
