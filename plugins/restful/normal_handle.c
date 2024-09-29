@@ -316,7 +316,32 @@ void handle_get_plugin_schema(nng_aio *aio)
     }
 
     char *buf = NULL;
-    buf       = file_string_read(&len, schema_path);
+
+    buf = file_string_read(&len, schema_path);
+    if (NULL == buf) {
+        free(schema_path);
+        if (0 > neu_asprintf(&schema_path, "%s/custom/schema/%s.json",
+                             g_plugin_dir, schema_name)) {
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
+            return;
+        }
+        buf = file_string_read(&len, schema_path);
+    }
+
+    if (NULL == buf) {
+        free(schema_path);
+        if (0 > neu_asprintf(&schema_path, "%s/system/schema/%s.json",
+                             g_plugin_dir, schema_name)) {
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
+            return;
+        }
+        buf = file_string_read(&len, schema_path);
+    }
+
     if (NULL == buf) {
         nlog_info("open %s error: %d", schema_path, errno);
         neu_http_not_found(aio, "{\"status\": \"error\"}");
