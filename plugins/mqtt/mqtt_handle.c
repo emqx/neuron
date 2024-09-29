@@ -460,7 +460,7 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 }
 
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
-                          neu_resp_error_t *data)
+                          neu_resp_error_t *data, void *trace_scope)
 {
     int   rv       = 0;
     char *json_str = NULL;
@@ -483,6 +483,10 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                    mqtt_json->uuid);
         rv = NEU_ERR_EINTERNAL;
         goto end;
+    }
+
+    if (trace_scope) {
+        neu_otel_scope_add_span_attr_string(trace_scope, "playload", json_str);
     }
 
     char *         topic = plugin->config.write_resp_topic;
