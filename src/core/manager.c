@@ -71,7 +71,8 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
 static char *file_save_tmp(const char *data, const char *suffix);
 static bool  mv_tmp_library_file(neu_plugin_kind_e kind, const char *tmp_path,
                                  const char *library);
-static bool  mv_tmp_schema_file(const char *tmp_path, const char *schema);
+static bool  mv_tmp_schema_file(neu_plugin_kind_e kind, const char *tmp_path,
+                                const char *schema);
 
 uint16_t neu_manager_get_port()
 {
@@ -400,7 +401,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        if (!mv_tmp_schema_file(schema_tmp_path, schema)) {
+        if (!mv_tmp_schema_file(kind, schema_tmp_path, schema)) {
             nlog_warn("library %s schema file save schema fail", cmd->library);
             free(cmd->so_file);
             free(cmd->schema_file);
@@ -661,7 +662,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        if (!mv_tmp_schema_file(schema_tmp_path, schema)) {
+        if (!mv_tmp_schema_file(kind, schema_tmp_path, schema)) {
             nlog_warn("library %s schema file save schema fail", cmd->library);
             free(cmd->so_file);
             free(cmd->schema_file);
@@ -1574,12 +1575,34 @@ static bool mv_tmp_library_file(neu_plugin_kind_e kind, const char *tmp_path,
     return false;
 }
 
-static bool mv_tmp_schema_file(const char *tmp_path, const char *schema)
+static bool mv_tmp_schema_file(neu_plugin_kind_e kind, const char *tmp_path,
+                               const char *schema)
 {
 
     char file_name[128] = { 0 };
-    snprintf(file_name, sizeof(file_name), "%s/schema/%s.json", g_plugin_dir,
-             schema);
+    char path_name[128] = { 0 };
+    if (kind == NEU_PLUGIN_KIND_CUSTOM) {
+        snprintf(file_name, sizeof(file_name), "%s/custom/schema/%s.json",
+                 g_plugin_dir, schema);
+        snprintf(path_name, sizeof(path_name), "%s/custom/schema",
+                 g_plugin_dir);
+    } else if (kind == NEU_PLUGIN_KIND_SYSTEM) {
+        snprintf(file_name, sizeof(file_name), "%s/system/schema/%s.json",
+                 g_plugin_dir, schema);
+        snprintf(path_name, sizeof(path_name), "%s/system/schema",
+                 g_plugin_dir);
+    } else {
+        return false;
+    }
+
+    struct stat st;
+
+    if (stat(path_name, &st) == -1) {
+        if (mkdir(path_name, 0700) == -1) {
+            nlog_error("%s mkdir fail", path_name);
+            return false;
+        }
+    }
 
     if (rename(tmp_path, file_name) != 0) {
         nlog_error("%s rename %s fail, err:%s", tmp_path, file_name,
