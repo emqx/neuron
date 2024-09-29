@@ -252,6 +252,20 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         if (plugin->kind != NEU_PLUGIN_KIND_SYSTEM) {
+
+            char so_file_path[128]     = { 0 };
+            char schema_file_path[128] = { 0 };
+            snprintf(so_file_path, sizeof(so_file_path), "%s/custom/%s",
+                     g_plugin_dir, plugin->lib_name);
+            snprintf(schema_file_path, sizeof(schema_file_path),
+                     "%s/custom/schema/%s.json", g_plugin_dir, plugin->schema);
+            if (remove(so_file_path) != 0) {
+                nlog_error("rm %s file fail!", so_file_path);
+            }
+            if (remove(schema_file_path) != 0) {
+                nlog_error("rm %s file fail!", schema_file_path);
+            }
+
             HASH_DEL(mgr->plugins, plugin);
             entity_free(plugin);
             ret = NEU_ERR_SUCCESS;
