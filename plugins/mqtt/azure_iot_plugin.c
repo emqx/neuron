@@ -330,7 +330,7 @@ static int azure_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        error = handle_write_response(plugin, head->ctx, data);
+        error = handle_write_response(plugin, head->ctx, data, NULL);
         break;
     case NEU_RESP_READ_GROUP:
         // error = handle_read_response(plugin, head->ctx, data);

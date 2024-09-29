@@ -482,7 +482,7 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        error = handle_write_response(plugin, head->ctx, data);
+        error = handle_write_response(plugin, head->ctx, data, scope);
         break;
     case NEU_RESP_GET_NODES_STATE: {
         handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);
@@ -537,7 +537,7 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     }
 
     if (trace) {
-        neu_otel_scope_add_span_attr_int(scope, "error", error);
+        neu_otel_scope_add_span_attr_int(scope, "handle error", error);
         neu_otel_scope_set_span_end_time(scope, neu_time_ms());
         neu_otel_trace_set_final(trace);
     }
