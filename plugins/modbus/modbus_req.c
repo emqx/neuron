@@ -23,6 +23,11 @@
 
 #include "modbus_req.h"
 
+#define MAX_SLAVES 256
+
+uint8_t failed_cycles[MAX_SLAVES];
+bool    skip[MAX_SLAVES];
+
 struct modbus_group_data {
     UT_array *              tags;
     char *                  group;
@@ -152,7 +157,8 @@ void handle_modbus_error(neu_plugin_t *plugin, struct modbus_group_data *gd,
 void finalize_modbus_read_result(neu_plugin_t *            plugin,
                                  struct modbus_group_data *gd,
                                  uint16_t cmd_index, int ret_r, int ret_buf,
-                                 uint64_t read_tms, int64_t *rtt)
+                                 uint64_t read_tms, int64_t *rtt,
+                                 bool *slave_err)
 {
     if (ret_r <= 0) {
         handle_modbus_error(plugin, gd, cmd_index, NEU_ERR_PLUGIN_DISCONNECTED,
@@ -166,6 +172,7 @@ void finalize_modbus_read_result(neu_plugin_t *            plugin,
                                 NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE,
                                 "no modbus response received");
             *rtt = neu_time_ms() - read_tms;
+            slave_err[gd->cmd_sort->cmd[cmd_index].slave_id] = true;
             break;
         case -1:
             handle_modbus_error(plugin, gd, cmd_index,
@@ -185,12 +192,13 @@ void finalize_modbus_read_result(neu_plugin_t *            plugin,
         }
     } else {
         *rtt = neu_time_ms() - read_tms;
+        failed_cycles[gd->cmd_sort->cmd[cmd_index].slave_id] = 0;
     }
 }
 
 void check_modbus_read_result(neu_plugin_t *            plugin,
                               struct modbus_group_data *gd, uint16_t cmd_index,
-                              int64_t *rtt)
+                              int64_t *rtt, bool *slave_err)
 {
     uint16_t response_size = 0;
     uint64_t read_tms      = neu_time_ms();
@@ -224,7 +232,7 @@ void check_modbus_read_result(neu_plugin_t *            plugin,
     }
 
     finalize_modbus_read_result(plugin, gd, cmd_index, ret_r, ret_buf, read_tms,
-                                rtt);
+                                rtt, slave_err);
 }
 
 void update_metrics_after_read(neu_plugin_t *plugin, int64_t rtt,
@@ -244,6 +252,40 @@ void update_metrics_after_read(neu_plugin_t *plugin, int64_t rtt,
     update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS, rtt, NULL);
     update_metric(plugin->common.adapter, NEU_METRIC_GROUP_LAST_SEND_MSGS,
                   gd->cmd_sort->n_cmd, group->group_name);
+}
+
+typedef struct {
+    uint8_t  slave_id;
+    uint16_t degrade_time;
+} degrade_timer_data_t;
+
+void *degrade_timer(void *arg)
+{
+    degrade_timer_data_t *data = (degrade_timer_data_t *) arg;
+
+    struct timespec t1 = { .tv_sec = data->degrade_time, .tv_nsec = 0 };
+    struct timespec t2 = { 0 };
+    nanosleep(&t1, &t2);
+
+    skip[data->slave_id] = false;
+
+    free(data);
+    return NULL;
+}
+
+void set_skip_timer(uint8_t slave_id, uint32_t degrade_time)
+{
+    degrade_timer_data_t *data =
+        (degrade_timer_data_t *) malloc(sizeof(degrade_timer_data_t));
+    data->slave_id     = slave_id;
+    data->degrade_time = degrade_time;
+
+    failed_cycles[slave_id] = 0;
+
+    pthread_t timer_thread;
+    pthread_create(&timer_thread, NULL, degrade_timer, data);
+
+    pthread_detach(timer_thread);
 }
 
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
@@ -279,9 +321,35 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
     gd                        = (struct modbus_group_data *) group->user_data;
     plugin->plugin_group_data = gd;
 
+    bool slave_err_record[MAX_SLAVES] = { false };
+
     for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
-        plugin->cmd_idx = i;
-        check_modbus_read_result(plugin, gd, i, &rtt);
+        bool    slave_err[MAX_SLAVES] = { false };
+        uint8_t slave_id              = gd->cmd_sort->cmd[i].slave_id;
+        plugin->cmd_idx               = i;
+
+        if (slave_err_record[slave_id] == true) {
+            continue;
+        }
+
+        if (plugin->degradation == false || skip[slave_id] == false) {
+            check_modbus_read_result(plugin, gd, i, &rtt, slave_err);
+        } else {
+            continue;
+        }
+
+        if (plugin->degradation) {
+            if (slave_err[slave_id]) {
+                failed_cycles[slave_id]++;
+                slave_err_record[slave_id] = true;
+            }
+
+            if (failed_cycles[slave_id] >= plugin->degrade_cycle) {
+                skip[slave_id] = true;
+                plog_warn(plugin, "Skip slave %hhu", slave_id);
+                set_skip_timer(slave_id, plugin->degrade_time);
+            }
+        }
 
         if (plugin->interval > 0) {
             struct timespec t1 = { .tv_sec  = plugin->interval / 1000,
