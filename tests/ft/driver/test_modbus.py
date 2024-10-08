@@ -387,6 +387,14 @@ test_input_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "addre
 test_input_register_bit = {"driver": "modbus-tcp", "group": "group", "tag": "tag", "address": "1!30010.0",
                            "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "precision": 0, "decimal": 0, "bias": 0.0}
 
+hold_int16_slave255_1 = [{"name": "hold_int16_255_1", "address": "255!400001",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT16}]
+hold_int16_slave255_2 = [{"name": "hold_int16_255_2", "address": "255!400003",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT16}]
+hold_int16_slave100_1 = [{"name": "hold_int16_100_1", "address": "100!400001",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT16}]
+hold_int16_slave100_2 = [{"name": "hold_int16_100_2", "address": "100!400003",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT16}]
 
 class TestModbus:
 
@@ -1608,3 +1616,32 @@ class TestModbus:
 
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+    @description(given="created modbus node with degradation", when="trigger degradation, read tags", then="success")
+    def test_modbus_degradation(self, param):
+        response = api.add_node(node=param[0]+"_degradation", plugin=param[1])
+        assert 200 == response.status_code
+        if param[0] == 'modbus-tcp':
+            api.modbus_tcp_node_setting(
+                node=param[0]+"_degradation", port=tcp_port, device_degrade=1)
+        elif param[0] == 'modbus-rtu':
+            api.modbus_rtu_node_setting(
+                node=param[0]+"_degradation", port=rtu_port, device_degrade=1)
+        else:
+            pytest.skip("modbus rtu tty pass")
+        response = api.add_group(node=param[0]+"_degradation", group='group')
+        assert 200 == response.status_code
+
+        api.add_tags_check(node=param[0]+"_degradation",
+                           group='group', tags=hold_int16)
+        api.add_tags_check(node=param[0]+"_degradation",
+                           group='group', tags=hold_int16_slave100_1)
+        api.add_tags_check(node=param[0]+"_degradation",
+                           group='group', tags=hold_int16_slave100_2)
+        api.add_tags_check(node=param[0]+"_degradation",
+                           group='group', tags=hold_int16_slave255_1)
+        api.add_tags_check(node=param[0]+"_degradation",
+                           group='group', tags=hold_int16_slave255_2)
+        time.sleep(3)
+        assert 1 == api.read_tag(
+            node=param[0]+"_degradation", group='group', tag=hold_int16[0]['name'])
