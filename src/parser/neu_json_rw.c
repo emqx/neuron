@@ -157,14 +157,21 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
             }
         }
 
+        void *attributes_object = neu_json_encode_new();
         for (int k = 0; k < p_tag->n_meta; k++) {
-            tag_elems[if_precision + 9 + k].name = p_tag->metas[k].name;
-            tag_elems[if_precision + 9 + k].t    = p_tag->metas[k].t;
-            tag_elems[if_precision + 9 + k].v    = p_tag->metas[k].value;
+            neu_json_elem_t meta_elem = { 0 };
+            meta_elem.name            = p_tag->metas[k].name;
+            meta_elem.t               = p_tag->metas[k].t;
+            meta_elem.v               = p_tag->metas[k].value;
+            neu_json_encode_field(attributes_object, &meta_elem, 1);
         }
 
+        tag_elems[if_precision + 9].name      = "attributes";
+        tag_elems[if_precision + 9].t         = NEU_JSON_OBJECT;
+        tag_elems[if_precision + 9].v.val_object = attributes_object;
+
         tag_array = neu_json_encode_array(tag_array, tag_elems,
-                                          9 + if_precision + p_tag->n_meta);
+                                          10 + if_precision);
 
         free(p_tag->datatag.name);
         free(p_tag->datatag.address);
