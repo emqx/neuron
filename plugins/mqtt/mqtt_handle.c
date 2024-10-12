@@ -607,15 +607,10 @@ int handle_trans_data(neu_plugin_t *            plugin,
     if (neu_otel_data_is_started() && trans_data->trace_ctx) {
         trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
         if (trans_trace) {
-            trans_scope = neu_otel_add_span(trans_trace);
-            neu_otel_scope_set_span_name(trans_scope, "mqtt publish");
             char new_span_id[36] = { 0 };
             neu_otel_new_span_id(new_span_id);
-            neu_otel_scope_set_span_id(trans_scope, new_span_id);
-            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
-            if (p_sp_id) {
-                neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
-            }
+            trans_scope =
+                neu_otel_add_span2(trans_trace, "mqtt publish", new_span_id);
             neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                              (int64_t)(pthread_self()));
             neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
@@ -661,15 +656,9 @@ int handle_trans_data(neu_plugin_t *            plugin,
         neu_mqtt_qos_e qos   = plugin->config.qos;
 
         if (plugin->config.version == NEU_MQTT_VERSION_V5 && trans_trace) {
-            neu_otel_scope_add_span_attr_string(trans_scope, "playload",
-                                                json_str);
             rv = publish_with_trace(plugin, qos, topic, json_str,
                                     strlen(json_str), trace_parent);
         } else {
-            if (trans_trace) {
-                neu_otel_scope_add_span_attr_string(trans_scope, "playload",
-                                                    json_str);
-            }
             rv = publish(plugin, qos, topic, json_str, strlen(json_str));
         }
 
@@ -677,7 +666,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
     } while (0);
 
     if (trans_trace) {
-        neu_otel_scope_add_span_attr_int(trans_scope, "error", rv);
+        neu_otel_scope_add_span_attr_int(trans_scope, "rv", rv);
         neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
         neu_otel_trace_set_final(trans_trace);
     }
