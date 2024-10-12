@@ -96,6 +96,9 @@ static int hex_char_to_int(char c)
 static int hex_string_to_binary(const char *   hex_string,
                                 unsigned char *binary_array, int max_length)
 {
+    if (hex_string == NULL) {
+        return -1;
+    }
     int length = strlen(hex_string);
     if (length % 2 != 0 || length <= 0)
         return -1;
@@ -596,6 +599,84 @@ neu_otel_scope_ctx neu_otel_add_span(neu_otel_trace_ctx ctx)
     scope->span->trace_id.data = t_id;
     scope->span->trace_id.len  = 16;
     scope->span->flags         = trace_ctx->flags;
+    utarray_push_back(trace_ctx->scopes, &scope);
+    pthread_mutex_unlock(&trace_ctx->mutex);
+    return scope;
+}
+
+neu_otel_scope_ctx neu_otel_add_span2(neu_otel_trace_ctx ctx,
+                                      const char *       span_name,
+                                      const char *       span_id)
+{
+    trace_scope_t *scope     = calloc(1, sizeof(trace_scope_t));
+    trace_ctx_t *  trace_ctx = (trace_ctx_t *) ctx;
+    pthread_mutex_lock(&trace_ctx->mutex);
+    scope->trace_ctx = ctx;
+    if (trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans == 0) {
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans =
+            calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Span *));
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans[0] =
+            calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Span));
+
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans = 1;
+        scope->span =
+            trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans[0];
+        scope->span_index = 0;
+    } else {
+        Opentelemetry__Proto__Trace__V1__Span **t_spans =
+            trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans;
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans =
+            calloc(1 +
+                       trace_ctx->trace_data.resource_spans[0]
+                           ->scope_spans[0]
+                           ->n_spans,
+                   sizeof(Opentelemetry__Proto__Trace__V1__Span *));
+        for (size_t i = 0; i <
+             trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans;
+             i++) {
+            trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans[i] =
+                t_spans[i];
+        }
+
+        free(t_spans);
+
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->spans
+            [trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans] =
+            calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Span));
+        scope->span = trace_ctx->trace_data.resource_spans[0]
+                          ->scope_spans[0]
+                          ->spans[trace_ctx->trace_data.resource_spans[0]
+                                      ->scope_spans[0]
+                                      ->n_spans];
+        trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans += 1;
+
+        scope->span_index =
+            trace_ctx->trace_data.resource_spans[0]->scope_spans[0]->n_spans -
+            1;
+    }
+
+    opentelemetry__proto__trace__v1__span__init(scope->span);
+    scope->span->kind =
+        OPENTELEMETRY__PROTO__TRACE__V1__SPAN__SPAN_KIND__SPAN_KIND_SERVER;
+    uint8_t *t_id = calloc(1, 16);
+    hex_string_to_binary((char *) trace_ctx->trace_id, t_id, 16);
+    scope->span->trace_id.data = t_id;
+    scope->span->trace_id.len  = 16;
+    scope->span->flags         = trace_ctx->flags;
+    neu_otel_scope_set_span_name(scope, span_name);
+    neu_otel_scope_set_span_id(scope, span_id);
+    if (scope->span_index != 0) {
+        neu_otel_scope_set_parent_span_id2(
+            scope,
+            trace_ctx->trace_data.resource_spans[0]
+                ->scope_spans[0]
+                ->spans[scope->span_index - 1]
+                ->span_id.data,
+            trace_ctx->trace_data.resource_spans[0]
+                ->scope_spans[0]
+                ->spans[scope->span_index - 1]
+                ->span_id.len);
+    }
     utarray_push_back(trace_ctx->scopes, &scope);
     pthread_mutex_unlock(&trace_ctx->mutex);
     return scope;

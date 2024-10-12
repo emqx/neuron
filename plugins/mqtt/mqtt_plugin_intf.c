@@ -537,7 +537,7 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     }
 
     if (trace) {
-        neu_otel_scope_add_span_attr_int(scope, "handle error", error);
+        neu_otel_scope_add_span_attr_int(scope, "rv", error);
         neu_otel_scope_set_span_end_time(scope, neu_time_ms());
         neu_otel_trace_set_final(trace);
     }

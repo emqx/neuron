@@ -42,6 +42,9 @@ neu_otel_trace_ctx neu_otel_find_trace_by_id(const char *trace_id);
 void neu_otel_free_trace(neu_otel_trace_ctx ctx);
 
 neu_otel_scope_ctx neu_otel_add_span(neu_otel_trace_ctx ctx);
+neu_otel_scope_ctx neu_otel_add_span2(neu_otel_trace_ctx ctx,
+                                      const char *       span_name,
+                                      const char *       span_id);
 
 void neu_otel_scope_set_parent_span_id(neu_otel_scope_ctx ctx,
                                        const char *       parent_span_id);
