@@ -367,17 +367,10 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
             if (neu_otel_data_is_started() && trans_data->trace_ctx) {
                 trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
                 if (trans_trace) {
-                    trans_scope = neu_otel_add_span(trans_trace);
-                    neu_otel_scope_set_span_name(trans_scope, "ekuiper send");
                     char new_span_id[36] = { 0 };
                     neu_otel_new_span_id(new_span_id);
-                    neu_otel_scope_set_span_id(trans_scope, new_span_id);
-                    uint8_t *p_sp_id =
-                        neu_otel_scope_get_pre_span_id(trans_scope);
-                    if (p_sp_id) {
-                        neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id,
-                                                           8);
-                    }
+                    trans_scope = neu_otel_add_span2(
+                        trans_trace, "ekuiper send", new_span_id);
                     neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                                      (int64_t)(pthread_self()));
                     neu_otel_scope_add_span_attr_int(
