@@ -66,6 +66,13 @@ typedef enum modbus_area {
     MODBUS_AREA_HOLD_REGISTER  = 4,
 } modbus_area_e;
 
+typedef enum modbus_endianess {
+    MODBUS_ABCD = 1,
+    MODBUS_BADC = 2,
+    MODBUS_DCBA = 3,
+    MODBUS_CDAB = 4,
+} modbus_endianess;
+
 struct modbus_header {
     uint16_t seq;
     uint16_t protocol;

@@ -438,6 +438,9 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             case NEU_TYPE_FLOAT:
             case NEU_TYPE_INT32:
             case NEU_TYPE_UINT32:
+                if ((*p_tag)->option.value32.is_default) {
+                    modbus_convert_endianess(&dvalue.value, plugin->endianess);
+                }
                 dvalue.value.u32 = ntohl(dvalue.value.u32);
                 break;
             case NEU_TYPE_DOUBLE:
@@ -683,8 +686,8 @@ int modbus_test_read_tag(neu_plugin_t *plugin, void *req, neu_datatag_t tag)
     return 0;
 }
 
-static uint8_t convert_value(neu_value_u *value, neu_datatag_t *tag,
-                             modbus_point_t *point)
+static uint8_t convert_value(neu_plugin_t *plugin, neu_value_u *value,
+                             neu_datatag_t *tag, modbus_point_t *point)
 {
     uint8_t n_byte = 0;
     switch (tag->type) {
@@ -696,6 +699,9 @@ static uint8_t convert_value(neu_value_u *value, neu_datatag_t *tag,
     case NEU_TYPE_FLOAT:
     case NEU_TYPE_UINT32:
     case NEU_TYPE_INT32:
+        if (point->option.value32.is_default) {
+            modbus_convert_endianess(value, plugin->endianess);
+        }
         value->u32 = htonl(value->u32);
         n_byte     = sizeof(uint32_t);
         break;
@@ -773,7 +779,7 @@ int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     int            ret   = modbus_tag_to_point(tag, &point);
     assert(ret == 0);
 
-    uint8_t n_byte = convert_value(&value, tag, &point);
+    uint8_t n_byte = convert_value(plugin, &value, tag, &point);
     return write_modbus_point(plugin, req, &point, value, n_byte);
 }
 
@@ -794,7 +800,7 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
 
         utarray_push_back(gtags->tags, &p);
     }
-    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags);
+    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags, plugin->endianess);
     for (uint16_t i = 0; i < gtags->cmd_sort->n_cmd; i++) {
         ret = write_modbus_points(plugin, &gtags->cmd_sort->cmd[i], req);
         if (ret <= 0) {
