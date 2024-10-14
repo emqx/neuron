@@ -1645,3 +1645,92 @@ class TestModbus:
         time.sleep(3)
         assert 1 == api.read_tag(
             node=param[0]+"_degradation", group='group', tag=hold_int16[0]['name'])
+
+    @description(given="endianness in node configuration, without endianness in tag", when="write and read tag", then="write/read success")
+    def test_write_read_endianness_node(self, param):
+        if param[0] != 'modbus-tcp':
+            pytest.skip("test modbus tcp only")
+        response = api.add_node(node=param[0]+"_ABCD", plugin=param[1])
+        assert 200 == response.status_code
+        api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=4)
+        api.add_tags_check(node=param[0]+"_ABCD", group='group', tags=hold_uint32)
+        api.write_tag_check(
+            node=param[0]+"_ABCD", group='group', tag=hold_uint32[0]['name'], value=0x31323334)
+        time.sleep(0.3)
+        assert 0x31323334 == api.read_tag(
+            node=param[0]+"_ABCD", group='group', tag=hold_uint32[0]['name'])
+        
+        response = api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=1)
+        time.sleep(0.3)
+        assert 0x33343132 == api.read_tag(
+            node=param[0]+"_ABCD", group='group', tag=hold_uint32[0]['name'])
+        
+        response = api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=2)
+        time.sleep(0.3)
+        assert 0x34333231 == api.read_tag(
+            node=param[0]+"_ABCD", group='group', tag=hold_uint32[0]['name'])
+        
+        response = api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=3)
+        time.sleep(0.3)
+        assert 0x32313433 == api.read_tag(
+            node=param[0]+"_ABCD", group='group', tag=hold_uint32[0]['name'])
+        
+    @description(given="endianness in tag, without endianness in node configuration", when="write and read tag", then="write/read success")
+    def test_write_read_endianness_tag(self, param):
+        if param[0] != 'modbus-tcp':
+            pytest.skip("test modbus tcp only")
+        api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=1)
+        time.sleep(0.3)
+        api.add_tags_check(node=param[0]+"_ABCD", group='group', tags=hold_uint32_LL)
+        api.add_tags_check(node=param[0]+"_ABCD", group='group', tags=hold_uint32_LB)
+        api.add_tags_check(node=param[0]+"_ABCD", group='group', tags=hold_uint32_BL)
+        api.add_tags_check(node=param[0]+"_ABCD", group='group', tags=hold_uint32_BB)
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+        
+        api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=4)
+        time.sleep(0.3)
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+        
+        api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=2)
+        time.sleep(0.3)
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+        
+        api.modbus_tcp_node_setting_endian(
+            node=param[0]+"_ABCD", port=tcp_port, endianness=3)
+        time.sleep(0.3)
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'])

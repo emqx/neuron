@@ -165,6 +165,35 @@
 			"max": 10000
 		}
 	},
+	"endianess": {
+		"name": "Endianess",
+		"name_zh": "字节序",
+		"description": "Tag byte order, ABCD corresponds to 1234",
+		"description_zh": "点位字节序，ABCD 对应 1234",
+		"attribute": "required",
+		"type": "map",
+		"default": 1,
+		"valid": {
+			"map": [
+				{
+					"key": "ABCD",
+					"value": 1
+				},
+				{
+					"key": "BADC",
+					"value": 2
+				},
+				{
+					"key": "DCBA",
+					"value": 3
+				},
+				{
+					"key": "CDAB",
+					"value": 4
+				}
+			]
+		}
+	},
 	"interval": {
 		"name": "Send Interval (ms)",
 		"name_zh": "指令发送间隔 (ms)",

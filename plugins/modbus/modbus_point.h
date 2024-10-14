@@ -80,8 +80,11 @@ typedef struct modbus_write_cmd_sort {
 } modbus_write_cmd_sort_t;
 
 modbus_read_cmd_sort_t * modbus_tag_sort(UT_array *tags, uint16_t max_byte);
-modbus_write_cmd_sort_t *modbus_write_tags_sort(UT_array *tags);
+modbus_write_cmd_sort_t *modbus_write_tags_sort(UT_array *       tags,
+                                                modbus_endianess endianess);
 void                     modbus_tag_sort_free(modbus_read_cmd_sort_t *cs);
+
+void modbus_convert_endianess(neu_value_u *value, modbus_endianess endianess);
 
 #ifdef __cplusplus
 }

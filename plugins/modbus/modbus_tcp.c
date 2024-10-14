@@ -172,6 +172,8 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t degrade_time  = { .name = "degrade_time",
                                      .t    = NEU_JSON_INT };
 
+    neu_json_elem_t endianess = { .name = "endianess", .t = NEU_JSON_INT };
+
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
 
@@ -210,8 +212,14 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     if (ret != 0) {
         free(err_param);
         degradation.v.val_int   = 0;
-        degrade_cycle.v.val_int = 3;
-        degrade_time.v.val_int  = 30;
+        degrade_cycle.v.val_int = 2;
+        degrade_time.v.val_int  = 600;
+    }
+
+    ret = neu_parse_param((char *) config, &err_param, 1, &endianess);
+    if (ret != 0) {
+        free(err_param);
+        endianess.v.val_int = MODBUS_ABCD;
     }
 
     param.log              = plugin->common.log;
@@ -222,6 +230,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->degradation    = degradation.v.val_int;
     plugin->degrade_cycle  = degrade_cycle.v.val_int;
     plugin->degrade_time   = degrade_time.v.val_int;
+    plugin->endianess      = endianess.v.val_int;
 
     if (mode.v.val_int == 1) {
         param.type                           = NEU_CONN_TCP_SERVER;
