@@ -32,6 +32,7 @@ struct modbus_group_data {
     UT_array *              tags;
     char *                  group;
     modbus_read_cmd_sort_t *cmd_sort;
+    modbus_address_base     address_base;
 };
 
 struct modbus_write_tags_data {
@@ -294,8 +295,13 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
     neu_conn_state_t          state = { 0 };
     struct modbus_group_data *gd    = NULL;
     int64_t                   rtt   = NEU_METRIC_LAST_RTT_MS_MAX;
+    struct modbus_group_data *gdt =
+        (struct modbus_group_data *) group->user_data;
 
-    if (group->user_data == NULL) {
+    if (group->user_data == NULL || gdt->address_base != plugin->address_base) {
+        if (group->user_data != NULL) {
+            plugin_group_free(group);
+        }
         gd = calloc(1, sizeof(struct modbus_group_data));
 
         group->user_data  = gd;
@@ -304,8 +310,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 
         utarray_foreach(group->tags, neu_datatag_t *, tag)
         {
-            modbus_point_t *p   = calloc(1, sizeof(modbus_point_t));
-            int             ret = modbus_tag_to_point(tag, p);
+            modbus_point_t *p = calloc(1, sizeof(modbus_point_t));
+            int ret = modbus_tag_to_point(tag, p, plugin->address_base);
             if (ret != NEU_ERR_SUCCESS) {
                 plog_error(plugin, "invalid tag: %s, address: %s", tag->name,
                            tag->address);
@@ -314,8 +320,9 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             utarray_push_back(gd->tags, &p);
         }
 
-        gd->group    = strdup(group->group_name);
-        gd->cmd_sort = modbus_tag_sort(gd->tags, max_byte);
+        gd->group        = strdup(group->group_name);
+        gd->cmd_sort     = modbus_tag_sort(gd->tags, max_byte);
+        gd->address_base = plugin->address_base;
     }
 
     gd                        = (struct modbus_group_data *) group->user_data;
@@ -646,7 +653,7 @@ int modbus_test_read_tag(neu_plugin_t *plugin, void *req, neu_datatag_t tag)
     neu_json_value_u error_value;
     error_value.val_int = 0;
 
-    int err = modbus_tag_to_point(&tag, &point);
+    int err = modbus_tag_to_point(&tag, &point, plugin->address_base);
     if (err != NEU_ERR_SUCCESS) {
         plugin->common.adapter_callbacks->driver.test_read_tag_response(
             plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
@@ -776,7 +783,7 @@ int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                      neu_value_u value)
 {
     modbus_point_t point = { 0 };
-    int            ret   = modbus_tag_to_point(tag, &point);
+    int            ret = modbus_tag_to_point(tag, &point, plugin->address_base);
     assert(ret == 0);
 
     uint8_t n_byte = convert_value(plugin, &value, tag, &point);
@@ -795,7 +802,7 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
     utarray_foreach(tags, neu_plugin_tag_value_t *, tag)
     {
         modbus_point_write_t *p = calloc(1, sizeof(modbus_point_write_t));
-        ret                     = modbus_write_tag_to_point(tag, p);
+        ret = modbus_write_tag_to_point(tag, p, plugin->address_base);
         assert(ret == 0);
 
         utarray_push_back(gtags->tags, &p);

@@ -38,8 +38,9 @@ struct neu_plugin {
     int             client_fd;
     neu_events_t *  events;
 
-    modbus_protocol_e protocol;
-    modbus_endianess  endianess;
+    modbus_protocol_e   protocol;
+    modbus_endianess    endianess;
+    modbus_address_base address_base;
 
     uint16_t interval;
     uint16_t retry_interval;
