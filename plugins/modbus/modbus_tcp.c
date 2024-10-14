@@ -37,7 +37,6 @@ static int driver_config(neu_plugin_t *plugin, const char *config);
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
 
-static int driver_tag_validator(const neu_datatag_t *tag);
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
@@ -60,7 +59,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .driver.group_timer   = driver_group_timer,
     .driver.group_sync    = driver_group_timer,
     .driver.write_tag     = driver_write,
-    .driver.tag_validator = driver_tag_validator,
+    .driver.tag_validator = NULL,
     .driver.write_tags    = driver_write_tags,
     .driver.test_read_tag = driver_test_read_tag,
     .driver.add_tags      = NULL,
@@ -172,7 +171,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t degrade_time  = { .name = "degrade_time",
                                      .t    = NEU_JSON_INT };
 
-    neu_json_elem_t endianess = { .name = "endianess", .t = NEU_JSON_INT };
+    neu_json_elem_t endianess    = { .name = "endianess", .t = NEU_JSON_INT };
+    neu_json_elem_t address_base = { .name = "address_base",
+                                     .t    = NEU_JSON_INT };
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
@@ -222,6 +223,12 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         endianess.v.val_int = MODBUS_ABCD;
     }
 
+    ret = neu_parse_param((char *) config, &err_param, 1, &address_base);
+    if (ret != 0) {
+        free(err_param);
+        address_base.v.val_int = base_1;
+    }
+
     param.log              = plugin->common.log;
     plugin->interval       = interval.v.val_int;
     plugin->max_retries    = max_retries.v.val_int;
@@ -231,6 +238,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->degrade_cycle  = degrade_cycle.v.val_int;
     plugin->degrade_time   = degrade_time.v.val_int;
     plugin->endianess      = endianess.v.val_int;
+    plugin->address_base   = address_base.v.val_int;
 
     if (mode.v.val_int == 1) {
         param.type                           = NEU_CONN_TCP_SERVER;
@@ -276,17 +284,11 @@ static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     return 0;
 }
 
-static int driver_tag_validator(const neu_datatag_t *tag)
-{
-    modbus_point_t point = { 0 };
-    return modbus_tag_to_point(tag, &point);
-}
-
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 {
     modbus_point_t point = { 0 };
 
-    int ret = modbus_tag_to_point(tag, &point);
+    int ret = modbus_tag_to_point(tag, &point, plugin->address_base);
     if (ret == 0) {
         plog_notice(
             plugin,

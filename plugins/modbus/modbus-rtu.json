@@ -186,6 +186,27 @@
 			]
 		}
 	},
+	"address_base": {
+		"name": "Start Address",
+		"name_zh": "开始地址",
+		"description": "Address starts from 1 or 0",
+		"description_zh": "地址从 1 开始或从 0 开始",
+		"attribute": "required",
+		"type": "map",
+		"default": 1,
+		"valid": {
+			"map": [
+				{
+					"key": "Protocol Addresses (Base 0)",
+					"value": 0
+				},
+				{
+					"key": "PLC Addresses (Base 1)",
+					"value": 1
+				}
+			]
+		}
+	},
 	"interval": {
 		"name": "Send Interval (ms)",
 		"name_zh": "指令发送间隔 (ms)",

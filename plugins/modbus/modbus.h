@@ -73,6 +73,11 @@ typedef enum modbus_endianess {
     MODBUS_CDAB = 4,
 } modbus_endianess;
 
+typedef enum modbus_address_base {
+    base_0 = 0,
+    base_1 = 1,
+} modbus_address_base;
+
 struct modbus_header {
     uint16_t seq;
     uint16_t protocol;

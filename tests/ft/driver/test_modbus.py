@@ -1734,3 +1734,28 @@ class TestModbus:
             node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
         assert 12345678 == api.read_tag(
             node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+
+    @description(given="created modbus node", when="set modbus start base to 0", then="set success and read/write success")
+    def test_set_modbus_start_base(self, param):
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_1[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_2[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_3[0]['name'])
+        
+        if param[0] == 'modbus-rtu':
+            api.modbus_rtu_node_setting_base(
+                node=param[0], port=rtu_port, base=0)
+        elif param[0] == 'modbus-tcp':
+            api.modbus_tcp_node_setting_base(
+                node=param[0], port=tcp_port, base=0)
+        else:
+            pytest.skip()
+        time.sleep(0.3)
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_1[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_2[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_3[0]['name'])

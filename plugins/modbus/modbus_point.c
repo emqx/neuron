@@ -35,7 +35,8 @@ static int  tag_cmp_write(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
 static bool tag_sort_write(neu_tag_sort_t *sort, void *tag,
                            void *tag_to_be_sorted);
 
-int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
+int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point,
+                        modbus_address_base address_base)
 {
     int      ret           = NEU_ERR_SUCCESS;
     uint32_t start_address = 0;
@@ -47,13 +48,18 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
     char area = 0;
     int  n    = sscanf(tag->address, "%hhu!%c%u", &point->slave_id, &area,
                    &start_address);
-    if (n != 3 || start_address == 0) {
+    if (n != 3) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
 
-    point->start_address = (uint16_t) start_address;
+    if (start_address == 65536 && address_base == 0) {
+        point->start_address = 65535;
+    } else if (start_address == 0 && address_base == 1) {
+        point->start_address = 0;
+    } else {
+        point->start_address = (uint16_t) start_address - address_base;
+    }
 
-    point->start_address -= 1;
     point->type = tag->type;
 
     switch (area) {
@@ -194,10 +200,11 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
 }
 
 int modbus_write_tag_to_point(const neu_plugin_tag_value_t *tag,
-                              modbus_point_write_t *        point)
+                              modbus_point_write_t *        point,
+                              modbus_address_base           address_base)
 {
     int ret      = NEU_ERR_SUCCESS;
-    ret          = modbus_tag_to_point(tag->tag, &point->point);
+    ret          = modbus_tag_to_point(tag->tag, &point->point, address_base);
     point->value = tag->value;
     return ret;
 }
