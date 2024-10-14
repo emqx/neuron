@@ -35,6 +35,13 @@ static inline int64_t neu_time_ms()
     return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
+static inline int64_t neu_time_ns()
+{
+    struct timespec ts = { 0 };
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (int64_t) ts.tv_sec * 1000000000 + (int64_t) ts.tv_nsec;
+}
+
 static inline void neu_msleep(unsigned msec)
 {
     struct timespec tv = {

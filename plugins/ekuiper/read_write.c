@@ -105,7 +105,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
                 neu_otel_add_span2(trans_trace, "ekuiper send", new_span_id);
             neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                              (int64_t)(pthread_self()));
-            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
         }
     }
 
@@ -165,8 +165,13 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     } while (0);
 
     if (trans_trace) {
-        neu_otel_scope_add_span_attr_int(trans_scope, "rv", rv);
-        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+        if (rv == 0) {
+            neu_otel_scope_set_status_code2(trans_scope, NEU_OTEL_STATUS_OK, 0);
+        } else {
+            neu_otel_scope_set_status_code(trans_scope, NEU_OTEL_STATUS_ERROR,
+                                           nng_strerror(rv));
+        }
+        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
         neu_otel_trace_set_final(trans_trace);
     }
 }
