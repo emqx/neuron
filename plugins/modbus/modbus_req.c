@@ -23,10 +23,16 @@
 
 #include "modbus_req.h"
 
+#define MAX_SLAVES 256
+
+uint8_t failed_cycles[MAX_SLAVES];
+bool    skip[MAX_SLAVES];
+
 struct modbus_group_data {
     UT_array *              tags;
     char *                  group;
     modbus_read_cmd_sort_t *cmd_sort;
+    modbus_address_base     address_base;
 };
 
 struct modbus_write_tags_data {
@@ -152,7 +158,8 @@ void handle_modbus_error(neu_plugin_t *plugin, struct modbus_group_data *gd,
 void finalize_modbus_read_result(neu_plugin_t *            plugin,
                                  struct modbus_group_data *gd,
                                  uint16_t cmd_index, int ret_r, int ret_buf,
-                                 uint64_t read_tms, int64_t *rtt)
+                                 uint64_t read_tms, int64_t *rtt,
+                                 bool *slave_err)
 {
     if (ret_r <= 0) {
         handle_modbus_error(plugin, gd, cmd_index, NEU_ERR_PLUGIN_DISCONNECTED,
@@ -166,6 +173,7 @@ void finalize_modbus_read_result(neu_plugin_t *            plugin,
                                 NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE,
                                 "no modbus response received");
             *rtt = neu_time_ms() - read_tms;
+            slave_err[gd->cmd_sort->cmd[cmd_index].slave_id] = true;
             break;
         case -1:
             handle_modbus_error(plugin, gd, cmd_index,
@@ -185,12 +193,13 @@ void finalize_modbus_read_result(neu_plugin_t *            plugin,
         }
     } else {
         *rtt = neu_time_ms() - read_tms;
+        failed_cycles[gd->cmd_sort->cmd[cmd_index].slave_id] = 0;
     }
 }
 
 void check_modbus_read_result(neu_plugin_t *            plugin,
                               struct modbus_group_data *gd, uint16_t cmd_index,
-                              int64_t *rtt)
+                              int64_t *rtt, bool *slave_err)
 {
     uint16_t response_size = 0;
     uint64_t read_tms      = neu_time_ms();
@@ -224,7 +233,7 @@ void check_modbus_read_result(neu_plugin_t *            plugin,
     }
 
     finalize_modbus_read_result(plugin, gd, cmd_index, ret_r, ret_buf, read_tms,
-                                rtt);
+                                rtt, slave_err);
 }
 
 void update_metrics_after_read(neu_plugin_t *plugin, int64_t rtt,
@@ -246,14 +255,53 @@ void update_metrics_after_read(neu_plugin_t *plugin, int64_t rtt,
                   gd->cmd_sort->n_cmd, group->group_name);
 }
 
+typedef struct {
+    uint8_t  slave_id;
+    uint16_t degrade_time;
+} degrade_timer_data_t;
+
+void *degrade_timer(void *arg)
+{
+    degrade_timer_data_t *data = (degrade_timer_data_t *) arg;
+
+    struct timespec t1 = { .tv_sec = data->degrade_time, .tv_nsec = 0 };
+    struct timespec t2 = { 0 };
+    nanosleep(&t1, &t2);
+
+    skip[data->slave_id] = false;
+
+    free(data);
+    return NULL;
+}
+
+void set_skip_timer(uint8_t slave_id, uint32_t degrade_time)
+{
+    degrade_timer_data_t *data =
+        (degrade_timer_data_t *) malloc(sizeof(degrade_timer_data_t));
+    data->slave_id     = slave_id;
+    data->degrade_time = degrade_time;
+
+    failed_cycles[slave_id] = 0;
+
+    pthread_t timer_thread;
+    pthread_create(&timer_thread, NULL, degrade_timer, data);
+
+    pthread_detach(timer_thread);
+}
+
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
     neu_conn_state_t          state = { 0 };
     struct modbus_group_data *gd    = NULL;
     int64_t                   rtt   = NEU_METRIC_LAST_RTT_MS_MAX;
+    struct modbus_group_data *gdt =
+        (struct modbus_group_data *) group->user_data;
 
-    if (group->user_data == NULL) {
+    if (group->user_data == NULL || gdt->address_base != plugin->address_base) {
+        if (group->user_data != NULL) {
+            plugin_group_free(group);
+        }
         gd = calloc(1, sizeof(struct modbus_group_data));
 
         group->user_data  = gd;
@@ -262,8 +310,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 
         utarray_foreach(group->tags, neu_datatag_t *, tag)
         {
-            modbus_point_t *p   = calloc(1, sizeof(modbus_point_t));
-            int             ret = modbus_tag_to_point(tag, p);
+            modbus_point_t *p = calloc(1, sizeof(modbus_point_t));
+            int ret = modbus_tag_to_point(tag, p, plugin->address_base);
             if (ret != NEU_ERR_SUCCESS) {
                 plog_error(plugin, "invalid tag: %s, address: %s", tag->name,
                            tag->address);
@@ -272,16 +320,43 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             utarray_push_back(gd->tags, &p);
         }
 
-        gd->group    = strdup(group->group_name);
-        gd->cmd_sort = modbus_tag_sort(gd->tags, max_byte);
+        gd->group        = strdup(group->group_name);
+        gd->cmd_sort     = modbus_tag_sort(gd->tags, max_byte);
+        gd->address_base = plugin->address_base;
     }
 
     gd                        = (struct modbus_group_data *) group->user_data;
     plugin->plugin_group_data = gd;
 
+    bool slave_err_record[MAX_SLAVES] = { false };
+
     for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
-        plugin->cmd_idx = i;
-        check_modbus_read_result(plugin, gd, i, &rtt);
+        bool    slave_err[MAX_SLAVES] = { false };
+        uint8_t slave_id              = gd->cmd_sort->cmd[i].slave_id;
+        plugin->cmd_idx               = i;
+
+        if (slave_err_record[slave_id] == true) {
+            continue;
+        }
+
+        if (plugin->degradation == false || skip[slave_id] == false) {
+            check_modbus_read_result(plugin, gd, i, &rtt, slave_err);
+        } else {
+            continue;
+        }
+
+        if (plugin->degradation) {
+            if (slave_err[slave_id]) {
+                failed_cycles[slave_id]++;
+                slave_err_record[slave_id] = true;
+            }
+
+            if (failed_cycles[slave_id] >= plugin->degrade_cycle) {
+                skip[slave_id] = true;
+                plog_warn(plugin, "Skip slave %hhu", slave_id);
+                set_skip_timer(slave_id, plugin->degrade_time);
+            }
+        }
 
         if (plugin->interval > 0) {
             struct timespec t1 = { .tv_sec  = plugin->interval / 1000,
@@ -370,6 +445,9 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             case NEU_TYPE_FLOAT:
             case NEU_TYPE_INT32:
             case NEU_TYPE_UINT32:
+                if ((*p_tag)->option.value32.is_default) {
+                    modbus_convert_endianess(&dvalue.value, plugin->endianess);
+                }
                 dvalue.value.u32 = ntohl(dvalue.value.u32);
                 break;
             case NEU_TYPE_DOUBLE:
@@ -575,7 +653,7 @@ int modbus_test_read_tag(neu_plugin_t *plugin, void *req, neu_datatag_t tag)
     neu_json_value_u error_value;
     error_value.val_int = 0;
 
-    int err = modbus_tag_to_point(&tag, &point);
+    int err = modbus_tag_to_point(&tag, &point, plugin->address_base);
     if (err != NEU_ERR_SUCCESS) {
         plugin->common.adapter_callbacks->driver.test_read_tag_response(
             plugin->common.adapter, req, NEU_JSON_INT, NEU_TYPE_ERROR,
@@ -615,8 +693,8 @@ int modbus_test_read_tag(neu_plugin_t *plugin, void *req, neu_datatag_t tag)
     return 0;
 }
 
-static uint8_t convert_value(neu_value_u *value, neu_datatag_t *tag,
-                             modbus_point_t *point)
+static uint8_t convert_value(neu_plugin_t *plugin, neu_value_u *value,
+                             neu_datatag_t *tag, modbus_point_t *point)
 {
     uint8_t n_byte = 0;
     switch (tag->type) {
@@ -628,6 +706,9 @@ static uint8_t convert_value(neu_value_u *value, neu_datatag_t *tag,
     case NEU_TYPE_FLOAT:
     case NEU_TYPE_UINT32:
     case NEU_TYPE_INT32:
+        if (point->option.value32.is_default) {
+            modbus_convert_endianess(value, plugin->endianess);
+        }
         value->u32 = htonl(value->u32);
         n_byte     = sizeof(uint32_t);
         break;
@@ -702,10 +783,10 @@ int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                      neu_value_u value)
 {
     modbus_point_t point = { 0 };
-    int            ret   = modbus_tag_to_point(tag, &point);
+    int            ret = modbus_tag_to_point(tag, &point, plugin->address_base);
     assert(ret == 0);
 
-    uint8_t n_byte = convert_value(&value, tag, &point);
+    uint8_t n_byte = convert_value(plugin, &value, tag, &point);
     return write_modbus_point(plugin, req, &point, value, n_byte);
 }
 
@@ -721,12 +802,12 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
     utarray_foreach(tags, neu_plugin_tag_value_t *, tag)
     {
         modbus_point_write_t *p = calloc(1, sizeof(modbus_point_write_t));
-        ret                     = modbus_write_tag_to_point(tag, p);
+        ret = modbus_write_tag_to_point(tag, p, plugin->address_base);
         assert(ret == 0);
 
         utarray_push_back(gtags->tags, &p);
     }
-    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags);
+    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags, plugin->endianess);
     for (uint16_t i = 0; i < gtags->cmd_sort->n_cmd; i++) {
         ret = write_modbus_points(plugin, &gtags->cmd_sort->cmd[i], req);
         if (ret <= 0) {
