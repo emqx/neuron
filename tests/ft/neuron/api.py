@@ -339,16 +339,20 @@ def prgfile_process(driver):
 # plugin setting
 
 
-def modbus_tcp_node_setting(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1):
+def modbus_tcp_node_setting(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1,
+                            device_degrade=0, degrade_cycle=1, degrade_time=600):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
-                                    "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "retry_interval": retry_interval})
+                                    "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "retry_interval": retry_interval,
+                                    "device_degrade": device_degrade, "degrade_cycle": degrade_cycle, "degrade_time": degrade_time})
 
 
-def modbus_rtu_node_setting(node, port=502, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1, link=1, device="", stop=0, parity=0, baud=4, data=3):
+def modbus_rtu_node_setting(node, port=502, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1, link=1, device="", stop=0, parity=0, baud=4, data=3,
+                            device_degrade=0, degrade_cycle=1, degrade_time=600):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode,
                                     "interval": interval, "host": host, "port": port, "timeout": timeout,
                                     "max_retries": max_retries, "retry_interval": retry_interval, "link": link, "device": device, "stop": stop,
-                                    "parity": parity, "baud": baud, "data": data})
+                                    "parity": parity, "baud": baud, "data": data,
+                                    "device_degrade": device_degrade, "degrade_cycle": degrade_cycle, "degrade_time": degrade_time})
 
 
 def modbus_tcp_node_setting_endian(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, retry_interval=1, endianness=1):

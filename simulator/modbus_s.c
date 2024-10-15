@@ -91,7 +91,7 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     }
 
     if (code->slave_id != 1 && code->slave_id != 2 && code->slave_id != 3) {
-        return -1;
+        return -2;
     }
 
     switch (code->function) {
