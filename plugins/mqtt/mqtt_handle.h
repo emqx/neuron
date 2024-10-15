@@ -40,7 +40,8 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       trace_w3c_t *trace_w3c);
 
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
-                          neu_resp_error_t *data, void *trace_scope);
+                          neu_resp_error_t *data, void *trace_scope,
+                          void *trace_ctx, char *span_id);
 
 void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
                      const uint8_t *payload, uint32_t len, void *data,

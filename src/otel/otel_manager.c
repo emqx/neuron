@@ -169,7 +169,12 @@ void neu_otel_free_span(Opentelemetry__Proto__Trace__V1__Span *span)
         free(span->attributes[i]->value);
         free(span->attributes[i]);
     }
-
+    if (span->status) {
+        if (span->status->message) {
+            free(span->status->message);
+        }
+        free(span->status);
+    }
     free(span->attributes);
     free(span->name);
     free(span->trace_id.data);
@@ -852,19 +857,44 @@ void neu_otel_scope_add_span_attr_bool(neu_otel_scope_ctx ctx, const char *key,
     free(t_kvs);
 }
 
-void neu_otel_scope_set_span_start_time(neu_otel_scope_ctx ctx, int64_t ms)
+void neu_otel_scope_set_span_start_time(neu_otel_scope_ctx ctx, int64_t ns)
 {
     trace_scope_t *scope              = (trace_scope_t *) ctx;
-    scope->span->start_time_unix_nano = ((uint64_t) ms) * 1000000;
+    scope->span->start_time_unix_nano = ((uint64_t) ns);
 }
-void neu_otel_scope_set_span_end_time(neu_otel_scope_ctx ctx, int64_t ms)
+void neu_otel_scope_set_span_end_time(neu_otel_scope_ctx ctx, int64_t ns)
 
 {
     trace_scope_t *scope            = (trace_scope_t *) ctx;
-    scope->span->end_time_unix_nano = ((uint64_t) ms) * 1000000;
+    scope->span->end_time_unix_nano = ((uint64_t) ns);
     trace_ctx_t *trace_ctx          = (trace_ctx_t *) scope->trace_ctx;
     trace_ctx->span_num += 1;
     trace_ctx->expected_span_num -= 1;
+}
+
+void neu_otel_scope_set_status_code(neu_otel_scope_ctx     ctx,
+                                    neu_otel_status_code_e code,
+                                    const char *           desc)
+{
+    trace_scope_t *scope = (trace_scope_t *) ctx;
+    scope->span->status =
+        calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Status));
+    opentelemetry__proto__trace__v1__status__init(scope->span->status);
+    scope->span->status->code    = code;
+    scope->span->status->message = strdup(desc);
+}
+
+void neu_otel_scope_set_status_code2(neu_otel_scope_ctx     ctx,
+                                     neu_otel_status_code_e code, int errorno)
+{
+    trace_scope_t *scope = (trace_scope_t *) ctx;
+    scope->span->status =
+        calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Status));
+    opentelemetry__proto__trace__v1__status__init(scope->span->status);
+    char *error_buf = calloc(1, 16);
+    sprintf(error_buf, "%d", errorno);
+    scope->span->status->code    = code;
+    scope->span->status->message = error_buf;
 }
 
 uint8_t *neu_otel_scope_get_pre_span_id(neu_otel_scope_ctx ctx)

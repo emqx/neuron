@@ -23,6 +23,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum {
+    NEU_OTEL_STATUS_UNSET = 0,
+    NEU_OTEL_STATUS_OK    = 1,
+    NEU_OTEL_STATUS_ERROR = 2,
+} neu_otel_status_code_e;
+
 typedef void *neu_otel_trace_ctx;
 typedef void *neu_otel_scope_ctx;
 
@@ -69,10 +75,17 @@ void neu_otel_scope_add_span_attr_string(neu_otel_scope_ctx ctx,
 void neu_otel_scope_add_span_attr_bool(neu_otel_scope_ctx ctx, const char *key,
                                        bool val);
 
-void neu_otel_scope_set_span_start_time(neu_otel_scope_ctx ctx, int64_t ms);
-void neu_otel_scope_set_span_end_time(neu_otel_scope_ctx ctx, int64_t ms);
+void neu_otel_scope_set_span_start_time(neu_otel_scope_ctx ctx, int64_t ns);
+void neu_otel_scope_set_span_end_time(neu_otel_scope_ctx ctx, int64_t ns);
 
 uint8_t *neu_otel_scope_get_pre_span_id(neu_otel_scope_ctx ctx);
+
+void neu_otel_scope_set_status_code(neu_otel_scope_ctx     ctx,
+                                    neu_otel_status_code_e code,
+                                    const char *           desc);
+
+void neu_otel_scope_set_status_code2(neu_otel_scope_ctx     ctx,
+                                     neu_otel_status_code_e code, int errorno);
 
 int neu_otel_trace_pack_size(neu_otel_trace_ctx ctx);
 

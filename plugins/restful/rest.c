@@ -190,7 +190,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
             }
             neu_otel_scope_add_span_attr_int(scope, "thread id",
                                              (int64_t)(pthread_self()));
-            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(scope, neu_time_ns());
         }
     }
 
@@ -201,33 +201,39 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
             neu_http_response(header->ctx, error->error, result_error);
         });
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", error->error);
+            if (error->error != NEU_ERR_SUCCESS) {
+                neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_ERROR,
+                                                error->error);
+            } else {
+                neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK,
+                                                error->error);
+            }
         }
         break;
     }
     case NEU_RESP_GET_PLUGIN:
         handle_get_plugin_resp(header->ctx, (neu_resp_get_plugin_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_NODE:
         handle_get_adapter_resp(header->ctx, (neu_resp_get_node_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_GROUP:
         handle_get_group_resp(header->ctx, (neu_resp_get_group_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_DRIVER_GROUP:
         handle_get_driver_group_resp(header->ctx,
                                      (neu_resp_get_driver_group_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_ADD_TAG:
@@ -254,62 +260,69 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_TAG:
         handle_get_tags_resp(header->ctx, (neu_resp_get_tag_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
         handle_grp_get_subscribe_resp(header->ctx,
                                       (neu_resp_get_subscribe_group_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_NODE_SETTING:
         handle_get_node_setting_resp(header->ctx,
                                      (neu_resp_get_node_setting_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_NODES_STATE:
         handle_get_nodes_state_resp(header->ctx,
                                     (neu_resp_get_nodes_state_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_GET_NODE_STATE:
         handle_get_node_state_resp(header->ctx,
                                    (neu_resp_get_node_state_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_READ_GROUP:
         handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_READ_GROUP_PAGINATE:
         handle_read_paginate_resp(header->ctx,
                                   (neu_resp_read_group_paginate_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_TEST_READ_TAG:
         handle_test_read_tag_resp(header->ctx,
                                   (neu_resp_test_read_tag_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(scope, "error", 0);
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     case NEU_RESP_SCAN_TAGS:
         handle_scan_tags_resp(header->ctx, (neu_resp_scan_tags_t *) data);
         if (neu_otel_control_is_started() && trace) {
-            neu_otel_scope_add_span_attr_int(
-                scope, "error", ((neu_resp_scan_tags_t *) data)->error);
+            if (((neu_resp_scan_tags_t *) data)->error != NEU_ERR_SUCCESS) {
+                neu_otel_scope_set_status_code2(
+                    scope, NEU_OTEL_STATUS_ERROR,
+                    ((neu_resp_scan_tags_t *) data)->error);
+            } else {
+                neu_otel_scope_set_status_code2(
+                    scope, NEU_OTEL_STATUS_OK,
+                    ((neu_resp_scan_tags_t *) data)->error);
+            }
         }
         break;
     default:
@@ -320,7 +333,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     }
 
     if (neu_otel_control_is_started() && trace) {
-        neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+        neu_otel_scope_set_span_end_time(scope, neu_time_ns());
         neu_otel_trace_set_final(trace);
     }
 
