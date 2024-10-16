@@ -460,7 +460,8 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 }
 
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
-                          neu_resp_error_t *data, void *trace_scope)
+                          neu_resp_error_t *data, void *trace_scope,
+                          void *trace_ctx, char *span_id)
 {
     int   rv       = 0;
     char *json_str = NULL;
@@ -489,9 +490,21 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         neu_otel_scope_add_span_attr_string(trace_scope, "playload", json_str);
     }
 
+    char trace_parent[128] = { 0 };
+
+    if (trace_ctx && span_id) {
+        uint8_t *trace_id = neu_otel_get_trace_id(trace_ctx);
+        to_traceparent(trace_id, span_id, trace_parent);
+    }
+
     char *         topic = plugin->config.write_resp_topic;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    if (trace_ctx != 0 && strlen(trace_parent) != 0) {
+        rv = publish_with_trace(plugin, qos, topic, json_str, strlen(json_str),
+                                trace_parent);
+    } else {
+        rv = publish(plugin, qos, topic, json_str, strlen(json_str));
+    }
     json_str = NULL;
 
 end:
@@ -607,18 +620,13 @@ int handle_trans_data(neu_plugin_t *            plugin,
     if (neu_otel_data_is_started() && trans_data->trace_ctx) {
         trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
         if (trans_trace) {
-            trans_scope = neu_otel_add_span(trans_trace);
-            neu_otel_scope_set_span_name(trans_scope, "mqtt publish");
             char new_span_id[36] = { 0 };
             neu_otel_new_span_id(new_span_id);
-            neu_otel_scope_set_span_id(trans_scope, new_span_id);
-            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
-            if (p_sp_id) {
-                neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
-            }
+            trans_scope =
+                neu_otel_add_span2(trans_trace, "mqtt publish", new_span_id);
             neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                              (int64_t)(pthread_self()));
-            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
 
             trace_id = neu_otel_get_trace_id(trans_trace);
 
@@ -661,15 +669,9 @@ int handle_trans_data(neu_plugin_t *            plugin,
         neu_mqtt_qos_e qos   = plugin->config.qos;
 
         if (plugin->config.version == NEU_MQTT_VERSION_V5 && trans_trace) {
-            neu_otel_scope_add_span_attr_string(trans_scope, "playload",
-                                                json_str);
             rv = publish_with_trace(plugin, qos, topic, json_str,
                                     strlen(json_str), trace_parent);
         } else {
-            if (trans_trace) {
-                neu_otel_scope_add_span_attr_string(trans_scope, "playload",
-                                                    json_str);
-            }
             rv = publish(plugin, qos, topic, json_str, strlen(json_str));
         }
 
@@ -677,8 +679,13 @@ int handle_trans_data(neu_plugin_t *            plugin,
     } while (0);
 
     if (trans_trace) {
-        neu_otel_scope_add_span_attr_int(trans_scope, "error", rv);
-        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+        if (rv == NEU_ERR_SUCCESS) {
+            neu_otel_scope_set_status_code2(trans_scope, NEU_OTEL_STATUS_OK, 0);
+        } else {
+            neu_otel_scope_set_status_code2(trans_scope, NEU_OTEL_STATUS_ERROR,
+                                            rv);
+        }
+        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
         neu_otel_trace_set_final(trans_trace);
     }
 

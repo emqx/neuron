@@ -180,7 +180,7 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
             }
             neu_otel_scope_add_span_attr_int(scope, "thread id",
                                              (int64_t) pthread_self());
-            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(scope, neu_time_ns());
         }
     }
 
@@ -208,8 +208,14 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     adapter->cb_funs.response(adapter, req, &nerror);
 
     if (neu_otel_control_is_started() && trace) {
-        neu_otel_scope_add_span_attr_int(scope, "error", error);
-        neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+        if (error == NEU_ERR_SUCCESS) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, error);
+        } else {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_ERROR,
+                                            error);
+        }
+
+        neu_otel_scope_set_span_end_time(scope, neu_time_ns());
     }
 }
 
@@ -1987,18 +1993,13 @@ static int report_callback(void *usr_data)
         if (neu_otel_data_is_started() && data->trace_ctx) {
             trans_trace = neu_otel_find_trace(data->trace_ctx);
             if (trans_trace) {
-                trans_scope = neu_otel_add_span(trans_trace);
-                neu_otel_scope_set_span_name(trans_scope, "report cb");
                 char new_span_id[36] = { 0 };
                 neu_otel_new_span_id(new_span_id);
-                neu_otel_scope_set_span_id(trans_scope, new_span_id);
-                uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
-                if (p_sp_id) {
-                    neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
-                }
+                trans_scope =
+                    neu_otel_add_span2(trans_trace, "report cb", new_span_id);
                 neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                                  (int64_t)(pthread_self()));
-                neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+                neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
             }
         }
     }
@@ -2038,7 +2039,7 @@ static int report_callback(void *usr_data)
             }
 
             if (trans_trace) {
-                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
                 neu_otel_trace_set_expected_span_num(trans_trace, app_num);
                 if (app_num == 0) {
                     neu_otel_trace_set_final(trans_trace);
@@ -2060,7 +2061,7 @@ static int report_callback(void *usr_data)
 
             if (trans_trace) {
                 neu_otel_scope_add_span_attr_int(trans_scope, "no sub app", 1);
-                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+                neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
                 neu_otel_trace_set_final(trans_trace);
             }
         }
@@ -2072,7 +2073,7 @@ static int report_callback(void *usr_data)
         free(data->driver);
         if (trans_trace) {
             neu_otel_scope_add_span_attr_int(trans_scope, "no tags", 1);
-            neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+            neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
             neu_otel_trace_set_final(trans_trace);
         }
     }
@@ -2207,13 +2208,13 @@ static int write_callback(void *usr_data)
             }
         }
 
-        s_time = neu_time_ms();
+        s_time = neu_time_ns();
 
         if (wtag->single) {
             group->driver->adapter.module->intf_funs->driver.write_tag(
                 group->driver->adapter.plugin, (void *) wtag->req, wtag->tag,
                 wtag->value);
-            e_time = neu_time_ms();
+            e_time = neu_time_ns();
             neu_tag_free(wtag->tag);
         } else {
             group->driver->adapter.module->intf_funs->driver.write_tags(

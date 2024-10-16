@@ -245,7 +245,7 @@ void handle_write(nng_aio *aio)
                         }
                         neu_otel_scope_set_span_flags(scope, flags);
                         neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ms());
+                                                           neu_time_ns());
 
                         neu_otel_scope_add_span_attr_int(
                             scope, "thread id", (int64_t) pthread_self());
@@ -275,9 +275,9 @@ void handle_write(nng_aio *aio)
                                       result_error);
                 });
                 if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_add_span_attr_int(scope, "error type",
-                                                     NEU_ERR_STRING_TOO_LONG);
-                    neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                    neu_otel_scope_set_status_code2(
+                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_STRING_TOO_LONG);
+                    neu_otel_scope_set_span_end_time(scope, neu_time_ns());
                     neu_otel_trace_set_final(trace);
                 }
                 return;
@@ -290,9 +290,9 @@ void handle_write(nng_aio *aio)
                                       result_error);
                 });
                 if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_add_span_attr_int(scope, "error type",
-                                                     NEU_ERR_STRING_TOO_LONG);
-                    neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                    neu_otel_scope_set_status_code2(
+                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_STRING_TOO_LONG);
+                    neu_otel_scope_set_span_end_time(scope, neu_time_ns());
                     neu_otel_trace_set_final(trace);
                 }
                 return;
@@ -355,7 +355,7 @@ void handle_write(nng_aio *aio)
             if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
 
-                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                neu_otel_scope_set_span_end_time(scope, neu_time_ns());
             } else {
                 ret = neu_plugin_op(plugin, header, &cmd);
             }
@@ -366,8 +366,8 @@ void handle_write(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
                 if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_add_span_attr_int(scope, "error type",
-                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_scope_set_status_code2(
+                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);
                 }
             }
@@ -377,7 +377,8 @@ void handle_write(nng_aio *aio)
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
             if (neu_otel_control_is_started() && trace_flag) {
-                neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
+                neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_ERROR,
+                                                err_type);
                 neu_otel_trace_set_final(trace);
             }
 
@@ -432,7 +433,7 @@ void handle_write_tags(nng_aio *aio)
                         }
                         neu_otel_scope_set_span_flags(scope, flags);
                         neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ms());
+                                                           neu_time_ns());
 
                         neu_otel_scope_add_span_attr_int(
                             scope, "thread id", (int64_t) pthread_self());
@@ -466,7 +467,7 @@ void handle_write_tags(nng_aio *aio)
                             neu_otel_scope_add_span_attr_int(
                                 scope, "error type", NEU_ERR_STRING_TOO_LONG);
                             neu_otel_scope_set_span_end_time(scope,
-                                                             neu_time_ms());
+                                                             neu_time_ns());
                             neu_otel_trace_set_final(trace);
                         }
                         return;
@@ -530,7 +531,7 @@ void handle_write_tags(nng_aio *aio)
 
             if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
-                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                neu_otel_scope_set_span_end_time(scope, neu_time_ns());
             } else {
                 ret = neu_plugin_op(plugin, header, &cmd);
             }
@@ -541,8 +542,8 @@ void handle_write_tags(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
                 if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_add_span_attr_int(scope, "error type",
-                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_scope_set_status_code2(
+                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);
                 }
             }
@@ -552,7 +553,8 @@ void handle_write_tags(nng_aio *aio)
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
             if (neu_otel_control_is_started() && trace_flag) {
-                neu_otel_scope_add_span_attr_int(scope, "error type", err_type);
+                neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_ERROR,
+                                                err_type);
                 neu_otel_trace_set_final(trace);
             }
 
@@ -659,7 +661,7 @@ void handle_write_gtags(nng_aio *aio)
                         }
                         neu_otel_scope_set_span_flags(scope, flags);
                         neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ms());
+                                                           neu_time_ns());
 
                         neu_otel_scope_add_span_attr_int(
                             scope, "thread id", (int64_t) pthread_self());
@@ -688,7 +690,7 @@ void handle_write_gtags(nng_aio *aio)
 
             if (neu_otel_control_is_started() && trace_flag) {
                 ret = neu_plugin_op(plugin, header, &cmd);
-                neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+                neu_otel_scope_set_span_end_time(scope, neu_time_ns());
             } else {
                 ret = neu_plugin_op(plugin, header, &cmd);
             }
@@ -699,8 +701,8 @@ void handle_write_gtags(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
                 if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_add_span_attr_int(scope, "error type",
-                                                     NEU_ERR_IS_BUSY);
+                    neu_otel_scope_set_status_code2(
+                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_IS_BUSY);
                     neu_otel_trace_set_final(trace);
                 }
             }

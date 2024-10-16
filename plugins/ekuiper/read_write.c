@@ -100,17 +100,12 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     if (neu_otel_data_is_started() && trans_data->trace_ctx) {
         trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
         if (trans_trace) {
-            trans_scope = neu_otel_add_span(trans_trace);
-            neu_otel_scope_set_span_name(trans_scope, "ekuiper send");
             neu_otel_new_span_id(new_span_id);
-            neu_otel_scope_set_span_id(trans_scope, new_span_id);
-            uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(trans_scope);
-            if (p_sp_id) {
-                neu_otel_scope_set_parent_span_id2(trans_scope, p_sp_id, 8);
-            }
+            trans_scope =
+                neu_otel_add_span2(trans_trace, "ekuiper send", new_span_id);
             neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
                                              (int64_t)(pthread_self()));
-            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
         }
     }
 
@@ -137,8 +132,6 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
         }
 
         if (trans_trace) {
-            neu_otel_scope_add_span_attr_string(trans_scope, "playload",
-                                                json_str);
             trace_id           = neu_otel_get_trace_id(trans_trace);
             uint8_t span_id[8] = { 0 };
             hex_string_to_binary(new_span_id, span_id, 8);
@@ -172,8 +165,13 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     } while (0);
 
     if (trans_trace) {
-        neu_otel_scope_add_span_attr_int(trans_scope, "error", rv);
-        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ms());
+        if (rv == 0) {
+            neu_otel_scope_set_status_code2(trans_scope, NEU_OTEL_STATUS_OK, 0);
+        } else {
+            neu_otel_scope_set_status_code(trans_scope, NEU_OTEL_STATUS_ERROR,
+                                           nng_strerror(rv));
+        }
+        neu_otel_scope_set_span_end_time(trans_scope, neu_time_ns());
         neu_otel_trace_set_final(trans_trace);
     }
 }

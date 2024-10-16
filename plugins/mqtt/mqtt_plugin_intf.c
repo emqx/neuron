@@ -460,14 +460,14 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         plugin->cache_metric_update_ts = global_timestamp;
     }
 
-    neu_otel_trace_ctx trace = NULL;
-    neu_otel_scope_ctx scope = NULL;
+    neu_otel_trace_ctx trace           = NULL;
+    neu_otel_scope_ctx scope           = NULL;
+    char               new_span_id[36] = { 0 };
     if (neu_otel_control_is_started()) {
         trace = neu_otel_find_trace(head->ctx);
         if (trace) {
             scope = neu_otel_add_span(trace);
             neu_otel_scope_set_span_name(scope, "mqtt response");
-            char new_span_id[36] = { 0 };
             neu_otel_new_span_id(new_span_id);
             neu_otel_scope_set_span_id(scope, new_span_id);
             uint8_t *p_sp_id = neu_otel_scope_get_pre_span_id(scope);
@@ -476,13 +476,14 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
             }
             neu_otel_scope_add_span_attr_int(scope, "thread id",
                                              (int64_t)(pthread_self()));
-            neu_otel_scope_set_span_start_time(scope, neu_time_ms());
+            neu_otel_scope_set_span_start_time(scope, neu_time_ns());
         }
     }
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        error = handle_write_response(plugin, head->ctx, data, scope);
+        error = handle_write_response(plugin, head->ctx, data, scope, trace,
+                                      new_span_id);
         break;
     case NEU_RESP_GET_NODES_STATE: {
         handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);
@@ -537,8 +538,13 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     }
 
     if (trace) {
-        neu_otel_scope_add_span_attr_int(scope, "handle error", error);
-        neu_otel_scope_set_span_end_time(scope, neu_time_ms());
+        if (error == NEU_ERR_SUCCESS) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        } else {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_ERROR,
+                                            error);
+        }
+        neu_otel_scope_set_span_end_time(scope, neu_time_ns());
         neu_otel_trace_set_final(trace);
     }
 
