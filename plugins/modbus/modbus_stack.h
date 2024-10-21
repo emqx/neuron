@@ -30,7 +30,7 @@ typedef struct modbus_stack modbus_stack_t;
 
 typedef int (*modbus_stack_send)(void *ctx, uint16_t n_byte, uint8_t *bytes);
 typedef int (*modbus_stack_value)(void *ctx, uint8_t slave_id, uint16_t n_byte,
-                                  uint8_t *bytes, int error);
+                                  uint8_t *bytes, int error, void *trace);
 typedef int (*modbus_stack_write_resp)(void *ctx, void *req, int error);
 
 typedef enum modbus_protocol {
