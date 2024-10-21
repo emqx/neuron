@@ -49,12 +49,10 @@ UT_array *   neu_group_query_read_tag_paginate(neu_group_t *group,
                                                int *total_count);
 uint16_t     neu_group_tag_size(const neu_group_t *group);
 neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag);
-void neu_group_split_static_tags(neu_group_t *group, UT_array **static_tags,
-                                 UT_array **other_tags);
+void neu_group_split_static_tags(neu_group_t *group, UT_array **other_tags);
 
 typedef void (*neu_group_change_fn)(void *arg, int64_t timestamp,
-                                    UT_array *static_tags, UT_array *other_tags,
-                                    uint32_t interval);
+                                    UT_array *other_tags, uint32_t interval);
 void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn);
 bool neu_group_is_change(neu_group_t *group, int64_t timestamp);

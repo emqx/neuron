@@ -823,12 +823,7 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
         tags_res.tags[index].bias        = tag->bias;
-        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_tag_get_static_value_json(tag, &tags_res.tags[index].t,
-                                          &tags_res.tags[index].value);
-        } else {
-            tags_res.tags[index].t = NEU_JSON_UNDEFINE;
-        }
+        tags_res.tags[index].t           = NEU_JSON_UNDEFINE;
     }
 
     // accumulate tag object in `tags` array
@@ -908,12 +903,8 @@ static int get_driver_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         gtag->tags[index].precision   = tag->precision;
         gtag->tags[index].decimal     = tag->decimal;
         gtag->tags[index].bias        = tag->bias;
-        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_tag_get_static_value_json(tag, &gtag->tags[index].t,
-                                          &gtag->tags[index].value);
-        } else {
-            gtag->tags[index].t = NEU_JSON_UNDEFINE;
-        }
+        gtag->tags[index].t           = NEU_JSON_UNDEFINE;
+
         tag->name        = NULL; // moved
         tag->address     = NULL; // moved
         tag->description = NULL; // moved
@@ -1190,11 +1181,6 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
             NULL == cmd.tags[i].description) {
             ret = NEU_ERR_EINTERNAL;
             goto error;
-        }
-
-        if (NEU_ATTRIBUTE_STATIC & data->tags[i].attribute) {
-            neu_tag_set_static_value_json(&cmd.tags[i], data->tags[i].t,
-                                          &data->tags[i].value);
         }
     }
 

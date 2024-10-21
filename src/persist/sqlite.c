@@ -420,7 +420,6 @@ static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
     .store_tags          = neu_sqlite_persister_store_tags,
     .load_tags           = neu_sqlite_persister_load_tags,
     .update_tag          = neu_sqlite_persister_update_tag,
-    .update_tag_value    = neu_sqlite_persister_update_tag_value,
     .delete_tag          = neu_sqlite_persister_delete_tag,
     .store_subscription  = neu_sqlite_persister_store_subscription,
     .update_subscription = neu_sqlite_persister_update_subscription,
@@ -572,18 +571,15 @@ int neu_sqlite_persister_store_tag(neu_persister_t *    self,
                                    const char *         group_name,
                                    const neu_datatag_t *tag)
 {
-    char *val_str = neu_tag_dump_static_value(tag);
-    int   rv =
-        execute_sql(((neu_sqlite_persister_t *) self)->db,
-                    "INSERT INTO tags ("
-                    " driver_name, group_name, name, address, attribute,"
-                    " precision, type, decimal, bias, description, value"
-                    ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q)",
-                    driver_name, group_name, tag->name, tag->address,
-                    tag->attribute, tag->precision, tag->type, tag->decimal,
-                    tag->bias, tag->description, val_str);
+    int rv = execute_sql(((neu_sqlite_persister_t *) self)->db,
+                         "INSERT INTO tags ("
+                         " driver_name, group_name, name, address, attribute,"
+                         " precision, type, decimal, bias, description"
+                         ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q)",
+                         driver_name, group_name, tag->name, tag->address,
+                         tag->attribute, tag->precision, tag->type,
+                         tag->decimal, tag->bias, tag->description);
 
-    free(val_str);
     return rv;
 }
 
@@ -643,22 +639,6 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
                        tag->description, sqlite3_errmsg(db));
             return -1;
         }
-
-        char *val_str = neu_tag_dump_static_value(tag);
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 11, val_str, -1, NULL)) {
-            nlog_error("bind `%s` with value=`%s` fail: %s", query, val_str,
-                       sqlite3_errmsg(db));
-            free(val_str);
-            return -1;
-        }
-
-        if (SQLITE_DONE != sqlite3_step(stmt)) {
-            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(db));
-            free(val_str);
-            return -1;
-        }
-
-        free(val_str);
     }
 
     return 0;
@@ -737,10 +717,6 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
             .description = (char *) sqlite3_column_text(stmt, 7),
         };
         utarray_push_back(*tags, &tag);
-        if (neu_tag_attribute_test(&tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_tag_load_static_value(utarray_back(*tags),
-                                      (char *) sqlite3_column_text(stmt, 8));
-        }
 
         step = sqlite3_step(stmt);
     }
@@ -804,30 +780,14 @@ int neu_sqlite_persister_update_tag(neu_persister_t *    self,
                                     const char *         group_name,
                                     const neu_datatag_t *tag)
 {
-    char *val_str = neu_tag_dump_static_value(tag);
-    int   rv      = execute_sql(((neu_sqlite_persister_t *) self)->db,
+    int rv = execute_sql(((neu_sqlite_persister_t *) self)->db,
                          "UPDATE tags SET"
                          " address=%Q, attribute=%i, precision=%i, type=%i,"
-                         " decimal=%lf, bias=%lf, description=%Q, value=%Q "
+                         " decimal=%lf, bias=%lf, description=%Q "
                          "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
                          tag->address, tag->attribute, tag->precision,
                          tag->type, tag->decimal, tag->bias, tag->description,
-                         val_str, driver_name, group_name, tag->name);
-    free(val_str);
-    return rv;
-}
-
-int neu_sqlite_persister_update_tag_value(neu_persister_t *    self,
-                                          const char *         driver_name,
-                                          const char *         group_name,
-                                          const neu_datatag_t *tag)
-{
-    char *val_str = neu_tag_dump_static_value(tag);
-    int   rv      = execute_sql(((neu_sqlite_persister_t *) self)->db,
-                         "UPDATE tags SET value=%Q "
-                         "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
-                         val_str, driver_name, group_name, tag->name);
-    free(val_str);
+                         driver_name, group_name, tag->name);
     return rv;
 }
 

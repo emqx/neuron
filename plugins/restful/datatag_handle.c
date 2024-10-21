@@ -67,10 +67,6 @@ void handle_add_tags(nng_aio *aio)
                     } else {
                         cmd.tags[i].description = strdup("");
                     }
-                    if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
-                        neu_tag_set_static_value_json(
-                            &cmd.tags[i], req->tags[i].t, &req->tags[i].value);
-                    }
                 }
 
                 ret = neu_plugin_op(plugin, header, &cmd);
@@ -157,12 +153,6 @@ void handle_add_gtags(nng_aio *aio)
                             strdup(req->groups[i].tags[j].description);
                     } else {
                         cmd.groups[i].tags[j].description = strdup("");
-                    }
-                    if (NEU_ATTRIBUTE_STATIC &
-                        req->groups[i].tags[j].attribute) {
-                        neu_tag_set_static_value_json(
-                            &cmd.groups[i].tags[j], req->groups[i].tags[j].t,
-                            &req->groups[i].tags[j].value);
                     }
                 }
             }
@@ -283,10 +273,6 @@ void handle_update_tags(nng_aio *aio)
                 } else {
                     cmd.tags[i].description = strdup("");
                 }
-                if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
-                    neu_tag_set_static_value_json(&cmd.tags[i], req->tags[i].t,
-                                                  &req->tags[i].value);
-                }
             }
 
             ret = neu_plugin_op(plugin, header, &cmd);
@@ -367,12 +353,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
         tags_res.tags[index].bias        = tag->bias;
-        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_tag_get_static_value_json(tag, &tags_res.tags[index].t,
-                                          &tags_res.tags[index].value);
-        } else {
-            tags_res.tags[index].t = NEU_JSON_UNDEFINE;
-        }
+        tags_res.tags[index].t           = NEU_JSON_UNDEFINE;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);

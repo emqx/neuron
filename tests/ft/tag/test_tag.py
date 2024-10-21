@@ -8,14 +8,6 @@ hold_int16 = [{"name": "hold_int16", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
 hold_int16_to_int32 = [{"name": "hold_int16", "address": "1!400002",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT32}]
-hold_int16_to_static = [{"name": "hold_int16", "address": "1!400001",
-               "attribute": NEU_TAG_ATTRIBUTE_RW_STATIC, "type": NEU_TYPE_INT16, "value": 1}]
-hold_int16_to_static_without_value = [{"name": "hold_int16", "address": "1!400001",
-               "attribute": NEU_TAG_ATTRIBUTE_RW_STATIC, "type": NEU_TYPE_INT16}]
-hold_int16_static = [{"name": "hold_int16_static", "address": "1!400001",
-               "attribute": NEU_TAG_ATTRIBUTE_RW_STATIC, "type": NEU_TYPE_INT16, "value": 1}]
-hold_int16_static_null = [{"name": "hold_int16", "address": "1!400001",
-               "attribute": NEU_TAG_ATTRIBUTE_RW_STATIC, "type": NEU_TYPE_INT16}]
 hold_int16_bit = [{"name": "hold_int16_type", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16},
                {"name": "hold_bit_type", "address": "1!000001",
@@ -26,6 +18,8 @@ hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_bias = [{"name": "hold_int16_bias", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_READ, "type": NEU_TYPE_INT16, "bias": 1.0}]
+none= [{"name": "none", "address": "1!400001",
+               "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
 
 class TestTag:
 
@@ -581,18 +575,6 @@ class TestTag:
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
 
-    @description(given="static tag", when="add static tag", then="add success")
-    def test_add_static_tag(self):
-        response = api.add_tags(node="modbus-tcp", group="group1", tags=hold_int16_static)
-        assert 200 == response.status_code
-        assert NEU_ERR_SUCCESS == response.json()['error']
-
-    @description(given="static tag without value", when="add static tag without value", then="add failed")
-    def test_add_static_tag_without_value(self):
-        response = api.add_tags(node="modbus-tcp", group="group1", tags=hold_int16_static_null)
-        assert 400 == response.status_code
-        assert NEU_ERR_BODY_IS_WRONG == response.json()['error']
-
     @description(given="node group", when="add different types of tags", then="add success")
     def test_add_different_types_tags(self):
         response = api.add_tags(node="modbus-tcp", group="group1", tags=hold_int16_bit)
@@ -614,18 +596,6 @@ class TestTag:
         assert NEU_TAG_ATTRIBUTE_RW == response.json()["tags"][0]["attribute"]
         assert NEU_TYPE_INT16 == response.json()["tags"][0]["type"]
 
-    @description(given="node group tag", when="update tag to be static", then="update success")
-    def test_update_tag_to_static(self):
-        response = api.update_tags(node="modbus-tcp", group="group1", tags=hold_int16_to_static)
-        assert 200 == response.status_code
-        assert NEU_ERR_SUCCESS == response.json()['error']
-
-    @description(given="node group tag", when="update tag to be static without value", then="update failed")
-    def test_update_tag_to_static_without_value(self):
-        response = api.update_tags(node="modbus-tcp", group="group1", tags=hold_int16_to_static_without_value)
-        assert 400 == response.status_code
-        assert NEU_ERR_BODY_IS_WRONG == response.json()['error']
-
     @description(given="node group tag", when="update tag", then="update success")
     def test_update_tag(self):
         response = api.update_tags(node="modbus-tcp", group="group1", tags=hold_int16_to_int32)
@@ -638,12 +608,6 @@ class TestTag:
         assert "1!400002" == response.json()["tags"][0]["address"]
         assert NEU_TAG_ATTRIBUTE_RW == response.json()["tags"][0]["attribute"]
         assert NEU_TYPE_INT32 == response.json()["tags"][0]["type"]
-
-    @description(given="non-existent tag", when="update non-existent tag", then="update failed")
-    def test_update_non_existent_tag(self):
-        response = api.update_tags(node="modbus-tcp", group="group", tags=hold_int16_to_static)
-        assert 404 == response.status_code
-        assert NEU_ERR_TAG_NOT_EXIST == response.json()['error']
 
     @description(given="non-existent group", when="delete tag from non-existent group", then="delete failed")
     def test_delete_tag_non_existent_group(self):
@@ -678,6 +642,12 @@ class TestTag:
         response = api.del_tags(node="modbus-tcp", group="group1", tags=["hold_int16_description"])
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
+
+    @description(given="non-existent tag", when="update non-existent tag", then="update failed")
+    def test_update_non_existent_tag(self):
+        response = api.update_tags(node="modbus-tcp", group="group", tags=none)
+        assert 404 == response.status_code
+        assert NEU_ERR_TAG_NOT_EXIST == response.json()['error']
 
     @description(given="node group", when="add a tag with decimal", then="add success")
     def test_add_tag_with_decimal(self):
