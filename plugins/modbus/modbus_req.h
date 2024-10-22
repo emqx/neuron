@@ -62,7 +62,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte);
 int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes);
 int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
-                        uint8_t *bytes, int error);
+                        uint8_t *bytes, int error, void *trace);
 int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                  neu_value_u value, bool response);
 int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
