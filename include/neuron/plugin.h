@@ -67,6 +67,7 @@ struct neu_plugin_group {
     char *    group_name;
     UT_array *tags;
 
+    void *                context;
     void *                user_data;
     neu_plugin_group_free group_free;
     uint32_t              interval;

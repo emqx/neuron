@@ -1066,15 +1066,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         } else {
             if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
                 error.error = neu_adapter_driver_add_group(
-                    (neu_adapter_driver_t *) adapter, cmd->group,
-                    cmd->interval);
+                    (neu_adapter_driver_t *) adapter, cmd->group, cmd->interval,
+                    NULL);
             } else {
                 error.error = NEU_ERR_GROUP_NOT_ALLOW;
             }
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_add_group(adapter->name, cmd->group, cmd->interval);
+            adapter_storage_add_group(adapter->name, cmd->group, cmd->interval,
+                                      NULL);
         }
 
         neu_msg_exchange(header);
@@ -1465,9 +1466,11 @@ int neu_adapter_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
         // ensure group created`
         neu_adapter_driver_add_group((neu_adapter_driver_t *) adapter,
                                      cmd->groups[group_index].group,
-                                     cmd->groups[group_index].interval);
+                                     cmd->groups[group_index].interval,
+                                     cmd->groups[group_index].context);
         adapter_storage_add_group(adapter->name, cmd->groups[group_index].group,
-                                  cmd->groups[group_index].interval);
+                                  cmd->groups[group_index].interval,
+                                  cmd->groups[group_index].context);
         for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
              tag_index++) {
             int add_tag_result = neu_adapter_driver_add_tag(

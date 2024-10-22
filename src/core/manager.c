@@ -1367,7 +1367,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 for (uint16_t j = 0; j < driver->n_group; j++) {
                     adapter_storage_add_group(driver->node,
                                               driver->groups[j].group,
-                                              driver->groups[j].interval);
+                                              driver->groups[j].interval, NULL);
                     adapter_storage_add_tags(
                         driver->node, driver->groups[j].group,
                         driver->groups[j].tags, driver->groups[j].n_tag);

@@ -27,7 +27,7 @@
 void adapter_storage_state(const char *node, neu_node_running_state_e state);
 void adapter_storage_setting(const char *node, const char *setting);
 void adapter_storage_add_group(const char *node, const char *group,
-                               uint32_t interval);
+                               uint32_t interval, void *context);
 void adapter_storage_update_group(const char *node, const char *group,
                                   const char *new_name, uint32_t interval);
 void adapter_storage_del_group(const char *node, const char *group);

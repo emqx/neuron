@@ -224,7 +224,8 @@ struct neu_persister_vtbl_s {
      * @return 0 on success, non-zero otherwise
      */
     int (*store_group)(neu_persister_t *self, const char *driver_name,
-                       neu_persist_group_info_t *group_info);
+                       neu_persist_group_info_t *group_info,
+                       const char *              context);
 
     /**
      * Update group config.

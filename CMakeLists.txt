@@ -54,14 +54,17 @@ add_custom_target(neuron-version
           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
 
 find_package(nng CONFIG REQUIRED)
+find_package(LibXml2 REQUIRED)
 find_package(Threads)
 
 if (CMAKE_STAGING_PREFIX)
   include_directories(${CMAKE_STAGING_PREFIX}/include)
   link_directories(${CMAKE_STAGING_PREFIX}/lib)
+  include_directories(${CMAKE_STAGING_PREFIX}/include/libxml2)
 else()
   include_directories(/usr/local/include)
   link_directories(/usr/local/lib)
+  include_directories(/usr/local/include/libxml2)
 endif()
 
 set(PERSIST_SOURCES
@@ -90,6 +93,7 @@ set(NEURON_BASE_SOURCES
     src/utils/base64.c
     src/utils/async_queue.c
     src/utils/log.c
+	src/utils/cid.c
     ${PERSIST_SOURCES})
   
 if (SMART_LINK) 
@@ -114,7 +118,7 @@ target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${
 target_include_directories(neuron-base
                            PRIVATE include/neuron src)
 target_link_libraries(neuron-base libssl.a libcrypto.a)
-target_link_libraries(neuron-base nng libzlog.so jansson jwt
+target_link_libraries(neuron-base nng libzlog.so jansson jwt xml2
                       ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c)
 add_dependencies(neuron-base neuron-version)
 
@@ -150,6 +154,7 @@ set(NEURON_SOURCES
     plugins/restful/version_handle.c
     plugins/restful/scan_handle.c
     plugins/restful/otel_handle.c
+	plugins/restful/cid_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)
 
@@ -157,7 +162,7 @@ set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
-target_link_libraries(neuron dl neuron-base sqlite3 -lm)
+target_link_libraries(neuron dl neuron-base sqlite3 -lm xml2)
 target_link_options(neuron PRIVATE "LINKER:--dynamic-list-data")
 
 #copy file for run

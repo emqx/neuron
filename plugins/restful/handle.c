@@ -25,6 +25,7 @@
 #include "plugin.h"
 
 #include "adapter_handle.h"
+#include "cid_handle.h"
 #include "datatag_handle.h"
 #include "global_config_handle.h"
 #include "group_config_handle.h"
@@ -131,6 +132,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/otel",
     },
+    {
+        .url = "/api/v2/cid",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -145,6 +149,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type       = NEU_HTTP_HANDLER_REDIRECT,
         .url        = "/",
         .value.path = "/web",
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/cid",
+        .value.handler = handle_cid,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

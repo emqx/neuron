@@ -958,12 +958,14 @@ int neu_sqlite_persister_delete_subscription(neu_persister_t *self,
 
 int neu_sqlite_persister_store_group(neu_persister_t *         self,
                                      const char *              driver_name,
-                                     neu_persist_group_info_t *group_info)
+                                     neu_persist_group_info_t *group_info,
+                                     const char *              context)
 {
-    return execute_sql(
-        ((neu_sqlite_persister_t *) self)->db,
-        "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %u)",
-        driver_name, group_info->name, (unsigned) group_info->interval);
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "INSERT INTO groups (driver_name, name, interval, "
+                       "context) VALUES (%Q, %Q, %u, %Q)",
+                       driver_name, group_info->name,
+                       (unsigned) group_info->interval, context);
 }
 
 int neu_sqlite_persister_update_group(neu_persister_t *         self,
@@ -1017,6 +1019,12 @@ static int collect_group_info(sqlite3_stmt *stmt, UT_array **group_infos)
 
         info.name     = name;
         info.interval = sqlite3_column_int(stmt, 1);
+        char *context = (char *) sqlite3_column_text(stmt, 2);
+        if (NULL != context) {
+            info.context = strdup(context);
+        } else {
+            info.context = NULL;
+        }
         utarray_push_back(*group_infos, &info);
 
         step = sqlite3_step(stmt);
@@ -1036,7 +1044,8 @@ int neu_sqlite_persister_load_groups(neu_persister_t *self,
     neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
 
     sqlite3_stmt *stmt = NULL;
-    const char *query = "SELECT name, interval FROM groups WHERE driver_name=?";
+    const char *  query =
+        "SELECT name, interval, context FROM groups WHERE driver_name=?";
 
     utarray_new(*group_infos, &group_info_icd);
 

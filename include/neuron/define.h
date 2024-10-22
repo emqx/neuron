@@ -62,6 +62,21 @@
 #define NEU_LOG_LEVEL_ERROR "error"
 #define NEU_LOG_LEVEL_FATAL "fatal"
 
+#define NEU_CID_LNCLASS_LEN 8
+#define NEU_CID_LNTYPE_LEN 32
+#define NEU_CID_IED_NAME_LEN 32
+#define NEU_CID_LDEVICE_LEN 32
+#define NEU_CID_LNO_NAME_LEN 32
+#define NEU_CID_LNO_TYPE_LEN 32
+#define NEU_CID_INST_LEN 32
+#define NEU_CID_SDI_NAME_LEN 16
+#define NEU_CID_DO_NAME_LEN 32
+#define NEU_CID_DO_ID_LEN 32
+#define NEU_CID_DA_NAME_LEN 32
+#define NEU_CID_DATASET_NAME_LEN 32
+#define NEU_CID_REPORT_NAME_LEN 32
+#define NEU_CID_REPORT_ID_LEN 64
+
 #define CHECK_NODE_NAME_LENGTH_ERR                                            \
     do {                                                                      \
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {                 \

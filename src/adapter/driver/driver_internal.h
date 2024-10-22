@@ -46,7 +46,7 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req);
 
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
-                                 uint32_t interval);
+                                 uint32_t interval, void *context);
 int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
                                     const char *name, const char *new_name,
                                     uint32_t interval);

@@ -90,7 +90,8 @@ int neu_sqlite_persister_delete_subscription(neu_persister_t *self,
                                              const char *     group_name);
 int neu_sqlite_persister_store_group(neu_persister_t *         self,
                                      const char *              driver_name,
-                                     neu_persist_group_info_t *group_info);
+                                     neu_persist_group_info_t *group_info,
+                                     const char *              context);
 int neu_sqlite_persister_update_group(neu_persister_t *         self,
                                       const char *              driver_name,
                                       const char *              group_name,
