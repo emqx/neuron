@@ -467,6 +467,9 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
             el->grp.group_free(&el->grp);
         }
         free(el->grp.group_name);
+        if (el->grp.context) {
+            free(el->grp.context);
+        }
         free(el->name);
         utarray_free(el->grp.tags);
 
@@ -1377,7 +1380,7 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                       name##_TYPE, (init))
 
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
-                                 uint32_t interval)
+                                 uint32_t interval, void *context)
 {
     UT_icd   icd     = { sizeof(to_be_write_tag_t), NULL, NULL, NULL };
     UT_icd   sub_icd = { sizeof(sub_app_t), NULL, NULL, NULL };
@@ -1399,6 +1402,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->group          = neu_group_new(name, interval);
         find->grp.group_name = strdup(name);
         find->grp.interval   = interval;
+        find->grp.context    = context;
         neu_group_split_static_tags(find->group, &find->static_tags,
                                     &find->grp.tags);
 
@@ -1515,6 +1519,9 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         }
         free(find->grp.group_name);
         free(find->name);
+        if (find->grp.context) {
+            free(find->grp.context);
+        }
 
         utarray_foreach(find->static_tags, neu_datatag_t *, tag)
         {
@@ -1732,8 +1739,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
-        neu_adapter_driver_add_group(driver, group, interval);
-        adapter_storage_add_group(driver->adapter.name, group, interval);
+        neu_adapter_driver_add_group(driver, group, interval, NULL);
+        adapter_storage_add_group(driver->adapter.name, group, interval, NULL);
     }
     HASH_FIND_STR(driver->groups, group, find);
     assert(find != NULL);
@@ -2135,9 +2142,11 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
         .tags       = NULL,
         .group_free = NULL,
         .user_data  = NULL,
+        .context    = NULL,
     };
 
-    grp.tags = other_tags;
+    grp.context = group->grp.context;
+    grp.tags    = other_tags;
     free(group->grp.group_name);
     if (group->static_tags != NULL) {
         utarray_free(group->static_tags);

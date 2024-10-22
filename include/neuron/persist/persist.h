@@ -41,6 +41,7 @@ typedef struct {
 typedef struct {
     uint32_t interval;
     char *   name;
+    char *   context;
 } neu_persist_group_info_t;
 
 typedef struct {
@@ -68,6 +69,9 @@ static inline void neu_persist_node_info_fini(neu_persist_node_info_t *info)
 static inline void neu_persist_group_info_fini(neu_persist_group_info_t *info)
 {
     free(info->name);
+    if (info->context) {
+        free(info->context);
+    }
 }
 
 static inline void
@@ -255,7 +259,8 @@ int neu_persister_delete_subscription(const char *app_name,
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_group(const char *              driver_name,
-                              neu_persist_group_info_t *group_info);
+                              neu_persist_group_info_t *group_info,
+                              const char *              context);
 
 /**
  * Update group config.

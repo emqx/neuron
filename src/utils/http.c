@@ -286,6 +286,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:
+    case NEU_ERR_INVALID_CID:
     case NEU_ERR_IP_ADDRESS_INVALID:
     case NEU_ERR_IP_ADDRESS_IN_USE:
     case NEU_ERR_NODE_SETTING_INVALID:

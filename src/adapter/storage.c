@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "utils/cid.h"
 #include "utils/log.h"
 
 #include "adapter_internal.h"
@@ -34,14 +35,19 @@ void adapter_storage_setting(const char *node, const char *setting)
 }
 
 void adapter_storage_add_group(const char *node, const char *group,
-                               uint32_t interval)
+                               uint32_t interval, void *context)
 {
     neu_persist_group_info_t info = {
         .name     = (char *) group,
         .interval = interval,
     };
-
-    neu_persister_store_group(node, &info);
+    if (context != NULL) {
+        char *ctx = neu_cid_info_to_string((cid_dataset_info_t *) context);
+        neu_persister_store_group(node, &info, ctx);
+        free(ctx);
+    } else {
+        neu_persister_store_group(node, &info, NULL);
+    }
 }
 
 void adapter_storage_update_group(const char *node, const char *group,
@@ -146,7 +152,12 @@ int adapter_load_group_and_tag(neu_adapter_driver_t *driver)
     utarray_foreach(group_infos, neu_persist_group_info_t *, p)
     {
         UT_array *tags = NULL;
-        neu_adapter_driver_add_group(driver, p->name, p->interval);
+        if (p->context == NULL) {
+            neu_adapter_driver_add_group(driver, p->name, p->interval, NULL);
+        } else {
+            cid_dataset_info_t *info = neu_cid_info_from_string(p->context);
+            neu_adapter_driver_add_group(driver, p->name, p->interval, info);
+        }
 
         rv = neu_persister_load_tags(adapter->name, p->name, &tags);
         if (0 != rv) {

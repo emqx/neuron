@@ -421,9 +421,10 @@ int neu_persister_delete_subscription(const char *app_name,
 }
 
 int neu_persister_store_group(const char *              driver_name,
-                              neu_persist_group_info_t *group_info)
+                              neu_persist_group_info_t *group_info,
+                              const char *              context)
 {
-    return g_impl->vtbl->store_group(g_impl, driver_name, group_info);
+    return g_impl->vtbl->store_group(g_impl, driver_name, group_info, context);
 }
 
 int neu_persister_update_group(const char *driver_name, const char *group_name,

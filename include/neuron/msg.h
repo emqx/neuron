@@ -352,9 +352,10 @@ typedef struct neu_resp_get_group {
 
 typedef struct {
     char           group[NEU_GROUP_NAME_LEN];
-    int            n_tag;
     int            interval;
+    int            n_tag;
     neu_datatag_t *tags;
+    void *         context;
 } neu_gdatatag_t;
 
 typedef struct {
