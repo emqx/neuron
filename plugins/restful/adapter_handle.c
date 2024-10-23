@@ -434,11 +434,6 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
             } else {
                 gdatatags[i].tags[j].description = strdup("");
             }
-            if (NEU_ATTRIBUTE_STATIC & gtag_array->gtags[i].tags[j].attribute) {
-                neu_tag_set_static_value_json(
-                    &gdatatags[i].tags[j], gtag_array->gtags[i].tags[j].t,
-                    &gtag_array->gtags[i].tags[j].value);
-            }
 
             gtag_array->gtags[i].tags[j].address     = NULL; // moved
             gtag_array->gtags[i].tags[j].name        = NULL; // moved
