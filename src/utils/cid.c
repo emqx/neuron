@@ -59,7 +59,7 @@ int neu_cid_parse(const char *path, cid_t *cid)
     while (find != NULL) {
         if (find->type == XML_ELEMENT_NODE &&
             strcmp((const char *) find->name, "DataTypeTemplates") == 0) {
-            int ret = parse_template(find, &cid->template);
+            int ret = parse_template(find, &cid->cid_template);
             if (ret == 0) {
                 templates_parsed = true;
             }
@@ -71,7 +71,7 @@ int neu_cid_parse(const char *path, cid_t *cid)
     while (find_ied != NULL) {
         if (find_ied->type == XML_ELEMENT_NODE &&
             strcmp((const char *) find_ied->name, "IED") == 0) {
-            int ret = parse_ied(find_ied, &cid->ied, &cid->template);
+            int ret = parse_ied(find_ied, &cid->ied, &cid->cid_template);
             if (ret == 0) {
                 ied_parsed = true;
             }
@@ -94,22 +94,22 @@ int neu_cid_parse(const char *path, cid_t *cid)
 
 void neu_cid_free(cid_t *cid)
 {
-    for (int i = 0; i < cid->template.n_lnos; i++) {
-        if (cid->template.lnos[i].n_dos > 0) {
-            free(cid->template.lnos[i].dos);
+    for (int i = 0; i < cid->cid_template.n_lnos; i++) {
+        if (cid->cid_template.lnos[i].n_dos > 0) {
+            free(cid->cid_template.lnos[i].dos);
         }
     }
-    if (cid->template.n_lnos > 0) {
-        free(cid->template.lnos);
+    if (cid->cid_template.n_lnos > 0) {
+        free(cid->cid_template.lnos);
     }
 
-    for (int i = 0; i < cid->template.n_dos; i++) {
-        if (cid->template.dos[i].n_das > 0) {
-            free(cid->template.dos[i].das);
+    for (int i = 0; i < cid->cid_template.n_dos; i++) {
+        if (cid->cid_template.dos[i].n_das > 0) {
+            free(cid->cid_template.dos[i].das);
         }
     }
-    if (cid->template.n_dos > 0) {
-        free(cid->template.dos);
+    if (cid->cid_template.n_dos > 0) {
+        free(cid->cid_template.dos);
     }
 
     for (int i = 0; i < cid->ied.n_ldevices; i++) {
