@@ -79,6 +79,14 @@ target_include_directories(common_test PRIVATE
 )
 target_link_libraries(common_test neuron-base gtest_main gtest)
 
+file(COPY ${CMAKE_SOURCE_DIR}/tests/ut/serverBMS_3_test.cid DESTINATION ${UT_DIRECTORY}/config)
+add_executable(cid_test cid_test.cc)
+target_include_directories(cid_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(cid_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -90,3 +98,4 @@ gtest_discover_tests(async_queue_test)
 gtest_discover_tests(rolling_counter_test)
 gtest_discover_tests(mqtt_client_test)
 gtest_discover_tests(common_test)
+gtest_discover_tests(cid_test)

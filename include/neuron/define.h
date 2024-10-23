@@ -62,7 +62,7 @@
 #define NEU_LOG_LEVEL_ERROR "error"
 #define NEU_LOG_LEVEL_FATAL "fatal"
 
-#define NEU_CID_LNCLASS_LEN 8
+#define NEU_CID_LNCLASS_LEN 12
 #define NEU_CID_LNTYPE_LEN 32
 #define NEU_CID_IED_NAME_LEN 32
 #define NEU_CID_LDEVICE_LEN 32

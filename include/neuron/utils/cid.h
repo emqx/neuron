@@ -20,6 +20,10 @@
 #ifndef _NEU_UTILS_CID_H_
 #define _NEU_UTILS_CID_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "define.h"
 #include "msg.h"
 
@@ -118,8 +122,8 @@ typedef struct {
 } cid_template_t;
 
 typedef struct {
-    cid_ied_t ied;
-    cid_template_t template;
+    cid_ied_t      ied;
+    cid_template_t cid_template;
 } cid_t;
 
 typedef struct {
@@ -140,5 +144,9 @@ void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd);
 
 char *              neu_cid_info_to_string(cid_dataset_info_t *info);
 cid_dataset_info_t *neu_cid_info_from_string(const char *str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
