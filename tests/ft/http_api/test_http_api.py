@@ -42,14 +42,13 @@ global_config = {
                 },
                 {
                     "type": 3,
-                    "name": "hold_int16_s",
-                    "attribute": 9,
+                    "name": "hold_int16_2",
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400002",
-                    "description": "",
-                    "value": 1
+                    "description": ""
                 }
             ],
             "driver": "modbus",
@@ -160,14 +159,13 @@ driver_1 = {
                 },
                 {
                     "type": 3,
-                    "name": "hold_int16_s",
-                    "attribute": 9,
+                    "name": "hold_int16_2",
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400002",
-                    "description": "",
-                    "value": 1
+                    "description": ""
                 }
             ],
         },
@@ -208,14 +206,13 @@ driver_2 = {
                 },
                 {
                     "type": 3,
-                    "name": "hold_int16_s",
-                    "attribute": 9,
+                    "name": "hold_int16_2",
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400002",
-                    "description": "",
-                    "value": 1
+                    "description": ""
                 }
             ],
         }

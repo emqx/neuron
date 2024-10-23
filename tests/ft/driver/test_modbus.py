@@ -194,25 +194,6 @@ input_register_string = [{"name": "input_register_string", "address": "1!30120.1
 input_register_bytes = [{"name": "input_register_bytes", "address": "1!30130.10",
                          "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BYTES}]
 
-hold_int16_s = [{"name": "hold_int16_s", "address": "1!400801",
-                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT16, "value": 1}]
-hold_uint16_s = [{"name": "hold_uint16_s", "address": "1!400802",
-                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT16, "value": 1}]
-hold_int32_s = [{"name": "hold_int32_s", "address": "1!400803",
-                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT32, "value": 1}]
-hold_uint32_s = [{"name": "hold_uint32_s", "address": "1!400815",
-                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT32, "value": 1}]
-hold_int64_s = [{"name": "hold_int64_s", "address": "1!400823",
-                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT64, "value": 1}]
-hold_uint64_s = [{"name": "hold_uint64_s", "address": "1!400835",
-                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT64, "value": 1}]
-hold_float_s = [{"name": "hold_float_s", "address": "1!400847",
-                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_FLOAT, "value": 1.0}]
-hold_double_s = [{"name": "hold_double_s", "address": "1!400857",
-                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_DOUBLE, "value": 1.0}]
-hold_string_s = [{"name": "hold_string_s", "address": "1!400870.2",
-                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_STRING, "value": "a"}]
-
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!40103",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_decimal_w = [{"name": "hold_int16_decimal_w", "address": "1!40103",
@@ -507,42 +488,6 @@ class TestModbus:
 
         api.add_tags_check(node=param[0], group='group', tags=hold_string_H)
         api.add_tags_check(node=param[0], group='group', tags=hold_string_L)
-
-    @description(given="created modbus node", when="add and read static tags", then="add and read success")
-    def test_add_read_static_tags(self, param):
-        api.add_tags_check(node=param[0], group='group', tags=hold_int16_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_uint16_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_int32_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_uint32_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_int64_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_uint64_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_float_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_double_s)
-        api.add_tags_check(node=param[0], group='group', tags=hold_string_s)
-
-        time.sleep(0.5)
-
-        response = api.get_tags(node=param[0], group="group")
-        assert 200 == response.status_code
-
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_int16_s[0]['name'])
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_uint16_s[0]['name'])
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_int32_s[0]['name'])
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_uint32_s[0]['name'])
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_int64_s[0]['name'])
-        assert 1 == api.read_tag(
-            node=param[0], group='group', tag=hold_uint64_s[0]['name'])
-        assert 1.0 == api.read_tag(
-            node=param[0], group='group', tag=hold_float_s[0]['name'])
-        assert 1.0 == api.read_tag(
-            node=param[0], group='group', tag=hold_double_s[0]['name'])
-        assert 'a' == api.read_tag(
-            node=param[0], group='group', tag=hold_string_s[0]['name'])
 
     @description(given="created modbus node", when="add wrong tags", then="add failed")
     def test_add_wrong_tags(self, param):

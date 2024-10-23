@@ -32,7 +32,6 @@ typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
     NEU_ATTRIBUTE_WRITE     = 2,
     NEU_ATTRIBUTE_SUBSCRIBE = 4,
-    NEU_ATTRIBUTE_STATIC    = 8,
 } neu_attribute_e;
 
 typedef enum {
@@ -132,16 +131,5 @@ int neu_datatag_string_etoh(char *str, int len);
 int neu_datatag_string_dtoh(char *str, int len);
 int neu_datatag_string_tod(char *str, int len, int buf_len);
 int neu_datatag_string_toe(char *str, int len, int buf_len);
-
-int neu_tag_get_static_value(const neu_datatag_t *tag, neu_value_u *value);
-int neu_tag_set_static_value(neu_datatag_t *tag, const neu_value_u *value);
-
-int neu_tag_get_static_value_json(neu_datatag_t *tag, neu_json_type_e *t,
-                                  neu_json_value_u *v);
-int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
-                                  const neu_json_value_u *v);
-
-char *neu_tag_dump_static_value(const neu_datatag_t *tag);
-int   neu_tag_load_static_value(neu_datatag_t *tag, const char *s);
 
 #endif
