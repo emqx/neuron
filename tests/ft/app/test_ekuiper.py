@@ -159,6 +159,7 @@ class Mocker:
 
     def recv(self):
         msg = self.sock.recv()
+        msg = msg[26:]
         return json.loads(msg.decode())
 
     def send(self, data):

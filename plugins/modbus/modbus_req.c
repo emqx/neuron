@@ -147,7 +147,7 @@ void handle_modbus_error(neu_plugin_t *plugin, struct modbus_group_data *gd,
                          const char *error_message)
 {
     modbus_value_handle(plugin, gd->cmd_sort->cmd[cmd_index].slave_id, 0, NULL,
-                        error_code);
+                        error_code, NULL);
     if (error_message) {
         plog_error(plugin, "%s, skip, %hhu!%hu", error_message,
                    gd->cmd_sort->cmd[cmd_index].slave_id,
@@ -372,7 +372,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 }
 
 int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
-                        uint8_t *bytes, int error)
+                        uint8_t *bytes, int error, void *trace)
 {
     neu_plugin_t *            plugin = (neu_plugin_t *) ctx;
     struct modbus_group_data *gd =
@@ -498,8 +498,14 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
         }
 
-        plugin->common.adapter_callbacks->driver.update(
-            plugin->common.adapter, gd->group, (*p_tag)->name, dvalue);
+        if (trace) {
+            plugin->common.adapter_callbacks->driver.update_with_trace(
+                plugin->common.adapter, gd->group, (*p_tag)->name, dvalue, NULL,
+                0, trace);
+        } else {
+            plugin->common.adapter_callbacks->driver.update(
+                plugin->common.adapter, gd->group, (*p_tag)->name, dvalue);
+        }
     }
     return 0;
 }
