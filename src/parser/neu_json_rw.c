@@ -440,8 +440,9 @@ static int decode_write_tags_req_json(void *                     json_obj,
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t v_elems[] = {
             {
-                .name = "tag",
-                .t    = NEU_JSON_STR,
+                .name    = "tag",
+                .op_name = "name",
+                .t       = NEU_JSON_STR,
             },
             {
                 .name = "value",

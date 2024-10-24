@@ -157,6 +157,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ob = root;
     } else {
         ob = json_object_get(root, ele->name);
+        if (ob == NULL && ele->op_name != NULL && strlen(ele->op_name) > 0 &&
+            strlen(ele->op_name) < 32) {
+            ob = json_object_get(root, ele->op_name);
+        }
     }
 
     if (ob == NULL) {
