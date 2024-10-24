@@ -116,6 +116,7 @@ struct neu_mqtt_client_s {
     nng_tls_config *                tls_cfg;
     nng_msg *                       conn_msg;
     nng_duration                    retry;
+    nng_dialer                      dialer;
     bool                            open;
     bool                            connected;
     neu_mqtt_client_connection_cb_t connect_cb;
@@ -166,6 +167,33 @@ static int            client_send_sub_msg(neu_mqtt_client_t *client,
 static inline void    client_start_recv(neu_mqtt_client_t *client);
 static inline int     client_start_timer(neu_mqtt_client_t *client);
 static inline int     client_make_url(neu_mqtt_client_t *client);
+
+static char *write_string_to_random_file(const char *str)
+{
+
+    char filename[256] = { 0 };
+    snprintf(filename, sizeof(filename), "/tmp/file_%" PRId64 "_%d.txt",
+             neu_time_ms(), rand() % 10000);
+
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        return NULL;
+    }
+
+    if (fprintf(file, "%s", str) < 0) {
+        fclose(file);
+        return NULL;
+    }
+
+    fclose(file);
+
+    char *path = calloc(1, strlen(filename) + 1);
+    if (path) {
+        strcpy(path, filename);
+    }
+
+    return path;
+}
 
 static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
 {
@@ -1186,8 +1214,9 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
                             const char *ca, const char *cert, const char *key,
                             const char *keypass)
 {
-    int             rv  = 0;
-    nng_tls_config *cfg = NULL;
+    int             rv      = 0;
+    nng_tls_config *cfg     = NULL;
+    char *          pass[2] = { 0 };
 
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1229,6 +1258,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         goto end;
     }
 
+    if (ca && (rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
+        log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
+        rv = -1;
+        goto end;
+    }
+
     if (cert != NULL && key != NULL) {
         if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_REQUIRED)) !=
             0) {
@@ -1236,7 +1271,14 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
             rv = -1;
             goto end;
         }
-        if ((rv = nng_tls_config_own_cert(cfg, cert, key, keypass)) != 0) {
+
+        if (keypass) {
+            pass[0] = write_string_to_random_file(((char **) keypass)[0]);
+            pass[1] = write_string_to_random_file(((char **) keypass)[1]);
+        }
+
+        if ((rv = nng_tls_config_own_cert(cfg, cert, key,
+                                          (const char *) pass)) != 0) {
             log(error, "nng_tls_config_own_cert fail: %s", nng_strerror(rv));
             rv = -1;
             goto end;
@@ -1249,12 +1291,15 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         }
     }
 
-    if (ca && (rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
-        log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
-        rv = -1;
-    }
-
 end:
+    if (pass[0]) {
+        remove(pass[0]);
+        free(pass[0]);
+    }
+    if (pass[1]) {
+        remove(pass[1]);
+        free(pass[1]);
+    }
     nng_mtx_unlock(client->mtx);
     return rv;
 }
@@ -1494,7 +1539,8 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         goto error;
     }
 
-    client->open = true;
+    client->open   = true;
+    client->dialer = dialer;
     nng_mtx_unlock(client->mtx);
 
     return 0;
@@ -1516,7 +1562,6 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     int                rv     = 0;
     neu_events_t *     events = NULL;
     neu_event_timer_t *timer  = NULL;
-
     nng_mtx_lock(client->mtx);
     if (!client->open) {
         nng_mtx_unlock(client->mtx);
@@ -1526,6 +1571,16 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     timer          = client->timer;
     client->events = NULL;
     client->timer  = NULL;
+#ifdef NEU_USE_MQTT_SM
+    nng_msg *dup = NULL;
+    if (nng_msg_dup(&dup, client->conn_msg) != 0) {
+        log(error, "nng_msg_dup: %s", nng_strerror(rv));
+        nng_mtx_unlock(client->mtx);
+        return -1;
+    }
+    client->conn_msg = dup;
+#endif
+
     nng_mtx_unlock(client->mtx);
 
     if (events) {
@@ -1536,6 +1591,7 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
     // nng_aio_stop(client->recv_aio);
 
+    nng_dialer_close(client->dialer);
     rv = nng_close(client->sock);
     if (0 != rv) {
         log(error, "nng_close: %s", nng_strerror(rv));

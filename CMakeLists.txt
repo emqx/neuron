@@ -107,6 +107,12 @@ if (CLIB)
   add_definitions(-DNEU_CLIB=${CLIB})
 endif()
 
+
+if (USE_MQTT_SM)
+  message(STATUS "use mqtt sm")
+  add_definitions(-DNEU_USE_MQTT_SM)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "build release")
     add_definitions(-DNEU_RELEASE)
