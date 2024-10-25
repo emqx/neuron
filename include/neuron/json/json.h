@@ -65,6 +65,7 @@ typedef enum neu_json_attribute {
 typedef struct neu_json_elem {
     neu_json_attribute_t attribute;
     char *               name;
+    char *               op_name;
     enum neu_json_type   t;
     union neu_json_value v;
     uint8_t              precision;
