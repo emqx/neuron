@@ -62,6 +62,8 @@ typedef struct {
 typedef struct {
     char lnclass[NEU_CID_LNCLASS_LEN];
     char lntype[NEU_CID_LNTYPE_LEN];
+    char lnprefix[NEU_CID_LNPREFIX_LEN];
+    char lninst[NEU_CID_LNINST_LEN];
 
     cid_dataset_t *datasets;
     int            n_datasets;

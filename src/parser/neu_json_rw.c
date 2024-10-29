@@ -166,12 +166,12 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
             neu_json_encode_field(attributes_object, &meta_elem, 1);
         }
 
-        tag_elems[if_precision + 9].name      = "attributes";
-        tag_elems[if_precision + 9].t         = NEU_JSON_OBJECT;
+        tag_elems[if_precision + 9].name         = "attributes";
+        tag_elems[if_precision + 9].t            = NEU_JSON_OBJECT;
         tag_elems[if_precision + 9].v.val_object = attributes_object;
 
-        tag_array = neu_json_encode_array(tag_array, tag_elems,
-                                          10 + if_precision);
+        tag_array =
+            neu_json_encode_array(tag_array, tag_elems, 10 + if_precision);
 
         free(p_tag->datatag.name);
         free(p_tag->datatag.address);

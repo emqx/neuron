@@ -329,7 +329,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     data->group  = strdup(group);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
-    read_report_group(true,global_timestamp, 0,
+    read_report_group(true, global_timestamp, 0,
                       neu_adapter_get_tag_cache_type(&driver->adapter),
                       driver->cache, group, tags, data->tags);
 
