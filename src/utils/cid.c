@@ -181,9 +181,11 @@ void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
                 tag->address     = calloc(1, NEU_TAG_ADDRESS_LEN);
                 tag->description = strdup("");
                 snprintf(tag->address, NEU_TAG_ADDRESS_LEN - 1,
-                         "%s%s/%s$%s$%s$%s", cid->ied.name,
+                         "%s%s/%s%s%s$%s$%s$%s", cid->ied.name,
                          cid->ied.ldevices[i].inst,
-                         cid->ied.ldevices[i].lns[j].lnclass, "CO",
+                         cid->ied.ldevices[i].lns[j].lnprefix,
+                         cid->ied.ldevices[i].lns[j].lnclass,
+                         cid->ied.ldevices[i].lns[j].lninst, "CO",
                          cid->ied.ldevices[i].lns[j].ctrls[k].do_name,
                          cid->ied.ldevices[i].lns[j].ctrls[k].sdi_name);
             }
@@ -391,11 +393,28 @@ static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev,
                 (char *) xmlGetProp(lnode, (const xmlChar *) "lnClass");
             char *ln_type =
                 (char *) xmlGetProp(lnode, (const xmlChar *) "lnType");
+            char *ln_prefix =
+                (char *) xmlGetProp(lnode, (const xmlChar *) "prefix");
+            if (NULL == ln_prefix) {
+                ln_prefix = strdup("");
+            }
+
+            char *ln_inst =
+                (char *) xmlGetProp(lnode, (const xmlChar *) "inst");
+            if (NULL == ln_inst) {
+                ln_inst = strdup("");
+            }
+
             if (strlen(ln_class) >= NEU_CID_LNCLASS_LEN ||
-                strlen(ln_type) >= NEU_CID_LNTYPE_LEN) {
+                strlen(ln_type) >= NEU_CID_LNTYPE_LEN ||
+                strlen(ln_prefix) >= NEU_CID_LNPREFIX_LEN ||
+                strlen(ln_inst) >= NEU_CID_LNINST_LEN) {
                 xmlFree(ln_class);
                 xmlFree(ln_type);
-                nlog_warn("LN class/type is too long %d", (int) lnode->line);
+                xmlFree(ln_prefix);
+                xmlFree(ln_inst);
+                nlog_warn("LN class/type/prefix/inst is too long %d",
+                          (int) lnode->line);
                 return -1;
             } else {
                 ldev->n_lns += 1;
@@ -412,8 +431,12 @@ static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev,
 
                 strcpy(ln->lnclass, ln_class);
                 strcpy(ln->lntype, ln_type);
+                strcpy(ln->lnprefix, ln_prefix);
+                strcpy(ln->lninst, ln_inst);
                 xmlFree(ln_class);
                 xmlFree(ln_type);
+                xmlFree(ln_prefix);
+                xmlFree(ln_inst);
 
                 xmlNode *child = lnode->children;
                 while (child != NULL) {

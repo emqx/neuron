@@ -99,7 +99,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
                                 neu_tag_cache_type_e cache_type,
                                 neu_driver_cache_t *cache, const char *group,
                                 UT_array *tags, UT_array *tag_values);
-static void read_report_group(bool sub, int64_t timestamp, int64_t timeout,
+static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values);
@@ -328,7 +328,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     data->group  = strdup(group);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
-    read_report_group(true,global_timestamp, 0,
+    read_report_group(global_timestamp, 0,
                       neu_adapter_get_tag_cache_type(&driver->adapter),
                       driver->cache, group, tags, data->tags);
 
@@ -2106,7 +2106,7 @@ static int report_callback(void *usr_data)
         }
     }
 
-    read_report_group(false, global_timestamp,
+    read_report_group(global_timestamp,
                       neu_group_get_interval(group->group) *
                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                       neu_adapter_get_tag_cache_type(&group->driver->adapter),
@@ -2348,7 +2348,7 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
-static void read_report_group(bool sub, int64_t timestamp, int64_t timeout,
+static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values)
@@ -2358,7 +2358,7 @@ static void read_report_group(bool sub, int64_t timestamp, int64_t timeout,
         neu_driver_cache_value_t  value     = { 0 };
         neu_resp_tag_value_meta_t tag_value = { 0 };
 
-        if (sub && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
+        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             if (neu_driver_cache_meta_get_changed(cache, group, tag->name,
                                                   &value, tag_value.metas,
                                                   NEU_TAG_META_SIZE) != 0) {
