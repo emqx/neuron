@@ -62,7 +62,7 @@ $ wget --no-check-certificate --content-disposition https://github.com/protocolb
 $ tar -xzvf protobuf-cpp-3.20.1.tar.gz
 $ cd protobuf-3.20.1
 $ ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
-$ make && make install
+$ make && sudo make install
 ```
 
 [protobuf-c](https://github.com/protobuf-c/protobuf-c.git)
@@ -71,5 +71,5 @@ $ git clone -b v1.4.0 https://github.com/protobuf-c/protobuf-c.git
 $ cd protobuf-c
 $ ./autogen.sh
 $ ./configure  --disable-protoc --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC 
-$ make && make install
+$ make && sudo make install
 ```
