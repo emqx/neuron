@@ -73,3 +73,10 @@ $ ./autogen.sh
 $ ./configure  --disable-protoc --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC 
 $ make && make install
 ```
+
+[libxml2](https://github.com/GNOME/libxml2.git)
+$ git clone -b v2.9.14 https://github.com/GNOME/libxml2.git
+$ cd libxml2
+$ ./autogen.sh
+$ ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
+$ make && sudo make install
