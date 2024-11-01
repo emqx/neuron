@@ -244,8 +244,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     }
     neu_datatag_t *first = utarray_front(tags);
 
-    if (first == NULL ||
-        !neu_tag_attribute_test(first, NEU_ATTRIBUTE_SUBSCRIBE)) {
+    if (first == NULL) {
         utarray_free(tags);
         nlog_debug("update immediately, driver: %s, "
                    "group: %s, tag: %s, type: %s, "
