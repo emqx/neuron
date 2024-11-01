@@ -860,7 +860,8 @@ int check_value_decimal(neu_type_e write_type, double result, int64_t value_min,
         return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
     } else if (result < value_min || result > value_max) {
         return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
-    } else if (almost_equal(ceil(result), result, EPSILON)) {
+    } else if (almost_equal(ceil(result), result, EPSILON) ||
+               almost_equal(floor(result), result, EPSILON)) {
         return NEU_ERR_SUCCESS;
     } else {
         return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
@@ -910,7 +911,8 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
         case NEU_TYPE_UINT64:
             if (write_type != NEU_TYPE_INT64 && write_type != NEU_TYPE_DOUBLE) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else if (almost_equal(ceil(result), result, EPSILON)) {
+            } else if (almost_equal(ceil(result), result, EPSILON) ||
+                       almost_equal(floor(result), result, EPSILON)) {
                 return NEU_ERR_SUCCESS;
             } else {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
