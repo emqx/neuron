@@ -22,10 +22,13 @@
 
 #include <nng/nng.h>
 
+#include "msg.h"
+
 void handle_ping(nng_aio *aio);
 void handle_login(nng_aio *aio);
 void handle_password(nng_aio *aio);
 void handle_get_plugin_schema(nng_aio *aio);
+void handle_get_plugin_schema_resp(nng_aio *aio, neu_resp_check_schema_t *resp);
 void handle_status(nng_aio *aio);
 
 #endif

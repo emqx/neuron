@@ -78,4 +78,7 @@ bool neu_plugin_manager_remove_library(neu_plugin_manager_t *mgr,
 int neu_plugin_manager_update(neu_plugin_manager_t *mgr,
                               const char *          plugin_lib_name);
 
+bool neu_plugin_manager_schema_exist(neu_plugin_manager_t *mgr,
+                                     const char *          schema);
+
 #endif

@@ -122,6 +122,9 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_SCAN_TAGS,
     NEU_RESP_SCAN_TAGS,
+
+    NEU_REQ_CHECK_SCHEMA,
+    NEU_RESP_CHECK_SCHEMA,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -204,6 +207,9 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_SCAN_TAGS]  = "NEU_REQ_SCAN_TAGS",
     [NEU_RESP_SCAN_TAGS] = "NEU_RESP_SCAN_TAGS",
+
+    [NEU_REQ_CHECK_SCHEMA]  = "NEU_REQ_CHECK_SCHEMA",
+    [NEU_RESP_CHECK_SCHEMA] = "NEU_RESP_CHECK_SCHEMA",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -231,6 +237,15 @@ typedef struct neu_reqresp_head {
 typedef struct neu_resp_error {
     int error;
 } neu_resp_error_t;
+
+typedef struct neu_req_check_schema {
+    char schema[NEU_PLUGIN_NAME_LEN];
+} neu_req_check_schema_t;
+
+typedef struct {
+    bool exist;
+    char schema[NEU_PLUGIN_NAME_LEN];
+} neu_resp_check_schema_t;
 
 typedef struct {
     char                     node[NEU_NODE_NAME_LEN];

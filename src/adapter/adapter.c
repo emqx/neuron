@@ -509,6 +509,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->node);
         break;
     }
+    case NEU_REQ_CHECK_SCHEMA:
     case NEU_REQ_GET_DRIVER_GROUP:
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
         strcpy(pheader->receiver, "manager");
@@ -721,6 +722,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQRESP_NODES_STATE:
     case NEU_REQ_PRGFILE_PROCESS:
     case NEU_RESP_PRGFILE_PROCESS:
+    case NEU_RESP_CHECK_SCHEMA:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);

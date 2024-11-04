@@ -709,6 +709,17 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_CHECK_SCHEMA: {
+        neu_req_check_schema_t *cmd  = (neu_req_check_schema_t *) &header[1];
+        neu_resp_check_schema_t resp = { 0 };
+        strcpy(resp.schema, cmd->schema);
+        resp.exist   = neu_plugin_manager_schema_exist(manager->plugin_manager,
+                                                     cmd->schema);
+        header->type = NEU_RESP_CHECK_SCHEMA;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &resp);
+        break;
+    }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
         nlog_notice("add node name:%s plugin:%s", cmd->node, cmd->plugin);

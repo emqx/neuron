@@ -289,10 +289,9 @@ static inline const char *plugin_name_to_schema_name(const char *name)
 
 void handle_get_plugin_schema(nng_aio *aio)
 {
-    size_t      len                        = 0;
-    char *      schema_path                = NULL;
-    char        param[NEU_PLUGIN_NAME_LEN] = { 0 };
-    const char *schema_name                = param;
+    char          param[NEU_PLUGIN_NAME_LEN] = { 0 };
+    const char *  schema_name                = param;
+    neu_plugin_t *plugin                     = neu_rest_get_plugin();
 
     NEU_VALIDATE_JWT(aio);
 
@@ -302,56 +301,84 @@ void handle_get_plugin_schema(nng_aio *aio)
         rv = neu_http_get_param_str(aio, "plugin_name", param, sizeof(param));
         schema_name = plugin_name_to_schema_name(param);
     }
-    if (rv < 0) {
+    if (rv < 0 || strlen(schema_name) >= NEU_PLUGIN_NAME_LEN) {
         neu_http_bad_request(aio, "{\"error\": 1002}");
         return;
     }
 
-    if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
-                         schema_name)) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+    int                    ret    = 0;
+    neu_reqresp_head_t     header = { 0 };
+    neu_req_check_schema_t cmd    = { 0 };
+
+    header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+
+    header.ctx  = aio;
+    header.type = NEU_REQ_CHECK_SCHEMA;
+    strcpy(cmd.schema, schema_name);
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_get_plugin_schema_resp(nng_aio *aio, neu_resp_check_schema_t *resp)
+{
+    if (resp->exist) {
+        char * schema_path = NULL;
+        size_t len         = 0;
+        char * buf         = NULL;
+
+        if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
+                             resp->schema)) {
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
+            return;
+        }
+
+        buf = file_string_read(&len, schema_path);
+        if (NULL == buf) {
+            free(schema_path);
+            if (0 > neu_asprintf(&schema_path, "%s/custom/schema/%s.json",
+                                 g_plugin_dir, resp->schema)) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+            buf = file_string_read(&len, schema_path);
+        }
+
+        if (NULL == buf) {
+            free(schema_path);
+            if (0 > neu_asprintf(&schema_path, "%s/system/schema/%s.json",
+                                 g_plugin_dir, resp->schema)) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+            buf = file_string_read(&len, schema_path);
+        }
+
+        if (NULL == buf) {
+            nlog_info("open %s error: %d", schema_path, errno);
+            neu_http_not_found(aio, "{\"status\": \"error\"}");
+            free(schema_path);
+            return;
+        }
+
+        neu_http_ok(aio, buf);
+        free(buf);
+        free(schema_path);
+    } else {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PLUGIN_NOT_FOUND, {
             neu_http_response(aio, error_code.error, result_error);
         });
-        return;
     }
-
-    char *buf = NULL;
-
-    buf = file_string_read(&len, schema_path);
-    if (NULL == buf) {
-        free(schema_path);
-        if (0 > neu_asprintf(&schema_path, "%s/custom/schema/%s.json",
-                             g_plugin_dir, schema_name)) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            return;
-        }
-        buf = file_string_read(&len, schema_path);
-    }
-
-    if (NULL == buf) {
-        free(schema_path);
-        if (0 > neu_asprintf(&schema_path, "%s/system/schema/%s.json",
-                             g_plugin_dir, schema_name)) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            return;
-        }
-        buf = file_string_read(&len, schema_path);
-    }
-
-    if (NULL == buf) {
-        nlog_info("open %s error: %d", schema_path, errno);
-        neu_http_not_found(aio, "{\"status\": \"error\"}");
-        free(schema_path);
-        return;
-    }
-
-    neu_http_ok(aio, buf);
-    free(buf);
-    free(schema_path);
 }
 
 void handle_status(nng_aio *aio)
