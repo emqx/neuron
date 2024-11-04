@@ -99,7 +99,9 @@ extern "C" {
     XX(NEU_REQ_PRGFILE_PROCESS, neu_req_prgfile_process_t)           \
     XX(NEU_RESP_PRGFILE_PROCESS, neu_resp_prgfile_process_t)         \
     XX(NEU_REQ_SCAN_TAGS, neu_req_scan_tags_t)                       \
-    XX(NEU_RESP_SCAN_TAGS, neu_resp_scan_tags_t)
+    XX(NEU_RESP_SCAN_TAGS, neu_resp_scan_tags_t)                     \
+    XX(NEU_REQ_CHECK_SCHEMA, neu_req_check_schema_t)                 \
+    XX(NEU_RESP_CHECK_SCHEMA, neu_resp_check_schema_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {
@@ -140,6 +142,9 @@ static inline neu_msg_t *neu_msg_new(neu_reqresp_type_e t, void *ctx,
     // NOTE: ensure enough space to reuse message
     size_t body_size = 0;
     switch (t) {
+    case NEU_REQ_CHECK_SCHEMA:
+        body_size = neu_reqresp_size(NEU_RESP_CHECK_SCHEMA);
+        break;
     case NEU_REQ_GET_PLUGIN:
         body_size = neu_reqresp_size(NEU_RESP_GET_PLUGIN);
         break;

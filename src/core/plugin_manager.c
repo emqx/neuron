@@ -556,3 +556,20 @@ bool neu_plugin_manager_remove_library(neu_plugin_manager_t *mgr,
 
     return ret;
 }
+
+bool neu_plugin_manager_schema_exist(neu_plugin_manager_t *mgr,
+                                     const char *          schema)
+{
+    bool             exist = false;
+    plugin_entity_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, mgr->plugins, el, tmp)
+    {
+        if (strcmp(el->schema, schema) == 0) {
+            exist = true;
+            break;
+        }
+    }
+
+    return exist;
+}

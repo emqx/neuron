@@ -594,7 +594,6 @@ class TestHttp:
 
         response = api.get_plugin_schema(plugin='invalid')
         assert 404 == response.status_code
-        assert response.json()['status'] == 'error'
 
     @description(given="running neuron", when="get plugin", then="success")
     def test_get_plugin(self):
