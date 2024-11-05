@@ -99,7 +99,7 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
     conn->disconnected     = disconnected;
     conn->connected        = connected;
 
-    conn->buf_size = 2048;
+    conn->buf_size = 8192;
     conn->buf      = calloc(conn->buf_size, 1);
     conn->offset   = 0;
     conn->stop     = false;
