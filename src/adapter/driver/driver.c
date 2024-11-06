@@ -1000,7 +1000,7 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
         case NEU_TYPE_STRING:
         case NEU_TYPE_BOOL:
         case NEU_TYPE_BIT:
-            return NEU_ERR_PARAM_IS_WRONG;
+            return NEU_ERR_TAG_DECIMAL_INVALID;
         default:
             return NEU_ERR_SUCCESS;
         }

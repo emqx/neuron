@@ -329,7 +329,6 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_STR:
                 cmd.value.type = NEU_TYPE_STRING;
                 strcpy(cmd.value.value.str, req->value.val_str);
-
                 break;
             case NEU_JSON_BYTES:
                 cmd.value.type               = NEU_TYPE_BYTES;

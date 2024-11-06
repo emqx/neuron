@@ -886,3 +886,34 @@ class TestTag:
                 api.del_tags(
                     node="modbus-tcp", group="group1", tags=[tag["name"]]
                 )
+
+    @description(given="node and group", when="add string tag with decimal", then="add fail")
+    def test_add_string_tag_with_decimal(self):
+        string_decimal = [{"name": "string_decimal", "address": "1!400001.10",
+                    "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_STRING, "decimal": 0.1}]
+        response = api.add_tags(node="modbus-tcp", group="group1", tags=string_decimal)
+        assert 400 == response.status_code
+        assert NEU_ERR_TAG_DECIMAL_INVALID == response.json()['error']
+
+    @description(given="node and group", when="add string gtags with decimal", then="add fail")
+    def test_add_string_tag_with_decimal(self):
+        response = api.add_gtags(
+            node='modbus-tcp', 
+            groups=[
+                {"group": "group_ok","interval": 3000,
+                     "tags": [{
+                            "name": "tag_string_ok",
+                            "address": "1!400001.10",
+                            "attribute": 3,
+                            "type": NEU_TYPE_STRING}]},
+                {"group": "group123","interval": 3000,
+                     "tags": [{
+                            "name": "tag_string_decimal",
+                            "address": "1!400001.10",
+                            "attribute": 3,
+                            "type": NEU_TYPE_STRING,
+                            "decimal": 0.01}]}
+                ])
+        assert 400 == response.status_code
+        assert NEU_ERR_TAG_DECIMAL_INVALID == response.json()['error']
+        assert 1 == response.json()['index']
