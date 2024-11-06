@@ -1120,6 +1120,131 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                         (double) cmd->tags[i].value.value.i64;
                 }
             }
+            if (tag->type == NEU_TYPE_BYTES) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.bytes.bytes[j] =
+                            (uint8_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.bytes.bytes[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_INT8) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.i8s.i8s[j] =
+                            (int8_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.i8s.i8s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_INT16) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.i16s.i16s[j] =
+                            (int16_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.i16s.i16s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_UINT16) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.u16s.u16s[j] =
+                            (uint16_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.u16s.u16s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_INT32) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.i32s.i32s[j] =
+                            (int32_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.i32s.i32s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_UINT32) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.u32s.u32s[j] =
+                            (uint32_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.u32s.u32s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_UINT64) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.u64s.u64s[i] =
+                            (uint64_t) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.i64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.u64s.u64s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_DOUBLE) {
+                    for (int j = 0; j < cmd->tags[i].value.value.f64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.f32s.f32s[j] =
+                            (float) cmd->tags[i].value.value.f64s.f64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.f64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.f32s.f32s[j] = 0;
+                    }
+                }
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.f64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.f32s.f32s[j] =
+                            (float) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                    for (int j = cmd->tags[i].value.value.f64s.length;
+                         j < NEU_VALUE_SIZE; j++) {
+                        cmd->tags[i].value.value.f32s.f32s[j] = 0;
+                    }
+                }
+            }
+            if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
+                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
+                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
+                         j++) {
+                        cmd->tags[i].value.value.f64s.f64s[j] =
+                            (double) cmd->tags[i].value.value.i64s.i64s[j];
+                    }
+                }
+            }
+
             if (tag->decimal != 0) {
                 cal_decimal(tag->type, cmd->tags[i].value.type,
                             &cmd->tags[i].value.value, tag->decimal);
@@ -1236,6 +1361,181 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                             (double) cmd->groups[i].tags[k].value.value.i64;
                     }
                 }
+                if (tag->type == NEU_TYPE_BYTES) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.bytes.bytes[j] =
+                                (uint8_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.bytes.bytes[j] =
+                                0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_INT8) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.i8s.i8s[j] =
+                                (int8_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.i8s.i8s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_INT16) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.i16s.i16s[j] =
+                                (int16_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.i16s.i16s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_UINT16) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.u16s.u16s[j] =
+                                (uint16_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.u16s.u16s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_INT32) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.i32s.i32s[j] =
+                                (int32_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.i32s.i32s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_UINT32) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.u32s.u32s[j] =
+                                (uint32_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.u32s.u32s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_UINT64) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.u64s.u64s[j] =
+                                (uint64_t) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.i64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.u64s.u64s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_DOUBLE) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.f64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] =
+                                (float) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.f64s.f64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.f64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] = 0;
+                        }
+                    }
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.f64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] =
+                                (float) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                        for (int j =
+                                 cmd->groups[i].tags[k].value.value.f64s.length;
+                             j < NEU_VALUE_SIZE; j++) {
+                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] = 0;
+                        }
+                    }
+                }
+                if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
+                    if (cmd->groups[i].tags[k].value.type ==
+                        NEU_TYPE_ARRAY_INT64) {
+                        for (int j = 0;
+                             j < cmd->groups[i].tags[k].value.value.i64s.length;
+                             j++) {
+                            cmd->groups[i].tags[k].value.value.f64s.f64s[j] =
+                                (double) cmd->groups[i]
+                                    .tags[k]
+                                    .value.value.i64s.i64s[j];
+                        }
+                    }
+                }
+
                 if (tag->decimal != 0) {
                     cal_decimal(tag->type, cmd->groups[i].tags[k].value.type,
                                 &cmd->groups[i].tags[k].value.value,
@@ -1340,6 +1640,120 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
             if (cmd->value.type == NEU_TYPE_INT64) {
                 cmd->value.value.d64 = (double) cmd->value.value.i64;
+            }
+        }
+        if (tag->type == NEU_TYPE_BYTES) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.bytes.bytes[i] =
+                        (uint8_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.bytes.bytes[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_INT8) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.i8s.i8s[i] =
+                        (int8_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.i8s.i8s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_INT16) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.i16s.i16s[i] =
+                        (int16_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.i16s.i16s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_UINT16) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.u16s.u16s[i] =
+                        (uint16_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.u16s.u16s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_INT32) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.i32s.i32s[i] =
+                        (int32_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.i32s.i32s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_UINT32) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.u32s.u32s[i] =
+                        (uint32_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.u32s.u32s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_UINT64) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.u64s.u64s[i] =
+                        (uint64_t) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.u64s.u64s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_DOUBLE) {
+                for (int i = 0; i < cmd->value.value.f64s.length; i++) {
+                    cmd->value.value.f32s.f32s[i] =
+                        (float) cmd->value.value.f64s.f64s[i];
+                }
+                for (int i = cmd->value.value.f64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.f32s.f32s[i] = 0;
+                }
+            }
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.f64s.length; i++) {
+                    cmd->value.value.f32s.f32s[i] =
+                        (float) cmd->value.value.i64s.i64s[i];
+                }
+                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
+                     i++) {
+                    cmd->value.value.f32s.f32s[i] = 0;
+                }
+            }
+        }
+        if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
+            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
+                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
+                    cmd->value.value.f64s.f64s[i] =
+                        (double) cmd->value.value.i64s.i64s[i];
+                }
             }
         }
 

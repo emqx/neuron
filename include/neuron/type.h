@@ -52,6 +52,17 @@ typedef enum {
     NEU_TYPE_PTR           = 19,
     NEU_TYPE_TIME          = 20,
     NEU_TYPE_DATA_AND_TIME = 21,
+    NEU_TYPE_ARRAY_CHAR    = 22,
+    NEU_TYPE_ARRAY_INT8    = 23,
+    NEU_TYPE_ARRAY_INT16   = 24,
+    NEU_TYPE_ARRAY_UINT16  = 25,
+    NEU_TYPE_ARRAY_INT32   = 26,
+    NEU_TYPE_ARRAY_UINT32  = 27,
+    NEU_TYPE_ARRAY_INT64   = 28,
+    NEU_TYPE_ARRAY_UINT64  = 29,
+    NEU_TYPE_ARRAY_FLOAT   = 30,
+    NEU_TYPE_ARRAY_DOUBLE  = 31,
+    NEU_TYPE_ARRAY_BOOL    = 32,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -99,6 +110,28 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_TIME";
     case NEU_TYPE_DATA_AND_TIME:
         return "NEU_TYPE_DATA_AND_TIME";
+    case NEU_TYPE_ARRAY_CHAR:
+        return "NEU_TYPE_ARRAY_CHAR";
+    case NEU_TYPE_ARRAY_INT8:
+        return "NEU_TYPE_ARRAY_INT8";
+    case NEU_TYPE_ARRAY_INT16:
+        return "NEU_TYPE_ARRAY_INT16";
+    case NEU_TYPE_ARRAY_UINT16:
+        return "NEU_TYPE_ARRAY_UINT16";
+    case NEU_TYPE_ARRAY_INT32:
+        return "NEU_TYPE_ARRAY_INT32";
+    case NEU_TYPE_ARRAY_UINT32:
+        return "NEU_TYPE_ARRAY_UINT32";
+    case NEU_TYPE_ARRAY_INT64:
+        return "NEU_TYPE_ARRAY_INT64";
+    case NEU_TYPE_ARRAY_UINT64:
+        return "NEU_TYPE_ARRAY_UINT64";
+    case NEU_TYPE_ARRAY_FLOAT:
+        return "NEU_TYPE_ARRAY_FLOAT";
+    case NEU_TYPE_ARRAY_DOUBLE:
+        return "NEU_TYPE_ARRAY_FLOAT";
+    case NEU_TYPE_ARRAY_BOOL:
+        return "NEU_TYPE_ARRAY_BOOL";
     }
 
     return "";
@@ -115,23 +148,83 @@ typedef struct {
 typedef struct {
     uint8_t bytes[NEU_VALUE_SIZE];
     uint8_t length;
-} __attribute__((packed)) neu_value_bytes_t;
+} neu_value_bytes_t;
+
+typedef struct {
+    int8_t  i8s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_int8_t;
+
+typedef struct {
+    int16_t i16s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_int16_t;
+
+typedef struct {
+    uint16_t u16s[NEU_VALUE_SIZE];
+    uint8_t  length;
+} neu_value_array_uint16_t;
+
+typedef struct {
+    int32_t i32s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_int32_t;
+
+typedef struct {
+    uint32_t u32s[NEU_VALUE_SIZE];
+    uint8_t  length;
+} neu_value_array_uint32_t;
+
+typedef struct {
+    int64_t i64s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_int64_t;
+
+typedef struct {
+    uint64_t u64s[NEU_VALUE_SIZE];
+    uint8_t  length;
+} neu_value_array_uint64_t;
+
+typedef struct {
+    float   f32s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_float_t;
+
+typedef struct {
+    double  f64s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_double_t;
+
+typedef struct {
+    bool    bools[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_bool_t;
 
 typedef union {
-    bool              boolean;
-    int8_t            i8;
-    uint8_t           u8;
-    int16_t           i16;
-    uint16_t          u16;
-    int32_t           i32;
-    uint32_t          u32;
-    int64_t           i64;
-    uint64_t          u64;
-    float             f32;
-    double            d64;
-    char              str[NEU_VALUE_SIZE];
-    neu_value_bytes_t bytes;
-    neu_value_ptr_t   ptr;
+    bool                     boolean;
+    int8_t                   i8;
+    uint8_t                  u8;
+    int16_t                  i16;
+    uint16_t                 u16;
+    int32_t                  i32;
+    uint32_t                 u32;
+    int64_t                  i64;
+    uint64_t                 u64;
+    float                    f32;
+    double                   d64;
+    char                     str[NEU_VALUE_SIZE];
+    neu_value_bytes_t        bytes;
+    neu_value_ptr_t          ptr;
+    neu_value_array_int8_t   i8s;
+    neu_value_array_int16_t  i16s;
+    neu_value_array_uint16_t u16s;
+    neu_value_array_int32_t  i32s;
+    neu_value_array_uint32_t u32s;
+    neu_value_array_int64_t  i64s;
+    neu_value_array_uint64_t u64s;
+    neu_value_array_float_t  f32s;
+    neu_value_array_double_t f64s;
+    neu_value_array_bool_t   bools;
 } neu_value_u;
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)
