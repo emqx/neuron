@@ -37,24 +37,94 @@ typedef enum neu_json_type {
     NEU_JSON_FLOAT,
     NEU_JSON_BOOL,
     NEU_JSON_OBJECT,
-    NEU_JSON_BYTES,
+    NEU_JSON_ARRAY_INT8,
+    NEU_JSON_ARRAY_UINT8,
+    NEU_JSON_ARRAY_INT16,
+    NEU_JSON_ARRAY_UINT16,
+    NEU_JSON_ARRAY_INT32,
+    NEU_JSON_ARRAY_UINT32,
+    NEU_JSON_ARRAY_INT64,
+    NEU_JSON_ARRAY_UINT64,
+    NEU_JSON_ARRAY_FLOAT,
+    NEU_JSON_ARRAY_DOUBLE,
+    NEU_JSON_ARRAY_BOOL,
     NEU_JSON_VALUE = NEU_JSON_UNDEFINE
 } neu_json_type_e;
 
 typedef struct {
-    uint8_t *bytes;
+    int8_t *i8s;
+    uint8_t length;
+} neu_json_value_array_int8_t;
+
+typedef struct {
+    uint8_t *u8s;
     uint8_t  length;
-} neu_json_value_bytes_t;
+} neu_json_value_array_uint8_t;
+
+typedef struct {
+    int16_t *i16s;
+    uint8_t  length;
+} neu_json_value_array_int16_t;
+
+typedef struct {
+    uint16_t *u16s;
+    uint8_t   length;
+} neu_json_value_array_uint16_t;
+
+typedef struct {
+    int32_t *i32s;
+    uint8_t  length;
+} neu_json_value_array_int32_t;
+
+typedef struct {
+    uint32_t *u32s;
+    uint8_t   length;
+} neu_json_value_array_uint32_t;
+
+typedef struct {
+    int64_t *i64s;
+    uint8_t  length;
+} neu_json_value_array_int64_t;
+
+typedef struct {
+    uint64_t *u64s;
+    uint8_t   length;
+} neu_json_value_array_uint64_t;
+
+typedef struct {
+    float * f32s;
+    uint8_t length;
+} neu_json_value_array_float_t;
+
+typedef struct {
+    double *f64s;
+    uint8_t length;
+} neu_json_value_array_double_t;
+
+typedef struct {
+    bool *  bools;
+    uint8_t length;
+} neu_json_value_array_bool_t;
 
 typedef union neu_json_value {
-    int64_t                val_int;
-    uint8_t                val_bit;
-    float                  val_float;
-    double                 val_double;
-    bool                   val_bool;
-    char *                 val_str;
-    void *                 val_object;
-    neu_json_value_bytes_t val_bytes;
+    int64_t                       val_int;
+    uint8_t                       val_bit;
+    float                         val_float;
+    double                        val_double;
+    bool                          val_bool;
+    char *                        val_str;
+    void *                        val_object;
+    neu_json_value_array_int8_t   val_array_int8;
+    neu_json_value_array_uint8_t  val_array_uint8;
+    neu_json_value_array_int16_t  val_array_int16;
+    neu_json_value_array_uint16_t val_array_uint16;
+    neu_json_value_array_int32_t  val_array_int32;
+    neu_json_value_array_uint32_t val_array_uint32;
+    neu_json_value_array_int64_t  val_array_int64;
+    neu_json_value_array_uint64_t val_array_uint64;
+    neu_json_value_array_float_t  val_array_float;
+    neu_json_value_array_double_t val_array_double;
+    neu_json_value_array_bool_t   val_array_bool;
 } neu_json_value_u;
 
 typedef enum neu_json_attribute {

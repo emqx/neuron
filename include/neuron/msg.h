@@ -980,6 +980,7 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
     case NEU_TYPE_STRING:
     case NEU_TYPE_TIME:
     case NEU_TYPE_DATA_AND_TIME:
+    case NEU_TYPE_ARRAY_CHAR:
         tag_json->t             = NEU_JSON_STR;
         tag_json->value.val_str = tag_value->value.value.str;
         break;
@@ -988,9 +989,69 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         tag_json->value.val_str = (char *) tag_value->value.value.ptr.ptr;
         break;
     case NEU_TYPE_BYTES:
-        tag_json->t                      = NEU_JSON_BYTES;
-        tag_json->value.val_bytes.length = tag_value->value.value.bytes.length;
-        tag_json->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        tag_json->t = NEU_JSON_ARRAY_UINT8;
+        tag_json->value.val_array_uint8.length =
+            tag_value->value.value.bytes.length;
+        tag_json->value.val_array_uint8.u8s =
+            tag_value->value.value.bytes.bytes;
+        break;
+    case NEU_TYPE_ARRAY_INT8:
+        tag_json->t = NEU_JSON_ARRAY_INT8;
+        tag_json->value.val_array_int8.length =
+            tag_value->value.value.i8s.length;
+        tag_json->value.val_array_int8.i8s = tag_value->value.value.i8s.i8s;
+        break;
+    case NEU_TYPE_ARRAY_INT16:
+        tag_json->t = NEU_JSON_ARRAY_INT16;
+        tag_json->value.val_array_int16.length =
+            tag_value->value.value.i16s.length;
+        tag_json->value.val_array_int16.i16s = tag_value->value.value.i16s.i16s;
+        break;
+    case NEU_TYPE_ARRAY_UINT16:
+        tag_json->t = NEU_JSON_ARRAY_UINT16;
+        tag_json->value.val_array_uint16.length =
+            tag_value->value.value.u16s.length;
+        tag_json->value.val_array_uint16.u16s =
+            tag_value->value.value.u16s.u16s;
+        break;
+    case NEU_TYPE_ARRAY_INT32:
+        tag_json->t = NEU_JSON_ARRAY_INT32;
+        tag_json->value.val_array_int32.length =
+            tag_value->value.value.i32s.length;
+        tag_json->value.val_array_int32.i32s = tag_value->value.value.i32s.i32s;
+        break;
+    case NEU_TYPE_ARRAY_UINT32:
+        tag_json->t = NEU_JSON_ARRAY_UINT32;
+        tag_json->value.val_array_uint32.length =
+            tag_value->value.value.u32s.length;
+        tag_json->value.val_array_uint32.u32s =
+            tag_value->value.value.u32s.u32s;
+        break;
+    case NEU_TYPE_ARRAY_INT64:
+        tag_json->t = NEU_JSON_ARRAY_INT64;
+        tag_json->value.val_array_int64.length =
+            tag_value->value.value.i64s.length;
+        tag_json->value.val_array_int64.i64s = tag_value->value.value.i64s.i64s;
+        break;
+    case NEU_TYPE_ARRAY_UINT64:
+        tag_json->t = NEU_JSON_ARRAY_UINT64;
+        tag_json->value.val_array_uint64.length =
+            tag_value->value.value.u64s.length;
+        tag_json->value.val_array_uint64.u64s =
+            tag_value->value.value.u64s.u64s;
+        break;
+    case NEU_TYPE_ARRAY_FLOAT:
+        tag_json->t = NEU_JSON_ARRAY_FLOAT;
+        tag_json->value.val_array_float.length =
+            tag_value->value.value.f32s.length;
+        tag_json->value.val_array_float.f32s = tag_value->value.value.f32s.f32s;
+        break;
+    case NEU_TYPE_ARRAY_DOUBLE:
+        tag_json->t = NEU_JSON_ARRAY_DOUBLE;
+        tag_json->value.val_array_double.length =
+            tag_value->value.value.f64s.length;
+        tag_json->value.val_array_double.f64s =
+            tag_value->value.value.f64s.f64s;
         break;
     case NEU_TYPE_CUSTOM:
         tag_json->t                = NEU_JSON_OBJECT;
@@ -1108,6 +1169,7 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
     case NEU_TYPE_STRING:
     case NEU_TYPE_TIME:
     case NEU_TYPE_DATA_AND_TIME:
+    case NEU_TYPE_ARRAY_CHAR:
         tag_json->t             = NEU_JSON_STR;
         tag_json->value.val_str = tag_value->value.value.str;
         break;
@@ -1116,9 +1178,73 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
         tag_json->value.val_str = (char *) tag_value->value.value.ptr.ptr;
         break;
     case NEU_TYPE_BYTES:
-        tag_json->t                      = NEU_JSON_BYTES;
-        tag_json->value.val_bytes.length = tag_value->value.value.bytes.length;
-        tag_json->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        tag_json->t = NEU_JSON_ARRAY_UINT8;
+        tag_json->value.val_array_uint8.length =
+            tag_value->value.value.bytes.length;
+        tag_json->value.val_array_uint8.u8s =
+            tag_value->value.value.bytes.bytes;
+        break;
+    case NEU_TYPE_ARRAY_INT8:
+        tag_json->t = NEU_JSON_ARRAY_INT8;
+        tag_json->value.val_array_int8.length =
+            tag_value->value.value.i8s.length;
+        tag_json->value.val_array_int8.i8s = tag_value->value.value.i8s.i8s;
+        break;
+    case NEU_TYPE_ARRAY_INT16:
+        tag_json->t = NEU_JSON_ARRAY_INT16;
+        tag_json->value.val_array_int16.length =
+            tag_value->value.value.i16s.length;
+        tag_json->value.val_array_int16.i16s = tag_value->value.value.i16s.i16s;
+        break;
+    case NEU_TYPE_ARRAY_UINT16:
+        tag_json->t = NEU_JSON_ARRAY_UINT16;
+        tag_json->value.val_array_uint16.length =
+            tag_value->value.value.u16s.length;
+        tag_json->value.val_array_uint16.u16s =
+            tag_value->value.value.u16s.u16s;
+        break;
+    case NEU_TYPE_ARRAY_INT32:
+        tag_json->t = NEU_JSON_ARRAY_INT32;
+        tag_json->value.val_array_int32.length =
+            tag_value->value.value.i32s.length;
+        tag_json->value.val_array_int32.i32s = tag_value->value.value.i32s.i32s;
+        break;
+    case NEU_TYPE_ARRAY_UINT32:
+        tag_json->t = NEU_JSON_ARRAY_UINT32;
+        tag_json->value.val_array_uint32.length =
+            tag_value->value.value.u32s.length;
+        tag_json->value.val_array_uint32.u32s =
+            tag_value->value.value.u32s.u32s;
+        break;
+    case NEU_TYPE_ARRAY_INT64:
+        tag_json->t = NEU_JSON_ARRAY_INT64;
+        tag_json->value.val_array_int64.length =
+            tag_value->value.value.i64s.length;
+        tag_json->value.val_array_int64.i64s = tag_value->value.value.i64s.i64s;
+        break;
+    case NEU_TYPE_ARRAY_UINT64:
+        tag_json->t = NEU_JSON_ARRAY_UINT64;
+        tag_json->value.val_array_uint64.length =
+            tag_value->value.value.u64s.length;
+        tag_json->value.val_array_uint64.u64s =
+            tag_value->value.value.u64s.u64s;
+        break;
+    case NEU_TYPE_ARRAY_FLOAT:
+        tag_json->t = NEU_JSON_ARRAY_FLOAT;
+        tag_json->value.val_array_float.length =
+            tag_value->value.value.f32s.length;
+        tag_json->value.val_array_float.f32s = tag_value->value.value.f32s.f32s;
+        break;
+    case NEU_TYPE_ARRAY_DOUBLE:
+        tag_json->t = NEU_JSON_ARRAY_DOUBLE;
+        tag_json->value.val_array_double.length =
+            tag_value->value.value.f64s.length;
+        tag_json->value.val_array_double.f64s =
+            tag_value->value.value.f64s.f64s;
+        break;
+    case NEU_TYPE_CUSTOM:
+        tag_json->t                = NEU_JSON_OBJECT;
+        tag_json->value.val_object = tag_value->value.value.json;
         break;
     default:
         break;
