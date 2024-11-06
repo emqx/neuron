@@ -128,15 +128,125 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_BOOL:
         json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));
         break;
-    case NEU_JSON_BYTES: {
-        void *bytes = json_array();
+    case NEU_JSON_ARRAY_BOOL: {
+        void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_bytes.length; i++) {
-            json_array_append_new(bytes,
-                                  json_integer(ele.v.val_bytes.bytes[i]));
+        for (int i = 0; i < ele.v.val_array_bool.length; i++) {
+            json_array_append_new(array,
+                                  json_boolean(ele.v.val_array_bool.bools[i]));
         }
 
-        json_object_set_new(ob, ele.name, bytes);
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_INT8: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_int8.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_int8.i8s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT8: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_uint8.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_uint8.u8s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_INT16: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_int16.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_int16.i16s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT16: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_uint16.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_uint16.u16s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_INT32: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_int32.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_int32.i32s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT32: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_uint32.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_uint32.u32s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_INT64: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_int64.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_int64.i64s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT64: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_uint64.length; i++) {
+            json_array_append_new(array,
+                                  json_integer(ele.v.val_array_uint64.u64s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_FLOAT: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_float.length; i++) {
+            json_array_append_new(array,
+                                  json_real(ele.v.val_array_float.f32s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
+    case NEU_JSON_ARRAY_DOUBLE: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_double.length; i++) {
+            json_array_append_new(array,
+                                  json_real(ele.v.val_array_double.f64s[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
         break;
     }
     case NEU_JSON_OBJECT:
@@ -181,7 +291,20 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         } else if (json_is_integer(ob)) {
             ele->t = NEU_JSON_INT;
         } else if (json_is_array(ob)) {
-            ele->t = NEU_JSON_BYTES;
+            json_t *value = NULL;
+            int     index = 0;
+            ele->t        = NEU_JSON_ARRAY_INT64;
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->t = NEU_JSON_ARRAY_DOUBLE;
+                    break;
+                }
+                if (json_is_boolean(value)) {
+                    ele->t = NEU_JSON_ARRAY_BOOL;
+                    break;
+                }
+            }
         }
     }
 
@@ -221,19 +344,62 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     case NEU_JSON_BOOL:
         ele->v.val_bool = json_boolean_value(ob);
         break;
-    case NEU_JSON_BYTES: {
+    case NEU_JSON_ARRAY_BOOL: {
         json_t *value = NULL;
 
-        ele->v.val_bytes.length = json_array_size(ob);
-        if (ele->v.val_bytes.length > 0) {
+        ele->v.val_array_bool.length = json_array_size(ob);
+        if (ele->v.val_array_bool.length > 0) {
             int index = 0;
 
-            ele->v.val_bytes.bytes =
-                calloc(ele->v.val_bytes.length, sizeof(uint8_t));
+            ele->v.val_array_bool.bools =
+                calloc(ele->v.val_array_bool.length, sizeof(bool));
             json_array_foreach(ob, index, value)
             {
-                ele->v.val_bytes.bytes[index] =
-                    (uint8_t) json_integer_value(value);
+                ele->v.val_array_bool.bools[index] = json_boolean_value(value);
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_INT64: {
+        json_t *value = NULL;
+
+        ele->v.val_array_int64.length = json_array_size(ob);
+        if (ele->v.val_array_int64.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_int64.i64s =
+                calloc(ele->v.val_array_int64.length, sizeof(int64_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_int64.i64s[index] =
+                        (int64_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_int64.i64s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_DOUBLE: {
+        json_t *value = NULL;
+
+        ele->v.val_array_double.length = json_array_size(ob);
+        if (ele->v.val_array_double.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_double.f64s =
+                calloc(ele->v.val_array_double.length, sizeof(double));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_integer(value)) {
+                    ele->v.val_array_double.f64s[index] =
+                        (double) json_integer_value(value);
+                } else {
+                    ele->v.val_array_double.f64s[index] =
+                        json_real_value(value);
+                }
             }
         }
         break;
