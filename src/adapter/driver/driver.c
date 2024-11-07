@@ -749,7 +749,8 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_STRING:
     case NEU_TYPE_TIME:
     case NEU_TYPE_DATA_AND_TIME:
-    case NEU_TYPE_BYTES:
+    case NEU_TYPE_ARRAY_INT64:
+    case NEU_TYPE_ARRAY_CHAR:
         break;
     case NEU_TYPE_BIT:
         value->type     = NEU_TYPE_BIT;
@@ -828,6 +829,129 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         case NEU_DATATAG_ENDIAN_L64:
         default:
             break;
+        }
+        break;
+    case NEU_TYPE_BYTES:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.bytes.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.bytes.bytes[i] =
+                    (uint8_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.bytes.bytes[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_INT8:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.i8s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.i8s.i8s[i] = (int8_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.i8s.i8s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_UINT8:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.u8s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.u8s.u8s[i] = (uint8_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.u8s.u8s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_INT16:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.i16s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.i16s.i16s[i] = (int16_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.i16s.i16s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_UINT16:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.u16s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.u16s.u16s[i] =
+                    (uint16_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.u16s.u16s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_INT32:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.i32s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.i32s.i32s[i] = (int32_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.i32s.i32s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_UINT32:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.u32s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.u32s.u32s[i] =
+                    (uint32_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.u32s.u32s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_UINT64:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.u64s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.u64s.u64s[i] =
+                    (uint64_t) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.u64s.u64s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_FLOAT:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.f32s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.f32s.f32s[i] = (float) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.f32s.f32s[i] = 0;
+            }
+        }
+        if (value->type == NEU_TYPE_ARRAY_DOUBLE) {
+            value->value.f32s.length = value->value.f64s.length;
+            for (int i = 0; i < value->value.f64s.length; i++) {
+                value->value.f32s.f32s[i] = (float) value->value.f64s.f64s[i];
+            }
+            for (int i = value->value.f64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.f32s.f32s[i] = 0;
+            }
+        }
+        break;
+    case NEU_TYPE_ARRAY_DOUBLE:
+        if (value->type == NEU_TYPE_ARRAY_INT64) {
+            value->value.f64s.length = value->value.i64s.length;
+            for (int i = 0; i < value->value.i64s.length; i++) {
+                value->value.f64s.f64s[i] = (double) value->value.i64s.i64s[i];
+            }
+            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+                value->value.f64s.f64s[i] = 0;
+            }
         }
         break;
     default:
@@ -1120,165 +1244,6 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                         (double) cmd->tags[i].value.value.i64;
                 }
             }
-            if (tag->type == NEU_TYPE_BYTES) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.bytes.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.bytes.bytes[j] =
-                            (uint8_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.bytes.bytes[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_INT8) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.i8s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.i8s.i8s[j] =
-                            (int8_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.i8s.i8s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_UINT8) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.u8s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.u8s.u8s[j] =
-                            (int8_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.u8s.u8s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_INT16) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.i16s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.i16s.i16s[j] =
-                            (int16_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.i16s.i16s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_UINT16) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.u16s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.u16s.u16s[j] =
-                            (uint16_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.u16s.u16s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_INT32) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.i32s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.i32s.i32s[j] =
-                            (int32_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.i32s.i32s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_UINT32) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.u32s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.u32s.u32s[j] =
-                            (uint32_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.u32s.u32s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_UINT64) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.u64s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.u64s.u64s[i] =
-                            (uint64_t) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.i64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.u64s.u64s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_DOUBLE) {
-                    cmd->tags[i].value.value.f32s.length =
-                        cmd->tags[i].value.value.f64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.f64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.f32s.f32s[j] =
-                            (float) cmd->tags[i].value.value.f64s.f64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.f64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.f32s.f32s[j] = 0;
-                    }
-                }
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.f32s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.f64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.f32s.f32s[j] =
-                            (float) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                    for (int j = cmd->tags[i].value.value.f64s.length;
-                         j < NEU_VALUE_SIZE; j++) {
-                        cmd->tags[i].value.value.f32s.f32s[j] = 0;
-                    }
-                }
-            }
-            if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
-                if (cmd->tags[i].value.type == NEU_TYPE_ARRAY_INT64) {
-                    cmd->tags[i].value.value.f64s.length =
-                        cmd->tags[i].value.value.i64s.length;
-                    for (int j = 0; j < cmd->tags[i].value.value.i64s.length;
-                         j++) {
-                        cmd->tags[i].value.value.f64s.f64s[j] =
-                            (double) cmd->tags[i].value.value.i64s.i64s[j];
-                    }
-                }
-            }
 
             if (tag->decimal != 0) {
                 cal_decimal(tag->type, cmd->tags[i].value.type,
@@ -1396,220 +1361,6 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                             (double) cmd->groups[i].tags[k].value.value.i64;
                     }
                 }
-                if (tag->type == NEU_TYPE_BYTES) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.bytes.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.bytes.bytes[j] =
-                                (uint8_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.bytes.bytes[j] =
-                                0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_INT8) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.i8s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.i8s.i8s[j] =
-                                (int8_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.i8s.i8s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_UINT8) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.u8s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.u8s.u8s[j] =
-                                (int8_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.u8s.u8s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_INT16) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.i16s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.i16s.i16s[j] =
-                                (int16_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.i16s.i16s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_UINT16) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.u16s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.u16s.u16s[j] =
-                                (uint16_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.u16s.u16s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_INT32) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.i32s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.i32s.i32s[j] =
-                                (int32_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.i32s.i32s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_UINT32) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.u32s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.u32s.u32s[j] =
-                                (uint32_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.u32s.u32s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_UINT64) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.u64s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.u64s.u64s[j] =
-                                (uint64_t) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.i64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.u64s.u64s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_DOUBLE) {
-                        cmd->groups[i].tags[k].value.value.f32s.length =
-                            cmd->groups[i].tags[k].value.value.f64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.f64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] =
-                                (float) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.f64s.f64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.f64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] = 0;
-                        }
-                    }
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.f32s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.f64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] =
-                                (float) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                        for (int j =
-                                 cmd->groups[i].tags[k].value.value.f64s.length;
-                             j < NEU_VALUE_SIZE; j++) {
-                            cmd->groups[i].tags[k].value.value.f32s.f32s[j] = 0;
-                        }
-                    }
-                }
-                if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
-                    if (cmd->groups[i].tags[k].value.type ==
-                        NEU_TYPE_ARRAY_INT64) {
-                        cmd->groups[i].tags[k].value.value.f64s.length =
-                            cmd->groups[i].tags[k].value.value.i64s.length;
-                        for (int j = 0;
-                             j < cmd->groups[i].tags[k].value.value.i64s.length;
-                             j++) {
-                            cmd->groups[i].tags[k].value.value.f64s.f64s[j] =
-                                (double) cmd->groups[i]
-                                    .tags[k]
-                                    .value.value.i64s.i64s[j];
-                        }
-                    }
-                }
 
                 if (tag->decimal != 0) {
                     cal_decimal(tag->type, cmd->groups[i].tags[k].value.type,
@@ -1715,143 +1466,6 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
             if (cmd->value.type == NEU_TYPE_INT64) {
                 cmd->value.value.d64 = (double) cmd->value.value.i64;
-            }
-        }
-        if (tag->type == NEU_TYPE_BYTES) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.bytes.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.bytes.bytes[i] =
-                        (uint8_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.bytes.bytes[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_INT8) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.i8s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.i8s.i8s[i] =
-                        (int8_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.i8s.i8s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_UINT8) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.u8s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.u8s.u8s[i] =
-                        (uint8_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.u8s.u8s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_INT16) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.i16s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.i16s.i16s[i] =
-                        (int16_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.i16s.i16s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_UINT16) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.u16s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.u16s.u16s[i] =
-                        (uint16_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.u16s.u16s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_INT32) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.i32s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.i32s.i32s[i] =
-                        (int32_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.i32s.i32s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_UINT32) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.u32s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.u32s.u32s[i] =
-                        (uint32_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.u32s.u32s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_UINT64) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.u64s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.u64s.u64s[i] =
-                        (uint64_t) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.u64s.u64s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_FLOAT) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_DOUBLE) {
-                cmd->value.value.f32s.length = cmd->value.value.f64s.length;
-                for (int i = 0; i < cmd->value.value.f64s.length; i++) {
-                    cmd->value.value.f32s.f32s[i] =
-                        (float) cmd->value.value.f64s.f64s[i];
-                }
-                for (int i = cmd->value.value.f64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.f32s.f32s[i] = 0;
-                }
-            }
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.f32s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.f64s.length; i++) {
-                    cmd->value.value.f32s.f32s[i] =
-                        (float) cmd->value.value.i64s.i64s[i];
-                }
-                for (int i = cmd->value.value.i64s.length; i < NEU_VALUE_SIZE;
-                     i++) {
-                    cmd->value.value.f32s.f32s[i] = 0;
-                }
-            }
-        }
-        if (tag->type == NEU_TYPE_ARRAY_DOUBLE) {
-            if (cmd->value.type == NEU_TYPE_ARRAY_INT64) {
-                cmd->value.value.f64s.length = cmd->value.value.i64s.length;
-                for (int i = 0; i < cmd->value.value.i64s.length; i++) {
-                    cmd->value.value.f64s.f64s[i] =
-                        (double) cmd->value.value.i64s.i64s[i];
-                }
             }
         }
 
