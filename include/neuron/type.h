@@ -56,15 +56,16 @@ typedef enum {
     NEU_TYPE_DATA_AND_TIME = 21,
     NEU_TYPE_ARRAY_CHAR    = 22,
     NEU_TYPE_ARRAY_INT8    = 23,
-    NEU_TYPE_ARRAY_INT16   = 24,
-    NEU_TYPE_ARRAY_UINT16  = 25,
-    NEU_TYPE_ARRAY_INT32   = 26,
-    NEU_TYPE_ARRAY_UINT32  = 27,
-    NEU_TYPE_ARRAY_INT64   = 28,
-    NEU_TYPE_ARRAY_UINT64  = 29,
-    NEU_TYPE_ARRAY_FLOAT   = 30,
-    NEU_TYPE_ARRAY_DOUBLE  = 31,
-    NEU_TYPE_ARRAY_BOOL    = 32,
+    NEU_TYPE_ARRAY_UINT8   = 24,
+    NEU_TYPE_ARRAY_INT16   = 25,
+    NEU_TYPE_ARRAY_UINT16  = 26,
+    NEU_TYPE_ARRAY_INT32   = 27,
+    NEU_TYPE_ARRAY_UINT32  = 28,
+    NEU_TYPE_ARRAY_INT64   = 29,
+    NEU_TYPE_ARRAY_UINT64  = 30,
+    NEU_TYPE_ARRAY_FLOAT   = 31,
+    NEU_TYPE_ARRAY_DOUBLE  = 32,
+    NEU_TYPE_ARRAY_BOOL    = 33,
     NEU_TYPE_CUSTOM        = 40,
 } neu_type_e;
 
@@ -117,6 +118,8 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_ARRAY_CHAR";
     case NEU_TYPE_ARRAY_INT8:
         return "NEU_TYPE_ARRAY_INT8";
+    case NEU_TYPE_ARRAY_UINT8:
+        return "NEU_TYPE_ARRAY_UINT8";
     case NEU_TYPE_ARRAY_INT16:
         return "NEU_TYPE_ARRAY_INT16";
     case NEU_TYPE_ARRAY_UINT16:
@@ -159,6 +162,11 @@ typedef struct {
     int8_t  i8s[NEU_VALUE_SIZE];
     uint8_t length;
 } neu_value_array_int8_t;
+
+typedef struct {
+    uint8_t u8s[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_uint8_t;
 
 typedef struct {
     int16_t i16s[NEU_VALUE_SIZE];
@@ -222,6 +230,7 @@ typedef union {
     neu_value_ptr_t          ptr;
     json_t *                 json;
     neu_value_array_int8_t   i8s;
+    neu_value_array_uint8_t  u8s;
     neu_value_array_int16_t  i16s;
     neu_value_array_uint16_t u16s;
     neu_value_array_int32_t  i32s;
