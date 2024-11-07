@@ -30,7 +30,7 @@ CREATE TABLE
     precision INTEGER NOT NULL check (precision BETWEEN 0 AND 17),
     decimal REAL NOT NULL,
     bias REAL NOT NULL check (bias BETWEEN -1000 AND 1000),
-    type INTEGER NOT NULL check (type BETWEEN 0 AND 22),
+    type INTEGER NOT NULL check (type BETWEEN 0 AND 40),
     description TEXT NULL check (length (description) <= 512),
     value TEXT,
     UNIQUE (driver_name, group_name, name),
