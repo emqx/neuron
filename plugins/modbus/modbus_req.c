@@ -517,15 +517,13 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     (void) req;
     neu_json_value_u jvalue = { 0 };
     neu_json_type_e  jtype;
+    uint8_t          recv_bytes[256] = { 0 };
 
     switch (point->area) {
     case MODBUS_AREA_HOLD_REGISTER:
     case MODBUS_AREA_INPUT_REGISTER:
         if (n_byte >= point->n_register * 2) {
-            jvalue.val_bytes.bytes =
-                (uint8_t *) malloc(point->n_register * 2 + 1);
-            memcpy(jvalue.val_bytes.bytes, bytes, point->n_register * 2);
-            jvalue.val_bytes.length = point->n_register * 2;
+            memcpy(recv_bytes, bytes, point->n_register * 2);
         }
         break;
     case MODBUS_AREA_COIL:
@@ -539,23 +537,20 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     case NEU_TYPE_UINT16: {
         jtype = NEU_JSON_INT;
         uint16_t tmp_val16;
-        memcpy(&tmp_val16, jvalue.val_bytes.bytes, sizeof(uint16_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val16, recv_bytes, sizeof(uint16_t));
         jvalue.val_int = ntohs(tmp_val16);
         break;
     }
     case NEU_TYPE_INT16: {
         jtype = NEU_JSON_INT;
         int16_t tmp_val16;
-        memcpy(&tmp_val16, jvalue.val_bytes.bytes, sizeof(int16_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val16, recv_bytes, sizeof(int16_t));
         jvalue.val_int = (int16_t) ntohs(tmp_val16);
         break;
     }
     case NEU_TYPE_FLOAT: {
         uint32_t tmp_valf;
-        memcpy(&tmp_valf, jvalue.val_bytes.bytes, sizeof(uint32_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_valf, recv_bytes, sizeof(uint32_t));
         jtype          = NEU_JSON_FLOAT;
         jvalue.val_int = ntohl(tmp_valf);
         break;
@@ -563,23 +558,20 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     case NEU_TYPE_INT32: {
         jtype = NEU_JSON_INT;
         int32_t tmp_val32;
-        memcpy(&tmp_val32, jvalue.val_bytes.bytes, sizeof(int32_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val32, recv_bytes, sizeof(int32_t));
         jvalue.val_int = (int32_t) ntohl(tmp_val32);
         break;
     }
     case NEU_TYPE_UINT32: {
         jtype = NEU_JSON_INT;
         uint32_t tmp_val32;
-        memcpy(&tmp_val32, jvalue.val_bytes.bytes, sizeof(uint32_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val32, recv_bytes, sizeof(uint32_t));
         jvalue.val_int = ntohl(tmp_val32);
         break;
     }
     case NEU_TYPE_DOUBLE: {
         uint64_t tmp_vald;
-        memcpy(&tmp_vald, jvalue.val_bytes.bytes, sizeof(uint64_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_vald, recv_bytes, sizeof(uint64_t));
         jtype          = NEU_JSON_DOUBLE;
         jvalue.val_int = neu_ntohll(tmp_vald);
         break;
@@ -587,16 +579,14 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     case NEU_TYPE_INT64: {
         jtype = NEU_JSON_INT;
         int64_t tmp_val64;
-        memcpy(&tmp_val64, jvalue.val_bytes.bytes, sizeof(int64_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val64, recv_bytes, sizeof(int64_t));
         jvalue.val_int = (int64_t) neu_ntohll(tmp_val64);
         break;
     }
     case NEU_TYPE_UINT64: {
         jtype = NEU_JSON_INT;
         uint64_t tmp_val64;
-        memcpy(&tmp_val64, jvalue.val_bytes.bytes, sizeof(uint64_t));
-        free(jvalue.val_bytes.bytes);
+        memcpy(&tmp_val64, recv_bytes, sizeof(uint64_t));
         jvalue.val_int = neu_ntohll(tmp_val64);
         break;
     }
@@ -606,9 +596,8 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         case MODBUS_AREA_INPUT_REGISTER: {
             jtype             = NEU_JSON_BIT;
             neu_value16_u v16 = { 0 };
-            v16.value         = htons(*(uint16_t *) jvalue.val_bytes.bytes);
-            free(jvalue.val_bytes.bytes);
-            jvalue.val_bit = neu_value16_get_bit(v16, point->option.bit.bit);
+            v16.value         = htons(*(uint16_t *) recv_bytes);
+            jvalue.val_bit    = neu_value16_get_bit(v16, point->option.bit.bit);
             break;
         }
         case MODBUS_AREA_COIL:
@@ -619,10 +608,10 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         break;
     }
     case NEU_TYPE_STRING: {
-        jtype                      = NEU_JSON_STR;
-        size_t str_length          = point->n_register * 2;
-        jvalue.val_str             = (char *) jvalue.val_bytes.bytes;
-        jvalue.val_str[str_length] = '\0';
+        jtype             = NEU_JSON_STR;
+        size_t str_length = point->n_register * 2;
+        jvalue.val_str    = calloc(1, str_length + 1);
+        strncpy(jvalue.val_str, (char *) recv_bytes, str_length);
 
         switch (point->option.string.type) {
         case NEU_DATATAG_STRING_TYPE_H:

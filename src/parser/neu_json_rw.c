@@ -383,8 +383,47 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
     }
-    if (req->t == NEU_JSON_BYTES && req->value.val_bytes.length > 0) {
-        free(req->value.val_bytes.bytes);
+    if (req->t == NEU_JSON_ARRAY_INT8 && req->value.val_array_int8.length > 0) {
+        free(req->value.val_array_int8.i8s);
+    }
+    if (req->t == NEU_JSON_ARRAY_UINT8 &&
+        req->value.val_array_uint8.length > 0) {
+        free(req->value.val_array_uint8.u8s);
+    }
+    if (req->t == NEU_JSON_ARRAY_INT16 &&
+        req->value.val_array_int16.length > 0) {
+        free(req->value.val_array_int16.i16s);
+    }
+    if (req->t == NEU_JSON_ARRAY_UINT16 &&
+        req->value.val_array_uint16.length > 0) {
+        free(req->value.val_array_uint16.u16s);
+    }
+    if (req->t == NEU_JSON_ARRAY_INT32 &&
+        req->value.val_array_int32.length > 0) {
+        free(req->value.val_array_int32.i32s);
+    }
+    if (req->t == NEU_JSON_ARRAY_UINT32 &&
+        req->value.val_array_uint32.length > 0) {
+        free(req->value.val_array_uint32.u32s);
+    }
+    if (req->t == NEU_JSON_ARRAY_INT64 &&
+        req->value.val_array_int64.length > 0) {
+        free(req->value.val_array_int64.i64s);
+    }
+    if (req->t == NEU_JSON_ARRAY_UINT64 &&
+        req->value.val_array_uint64.length > 0) {
+        free(req->value.val_array_uint64.u64s);
+    }
+    if (req->t == NEU_JSON_ARRAY_FLOAT &&
+        req->value.val_array_float.length > 0) {
+        free(req->value.val_array_float.f32s);
+    }
+    if (req->t == NEU_JSON_ARRAY_DOUBLE &&
+        req->value.val_array_double.length > 0) {
+        free(req->value.val_array_double.f64s);
+    }
+    if (req->t == NEU_JSON_ARRAY_BOOL && req->value.val_array_bool.length > 0) {
+        free(req->value.val_array_bool.bools);
     }
 
     free(req);
@@ -502,9 +541,49 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
         if (req->tags[i].t == NEU_JSON_STR) {
             free(req->tags[i].value.val_str);
         }
-        if (req->tags[i].t == NEU_JSON_BYTES &&
-            req->tags[i].value.val_bytes.length > 0) {
-            free(req->tags[i].value.val_bytes.bytes);
+        if (req->tags[i].t == NEU_JSON_ARRAY_INT8 &&
+            req->tags[i].value.val_array_int8.length > 0) {
+            free(req->tags[i].value.val_array_int8.i8s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_UINT8 &&
+            req->tags[i].value.val_array_uint8.length > 0) {
+            free(req->tags[i].value.val_array_uint8.u8s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_INT16 &&
+            req->tags[i].value.val_array_int16.length > 0) {
+            free(req->tags[i].value.val_array_int16.i16s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_UINT16 &&
+            req->tags[i].value.val_array_uint16.length > 0) {
+            free(req->tags[i].value.val_array_uint16.u16s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_INT32 &&
+            req->tags[i].value.val_array_int32.length > 0) {
+            free(req->tags[i].value.val_array_int32.i32s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_UINT32 &&
+            req->tags[i].value.val_array_uint32.length > 0) {
+            free(req->tags[i].value.val_array_uint32.u32s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_INT64 &&
+            req->tags[i].value.val_array_int64.length > 0) {
+            free(req->tags[i].value.val_array_int64.i64s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_UINT64 &&
+            req->tags[i].value.val_array_uint64.length > 0) {
+            free(req->tags[i].value.val_array_uint64.u64s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_FLOAT &&
+            req->tags[i].value.val_array_float.length > 0) {
+            free(req->tags[i].value.val_array_float.f32s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_DOUBLE &&
+            req->tags[i].value.val_array_double.length > 0) {
+            free(req->tags[i].value.val_array_double.f64s);
+        }
+        if (req->tags[i].t == NEU_JSON_ARRAY_BOOL &&
+            req->tags[i].value.val_array_bool.length > 0) {
+            free(req->tags[i].value.val_array_bool.bools);
         }
     }
     free(req->tags);
@@ -1170,9 +1249,49 @@ void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
             if (req->groups[i].tags[k].t == NEU_JSON_STR) {
                 free(req->groups[i].tags[k].value.val_str);
             }
-            if (req->groups[i].tags[k].t == NEU_JSON_BYTES &&
-                req->groups[i].tags[k].value.val_bytes.length > 0) {
-                free(req->groups[i].tags[k].value.val_bytes.bytes);
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_INT8 &&
+                req->groups[i].tags[k].value.val_array_int8.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_int8.i8s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_UINT8 &&
+                req->groups[i].tags[k].value.val_array_uint8.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_uint8.u8s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_INT16 &&
+                req->groups[i].tags[k].value.val_array_int16.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_int16.i16s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_UINT16 &&
+                req->groups[i].tags[k].value.val_array_uint16.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_uint16.u16s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_INT32 &&
+                req->groups[i].tags[k].value.val_array_int32.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_int32.i32s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_UINT32 &&
+                req->groups[i].tags[k].value.val_array_uint32.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_uint32.u32s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_INT64 &&
+                req->groups[i].tags[k].value.val_array_int64.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_int64.i64s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_UINT64 &&
+                req->groups[i].tags[k].value.val_array_uint64.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_uint64.u64s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_FLOAT &&
+                req->groups[i].tags[k].value.val_array_float.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_float.f32s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_DOUBLE &&
+                req->groups[i].tags[k].value.val_array_double.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_double.f64s);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_BOOL &&
+                req->groups[i].tags[k].value.val_array_bool.length > 0) {
+                free(req->groups[i].tags[k].value.val_array_bool.bools);
             }
         }
         if (req->groups[i].n_tag > 0) {
