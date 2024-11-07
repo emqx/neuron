@@ -983,6 +983,12 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
             tag_value->value.value.i8s.length;
         tag_json->value.val_array_int8.i8s = tag_value->value.value.i8s.i8s;
         break;
+    case NEU_TYPE_ARRAY_UINT8:
+        tag_json->t = NEU_JSON_ARRAY_UINT8;
+        tag_json->value.val_array_uint8.length =
+            tag_value->value.value.u8s.length;
+        tag_json->value.val_array_uint8.u8s = tag_value->value.value.u8s.u8s;
+        break;
     case NEU_TYPE_ARRAY_INT16:
         tag_json->t = NEU_JSON_ARRAY_INT16;
         tag_json->value.val_array_int16.length =
@@ -1167,6 +1173,12 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
         tag_json->value.val_array_int8.length =
             tag_value->value.value.i8s.length;
         tag_json->value.val_array_int8.i8s = tag_value->value.value.i8s.i8s;
+        break;
+    case NEU_TYPE_ARRAY_UINT8:
+        tag_json->t = NEU_JSON_ARRAY_UINT8;
+        tag_json->value.val_array_uint8.length =
+            tag_value->value.value.u8s.length;
+        tag_json->value.val_array_uint8.u8s = tag_value->value.value.u8s.u8s;
         break;
     case NEU_TYPE_ARRAY_INT16:
         tag_json->t = NEU_JSON_ARRAY_INT16;

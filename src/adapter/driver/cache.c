@@ -277,6 +277,18 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     }
                 }
                 break;
+            case NEU_TYPE_ARRAY_UINT8:
+                if (elem->value_old.value.u8s.length !=
+                    value.value.u8s.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value_old.value.u8s.u8s,
+                               value.value.u8s.u8s,
+                               value.value.u8s.length) != 0) {
+                        elem->changed = true;
+                    }
+                }
+                break;
             case NEU_TYPE_ARRAY_INT16:
                 if (elem->value_old.value.i16s.length !=
                     value.value.i16s.length) {
@@ -473,6 +485,16 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 } else {
                     if (memcmp(elem->value.value.i8s.i8s, value.value.i8s.i8s,
                                value.value.i8s.length) != 0) {
+                        elem->changed = true;
+                    }
+                }
+                break;
+            case NEU_TYPE_ARRAY_UINT8:
+                if (elem->value.value.u8s.length != value.value.u8s.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value.value.u8s.u8s, value.value.u8s.u8s,
+                               value.value.u8s.length) != 0) {
                         elem->changed = true;
                     }
                 }
@@ -718,6 +740,11 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
                    elem->value.value.i8s.length);
             break;
+        case NEU_TYPE_ARRAY_UINT8:
+            value->value.value.u8s.length = elem->value.value.u8s.length;
+            memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
+                   elem->value.value.u8s.length);
+            break;
         case NEU_TYPE_ARRAY_INT16:
             value->value.value.i16s.length = elem->value.value.i16s.length;
             memcpy(value->value.value.i16s.i16s, elem->value.value.i16s.i16s,
@@ -853,6 +880,11 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             value->value.value.i8s.length = elem->value.value.i8s.length;
             memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
                    elem->value.value.i8s.length);
+            break;
+        case NEU_TYPE_ARRAY_UINT8:
+            value->value.value.u8s.length = elem->value.value.u8s.length;
+            memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
+                   elem->value.value.u8s.length);
             break;
         case NEU_TYPE_ARRAY_INT16:
             value->value.value.i16s.length = elem->value.value.i16s.length;
