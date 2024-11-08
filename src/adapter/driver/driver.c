@@ -3022,3 +3022,15 @@ void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
         start_group_timer(driver, g);
     }
 }
+
+int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.call == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_CMD_CALL;
+    }
+    return driver->adapter.module->intf_funs->driver.call(
+        driver->adapter.plugin, cmd);
+}

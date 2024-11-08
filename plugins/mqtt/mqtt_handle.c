@@ -22,6 +22,7 @@
 #include "otel/otel_manager.h"
 #include "utils/asprintf.h"
 #include "version.h"
+#include "json/neu_json_driver.h"
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
 
@@ -177,6 +178,26 @@ static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states,
 
     free(json.states);
     return json_str;
+}
+
+static inline int send_driver_cmd(neu_plugin_t *         plugin,
+                                  neu_json_driver_cmd_t *req)
+{
+    plog_notice(plugin, "driver cmd, driver:%s, cmd:%s", req->driver, req->cmd);
+    neu_reqresp_head_t header = { 0 };
+    header.ctx                = NULL;
+
+    neu_req_driver_cmd_t cmd = { 0 };
+    strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN);
+    cmd.cmd = strdup(req->cmd);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        free(cmd.cmd);
+        plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_CMD) fail");
+        return -1;
+    }
+
+    return 0;
 }
 
 static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
@@ -531,6 +552,30 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
     return rv;
+}
+
+void handle_driver_cmd_req(neu_mqtt_qos_e qos, const char *topic,
+                           const uint8_t *payload, uint32_t len, void *data,
+                           trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) trace_w3c;
+    neu_plugin_t *         plugin = data;
+    neu_json_driver_cmd_t *req    = NULL;
+
+    char *json_str = calloc(len + 1, sizeof(char));
+    memcpy(json_str, payload, len);
+
+    int rv = neu_json_decode_driver_cmd_req(json_str, &req);
+    if (rv != 0) {
+        plog_error(plugin, "neu_json_decode_driver_cmd_req failed");
+        free(json_str);
+        return;
+    }
+
+    neu_json_decode_driver_cmd_req_free(req);
+    free(json_str);
 }
 
 void handle_read_req(neu_mqtt_qos_e qos, const char *topic,

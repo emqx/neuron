@@ -125,6 +125,8 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_CHECK_SCHEMA,
     NEU_RESP_CHECK_SCHEMA,
+
+    NEU_REQ_DRIVER_CMD,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -210,6 +212,8 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_CHECK_SCHEMA]  = "NEU_REQ_CHECK_SCHEMA",
     [NEU_RESP_CHECK_SCHEMA] = "NEU_RESP_CHECK_SCHEMA",
+
+    [NEU_REQ_DRIVER_CMD] = "NEU_REQ_DRIVER_CMD",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -237,6 +241,11 @@ typedef struct neu_reqresp_head {
 typedef struct neu_resp_error {
     int error;
 } neu_resp_error_t;
+
+typedef struct neu_req_driver_cmd {
+    char  driver[NEU_NODE_NAME_LEN];
+    char *cmd;
+} neu_req_driver_cmd_t;
 
 typedef struct neu_req_check_schema {
     char schema[NEU_PLUGIN_NAME_LEN];

@@ -50,6 +50,10 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                          neu_resp_read_group_t *data);
 
+void handle_driver_cmd_req(neu_mqtt_qos_e qos, const char *topic,
+                           const uint8_t *payload, uint32_t len, void *data,
+                           trace_w3c_t *trace_w3c);
+
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                            mqtt_upload_format_e format);
 int   handle_trans_data(neu_plugin_t *            plugin,
