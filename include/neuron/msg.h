@@ -637,11 +637,13 @@ typedef struct {
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
 
 typedef struct neu_req_read_group {
-    char *driver;
-    char *group;
-    char *name;
-    char *desc;
-    bool  sync;
+    char *   driver;
+    char *   group;
+    char *   name;
+    char *   desc;
+    bool     sync;
+    uint16_t n_tag;
+    char **  tags;
 } neu_req_read_group_t;
 
 static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
@@ -650,6 +652,12 @@ static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
     free(req->group);
     free(req->name);
     free(req->desc);
+    if (req->n_tag > 0) {
+        for (uint16_t i = 0; i < req->n_tag; i++) {
+            free(req->tags[i]);
+        }
+        free(req->tags);
+    }
 }
 
 typedef struct neu_req_read_group_paginate {

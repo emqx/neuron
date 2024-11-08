@@ -296,6 +296,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
             ele->t        = NEU_JSON_ARRAY_INT64;
             json_array_foreach(ob, index, value)
             {
+                if (json_is_string(value)) {
+                    ele->t = NEU_JSON_ARRAY_STR;
+                    break;
+                }
                 if (json_is_real(value)) {
                     ele->t = NEU_JSON_ARRAY_DOUBLE;
                     break;
@@ -344,6 +348,26 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     case NEU_JSON_BOOL:
         ele->v.val_bool = json_boolean_value(ob);
         break;
+    case NEU_JSON_ARRAY_STR: {
+        json_t *value = NULL;
+
+        ele->v.val_array_str.length = json_array_size(ob);
+        if (ele->v.val_array_str.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_str.p_strs =
+                calloc(ele->v.val_array_str.length, sizeof(char *));
+            json_array_foreach(ob, index, value)
+            {
+                const char *str_val = json_string_value(value);
+                if (str_val != NULL) {
+                    ele->v.val_array_str.p_strs[index] = strdup(str_val);
+                }
+            }
+        }
+
+        break;
+    }
     case NEU_JSON_ARRAY_BOOL: {
         json_t *value = NULL;
 

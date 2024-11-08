@@ -670,6 +670,13 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
             .t         = NEU_JSON_OBJECT,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
+        {
+            .name                   = "tags",
+            .t                      = NEU_JSON_ARRAY_STR,
+            .attribute              = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            .v.val_array_str.length = 0,
+            .v.val_array_str.p_strs = NULL,
+        },
     };
 
     neu_json_elem_t query_elems[] = {
@@ -691,9 +698,11 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
         goto error;
     }
 
-    req->node  = req_elems[0].v.val_str;
-    req->group = req_elems[1].v.val_str;
-    req->sync  = req_elems[2].v.val_bool;
+    req->node   = req_elems[0].v.val_str;
+    req->group  = req_elems[1].v.val_str;
+    req->sync   = req_elems[2].v.val_bool;
+    req->n_tags = req_elems[4].v.val_array_str.length;
+    req->tags   = req_elems[4].v.val_array_str.p_strs;
 
     if (req_elems[3].v.val_object) {
         ret = neu_json_decode_by_json(req_elems[3].v.val_object,
@@ -726,6 +735,14 @@ void neu_json_decode_read_req_free(neu_json_read_req_t *req)
 {
     free(req->group);
     free(req->node);
+    if (req->n_tags > 0) {
+        for (int i = 0; i < req->n_tags; i++) {
+            if (req->tags[i] != NULL) {
+                free(req->tags[i]);
+            }
+        }
+        free(req->tags);
+    }
 
     free(req);
 }

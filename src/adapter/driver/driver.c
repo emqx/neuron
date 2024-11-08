@@ -568,7 +568,8 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 
     neu_resp_read_group_t resp  = { 0 };
     neu_group_t *         group = g->group;
-    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
+    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc,
+                                              cmd->n_tag, cmd->tags);
 
     utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
 
@@ -651,7 +652,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
             group, cmd->name, cmd->desc, cmd->current_page, cmd->page_size,
             &resp.total_count);
     } else {
-        tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
+        tags = neu_group_query_read_tag(group, cmd->name, cmd->desc, 0, NULL);
         resp.total_count = utarray_len(tags);
     }
 

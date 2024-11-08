@@ -149,11 +149,13 @@ int  neu_json_decode_write(char *buf, neu_json_write_t **result);
 void neu_json_decode_write_free(neu_json_write_t *req);
 
 typedef struct {
-    char *group;
-    char *node;
-    char *name;
-    char *desc;
-    bool  sync;
+    char * group;
+    char * node;
+    char * name;
+    char * desc;
+    bool   sync;
+    int    n_tags;
+    char **tags;
 } neu_json_read_req_t;
 
 int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);

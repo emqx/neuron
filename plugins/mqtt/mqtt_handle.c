@@ -198,8 +198,14 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     cmd.driver               = req->node;
     cmd.group                = req->group;
     cmd.sync                 = req->sync;
-    req->node                = NULL; // ownership moved
-    req->group               = NULL; // ownership moved
+    cmd.n_tag                = req->n_tags;
+    cmd.tags                 = req->tags;
+
+    req->node   = NULL; // ownership moved
+    req->group  = NULL; // ownership moved
+    req->n_tags = 0;
+    req->tags   = NULL;
+
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         neu_req_read_group_fini(&cmd);
         plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail");
