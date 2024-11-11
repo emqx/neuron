@@ -256,15 +256,26 @@ static inline bool description_contains(const neu_datatag_t *tag, void *data)
 }
 
 struct query {
-    char *name;
-    char *desc;
+    char *   name;
+    char *   desc;
+    uint16_t n_tagname;
+    char **  tagnames;
 };
 
 static inline bool match_query(const neu_datatag_t *tag, void *data)
 {
-    struct query *q = data;
-    return (!q->name || name_contains(tag, q->name)) &&
+    struct query *q      = data;
+    bool          filter = (!q->name || name_contains(tag, q->name)) &&
         (!q->desc || description_contains(tag, q->desc));
+    if (filter && q->n_tagname > 0) {
+        for (uint16_t i = 0; i < q->n_tagname; i++) {
+            if (strcmp(tag->name, q->tagnames[i]) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return filter;
 }
 
 static inline bool is_readable_and_match_query(const neu_datatag_t *tag,
@@ -285,12 +296,15 @@ UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
 }
 
 UT_array *neu_group_query_read_tag(neu_group_t *group, const char *name,
-                                   const char *desc)
+                                   const char *desc, uint16_t n_tagname,
+                                   char **tagnames)
 {
     UT_array *   array = NULL;
     struct query q     = {
-        .name = (char *) name,
-        .desc = (char *) desc,
+        .name      = (char *) name,
+        .desc      = (char *) desc,
+        .n_tagname = n_tagname,
+        .tagnames  = tagnames,
     };
 
     pthread_mutex_lock(&group->mtx);

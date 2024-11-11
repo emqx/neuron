@@ -1062,6 +1062,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_GTAGS:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
+    case NEU_REQ_DRIVER_CMD:
     case NEU_REQ_ADD_GROUP: {
         neu_otel_trace_ctx trace = NULL;
         neu_otel_scope_ctx scope = NULL;

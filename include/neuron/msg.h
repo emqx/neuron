@@ -125,6 +125,8 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_CHECK_SCHEMA,
     NEU_RESP_CHECK_SCHEMA,
+
+    NEU_REQ_DRIVER_CMD,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -210,6 +212,8 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_CHECK_SCHEMA]  = "NEU_REQ_CHECK_SCHEMA",
     [NEU_RESP_CHECK_SCHEMA] = "NEU_RESP_CHECK_SCHEMA",
+
+    [NEU_REQ_DRIVER_CMD] = "NEU_REQ_DRIVER_CMD",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -237,6 +241,11 @@ typedef struct neu_reqresp_head {
 typedef struct neu_resp_error {
     int error;
 } neu_resp_error_t;
+
+typedef struct neu_req_driver_cmd {
+    char  driver[NEU_NODE_NAME_LEN];
+    char *cmd;
+} neu_req_driver_cmd_t;
 
 typedef struct neu_req_check_schema {
     char schema[NEU_PLUGIN_NAME_LEN];
@@ -637,11 +646,13 @@ typedef struct {
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
 
 typedef struct neu_req_read_group {
-    char *driver;
-    char *group;
-    char *name;
-    char *desc;
-    bool  sync;
+    char *   driver;
+    char *   group;
+    char *   name;
+    char *   desc;
+    bool     sync;
+    uint16_t n_tag;
+    char **  tags;
 } neu_req_read_group_t;
 
 static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
@@ -650,6 +661,12 @@ static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
     free(req->group);
     free(req->name);
     free(req->desc);
+    if (req->n_tag > 0) {
+        for (uint16_t i = 0; i < req->n_tag; i++) {
+            free(req->tags[i]);
+        }
+        free(req->tags);
+    }
 }
 
 typedef struct neu_req_read_group_paginate {

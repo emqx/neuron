@@ -178,6 +178,8 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->read_resp_topic = NULL;
     free(plugin->upload_topic);
     plugin->upload_topic = NULL;
+    free(plugin->driver_cmd_topic);
+    plugin->driver_cmd_topic = NULL;
 
     route_tbl_free(plugin->route_tbl);
 
@@ -279,6 +281,14 @@ static int create_topic(neu_plugin_t *plugin)
         return -1;
     }
 
+    neu_asprintf(&plugin->driver_cmd_topic, "/neuron/%s/driver/cmd",
+                 plugin->common.name);
+    if (NULL == plugin->driver_cmd_topic) {
+        free(plugin->driver_cmd_topic);
+        plugin->driver_cmd_topic = NULL;
+        return -1;
+    }
+
     return 0;
 }
 
@@ -306,6 +316,14 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }
 
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  plugin->driver_cmd_topic, plugin,
+                                  handle_driver_cmd_req)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->driver_cmd_topic);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
     return 0;
 }
 
@@ -313,6 +331,7 @@ static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 {
     neu_mqtt_client_unsubscribe(plugin->client, plugin->read_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
+    neu_mqtt_client_unsubscribe(plugin->client, plugin->driver_cmd_topic);
     neu_msleep(100); // wait for message completion
     return 0;
 }

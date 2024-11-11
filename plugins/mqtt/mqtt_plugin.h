@@ -52,6 +52,7 @@ struct neu_plugin {
     char *              read_req_topic;
     char *              read_resp_topic;
     char *              upload_topic;
+    char *              driver_cmd_topic;
     route_entry_t *     route_tbl;
 
     int (*parse_config)(neu_plugin_t *plugin, const char *setting,

@@ -42,7 +42,8 @@ UT_array *   neu_group_get_tag(neu_group_t *group);
 UT_array *   neu_group_query_tag(neu_group_t *group, const char *name);
 UT_array *   neu_group_get_read_tag(neu_group_t *group);
 UT_array *   neu_group_query_read_tag(neu_group_t *group, const char *name,
-                                      const char *desc);
+                                      const char *desc, uint16_t n_tagname,
+                                      char **tagnames);
 UT_array *   neu_group_query_read_tag_paginate(neu_group_t *group,
                                                const char *name, const char *desc,
                                                int current_page, int page_size,

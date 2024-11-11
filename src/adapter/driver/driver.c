@@ -568,7 +568,8 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 
     neu_resp_read_group_t resp  = { 0 };
     neu_group_t *         group = g->group;
-    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
+    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc,
+                                              cmd->n_tag, cmd->tags);
 
     utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
 
@@ -651,7 +652,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
             group, cmd->name, cmd->desc, cmd->current_page, cmd->page_size,
             &resp.total_count);
     } else {
-        tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
+        tags = neu_group_query_read_tag(group, cmd->name, cmd->desc, 0, NULL);
         resp.total_count = utarray_len(tags);
     }
 
@@ -3020,4 +3021,16 @@ void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,
     if (g != NULL && neu_group_tag_size(g->group) > 0) {
         start_group_timer(driver, g);
     }
+}
+
+int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.call == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_CMD_CALL;
+    }
+    return driver->adapter.module->intf_funs->driver.call(
+        driver->adapter.plugin, cmd);
 }

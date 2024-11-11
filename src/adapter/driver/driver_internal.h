@@ -94,4 +94,7 @@ void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
 
 void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req);
+
+int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd);
+
 #endif
