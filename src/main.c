@@ -43,6 +43,7 @@ bool                  sub_filter_err    = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
 char                  host_port[32]     = { 0 };
 char                  g_status[32]      = { 0 };
+static bool           sig_trigger       = false;
 
 int64_t global_timestamp = 0;
 
@@ -55,10 +56,13 @@ static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
 
-    if (sig == SIGINT || sig == SIGTERM) {
-        neu_manager_destroy(g_manager);
-        neu_persister_destroy();
-        zlog_fini();
+    if (!sig_trigger) {
+        if (sig == SIGINT || sig == SIGTERM) {
+            neu_manager_destroy(g_manager);
+            neu_persister_destroy();
+            zlog_fini();
+        }
+        sig_trigger = true;
     }
     exit_flag = true;
     exit(-1);
