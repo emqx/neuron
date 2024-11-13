@@ -1426,3 +1426,8 @@ int is_ipv6(const char *ip)
     struct sockaddr_in6 sa;
     return inet_pton(AF_INET6, ip, &(sa.sin6_addr)) != 0;
 }
+
+bool neu_conn_is_connected(neu_conn_t *conn)
+{
+    return conn->is_connected;
+}

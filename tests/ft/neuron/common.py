@@ -29,7 +29,7 @@ class description(object):
 
 
 def random_port():
-    return random.randint(30000, 65535)
+    return random.randint(30000, 65530)
 
 
 def compare_float(v1, v2, delta=0.001):

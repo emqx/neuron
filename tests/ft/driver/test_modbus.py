@@ -8,9 +8,11 @@ import neuron.error as error
 import neuron.config as config
 from neuron.common import *
 
-tcp_port = random_port()
-rtu_port = random_port()
-otel_port = random_port()
+tcp_port        = random_port()
+rtu_port        = tcp_port + 1
+otel_port       = tcp_port + 2
+tcp_port_2      = tcp_port + 3
+backup_tcp_port = tcp_port + 4
 
 
 def start_socat():
@@ -1704,3 +1706,29 @@ class TestModbus:
             node=param[0], group='group', tag=coil_bit_2[0]['name'])
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=coil_bit_3[0]['name'])
+
+    @description(given="configed modbus node with backup ip&port and start corresponding sinulators", 
+                 when="stop the original simulator",
+                 then="success to read tags from backup simulator")
+    def test_modbus_backup(self, param):        
+        if param[0] == 'modbus-tcp':
+            api.del_node(node=param[0])
+            p_1 = process.start_simulator(['./modbus_simulator', 'tcp', f'{tcp_port_2}', 'ip_v4'])
+            p_2 = process.start_simulator(['./modbus_simulator', 'tcp', f'{backup_tcp_port}', 'ip_v4'])
+
+            api.add_node(node=param[0], plugin=param[1])
+            api.modbus_tcp_node_setting(node=param[0], port=tcp_port_2, interval=1)
+            api.add_group(node=param[0], group='group')
+            api.add_tags_check(node=param[0], group='group', tags=hold_int16)
+            time.sleep(3)
+            api.write_tag(node=param[0], group='group', tag=hold_int16[0]['name'], value=17)
+            time.sleep(1)
+            assert 17 == api.read_tag(node=param[0], group='group', tag=hold_int16[0]['name'])
+
+            api.modbus_tcp_node_setting_backup(node=param[0], port=tcp_port_2, backup_port=backup_tcp_port)
+            process.stop_simulator(p_1)
+            time.sleep(3)
+            assert 0 == api.read_tag(node=param[0], group='group', tag=hold_int16[0]['name'])
+            process.stop_simulator(p_2)
+        else:
+            pytest.skip()

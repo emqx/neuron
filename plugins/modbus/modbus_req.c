@@ -119,6 +119,23 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
         ret = neu_conn_tcp_server_send(plugin->conn, plugin->client_fd, bytes,
                                        n_byte);
     } else {
+        if (plugin->backup && neu_conn_is_connected(plugin->conn) == false) {
+            if (plugin->current_backup == false && plugin->first_attempt_done) {
+                plog_notice(plugin, "switch to backup ip:port %s:%hu",
+                            plugin->param_backup.params.tcp_client.ip,
+                            plugin->param_backup.params.tcp_client.port);
+                plugin->current_backup = true;
+                plugin->conn =
+                    neu_conn_reconfig(plugin->conn, &plugin->param_backup);
+            } else {
+                plog_notice(plugin, "switch to original ip:port %s:%hu",
+                            plugin->param.params.tcp_client.ip,
+                            plugin->param.params.tcp_client.port);
+                plugin->current_backup = false;
+                plugin->conn = neu_conn_reconfig(plugin->conn, &plugin->param);
+                plugin->first_attempt_done = true;
+            }
+        }
         ret = neu_conn_send(plugin->conn, bytes, n_byte);
     }
 
