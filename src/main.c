@@ -35,6 +35,8 @@
 #include "daemon.h"
 #include "version.h"
 
+#include "utils/cid.h"
+
 static bool           exit_flag         = false;
 static neu_manager_t *g_manager         = NULL;
 zlog_category_t *     neuron            = NULL;
@@ -189,6 +191,59 @@ int main(int argc, char *argv[])
 
     neuron = zlog_get_category("neuron");
     zlog_level_switch(neuron, default_log_level);
+
+    cid_t cid   = { 0 };
+    int   ret_c = neu_cid_parse("/tmp/UDT_531A_0011.ICD", &cid);
+    printf("neu_cid_parse ret=%d\n", ret_c);
+    for (int i = 0; i < cid.ied.n_access_points; i++) {
+        printf("access_points[%d].name=%s\n", i, cid.ied.access_points[i].name);
+        for (int j = 0; j < cid.ied.access_points[i].n_ldevices; j++) {
+            printf("-- access_points[%d].ldevices[%d].inst=%s\n", i, j,
+                   cid.ied.access_points[i].ldevices[j].inst);
+            for (int k = 0; k < cid.ied.access_points[i].ldevices[j].n_lns;
+                 k++) {
+                printf(
+                    "---- access_points[%d].ldevices[%d].lns[%d].lnprefix=%s\n",
+                    i, j, k,
+                    cid.ied.access_points[i].ldevices[j].lns[k].lnprefix);
+                for (int l = 0;
+                     l < cid.ied.access_points[i].ldevices[j].lns[k].n_datasets;
+                     l++) {
+                    printf("------ "
+                           "access_points[%d].ldevices[%d].lns[%d].datasets[%d]"
+                           ".name=%s\n",
+                           i, j, k, l,
+                           cid.ied.access_points[i]
+                               .ldevices[j]
+                               .lns[k]
+                               .datasets[l]
+                               .name);
+                    for (int a = 0; a < cid.ied.access_points[i]
+                                            .ldevices[j]
+                                            .lns[k]
+                                            .datasets[l]
+                                            .n_fcda;
+                         a++) {
+                        cid_fcda_t *fcda = &cid.ied.access_points[i]
+                                                .ldevices[j]
+                                                .lns[k]
+                                                .datasets[l]
+                                                .fcdas[a];
+                        // if (fcda->n_btypes == 0) {
+                        printf("nnn -------- "
+                               "access_points[%d].ldevices[%d].lns[%d]"
+                               ".datasets[%d].fcdas[%d].name=%s, n type: %d\n",
+                               i, j, k, l, a, fcda->do_name, fcda->n_btypes);
+                        //}
+                    }
+                }
+            }
+        }
+    }
+    neu_cid_free(&cid);
+
+    zlog_fini();
+    return 0;
 
     if (neuron_already_running()) {
         if (args.stop) {

@@ -65,19 +65,32 @@
 #define NEU_CID_LNCLASS_LEN 12
 #define NEU_CID_LNTYPE_LEN 32
 #define NEU_CID_LNPREFIX_LEN 10
-#define NEU_CID_LNINST_LEN 2
-#define NEU_CID_IED_NAME_LEN 32
+#define NEU_CID_LNINST_LEN 4
 #define NEU_CID_LDEVICE_LEN 32
 #define NEU_CID_LNO_NAME_LEN 32
 #define NEU_CID_LNO_TYPE_LEN 32
 #define NEU_CID_INST_LEN 16
 #define NEU_CID_SDI_NAME_LEN 16
 #define NEU_CID_DO_NAME_LEN 32
+#define NEU_CID_FCDA_NAME_LEN 32
+#define NEU_CID_FCDA_CLASS_LEN 16
+#define NEU_CID_FCDA_INST_LEN 4
+#define NEU_CID_FCDA_PREFIX_LEN 16
 #define NEU_CID_DO_ID_LEN 32
 #define NEU_CID_DA_NAME_LEN 32
 #define NEU_CID_DATASET_NAME_LEN 32
 #define NEU_CID_REPORT_NAME_LEN 32
 #define NEU_CID_REPORT_ID_LEN 64
+#define NEU_CID_ID_LEN 32
+#define NEU_CID_REF_TYPE_LEN 32
+#define NEU_CID_IED_NAME_LEN 32
+#define NEU_CID_ACCESS_POINT_NAME_LEN 16
+
+#define NEU_CID_LEN4 4
+#define NEU_CID_LEN8 8
+#define NEU_CID_LEN16 16
+#define NEU_CID_LEN32 32
+#define NEU_CID_LEN64 64
 
 #define CHECK_NODE_NAME_LENGTH_ERR                                            \
     do {                                                                      \

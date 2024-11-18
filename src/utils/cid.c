@@ -26,17 +26,15 @@
 #include "utils/log.h"
 #include "json/json.h"
 
-static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied,
-                     cid_template_t *template);
+static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied);
 static int parse_template(xmlNode *xml_template, cid_template_t *template);
-static int parse_ldevice(xmlNode *xml_server, cid_ied_t *ied,
-                         cid_template_t *template);
-static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev,
-                       cid_template_t *template);
+static int parse_ldevice(xmlNode *xml_server, cid_access_point_t *ap);
+static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev);
 static int parse_dataset(xmlNode *xml_dataset, cid_ln_t *ln);
 static int parse_report(xmlNode *xml_report, cid_ln_t *ln);
-static int parse_doi(xmlNode *xml_doi, cid_ln_t *ln, cid_template_t *template,
-                     int index);
+static int parse_doi(xmlNode *xml_doi, cid_ln_t *ln);
+
+static void fill_ied(cid_t *cid);
 
 int neu_cid_parse(const char *path, cid_t *cid)
 {
@@ -71,7 +69,7 @@ int neu_cid_parse(const char *path, cid_t *cid)
     while (find_ied != NULL) {
         if (find_ied->type == XML_ELEMENT_NODE &&
             strcmp((const char *) find_ied->name, "IED") == 0) {
-            int ret = parse_ied(find_ied, &cid->ied, &cid->cid_template);
+            int ret = parse_ied(find_ied, &cid->ied);
             if (ret == 0) {
                 ied_parsed = true;
             }
@@ -82,6 +80,7 @@ int neu_cid_parse(const char *path, cid_t *cid)
 
     if (ied_parsed && templates_parsed) {
         xmlFreeDoc(doc);
+        fill_ied(cid);
         return 0;
     } else {
         neu_cid_free(cid);
@@ -94,213 +93,277 @@ int neu_cid_parse(const char *path, cid_t *cid)
 
 void neu_cid_free(cid_t *cid)
 {
-    for (int i = 0; i < cid->cid_template.n_lnos; i++) {
-        if (cid->cid_template.lnos[i].n_dos > 0) {
-            free(cid->cid_template.lnos[i].dos);
+    for (int i = 0; i < cid->cid_template.n_lnotypes; i++) {
+        free(cid->cid_template.lnotypes[i].dos);
+    }
+    for (int i = 0; i < cid->cid_template.n_dotypes; i++) {
+        free(cid->cid_template.dotypes[i].das);
+        if (cid->cid_template.dotypes[i].n_sdos > 0) {
+            free(cid->cid_template.dotypes[i].sdos);
         }
     }
-    if (cid->cid_template.n_lnos > 0) {
-        free(cid->cid_template.lnos);
+    for (int i = 0; i < cid->cid_template.n_datypes; i++) {
+        free(cid->cid_template.datypes[i].bdas);
+    }
+    if (cid->cid_template.n_lnotypes > 0) {
+        free(cid->cid_template.lnotypes);
+    }
+    if (cid->cid_template.n_dotypes > 0) {
+        free(cid->cid_template.dotypes);
+    }
+    if (cid->cid_template.n_datypes > 0) {
+        free(cid->cid_template.datypes);
     }
 
-    for (int i = 0; i < cid->cid_template.n_dos; i++) {
-        if (cid->cid_template.dos[i].n_das > 0) {
-            free(cid->cid_template.dos[i].das);
-        }
-    }
-    if (cid->cid_template.n_dos > 0) {
-        free(cid->cid_template.dos);
-    }
+    for (int i = 0; i < cid->ied.n_access_points; i++) {
+        for (int j = 0; j < cid->ied.access_points[i].n_ldevices; j++) {
+            for (int k = 0; k < cid->ied.access_points[i].ldevices[j].n_lns;
+                 k++) {
+                for (int l = 0; l <
+                     cid->ied.access_points[i].ldevices[j].lns[k].n_datasets;
+                     l++) {
+                    if (cid->ied.access_points[i]
+                            .ldevices[j]
+                            .lns[k]
+                            .datasets[l]
+                            .n_fcda > 0) {
+                        free(cid->ied.access_points[i]
+                                 .ldevices[j]
+                                 .lns[k]
+                                 .datasets[l]
+                                 .fcdas);
+                    }
+                }
+                if (cid->ied.access_points[i].ldevices[j].lns[k].n_datasets >
+                    0) {
+                    free(cid->ied.access_points[i].ldevices[j].lns[k].datasets);
+                }
 
-    for (int i = 0; i < cid->ied.n_ldevices; i++) {
-        for (int j = 0; j < cid->ied.ldevices[i].n_lns; j++) {
-            if (cid->ied.ldevices[i].lns[j].n_reports > 0) {
-                free(cid->ied.ldevices[i].lns[j].reports);
-            }
-            if (cid->ied.ldevices[i].lns[j].n_ctrls > 0) {
-                free(cid->ied.ldevices[i].lns[j].ctrls);
-            }
-
-            for (int k = 0; k < cid->ied.ldevices[i].lns[j].n_datasets; k++) {
-                if (cid->ied.ldevices[i].lns[j].datasets[k].n_dos > 0) {
-                    free(cid->ied.ldevices[i].lns[j].datasets[k].dos);
+                for (int l = 0;
+                     l < cid->ied.access_points[i].ldevices[j].lns[k].n_dois;
+                     l++) {
+                    if (cid->ied.access_points[i]
+                            .ldevices[j]
+                            .lns[k]
+                            .dois[l]
+                            .n_dais > 0) {
+                        free(cid->ied.access_points[i]
+                                 .ldevices[j]
+                                 .lns[k]
+                                 .dois[l]
+                                 .dais);
+                    }
+                }
+                if (cid->ied.access_points[i].ldevices[j].lns[k].n_dois > 0) {
+                    free(cid->ied.access_points[i].ldevices[j].lns[k].dois);
+                }
+                if (cid->ied.access_points[i].ldevices[j].lns[k].n_reports >
+                    0) {
+                    free(cid->ied.access_points[i].ldevices[j].lns[k].reports);
                 }
             }
-            if (cid->ied.ldevices[i].lns[j].n_datasets > 0) {
-                free(cid->ied.ldevices[i].lns[j].datasets);
+
+            if (cid->ied.access_points[i].ldevices[j].n_lns > 0) {
+                free(cid->ied.access_points[i].ldevices[j].lns);
             }
         }
 
-        if (cid->ied.ldevices[i].n_lns > 0) {
-            free(cid->ied.ldevices[i].lns);
+        if (cid->ied.access_points[i].n_ldevices > 0) {
+            free(cid->ied.access_points[i].ldevices);
         }
     }
-    if (cid->ied.n_ldevices > 0) {
-        free(cid->ied.ldevices);
-    }
 
-    return;
+    if (cid->ied.n_access_points > 0) {
+        free(cid->ied.access_points);
+    }
 }
 
-void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
+static const char *find_type_id(cid_ldevice_t *ldev, const char *prefix,
+                                const char *ln_class, const char *ln_inst)
 {
-    strcpy(cmd->driver, driver);
-    cmd->n_group = 0;
-    cmd->groups  = NULL;
+    for (int i = 0; i < ldev->n_lns; i++) {
+        if (strcmp(ldev->lns[i].lnprefix, prefix) == 0 &&
+            strcmp(ldev->lns[i].lnclass, ln_class) == 0 &&
+            strcmp(ldev->lns[i].lninst, ln_inst) == 0) {
+            return (const char *) ldev->lns[i].lntype;
+        }
+    }
+    return NULL;
+}
 
-    cmd->n_group += 1;
-    cmd->groups = realloc(cmd->groups, cmd->n_group * sizeof(neu_gdatatag_t));
-    neu_gdatatag_t *ctl_group = &cmd->groups[cmd->n_group - 1];
-    memset(ctl_group, 0, sizeof(neu_gdatatag_t));
+static int find_basic_type(cid_template_t *template, const char *type_id,
+                           const char *do_name, const char *da_name,
+                           cid_fc_e fc, cid_basictype_e **btypes)
+{
+    *btypes                     = NULL;
+    cid_tm_lno_type_t *lno      = NULL;
+    char *             ref_type = NULL;
+    cid_tm_do_type_t * dotype   = NULL;
 
-    strcpy(ctl_group->group, "Control");
-    ctl_group->interval = 5000;
+    char *do_name_end = strchr(do_name, '.');
 
-    cid_dataset_info_t *ctl_info = calloc(1, sizeof(cid_dataset_info_t));
-    ctl_info->control            = true;
-    strcpy(ctl_info->ied_name, cid->ied.name);
-    ctl_group->context = ctl_info;
+    for (int i = 0; i < template->n_lnotypes; i++) {
+        if (strcmp(template->lnotypes[i].id, type_id) == 0) {
+            lno = &template->lnotypes[i];
+            break;
+        }
+    }
 
-    for (int i = 0; i < cid->ied.n_ldevices; i++) {
-        for (int j = 0; j < cid->ied.ldevices[i].n_lns; j++) {
-            for (int k = 0; k < cid->ied.ldevices[i].lns[j].n_ctrls; k++) {
-                ctl_group->n_tag += 1;
-                ctl_group->tags = realloc(
-                    ctl_group->tags, ctl_group->n_tag * sizeof(neu_datatag_t));
-                neu_datatag_t *tag = &ctl_group->tags[ctl_group->n_tag - 1];
-                memset(tag, 0, sizeof(neu_datatag_t));
+    if (lno != NULL) {
+        for (int i = 0; i < lno->n_dos; i++) {
+            if (do_name_end != NULL) {
+                if (strncmp(lno->dos[i].name, do_name,
+                            strlen(lno->dos[i].name)) == 0) {
+                    ref_type = lno->dos[i].ref_type;
+                    break;
+                }
+            } else {
+                if (strcmp(lno->dos[i].name, do_name) == 0) {
+                    ref_type = lno->dos[i].ref_type;
+                    break;
+                }
+            }
+        }
+    } else {
+        nlog_warn("Failed to find lno type %s", type_id);
+    }
 
-                tag->name = calloc(1, NEU_TAG_NAME_LEN);
-                snprintf(tag->name, NEU_TAG_NAME_LEN - 1, "%s/%s$%s",
-                         cid->ied.ldevices[i].inst,
-                         cid->ied.ldevices[i].lns[j].ctrls[k].do_name,
-                         cid->ied.ldevices[i].lns[j].ctrls[k].sdi_name);
+    if (ref_type != NULL) {
+        for (int i = 0; i < template->n_dotypes; i++) {
+            if (strcmp(template->dotypes[i].id, ref_type) == 0) {
+                dotype = &template->dotypes[i];
+                break;
+            }
+        }
+    } else {
+        nlog_warn("Failed to find ref type %s, %s", type_id, do_name);
+    }
 
-                tag->attribute   = NEU_ATTRIBUTE_WRITE;
-                tag->type        = NEU_TYPE_BOOL;
-                tag->address     = calloc(1, NEU_TAG_ADDRESS_LEN);
-                tag->description = strdup("");
-                snprintf(tag->address, NEU_TAG_ADDRESS_LEN - 1,
-                         "%s%s/%s%s%s$%s$%s$%s", cid->ied.name,
-                         cid->ied.ldevices[i].inst,
-                         cid->ied.ldevices[i].lns[j].lnprefix,
-                         cid->ied.ldevices[i].lns[j].lnclass,
-                         cid->ied.ldevices[i].lns[j].lninst, "CO",
-                         cid->ied.ldevices[i].lns[j].ctrls[k].do_name,
-                         cid->ied.ldevices[i].lns[j].ctrls[k].sdi_name);
+    if (dotype != NULL && do_name_end != NULL) {
+        for (int i = 0; i < dotype->n_sdos; i++) {
+            if (strcmp(dotype->sdos[i].name, do_name_end + 1) == 0) {
+                ref_type = dotype->sdos[i].ref_type;
+                for (int j = 0; j < template->n_dotypes; j++) {
+                    if (strcmp(template->dotypes[j].id, ref_type) == 0) {
+                        dotype = &template->dotypes[j];
+                        break;
+                    }
+                }
+                break;
             }
         }
     }
 
-    for (int i = 0; i < cid->ied.n_ldevices; i++) {
-        for (int j = 0; j < cid->ied.ldevices[i].n_lns; j++) {
-            for (int k = 0; k < cid->ied.ldevices[i].lns[j].n_datasets; k++) {
-                for (int l = 0; l < cid->ied.ldevices[i].lns[j].n_reports;
-                     l++) {
-                    if (strcmp(
-                            cid->ied.ldevices[i].lns[j].datasets[k].name,
-                            cid->ied.ldevices[i].lns[j].reports[l].dataset) ==
-                        0) {
-                        if (cid->ied.ldevices[i].lns[j].datasets[k].n_dos ==
-                            0) {
+    if (dotype != NULL) {
+        int index = 0;
+        for (int i = 0; i < dotype->n_das; i++) {
+            if (fc == dotype->das[i].fc) {
+                if (dotype->das[i].btype != Struct) {
+                    index += 1;
+                    *btypes = realloc(*btypes, index * sizeof(cid_basictype_e));
+                    (*btypes)[index - 1] = dotype->das[i].btype;
+                } else {
+                    for (int k = 0; k < template->n_datypes; k++) {
+                        if (strcmp(template->datypes[k].id,
+                                   dotype->das[i].ref_type) == 0) {
+                            if (strlen(da_name) > 0) {
+                                for (int l = 0; l < template->datypes[k].n_bdas;
+                                     l++) {
+                                    char da[NEU_CID_LEN64] = { 0 };
+                                    snprintf(da, sizeof(da), "%s.%s",
+                                             dotype->das[i].name,
+                                             template->datypes[k].bdas[l].name);
+                                    if (strcmp(da, da_name) == 0) {
+                                        index += 1;
+                                        *btypes = realloc(
+                                            *btypes,
+                                            index * sizeof(cid_basictype_e));
+                                        (*btypes)[index - 1] =
+                                            template->datypes[k].bdas[l].btype;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                for (int a = 0; a < template->datypes[k].n_bdas;
+                                     a++) {
+                                    index += 1;
+                                    *btypes = realloc(
+                                        *btypes,
+                                        index * sizeof(cid_basictype_e));
+                                    (*btypes)[index - 1] =
+                                        template->datypes[k].bdas[a].btype;
+                                }
+                            }
                             break;
                         }
-                        cmd->n_group += 1;
-                        cmd->groups = realloc(
-                            cmd->groups, cmd->n_group * sizeof(neu_gdatatag_t));
-                        neu_gdatatag_t *group = &cmd->groups[cmd->n_group - 1];
-                        memset(group, 0, sizeof(neu_gdatatag_t));
+                    }
+                }
+            }
+        }
 
-                        cid_dataset_info_t *info =
-                            calloc(1, sizeof(cid_dataset_info_t));
+        return index;
+    } else {
+        nlog_warn("Failed to find do type %s", ref_type);
+    }
 
-                        info->control = false;
-                        info->buffered =
-                            cid->ied.ldevices[i].lns[j].reports[l].buffered;
-                        strcpy(info->ied_name, cid->ied.name);
-                        strcpy(info->ldevice_inst, cid->ied.ldevices[i].inst);
-                        strcpy(info->ln_class,
-                               cid->ied.ldevices[i].lns[j].lnclass);
-                        strcpy(info->report_name,
-                               cid->ied.ldevices[i].lns[j].reports[l].name);
-                        strcpy(info->report_id,
-                               cid->ied.ldevices[i].lns[j].reports[l].id);
-                        strcpy(info->dataset_name,
-                               cid->ied.ldevices[i].lns[j].datasets[k].name);
-                        group->context = info;
+    return 0;
+}
 
-                        snprintf(group->group, NEU_GROUP_NAME_LEN - 1,
-                                 "%s_%s_%s", cid->ied.ldevices[i].inst,
-                                 cid->ied.ldevices[i].lns[j].lnclass,
-                                 cid->ied.ldevices[i].lns[j].datasets[k].name);
-                        group->interval =
-                            cid->ied.ldevices[i].lns[j].reports[l].intg_pd;
-                        group->n_tag =
-                            cid->ied.ldevices[i].lns[j].datasets[k].n_dos;
-                        group->tags =
-                            calloc(group->n_tag, sizeof(neu_datatag_t));
+static void update_dataset(cid_dataset_t *dataset, cid_ldevice_t *ldev,
+                           cid_template_t *template)
+{
+    for (int i = 0; i < dataset->n_fcda; i++) {
+        const char *type_id =
+            find_type_id(ldev, dataset->fcdas[i].prefix,
+                         dataset->fcdas[i].lnclass, dataset->fcdas[i].lninst);
+        if (type_id != NULL) {
+            cid_basictype_e *bs  = NULL;
+            int              ret = find_basic_type(
+                template, type_id, dataset->fcdas[i].do_name,
+                dataset->fcdas[i].da_name, dataset->fcdas[i].fc, &bs);
+            if (ret > 0) {
+                if (ret < 8) {
+                    memcpy(dataset->fcdas[i].btypes, bs,
+                           ret * sizeof(cid_basictype_e));
+                    dataset->fcdas[i].n_btypes = ret;
+                } else {
+                    nlog_warn(
+                        "Too many basic types for %s %s %s %s %s %d %s",
+                        dataset->fcdas[i].da_name, dataset->fcdas[i].do_name,
+                        dataset->fcdas[i].lnclass, dataset->fcdas[i].lninst,
+                        dataset->fcdas[i].prefix, dataset->fcdas[i].fc,
+                        type_id);
+                }
+                free(bs);
+            }
+        } else {
+            nlog_warn("Failed to find type id for %s %s %s %s %s %d %s",
+                      dataset->fcdas[i].da_name, dataset->fcdas[i].do_name,
+                      dataset->fcdas[i].lnclass, dataset->fcdas[i].lninst,
+                      dataset->fcdas[i].prefix, dataset->fcdas[i].fc, type_id);
+        }
+    }
+}
 
-                        for (int m = 0;
-                             m < cid->ied.ldevices[i].lns[j].datasets[k].n_dos;
-                             m++) {
-                            group->tags[m].name = strdup(cid->ied.ldevices[i]
-                                                             .lns[j]
-                                                             .datasets[k]
-                                                             .dos[m]
-                                                             .name);
-                            group->tags[m].attribute =
-                                NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_SUBSCRIBE;
-                            group->tags[m].address =
-                                calloc(1, NEU_TAG_ADDRESS_LEN);
-                            group->tags[m].description = strdup("");
-                            switch (cid->ied.ldevices[i]
-                                        .lns[j]
-                                        .datasets[k]
-                                        .dos[m]
-                                        .fc) {
-                            case ST:
-                                group->tags[m].type = NEU_TYPE_BOOL;
-                                snprintf(group->tags[m].address,
-                                         NEU_TAG_ADDRESS_LEN - 1,
-                                         "%s%s/%s$%s$%s", cid->ied.name,
-                                         cid->ied.ldevices[i].inst,
-                                         cid->ied.ldevices[i]
-                                             .lns[j]
-                                             .datasets[k]
-                                             .dos[m]
-                                             .lnclass,
-                                         "ST",
-                                         cid->ied.ldevices[i]
-                                             .lns[j]
-                                             .datasets[k]
-                                             .dos[m]
-                                             .name);
-                                break;
-                            case MX:
-                                group->tags[m].type = NEU_TYPE_FLOAT;
-                                snprintf(group->tags[m].address,
-                                         NEU_TAG_ADDRESS_LEN - 1,
-                                         "%s%s/%s$%s$%s", cid->ied.name,
-                                         cid->ied.ldevices[i].inst,
-                                         cid->ied.ldevices[i]
-                                             .lns[j]
-                                             .datasets[k]
-                                             .dos[m]
-                                             .lnclass,
-                                         "MX",
-                                         cid->ied.ldevices[i]
-                                             .lns[j]
-                                             .datasets[k]
-                                             .dos[m]
-                                             .name);
-                                break;
-                            default:
-                                group->tags[m].type = NEU_TYPE_INT16;
-                                break;
-                            }
-                        }
-
-                        break;
+static void fill_ied(cid_t *cid)
+{
+    for (int i = 0; i < cid->ied.n_access_points; i++) {
+        for (int j = 0; j < cid->ied.access_points[i].n_ldevices; j++) {
+            cid_ldevice_t *ldev = &cid->ied.access_points[i].ldevices[j];
+            for (int k = 0; k < cid->ied.access_points[i].ldevices[j].n_lns;
+                 k++) {
+                if (cid->ied.access_points[i].ldevices[j].lns[k].n_datasets >
+                    0) {
+                    for (int l = 0; l < cid->ied.access_points[i]
+                                            .ldevices[j]
+                                            .lns[k]
+                                            .n_datasets;
+                         l++) {
+                        update_dataset(&cid->ied.access_points[i]
+                                            .ldevices[j]
+                                            .lns[k]
+                                            .datasets[l],
+                                       ldev, &cid->cid_template);
                     }
                 }
             }
@@ -308,7 +371,7 @@ void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
     }
 }
 
-static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied, cid_template_t *template)
+static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied)
 {
     int   ret      = -1;
     char *ied_name = (char *) xmlGetProp(xml_ied, (const xmlChar *) "name");
@@ -324,11 +387,26 @@ static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied, cid_template_t *template)
     while (access_point != NULL) {
         if (access_point->type == XML_ELEMENT_NODE &&
             strcmp((const char *) access_point->name, "AccessPoint") == 0) {
+            char *name =
+                (char *) xmlGetProp(access_point, (const xmlChar *) "name");
+            ied->n_access_points += 1;
+            ied->access_points =
+                realloc(ied->access_points,
+                        ied->n_access_points * sizeof(cid_access_point_t));
+            cid_access_point_t *ap =
+                &ied->access_points[ied->n_access_points - 1];
+            memset(ap, 0, sizeof(cid_access_point_t));
+
+            if (name != NULL) {
+                strcpy(ap->name, name);
+                xmlFree(name);
+            }
+
             xmlNode *server = access_point->children;
             while (server != NULL) {
                 if (server->type == XML_ELEMENT_NODE &&
                     strcmp((const char *) server->name, "Server") == 0) {
-                    ret = parse_ldevice(server, ied, template);
+                    ret = parse_ldevice(server, ap);
                     break;
                 }
 
@@ -342,35 +420,29 @@ static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied, cid_template_t *template)
     return ret;
 }
 
-static int parse_ldevice(xmlNode *xml_server, cid_ied_t *ied,
-                         cid_template_t *template)
+static int parse_ldevice(xmlNode *xml_server, cid_access_point_t *ap)
 {
-    ied->ldevices    = NULL;
-    ied->n_ldevices  = 0;
+    ap->ldevices     = NULL;
+    ap->n_ldevices   = 0;
     xmlNode *ldevice = xml_server->children;
 
     while (ldevice != NULL) {
-        if (ldevice->type == XML_ELEMENT_NODE &&
-            strcmp((const char *) ldevice->name, "LDevice") == 0) {
-            ied->n_ldevices++;
-            ied->ldevices =
-                realloc(ied->ldevices, ied->n_ldevices * sizeof(cid_ldevice_t));
-            cid_ldevice_t *ldev = &ied->ldevices[ied->n_ldevices - 1];
-            ldev->lns           = NULL;
-            ldev->n_lns         = 0;
-            memset(ldev->inst, 0, sizeof(ldev->inst));
-
+        if (ldevice->type != XML_ELEMENT_NODE) {
+            ldevice = ldevice->next;
+            continue;
+        }
+        if (strcmp((const char *) ldevice->name, "LDevice") == 0) {
+            ap->n_ldevices += 1;
+            ap->ldevices =
+                realloc(ap->ldevices, ap->n_ldevices * sizeof(cid_ldevice_t));
+            cid_ldevice_t *ldev = &ap->ldevices[ap->n_ldevices - 1];
+            memset(ldev, 0, sizeof(cid_ldevice_t));
             char *inst = (char *) xmlGetProp(ldevice, (const xmlChar *) "inst");
-            if (strlen(inst) >= NEU_CID_INST_LEN) {
-                xmlFree(inst);
-                nlog_warn("LDevice inst is too long");
-                return -1;
-            } else {
+            if (inst != NULL) {
                 strcpy(ldev->inst, inst);
                 xmlFree(inst);
             }
-
-            int ret = parse_lnode(ldevice, ldev, template);
+            int ret = parse_lnode(ldevice, ldev);
             if (ret != 0) {
                 return ret;
             }
@@ -382,8 +454,7 @@ static int parse_ldevice(xmlNode *xml_server, cid_ied_t *ied,
     return 0;
 }
 
-static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev,
-                       cid_template_t *template)
+static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev)
 {
     xmlNode *lnode = xml_ldevice->children;
     while (lnode != NULL) {
@@ -395,84 +466,58 @@ static int parse_lnode(xmlNode *xml_ldevice, cid_ldevice_t *ldev,
                 (char *) xmlGetProp(lnode, (const xmlChar *) "lnType");
             char *ln_prefix =
                 (char *) xmlGetProp(lnode, (const xmlChar *) "prefix");
-            if (NULL == ln_prefix) {
-                ln_prefix = strdup("");
-            }
-
             char *ln_inst =
                 (char *) xmlGetProp(lnode, (const xmlChar *) "inst");
-            if (NULL == ln_inst) {
-                ln_inst = strdup("");
+
+            ldev->n_lns += 1;
+            ldev->lns    = realloc(ldev->lns, ldev->n_lns * sizeof(cid_ln_t));
+            cid_ln_t *ln = &ldev->lns[ldev->n_lns - 1];
+            memset(ln, 0, sizeof(cid_ln_t));
+
+            if (ln_class != NULL) {
+                strncpy(ln->lnclass, ln_class, sizeof(ln->lnclass) - 1);
+                xmlFree(ln_class);
+            }
+            if (ln_type != NULL) {
+                strncpy(ln->lntype, ln_type, sizeof(ln->lntype) - 1);
+                xmlFree(ln_type);
+            }
+            if (ln_prefix != NULL) {
+                strncpy(ln->lnprefix, ln_prefix, sizeof(ln->lnprefix) - 1);
+                xmlFree(ln_prefix);
+            }
+            if (ln_inst != NULL) {
+                strncpy(ln->lninst, ln_inst, sizeof(ln->lninst) - 1);
+                xmlFree(ln_inst);
             }
 
-            if (strlen(ln_class) >= NEU_CID_LNCLASS_LEN ||
-                strlen(ln_type) >= NEU_CID_LNTYPE_LEN ||
-                strlen(ln_prefix) >= NEU_CID_LNPREFIX_LEN ||
-                strlen(ln_inst) >= NEU_CID_LNINST_LEN) {
-                xmlFree(ln_class);
-                xmlFree(ln_type);
-                xmlFree(ln_prefix);
-                xmlFree(ln_inst);
-                nlog_warn("LN class/type/prefix/inst is too long %d",
-                          (int) lnode->line);
-                return -1;
-            } else {
-                ldev->n_lns += 1;
-                ldev->lns = realloc(ldev->lns, ldev->n_lns * sizeof(cid_ln_t));
-                cid_ln_t *ln = &ldev->lns[ldev->n_lns - 1];
-                memset(ln->lnclass, 0, sizeof(ln->lnclass));
-                memset(ln->lntype, 0, sizeof(ln->lntype));
-                ln->datasets   = NULL;
-                ln->n_datasets = 0;
-                ln->reports    = NULL;
-                ln->n_reports  = 0;
-                ln->ctrls      = NULL;
-                ln->n_ctrls    = 0;
-
-                strcpy(ln->lnclass, ln_class);
-                strcpy(ln->lntype, ln_type);
-                strcpy(ln->lnprefix, ln_prefix);
-                strcpy(ln->lninst, ln_inst);
-                xmlFree(ln_class);
-                xmlFree(ln_type);
-                xmlFree(ln_prefix);
-                xmlFree(ln_inst);
-
-                xmlNode *child = lnode->children;
-                while (child != NULL) {
-                    if (child->type == XML_ELEMENT_NODE &&
-                        strcmp((const char *) child->name, "DataSet") == 0) {
-                        int ret = parse_dataset(child, ln);
-                        if (ret != 0) {
-                            return ret;
-                        }
-                    }
-
-                    if (child->type == XML_ELEMENT_NODE &&
-                        strcmp((const char *) child->name, "ReportControl") ==
-                            0) {
-                        int ret = parse_report(child, ln);
-                        if (ret != 0) {
-                            return ret;
-                        }
-                    }
-
-                    if (child->type == XML_ELEMENT_NODE &&
-                        strcmp((const char *) child->name, "DOI") == 0) {
-                        for (int i = 0; i < template->n_lnos; i++) {
-                            if (strcmp(template->lnos[i].id, ln->lntype) == 0 &&
-                                template->lnos[i].n_dos > 0) {
-                                int ret = parse_doi(child, ln, template, i);
-                                if (ret != 0) {
-                                    return ret;
-                                }
-                                break;
-                            }
-                        }
-                    }
-
+            xmlNode *child = lnode->children;
+            while (child != NULL) {
+                if (child->type != XML_ELEMENT_NODE) {
                     child = child->next;
+                    continue;
                 }
+
+                if (strcmp((const char *) child->name, "DataSet") == 0) {
+                    int ret = parse_dataset(child, ln);
+                    if (ret != 0) {
+                        return ret;
+                    }
+                }
+                if (strcmp((const char *) child->name, "ReportControl") == 0) {
+                    int ret = parse_report(child, ln);
+                    if (ret != 0) {
+                        return ret;
+                    }
+                }
+                if (strcmp((const char *) child->name, "DOI") == 0) {
+                    int ret = parse_doi(child, ln);
+                    if (ret != 0) {
+                        return ret;
+                    }
+                }
+
+                child = child->next;
             }
         }
 
@@ -486,65 +531,79 @@ static int parse_dataset(xmlNode *xml_dataset, cid_ln_t *ln)
 {
     char *dataset_name =
         (char *) xmlGetProp(xml_dataset, (const xmlChar *) "name");
-    if (strlen(dataset_name) >= NEU_CID_DATASET_NAME_LEN) {
-        xmlFree(dataset_name);
-        nlog_warn("Dataset name is too long %d", (int) xml_dataset->line);
-        return -1;
-    } else {
+    if (dataset_name != NULL) {
         ln->n_datasets += 1;
         ln->datasets =
             realloc(ln->datasets, ln->n_datasets * sizeof(cid_dataset_t));
         cid_dataset_t *dataset = &ln->datasets[ln->n_datasets - 1];
-        dataset->n_dos         = 0;
-        dataset->dos           = NULL;
-        memset(dataset->name, 0, sizeof(dataset->name));
+        memset(dataset, 0, sizeof(cid_dataset_t));
 
-        strcpy(dataset->name, dataset_name);
+        strncpy(dataset->name, dataset_name, sizeof(dataset->name) - 1);
         xmlFree(dataset_name);
 
-        xmlNode *fcda = xml_dataset->children;
-        while (fcda != NULL) {
-            if (fcda->type == XML_ELEMENT_NODE &&
-                strcmp((const char *) fcda->name, "FCDA") == 0) {
-                dataset->n_dos += 1;
-                dataset->dos =
-                    realloc(dataset->dos, dataset->n_dos * sizeof(cid_do_t));
-                cid_do_t *doi = &dataset->dos[dataset->n_dos - 1];
-                memset(doi->name, 0, sizeof(doi->name));
-                memset(doi->lnclass, 0, sizeof(doi->lnclass));
-
-                char *do_name =
-                    (char *) xmlGetProp(fcda, (const xmlChar *) "doName");
-                char *lnclass =
-                    (char *) xmlGetProp(fcda, (const xmlChar *) "lnClass");
-                if (strlen(do_name) >= NEU_CID_DO_NAME_LEN ||
-                    strlen(lnclass) >= NEU_CID_LNCLASS_LEN) {
-                    xmlFree(do_name);
-                    xmlFree(lnclass);
-                    nlog_warn("DO name or lnclass is too long %d",
-                              (int) fcda->line);
-                    return -1;
-                } else {
-                    strcpy(doi->name, do_name);
-                    strcpy(doi->lnclass, lnclass);
-                    xmlFree(do_name);
-                    xmlFree(lnclass);
-                }
-
-                char *fc = (char *) xmlGetProp(fcda, (const xmlChar *) "fc");
-                if (fc != NULL && strcmp(fc, "ST") == 0) {
-                    doi->fc = ST;
-                } else if (fc != NULL && strcmp(fc, "MX") == 0) {
-                    doi->fc = MX;
-                } else {
-                    doi->fc = UNKNOWN;
-                    nlog_warn("FCDA unknown fc %s, %d", fc, (int) fcda->line);
-                }
-
-                xmlFree(fc);
+        xmlNode *xfcda = xml_dataset->children;
+        while (xfcda != NULL) {
+            if (xfcda->type != XML_ELEMENT_NODE) {
+                xfcda = xfcda->next;
+                continue;
             }
 
-            fcda = fcda->next;
+            if (strcmp((const char *) xfcda->name, "FCDA") == 0) {
+                char *da_name =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "daName");
+                char *do_name =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "doName");
+                char *fc = (char *) xmlGetProp(xfcda, (const xmlChar *) "fc");
+                char *ln_inst =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "lnInst");
+                char *ln_class =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "lnClass");
+                char *ld_inst =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "ldInst");
+                char *prefix =
+                    (char *) xmlGetProp(xfcda, (const xmlChar *) "prefix");
+
+                dataset->n_fcda += 1;
+                dataset->fcdas   = realloc(dataset->fcdas,
+                                         dataset->n_fcda * sizeof(cid_fcda_t));
+                cid_fcda_t *fcda = &dataset->fcdas[dataset->n_fcda - 1];
+                memset(fcda, 0, sizeof(cid_fcda_t));
+
+                if (da_name != NULL) {
+                    strncpy(fcda->da_name, da_name, sizeof(fcda->da_name) - 1);
+                    xmlFree(da_name);
+                }
+                if (do_name != NULL) {
+                    strncpy(fcda->do_name, do_name, sizeof(fcda->do_name) - 1);
+                    xmlFree(do_name);
+                }
+                if (ln_class != NULL) {
+                    strncpy(fcda->lnclass, ln_class, sizeof(fcda->lnclass) - 1);
+                    xmlFree(ln_class);
+                }
+                if (prefix != NULL) {
+                    strncpy(fcda->prefix, prefix, sizeof(fcda->prefix) - 1);
+                    xmlFree(prefix);
+                }
+                if (ln_inst != NULL) {
+                    strncpy(fcda->lninst, ln_inst, sizeof(fcda->lninst) - 1);
+                    xmlFree(ln_inst);
+                }
+                if (ld_inst != NULL) {
+                    strncpy(fcda->ldinst, ld_inst, sizeof(fcda->ldinst) - 1);
+                    xmlFree(ld_inst);
+                }
+                fcda->fc = F_UNKNOWN;
+                if (fc != NULL) {
+                    fcda->fc = decode_fc((const char *) fc);
+                    xmlFree(fc);
+                }
+                if (fcda->fc == F_UNKNOWN) {
+                    nlog_warn("Unknown FC %d", (int) xfcda->line);
+                }
+            }
+
+            xfcda = xfcda->next;
         }
     }
     return 0;
@@ -561,207 +620,373 @@ static int parse_report(xmlNode *xml_report, cid_ln_t *ln)
         (char *) xmlGetProp(xml_report, (const xmlChar *) "buffered");
     char *intg_pd = (char *) xmlGetProp(xml_report, (const xmlChar *) "intgPd");
 
-    if (strlen(report_name) >= NEU_CID_REPORT_NAME_LEN ||
-        strlen(report_id) >= NEU_CID_REPORT_ID_LEN ||
-        strlen(dataset) >= NEU_CID_DATASET_NAME_LEN) {
+    ln->n_reports += 1;
+    ln->reports = realloc(ln->reports, ln->n_reports * sizeof(cid_report_t));
+    cid_report_t *report = &ln->reports[ln->n_reports - 1];
+    memset(report, 0, sizeof(cid_report_t));
+
+    if (report_name != NULL) {
+        strncpy(report->name, report_name, sizeof(report->name) - 1);
         xmlFree(report_name);
+    }
+    if (report_id != NULL) {
+        strncpy(report->id, report_id, sizeof(report->id) - 1);
         xmlFree(report_id);
+    }
+    if (dataset != NULL) {
+        strncpy(report->dataset, dataset, sizeof(report->dataset) - 1);
         xmlFree(dataset);
-        xmlFree(buffered);
-        xmlFree(intg_pd);
-
-        nlog_warn("report name/id/datset too long %d", (int) xml_report->line);
-        return -1;
-    } else {
-        ln->n_reports += 1;
-        ln->reports =
-            realloc(ln->reports, ln->n_reports * sizeof(cid_report_t));
-        cid_report_t *report = &ln->reports[ln->n_reports - 1];
-        memset(report->name, 0, sizeof(report->name));
-        memset(report->id, 0, sizeof(report->id));
-        memset(report->dataset, 0, sizeof(report->dataset));
-        report->intg_pd  = 15000; // default
-        report->buffered = false;
-
-        strcpy(report->name, report_name);
-        strcpy(report->id, report_id);
-        strcpy(report->dataset, dataset);
-        if (buffered != NULL && strcmp(buffered, "true") == 0) {
+    }
+    if (buffered != NULL) {
+        if (strcmp(buffered, "true") == 0) {
             report->buffered = true;
+        } else {
+            report->buffered = false;
         }
-
+        xmlFree(buffered);
+    }
+    if (intg_pd != NULL) {
         int interval = atoi(intg_pd);
         if (interval > 0) {
             report->intg_pd = interval;
+        } else {
+            report->intg_pd = 15000;
         }
-
-        xmlFree(report_name);
-        xmlFree(report_id);
-        xmlFree(dataset);
-        xmlFree(buffered);
         xmlFree(intg_pd);
     }
 
     return 0;
 }
 
-static int parse_doi(xmlNode *xml_doi, cid_ln_t *ln, cid_template_t *template,
-                     int index)
+static int parse_doi(xmlNode *xml_doi, cid_ln_t *ln)
 {
-    char *doi_name = (char *) xmlGetProp(xml_doi, (const xmlChar *) "name");
-    for (int i = 0; i < template->lnos[index].n_dos; i++) {
-        if (strcmp(template->lnos[index].dos[i].name, doi_name) == 0) {
-            for (int k = 0; k < template->n_dos; k++) {
-                if (strcmp(template->dos[k].id,
-                           template->lnos[index].dos[i].type) == 0) {
-                    for (int j = 0; j < template->dos[k].n_das; j++) {
-                        if (strcmp(template->dos[k].id,
-                                   template->lnos[index].dos[i].type) == 0) {
-                            ln->n_ctrls += 1;
-                            ln->ctrls = realloc(
-                                ln->ctrls, ln->n_ctrls * sizeof(cid_ctrl_t));
-                            cid_ctrl_t *ctrl = &ln->ctrls[ln->n_ctrls - 1];
-                            memset(ctrl->do_name, 0, sizeof(ctrl->do_name));
-                            memset(ctrl->sdi_name, 0, sizeof(ctrl->sdi_name));
+    char *name = (char *) xmlGetProp(xml_doi, (const xmlChar *) "name");
+    if (name != NULL) {
+        ln->n_dois += 1;
+        ln->dois       = realloc(ln->dois, ln->n_dois * sizeof(cid_doi_t));
+        cid_doi_t *doi = &ln->dois[ln->n_dois - 1];
+        memset(doi, 0, sizeof(cid_doi_t));
 
-                            strcpy(ctrl->do_name, doi_name);
-                            strcpy(ctrl->sdi_name,
-                                   template->dos[k].das[j].name);
-                        }
-                    }
-                    break;
+        strncpy(doi->name, name, sizeof(doi->name) - 1);
+        xmlFree(name);
+
+        xmlNode *child = xml_doi->children;
+        while (child != NULL) {
+            if (child->type != XML_ELEMENT_NODE) {
+                child = child->next;
+                continue;
+            }
+            if (strcmp((const char *) child->name, "DAI") == 0) {
+                char *dai_name =
+                    (char *) xmlGetProp(child, (const xmlChar *) "name");
+                if (dai_name != NULL) {
+                    doi->n_dais += 1;
+                    doi->dais =
+                        realloc(doi->dais, doi->n_dais * sizeof(cid_dai_t));
+                    cid_dai_t *dai = &doi->dais[doi->n_dais - 1];
+                    memset(dai, 0, sizeof(cid_dai_t));
+
+                    strncpy(dai->name, dai_name, sizeof(dai->name) - 1);
+                    xmlFree(dai_name);
                 }
             }
-            break;
+
+            if (strcmp((const char *) child->name, "SDI") == 0) {
+                char *sdi_name =
+                    (char *) xmlGetProp(child, (const xmlChar *) "name");
+                if (sdi_name != NULL) {
+                    xmlNode *dai = child->children;
+                    while (dai != NULL) {
+                        if (dai->type != XML_ELEMENT_NODE) {
+                            dai = dai->next;
+                            continue;
+                        }
+
+                        if (strcmp((const char *) dai->name, "DAI") == 0) {
+                            char *dai_name = (char *) xmlGetProp(
+                                dai, (const xmlChar *) "name");
+                            if (dai_name != NULL) {
+                                doi->n_dais += 1;
+                                doi->dais = realloc(
+                                    doi->dais, doi->n_dais * sizeof(cid_dai_t));
+                                cid_dai_t *dai = &doi->dais[doi->n_dais - 1];
+                                memset(dai, 0, sizeof(cid_dai_t));
+
+                                strncpy(dai->name, dai_name,
+                                        sizeof(dai->name) - 1);
+                                strncpy(dai->sdi_name, sdi_name,
+                                        sizeof(dai->sdi_name) - 1);
+                                xmlFree(dai_name);
+                            }
+                        }
+
+                        dai = dai->next;
+                    }
+                    xmlFree(sdi_name);
+                }
+            }
+
+            child = child->next;
         }
     }
-
-    xmlFree(doi_name);
-
     return 0;
 }
 
 static int parse_template(xmlNode *xml_template, cid_template_t *template)
 {
-    template->dos    = NULL;
-    template->lnos   = NULL;
-    template->n_dos  = 0;
-    template->n_lnos = 0;
-    xmlNode *child   = xml_template->children;
+    template->lnotypes   = NULL;
+    template->n_lnotypes = 0;
+    template->dotypes    = NULL;
+    template->n_dotypes  = 0;
+    template->datypes    = NULL;
+    template->n_datypes  = 0;
+
+    xmlNode *child = xml_template->children;
 
     while (child != NULL) {
-        if (child->type == XML_ELEMENT_NODE &&
-            strcmp((const char *) child->name, "DOType") == 0) {
-            char *id  = (char *) xmlGetProp(child, (const xmlChar *) "id");
-            char *cdc = (char *) xmlGetProp(child, (const xmlChar *) "cdc");
-            if (strlen(id) >= NEU_CID_DO_ID_LEN) {
-                xmlFree(id);
-                xmlFree(cdc);
-                nlog_warn("DOType id is too long %d", (int) child->line);
-                return -1;
-            } else {
-                if (strcmp(cdc, "SPC") == 0 || strcmp(cdc, "DPC") == 0) {
-                    template->n_dos += 1;
-                    template->dos = realloc(
-                        template->dos, template->n_dos * sizeof(cid_tm_do_t));
-                    cid_tm_do_t *tm_do = &template->dos[template->n_dos - 1];
-                    memset(tm_do->id, 0, sizeof(tm_do->id));
-                    tm_do->n_das = 0;
-                    tm_do->das   = NULL;
+        if (child->type != XML_ELEMENT_NODE) {
+            child = child->next;
+            continue;
+        }
+        if (strcmp((const char *) child->name, "LNodeType") == 0) {
+            char *id = (char *) xmlGetProp(child, (const xmlChar *) "id");
+            char *ln_class =
+                (char *) xmlGetProp(child, (const xmlChar *) "lnClass");
+            if (id != NULL && ln_class != NULL) {
+                template->n_lnotypes += 1;
+                template->lnotypes =
+                    realloc(template->lnotypes,
+                            template->n_lnotypes * sizeof(cid_tm_lno_type_t));
+                cid_tm_lno_type_t *tm_lno =
+                    &template->lnotypes[template->n_lnotypes - 1];
+                memset(tm_lno, 0, sizeof(cid_tm_lno_type_t));
 
-                    strcpy(tm_do->id, id);
-                    if (strcmp(cdc, "SPC") == 0) {
-                        tm_do->cdc = SPC;
-                    } else {
-                        tm_do->cdc = DPC;
+                strcpy(tm_lno->id, id);
+                strcpy(tm_lno->ln_class, ln_class);
+
+                xmlNode *xdo = child->children;
+                while (xdo != NULL) {
+                    if (xdo->type != XML_ELEMENT_NODE) {
+                        xdo = xdo->next;
+                        continue;
+                    }
+                    char *name =
+                        (char *) xmlGetProp(xdo, (const xmlChar *) "name");
+                    char *ref_type =
+                        (char *) xmlGetProp(xdo, (const xmlChar *) "type");
+
+                    if (name != NULL && ref_type != NULL) {
+                        tm_lno->n_dos += 1;
+                        tm_lno->dos =
+                            realloc(tm_lno->dos,
+                                    tm_lno->n_dos * sizeof(cid_tm_lno_do_t));
+                        cid_tm_lno_do_t *tm_do =
+                            &tm_lno->dos[tm_lno->n_dos - 1];
+                        memset(tm_do, 0, sizeof(cid_tm_lno_do_t));
+
+                        strcpy(tm_do->name, name);
+                        strcpy(tm_do->ref_type, ref_type);
                     }
 
-                    xmlNode *da = child->children;
-                    while (da != NULL) {
-                        if (da->type != XML_ELEMENT_NODE ||
-                            strcmp((const char *) da->name, "DA") != 0) {
-                            da = da->next;
-                            continue;
+                    if (name != NULL) {
+                        xmlFree(name);
+                    }
+                    if (ref_type != NULL) {
+                        xmlFree(ref_type);
+                    }
+
+                    xdo = xdo->next;
+                }
+            }
+
+            if (id != NULL) {
+                xmlFree(id);
+            }
+            if (ln_class != NULL) {
+                xmlFree(ln_class);
+            }
+        }
+
+        if (strcmp((const char *) child->name, "DOType") == 0) {
+            char *id = (char *) xmlGetProp(child, (const xmlChar *) "id");
+            if (id != NULL && strlen(id) < NEU_CID_ID_LEN) {
+                template->n_dotypes += 1;
+                template->dotypes =
+                    realloc(template->dotypes,
+                            template->n_dotypes * sizeof(cid_tm_do_type_t));
+                cid_tm_do_type_t *tm_do =
+                    &template->dotypes[template->n_dotypes - 1];
+                memset(tm_do, 0, sizeof(cid_tm_do_type_t));
+
+                strcpy(tm_do->id, id);
+                xmlNode *da = child->children;
+                while (da != NULL) {
+                    if (da->type != XML_ELEMENT_NODE) {
+                        da = da->next;
+                        continue;
+                    }
+
+                    if (strcmp((const char *) da->name, "SDO") == 0) {
+                        char *sdo_name =
+                            (char *) xmlGetProp(da, (const xmlChar *) "name");
+                        char *sdo_ref_type =
+                            (char *) xmlGetProp(da, (const xmlChar *) "type");
+                        if (sdo_name != NULL && sdo_ref_type != NULL) {
+                            tm_do->n_sdos += 1;
+                            tm_do->sdos =
+                                realloc(tm_do->sdos,
+                                        tm_do->n_sdos * sizeof(cid_tm_sdo_t));
+                            cid_tm_sdo_t *tm_sdo =
+                                &tm_do->sdos[tm_do->n_sdos - 1];
+                            memset(tm_sdo, 0, sizeof(cid_tm_sdo_t));
+
+                            strcpy(tm_sdo->name, sdo_name);
+                            strcpy(tm_sdo->ref_type, sdo_ref_type);
                         }
+
+                        if (sdo_name != NULL) {
+                            xmlFree(sdo_name);
+                        }
+                        if (sdo_ref_type != NULL) {
+                            xmlFree(sdo_ref_type);
+                        }
+                    }
+
+                    if (strcmp((const char *) da->name, "DA") == 0) {
+                        char *btype =
+                            (char *) xmlGetProp(da, (const xmlChar *) "bType");
                         char *fc =
                             (char *) xmlGetProp(da, (const xmlChar *) "fc");
-                        if (fc != NULL && strcmp(fc, "CO") == 0) {
-                            char *da_name = (char *) xmlGetProp(
-                                da, (const xmlChar *) "name");
+                        char *name =
+                            (char *) xmlGetProp(da, (const xmlChar *) "name");
+                        char *ref_type =
+                            (char *) xmlGetProp(da, (const xmlChar *) "type");
+
+                        if (btype != NULL && fc != NULL && name != NULL) {
                             tm_do->n_das += 1;
-                            tm_do->das = realloc(
-                                tm_do->das, tm_do->n_das * sizeof(cid_tm_da_t));
-                            cid_tm_da_t *tm_da = &tm_do->das[tm_do->n_das - 1];
-                            memset(tm_da->name, 0, sizeof(tm_da->name));
+                            tm_do->das =
+                                realloc(tm_do->das,
+                                        tm_do->n_das * sizeof(cid_tm_do_da_t));
+                            cid_tm_do_da_t *tm_da =
+                                &tm_do->das[tm_do->n_das - 1];
+                            memset(tm_da, 0, sizeof(cid_tm_do_da_t));
 
-                            tm_da->fc = CO;
-                            strcpy(tm_da->name, da_name);
-
-                            xmlFree(da_name);
+                            strcpy(tm_da->name, name);
+                            if (ref_type != NULL) {
+                                strcpy(tm_da->ref_type, ref_type);
+                            }
+                            tm_da->btype = T_UNKNOWN;
+                            if (btype != NULL) {
+                                tm_da->btype =
+                                    decode_basictype((const char *) btype);
+                            }
+                            tm_da->fc = F_UNKNOWN;
+                            if (fc != NULL) {
+                                tm_da->fc = decode_fc((const char *) fc);
+                            }
+                            if (tm_da->btype == T_UNKNOWN) {
+                                nlog_warn("Unknown btype %s, %d", btype,
+                                          (int) da->line);
+                            }
+                            if (tm_da->fc == F_UNKNOWN) {
+                                nlog_warn("Unknown fc %s, %d", fc,
+                                          (int) da->line);
+                            }
                         }
 
-                        xmlFree(fc);
-                        da = da->next;
+                        if (btype != NULL) {
+                            xmlFree(btype);
+                        }
+                        if (fc != NULL) {
+                            xmlFree(fc);
+                        }
+                        if (name != NULL) {
+                            xmlFree(name);
+                        }
+                        if (ref_type != NULL) {
+                            xmlFree(ref_type);
+                        }
                     }
+
+                    da = da->next;
                 }
+            }
+
+            if (id != NULL) {
                 xmlFree(id);
-                xmlFree(cdc);
             }
         }
-        child = child->next;
-    }
 
-    xmlNode *child_node = xml_template->children;
-    while (child_node != NULL) {
-        if (child_node->type == XML_ELEMENT_NODE &&
-            strcmp((const char *) child_node->name, "LNodeType") == 0) {
-            char *id = (char *) xmlGetProp(child_node, (const xmlChar *) "id");
+        if (strcmp((const char *) child->name, "DAType") == 0) {
+            char *id = (char *) xmlGetProp(child, (const xmlChar *) "id");
+            if (id != NULL && strlen(id) < NEU_CID_ID_LEN) {
+                template->n_datypes += 1;
+                template->datypes =
+                    realloc(template->datypes,
+                            template->n_datypes * sizeof(cid_tm_da_type_t));
+                cid_tm_da_type_t *tm_dat =
+                    &template->datypes[template->n_datypes - 1];
+                memset(tm_dat, 0, sizeof(cid_tm_da_type_t));
 
-            template->n_lnos += 1;
-            template->lnos       = realloc(template->lnos,
-                                     template->n_lnos * sizeof(cid_tm_lno_t));
-            cid_tm_lno_t *tm_lno = &template->lnos[template->n_lnos - 1];
-            memset(tm_lno->id, 0, sizeof(tm_lno->id));
-            tm_lno->n_dos = 0;
-            tm_lno->dos   = NULL;
+                strcpy(tm_dat->id, id);
+                xmlNode *bda = child->children;
+                while (bda != NULL) {
+                    if (bda->type != XML_ELEMENT_NODE) {
+                        bda = bda->next;
+                        continue;
+                    }
+                    char *btype =
+                        (char *) xmlGetProp(bda, (const xmlChar *) "bType");
+                    char *name =
+                        (char *) xmlGetProp(bda, (const xmlChar *) "name");
+                    char *ref_type =
+                        (char *) xmlGetProp(bda, (const xmlChar *) "type");
 
-            strncpy(tm_lno->id, id, NEU_CID_DO_ID_LEN);
-            xmlFree(id);
-            xmlNode *dot = child_node->children;
-
-            while (dot != NULL) {
-                if (dot->type == XML_ELEMENT_NODE &&
-                    strcmp((const char *) dot->name, "DO") == 0) {
-                    char *do_type =
-                        (char *) xmlGetProp(dot, (const xmlChar *) "type");
-                    for (int i = 0; i < template->n_dos; i++) {
-                        if (strcmp(template->dos[i].id, do_type) == 0) {
-                            char *do_name = (char *) xmlGetProp(
-                                dot, (const xmlChar *) "name");
-                            tm_lno->n_dos += 1;
-                            tm_lno->dos = realloc(tm_lno->dos,
-                                                  tm_lno->n_dos *
-                                                      sizeof(cid_tm_lno_do_t));
-                            cid_tm_lno_do_t *tm_lno_do =
-                                &tm_lno->dos[tm_lno->n_dos - 1];
-                            memset(tm_lno_do->name, 0, sizeof(tm_lno_do->name));
-                            memset(tm_lno_do->type, 0, sizeof(tm_lno_do->type));
-
-                            strcpy(tm_lno_do->name, do_name);
-                            strcpy(tm_lno_do->type, do_type);
-                            xmlFree(do_name);
-                            break;
+                    if (btype != NULL && name != NULL) {
+                        tm_dat->n_bdas += 1;
+                        tm_dat->bdas =
+                            realloc(tm_dat->bdas,
+                                    tm_dat->n_bdas * sizeof(cid_tm_bda_type_t));
+                        cid_tm_bda_type_t *tm_bda =
+                            &tm_dat->bdas[tm_dat->n_bdas - 1];
+                        memset(tm_bda, 0, sizeof(cid_tm_bda_type_t));
+                        strcpy(tm_bda->name, name);
+                        if (ref_type != NULL) {
+                            strcpy(tm_bda->ref_type, ref_type);
+                        }
+                        tm_bda->btype = T_UNKNOWN;
+                        if (btype != NULL) {
+                            tm_bda->btype =
+                                decode_basictype((const char *) btype);
+                        }
+                        if (tm_bda->btype == T_UNKNOWN) {
+                            nlog_warn("Unknown btype %s, %d", btype,
+                                      (int) bda->line);
                         }
                     }
 
-                    xmlFree(do_type);
-                }
+                    if (btype != NULL) {
+                        xmlFree(btype);
+                    }
+                    if (name != NULL) {
+                        xmlFree(name);
+                    }
+                    if (ref_type != NULL) {
+                        xmlFree(ref_type);
+                    }
 
-                dot = dot->next;
+                    bda = bda->next;
+                }
+            } else {
+                nlog_warn("skip, DAType id is null or too long %d",
+                          (int) child->line);
+            }
+            if (id != NULL) {
+                xmlFree(id);
             }
         }
 
-        child_node = child_node->next;
+        child = child->next;
     }
 
     return 0;
@@ -883,4 +1108,202 @@ cid_dataset_info_t *neu_cid_info_from_string(const char *str)
         neu_json_decode_free(json);
         return info;
     }
+}
+
+void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
+{
+    strcpy(cmd->driver, driver);
+    cmd->n_group = 0;
+    cmd->groups  = NULL;
+    (void) cid;
+
+    // cmd->n_group += 1;
+    // cmd->groups = realloc(cmd->groups, cmd->n_group *
+    // sizeof(neu_gdatatag_t)); neu_gdatatag_t *ctl_group =
+    // &cmd->groups[cmd->n_group - 1]; memset(ctl_group, 0,
+    // sizeof(neu_gdatatag_t));
+
+    // strcpy(ctl_group->group, "Control");
+    // ctl_group->interval = 5000;
+
+    // cid_dataset_info_t *ctl_info = calloc(1, sizeof(cid_dataset_info_t));
+    // ctl_info->control            = true;
+    // strcpy(ctl_info->ied_name, cid->ied.name);
+    // ctl_group->context = ctl_info;
+
+    // for (int i = 0; i < cid->ied.n_ldevices; i++) {
+    // for (int j = 0; j < cid->ied.ldevices[i].n_lns; j++) {
+    // for (int k = 0; k < cid->ied.ldevices[i].lns[j].n_ctrls; k++) {
+    // ctl_group->n_tag += 1;
+    // ctl_group->tags = realloc(
+    // ctl_group->tags, ctl_group->n_tag * sizeof(neu_datatag_t));
+    // neu_datatag_t *tag = &ctl_group->tags[ctl_group->n_tag - 1];
+    // memset(tag, 0, sizeof(neu_datatag_t));
+
+    // tag->name = calloc(1, NEU_TAG_NAME_LEN);
+    // snprintf(tag->name, NEU_TAG_NAME_LEN - 1, "%s/%s$%s",
+    // cid->ied.ldevices[i].inst,
+    // cid->ied.ldevices[i].lns[j].ctrls[k].do_name,
+    // cid->ied.ldevices[i].lns[j].ctrls[k].sdi_name);
+
+    // tag->attribute   = NEU_ATTRIBUTE_WRITE;
+    // tag->type        = NEU_TYPE_BOOL;
+    // tag->address     = calloc(1, NEU_TAG_ADDRESS_LEN);
+    // tag->description = strdup("");
+    // snprintf(tag->address, NEU_TAG_ADDRESS_LEN - 1,
+    //"%s%s/%s%s%s$%s$%s$%s", cid->ied.name,
+    // cid->ied.ldevices[i].inst,
+    // cid->ied.ldevices[i].lns[j].lnprefix,
+    // cid->ied.ldevices[i].lns[j].lnclass,
+    // cid->ied.ldevices[i].lns[j].lninst, "CO",
+    // cid->ied.ldevices[i].lns[j].ctrls[k].do_name,
+    // cid->ied.ldevices[i].lns[j].ctrls[k].sdi_name);
+    //}
+    //}
+    //}
+
+    // for (int i = 0; i < cid->ied.n_ldevices; i++) {
+    // for (int j = 0; j < cid->ied.ldevices[i].n_lns; j++) {
+    // for (int k = 0; k < cid->ied.ldevices[i].lns[j].n_datasets; k++) {
+    // for (int l = 0; l < cid->ied.ldevices[i].lns[j].n_reports;
+    // l++) {
+    // if (strcmp(
+    // cid->ied.ldevices[i].lns[j].datasets[k].name,
+    // cid->ied.ldevices[i].lns[j].reports[l].dataset) ==
+    // 0) {
+    // if (cid->ied.ldevices[i].lns[j].datasets[k].n_fcda ==
+    // 0) {
+    // break;
+    //}
+    // cmd->n_group += 1;
+    // cmd->groups = realloc(
+    // cmd->groups, cmd->n_group * sizeof(neu_gdatatag_t));
+    // neu_gdatatag_t *group = &cmd->groups[cmd->n_group - 1];
+    // memset(group, 0, sizeof(neu_gdatatag_t));
+
+    // cid_dataset_info_t *info =
+    // calloc(1, sizeof(cid_dataset_info_t));
+
+    // info->control = false;
+    // info->buffered =
+    // cid->ied.ldevices[i].lns[j].reports[l].buffered;
+    // strcpy(info->ied_name, cid->ied.name);
+    // strcpy(info->ldevice_inst, cid->ied.ldevices[i].inst);
+    // strcpy(info->ln_class,
+    // cid->ied.ldevices[i].lns[j].lnclass);
+    // strcpy(info->report_name,
+    // cid->ied.ldevices[i].lns[j].reports[l].name);
+    // strcpy(info->report_id,
+    // cid->ied.ldevices[i].lns[j].reports[l].id);
+    // strcpy(info->dataset_name,
+    // cid->ied.ldevices[i].lns[j].datasets[k].name);
+    // group->context = info;
+
+    // snprintf(group->group, NEU_GROUP_NAME_LEN - 1,
+    //"%s.%s.%s", cid->ied.ldevices[i].inst,
+    // cid->ied.ldevices[i].lns[j].lnclass,
+    // cid->ied.ldevices[i].lns[j].datasets[k].name);
+    // group->interval =
+    // cid->ied.ldevices[i].lns[j].reports[l].intg_pd;
+    // group->n_tag =
+    // cid->ied.ldevices[i].lns[j].datasets[k].n_fcda;
+    // group->tags =
+    // calloc(group->n_tag, sizeof(neu_datatag_t));
+
+    // for (int m = 0;
+    // m < cid->ied.ldevices[i].lns[j].datasets[k].n_fcda;
+    // m++) {
+    // group->tags[m].name = calloc(1, NEU_TAG_NAME_LEN);
+    // snprintf(group->tags[m].name, NEU_TAG_NAME_LEN - 1,
+    //"%s%s%s.%s.%s",
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.prefix,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.lnclass,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.lninst,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.do_name,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.da_name);
+    // if (group->tags[m]
+    //.name[strlen(group->tags[m].name) - 1] ==
+    //'.') {
+    // group->tags[m]
+    //.name[strlen(group->tags[m].name) - 1] =
+    //'\0';
+    //}
+    // group->tags[m].attribute =
+    // NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_SUBSCRIBE;
+    // group->tags[m].address =
+    // calloc(1, NEU_TAG_ADDRESS_LEN);
+    // group->tags[m].description = strdup("");
+    // switch (cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.fc) {
+    // case ST:
+    // group->tags[m].type = NEU_TYPE_BOOL;
+    // snprintf(group->tags[m].address,
+    // NEU_TAG_ADDRESS_LEN - 1,
+    //"%s%s/%s$%s$%s", cid->ied.name,
+    // cid->ied.ldevices[i].inst,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.lnclass,
+    //"ST",
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.do_name);
+    // break;
+    // case MX:
+    // group->tags[m].type = NEU_TYPE_FLOAT;
+    // snprintf(group->tags[m].address,
+    // NEU_TAG_ADDRESS_LEN - 1,
+    //"%s%s/%s$%s$%s", cid->ied.name,
+    // cid->ied.ldevices[i].inst,
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.lnclass,
+    //"MX",
+    // cid->ied.ldevices[i]
+    //.lns[j]
+    //.datasets[k]
+    //.fcdas[m]
+    //.do_name);
+    // break;
+    // default:
+    // group->tags[m].type = NEU_TYPE_INT16;
+    // break;
+    //}
+    //}
+
+    // break;
+    //}
+    //}
+    //}
+    //}
+    //}
 }
