@@ -82,7 +82,7 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
     } else if (MQTT_UPLOAD_FORMAT_TAGS == format) { // tags
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp2, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
     } else {
