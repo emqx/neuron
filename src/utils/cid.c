@@ -34,7 +34,8 @@ static int parse_dataset(xmlNode *xml_dataset, cid_ln_t *ln);
 static int parse_report(xmlNode *xml_report, cid_ln_t *ln);
 static int parse_doi(xmlNode *xml_doi, cid_ln_t *ln);
 
-static void fill_ied(cid_t *cid);
+static void fill_fcda_type(cid_t *cid);
+static void fill_doi_ctls(cid_t *cid);
 
 int neu_cid_parse(const char *path, cid_t *cid)
 {
@@ -80,7 +81,8 @@ int neu_cid_parse(const char *path, cid_t *cid)
 
     if (ied_parsed && templates_parsed) {
         xmlFreeDoc(doc);
-        fill_ied(cid);
+        fill_fcda_type(cid);
+        fill_doi_ctls(cid);
         return 0;
     } else {
         neu_cid_free(cid);
@@ -152,6 +154,17 @@ void neu_cid_free(cid_t *cid)
                                  .lns[k]
                                  .dois[l]
                                  .dais);
+                    }
+                    if (cid->ied.access_points[i]
+                            .ldevices[j]
+                            .lns[k]
+                            .dois[l]
+                            .n_ctls > 0) {
+                        free(cid->ied.access_points[i]
+                                 .ldevices[j]
+                                 .lns[k]
+                                 .dois[l]
+                                 .ctls);
                     }
                 }
                 if (cid->ied.access_points[i].ldevices[j].lns[k].n_dois > 0) {
@@ -345,7 +358,7 @@ static void update_dataset(cid_dataset_t *dataset, cid_ldevice_t *ldev,
     }
 }
 
-static void fill_ied(cid_t *cid)
+static void fill_fcda_type(cid_t *cid)
 {
     for (int i = 0; i < cid->ied.n_access_points; i++) {
         for (int j = 0; j < cid->ied.access_points[i].n_ldevices; j++) {
@@ -366,6 +379,145 @@ static void fill_ied(cid_t *cid)
                                        ldev, &cid->cid_template);
                     }
                 }
+            }
+        }
+    }
+}
+
+static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
+                       cid_template_t *template)
+{
+    cid_tm_lno_type_t *tm_lno = NULL;
+    for (int i = 0; i < template->n_lnotypes; i++) {
+        if (strcmp(template->lnotypes[i].id, ref_type) == 0) {
+            tm_lno = &template->lnotypes[i];
+            break;
+        }
+    }
+
+    if (tm_lno == NULL) {
+        nlog_warn("Failed to find lno type %s", ref_type);
+        return;
+    }
+
+    for (int i = 0; i < n_dois; i++) {
+        // find the doi type
+        char *do_ref_type = NULL;
+        char *do_name_end = strchr(dois[i].name, '.');
+        for (int k = 0; k < tm_lno->n_dos; k++) {
+            if (do_name_end != NULL) {
+                if (strncmp(tm_lno->dos[k].name, dois[i].name,
+                            strlen(tm_lno->dos[k].name)) == 0) {
+                    do_ref_type = tm_lno->dos[k].ref_type;
+                    break;
+                }
+            } else {
+                if (strcmp(tm_lno->dos[k].name, dois[i].name) == 0) {
+                    do_ref_type = tm_lno->dos[k].ref_type;
+                    break;
+                }
+            }
+        }
+
+        if (do_ref_type != NULL) {
+            if (do_name_end != NULL) {
+                do_ref_type = NULL;
+                for (int k = 0; k < template->n_dotypes; k++) {
+                    if (strcmp(template->dotypes[k].id, do_ref_type) == 0) {
+                        for (int l = 0; l < template->dotypes[k].n_sdos; l++) {
+                            if (strcmp(template->dotypes[k].sdos[l].name,
+                                       do_name_end + 1) == 0) {
+                                do_ref_type =
+                                    template->dotypes[k].sdos[l].ref_type;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        cid_tm_do_type_t *tm_do = NULL;
+        if (do_ref_type != NULL) {
+            for (int k = 0; k < template->n_dotypes; k++) {
+                if (strcmp(template->dotypes[k].id, do_ref_type) == 0) {
+                    tm_do = &template->dotypes[k];
+                    break;
+                }
+            }
+        } else {
+            nlog_warn("Failed to find do type %s", do_ref_type);
+        }
+
+        if (tm_do != NULL) {
+            for (int k = 0; k < tm_do->n_das; k++) {
+                if (tm_do->das[k].fc == CO) {
+                    dois[i].n_ctls += 1;
+                    dois[i].ctls = realloc(
+                        dois[i].ctls, dois[i].n_ctls * sizeof(cid_doi_ctl_t));
+                    cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
+                    memset(ctl, 0, sizeof(cid_doi_ctl_t));
+
+                    strcpy(ctl->da_name, tm_do->das[k].name);
+                    ctl->fc = tm_do->das[k].fc;
+                    for (int j = 0; j < template->n_datypes; j++) {
+                        if (strcmp(template->datypes[j].id,
+                                   tm_do->das[k].ref_type) == 0) {
+                            ctl->btype = template->datypes[j].bdas[0].btype;
+                            break;
+                        }
+                    }
+                }
+
+                if (tm_do->das[k].fc == SP || tm_do->das[k].fc == SG) {
+                    if (tm_do->das[k].btype != Struct) {
+                        dois[i].n_ctls += 1;
+                        dois[i].ctls =
+                            realloc(dois[i].ctls,
+                                    dois[i].n_ctls * sizeof(cid_doi_ctl_t));
+                        cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
+                        memset(ctl, 0, sizeof(cid_doi_ctl_t));
+
+                        ctl->btype = tm_do->das[k].btype;
+                        ctl->fc    = tm_do->das[k].fc;
+                        strcpy(ctl->da_name, tm_do->das[k].name);
+                    } else {
+                        dois[i].n_ctls += 1;
+                        dois[i].ctls =
+                            realloc(dois[i].ctls,
+                                    dois[i].n_ctls * sizeof(cid_doi_ctl_t));
+                        cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
+                        memset(ctl, 0, sizeof(cid_doi_ctl_t));
+
+                        strcpy(ctl->da_name, tm_do->das[k].name);
+                        ctl->fc = tm_do->das[k].fc;
+                        for (int j = 0; j < template->n_datypes; j++) {
+                            if (strcmp(template->datypes[j].id,
+                                       tm_do->das[k].ref_type) == 0) {
+                                ctl->btype = template->datypes[j].bdas[0].btype;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            nlog_warn("Failed to find do type %s", do_ref_type);
+        }
+    }
+}
+
+static void fill_doi_ctls(cid_t *cid)
+{
+    for (int i = 0; i < cid->ied.n_access_points; i++) {
+        for (int j = 0; j < cid->ied.access_points[i].n_ldevices; j++) {
+            for (int k = 0; k < cid->ied.access_points[i].ldevices[j].n_lns;
+                 k++) {
+                update_doi(cid->ied.access_points[i].ldevices[j].lns[k].lntype,
+                           cid->ied.access_points[i].ldevices[j].lns[k].dois,
+                           cid->ied.access_points[i].ldevices[j].lns[k].n_dois,
+                           &cid->cid_template);
             }
         }
     }

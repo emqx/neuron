@@ -194,6 +194,7 @@ int main(int argc, char *argv[])
 
     cid_t cid   = { 0 };
     int   ret_c = neu_cid_parse("/tmp/UDT_531A_0011.ICD", &cid);
+    // int ret_c = neu_cid_parse("/tmp/serverBMS_3.cid", &cid);
     printf("neu_cid_parse ret=%d\n", ret_c);
     for (int i = 0; i < cid.ied.n_access_points; i++) {
         printf("access_points[%d].name=%s\n", i, cid.ied.access_points[i].name);
@@ -207,36 +208,53 @@ int main(int argc, char *argv[])
                     i, j, k,
                     cid.ied.access_points[i].ldevices[j].lns[k].lnprefix);
                 for (int l = 0;
-                     l < cid.ied.access_points[i].ldevices[j].lns[k].n_datasets;
+                     l < cid.ied.access_points[i].ldevices[j].lns[k].n_dois;
                      l++) {
-                    printf("------ "
-                           "access_points[%d].ldevices[%d].lns[%d].datasets[%d]"
-                           ".name=%s\n",
-                           i, j, k, l,
-                           cid.ied.access_points[i]
-                               .ldevices[j]
-                               .lns[k]
-                               .datasets[l]
-                               .name);
-                    for (int a = 0; a < cid.ied.access_points[i]
-                                            .ldevices[j]
-                                            .lns[k]
-                                            .datasets[l]
-                                            .n_fcda;
-                         a++) {
-                        cid_fcda_t *fcda = &cid.ied.access_points[i]
-                                                .ldevices[j]
-                                                .lns[k]
-                                                .datasets[l]
-                                                .fcdas[a];
-                        // if (fcda->n_btypes == 0) {
-                        printf("nnn -------- "
-                               "access_points[%d].ldevices[%d].lns[%d]"
-                               ".datasets[%d].fcdas[%d].name=%s, n type: %d\n",
-                               i, j, k, l, a, fcda->do_name, fcda->n_btypes);
-                        //}
+                    cid_doi_t *doi =
+                        &cid.ied.access_points[i].ldevices[j].lns[k].dois[l];
+                    if (doi->n_ctls > 0) {
+                        for (int a = 0; a < doi->n_ctls; a++) {
+                            printf("write ------ "
+                                   "access_points[%d].ldevices[%d].lns[%d]."
+                                   "dois[%d]"
+                                   ".ctls[%d].da_name=%s, fc=%d, btype=%d\n",
+                                   i, j, k, l, a, doi->ctls[a].da_name,
+                                   doi->ctls[a].fc, doi->ctls[a].btype);
+                        }
                     }
                 }
+                // for (int l = 0;
+                // l < cid.ied.access_points[i].ldevices[j].lns[k].n_datasets;
+                // l++) {
+                // printf("------ "
+                //"access_points[%d].ldevices[%d].lns[%d].datasets[%d]"
+                //".name=%s\n",
+                // i, j, k, l,
+                // cid.ied.access_points[i]
+                //.ldevices[j]
+                //.lns[k]
+                //.datasets[l]
+                //.name);
+                // for (int a = 0; a < cid.ied.access_points[i]
+                //.ldevices[j]
+                //.lns[k]
+                //.datasets[l]
+                //.n_fcda;
+                // a++) {
+                // cid_fcda_t *fcda = &cid.ied.access_points[i]
+                //.ldevices[j]
+                //.lns[k]
+                //.datasets[l]
+                //.fcdas[a];
+                // if (fcda->n_btypes == 0) {
+                // printf(
+                //"nnn -------- "
+                //"access_points[%d].ldevices[%d].lns[%d]"
+                //".datasets[%d].fcdas[%d].name=%s, n type: %d\n",
+                // i, j, k, l, a, fcda->do_name, fcda->n_btypes);
+                //}
+                //}
+                //}
             }
         }
     }

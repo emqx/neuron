@@ -196,10 +196,19 @@ typedef struct {
 } cid_dai_t;
 
 typedef struct {
+    char            da_name[NEU_CID_LEN32];
+    cid_basictype_e btype;
+    cid_fc_e        fc;
+} cid_doi_ctl_t;
+
+typedef struct {
     char name[NEU_CID_DO_NAME_LEN];
 
     cid_dai_t *dais;
     int        n_dais;
+
+    cid_doi_ctl_t *ctls;
+    int            n_ctls;
 } cid_doi_t;
 
 typedef struct {
