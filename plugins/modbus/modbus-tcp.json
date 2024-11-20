@@ -257,5 +257,30 @@
 			"min": 1000,
 			"max": 65535
 		}
+	},
+	"backup_host": {
+		"name": "Backup IP Address",
+		"name_zh": "备用 IP 地址",
+		"attribute": "optional",
+		"type": "string",
+		"condition": {
+			"field": "connection_mode",
+			"value": 0
+		}		
+	},
+	"backup_port": {
+		"name": "Backup Port",
+		"name_zh": "备用端口号",
+		"attribute": "optional",
+		"type": "int",
+		"default": 502,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		},
+		"condition": {
+			"field": "connection_mode",
+			"value": 0
+		}	
 	}
 }

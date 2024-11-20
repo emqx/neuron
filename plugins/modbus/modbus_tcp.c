@@ -125,6 +125,17 @@ static int driver_uninit(neu_plugin_t *plugin)
         modbus_stack_destroy(plugin->stack);
     }
 
+    if (!plugin->is_server) {
+        if (plugin->param.params.tcp_client.ip != NULL) {
+            free(plugin->param.params.tcp_client.ip);
+            plugin->param.params.tcp_client.ip = NULL;
+        }
+        if (plugin->param_backup.params.tcp_client.ip != NULL) {
+            free(plugin->param_backup.params.tcp_client.ip);
+            plugin->param_backup.params.tcp_client.ip = NULL;
+        }
+    }
+
     neu_event_close(plugin->events);
 
     plog_notice(plugin, "%s uninit success", plugin->common.name);
@@ -174,6 +185,13 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t endianess    = { .name = "endianess", .t = NEU_JSON_INT };
     neu_json_elem_t address_base = { .name = "address_base",
                                      .t    = NEU_JSON_INT };
+
+    neu_json_elem_t  backup_ip   = { .name      = "backup_host",
+                                  .t         = NEU_JSON_STR,
+                                  .v.val_str = NULL };
+    neu_json_elem_t  backup_port = { .name = "backup_port", .t = NEU_JSON_INT };
+    neu_conn_param_t param_backup = { 0 };
+    bool             backup       = false;
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
@@ -229,7 +247,16 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         address_base.v.val_int = base_1;
     }
 
+    ret = neu_parse_param((char *) config, &err_param, 2, &backup_ip,
+                          &backup_port);
+    if (ret != 0) {
+        free(err_param);
+    } else {
+        backup = true;
+    }
+
     param.log              = plugin->common.log;
+    param_backup.log       = plugin->common.log;
     plugin->interval       = interval.v.val_int;
     plugin->max_retries    = max_retries.v.val_int;
     plugin->retry_interval = retry_interval.v.val_int;
@@ -249,14 +276,45 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         param.params.tcp_server.timeout      = timeout.v.val_int;
         param.params.tcp_server.max_link     = 1;
         plugin->is_server                    = true;
+        backup                               = false;
+
+        if (plugin->param.params.tcp_client.ip != NULL) {
+            free(plugin->param.params.tcp_client.ip);
+            plugin->param.params.tcp_client.ip = NULL;
+        }
+        if (plugin->param_backup.params.tcp_client.ip != NULL) {
+            free(plugin->param_backup.params.tcp_client.ip);
+            plugin->param_backup.params.tcp_client.ip = NULL;
+        }
     }
     if (mode.v.val_int == 0) {
-        param.type                      = NEU_CONN_TCP_CLIENT;
-        param.params.tcp_client.ip      = host.v.val_str;
+        plugin->is_server = false;
+        param.type        = NEU_CONN_TCP_CLIENT;
+
+        if (plugin->param.params.tcp_client.ip != NULL) {
+            free(plugin->param.params.tcp_client.ip);
+            plugin->param.params.tcp_client.ip = NULL;
+        }
+
+        param.params.tcp_client.ip      = strdup(host.v.val_str);
         param.params.tcp_client.port    = port.v.val_int;
         param.params.tcp_client.timeout = timeout.v.val_int;
-        plugin->is_server               = false;
+
+        param_backup.type = NEU_CONN_TCP_CLIENT;
+        if (backup_ip.v.val_str != NULL) {
+            if (plugin->param_backup.params.tcp_client.ip != NULL) {
+                free(plugin->param_backup.params.tcp_client.ip);
+                plugin->param_backup.params.tcp_client.ip = NULL;
+            }
+            param_backup.params.tcp_client.ip = strdup(backup_ip.v.val_str);
+        }
+        param_backup.params.tcp_client.port    = backup_port.v.val_int;
+        param_backup.params.tcp_client.timeout = timeout.v.val_int;
     }
+
+    plugin->backup       = backup;
+    plugin->param        = param;
+    plugin->param_backup = param_backup;
 
     plog_notice(plugin,
                 "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
@@ -271,7 +329,15 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                          modbus_conn_disconnected);
     }
 
-    free(host.v.val_str);
+    if (host.v.val_str != NULL) {
+        free(host.v.val_str);
+        host.v.val_str = NULL;
+    }
+    if (backup_ip.v.val_str != NULL) {
+        free(backup_ip.v.val_str);
+        backup_ip.v.val_str = NULL;
+    }
+
     return 0;
 }
 

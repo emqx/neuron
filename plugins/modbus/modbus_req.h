@@ -49,6 +49,12 @@ struct neu_plugin {
     bool     degradation;
     uint16_t degrade_cycle;
     uint16_t degrade_time;
+
+    bool             backup;
+    bool             current_backup;
+    bool             first_attempt_done;
+    neu_conn_param_t param;
+    neu_conn_param_t param_backup;
 };
 
 void modbus_conn_connected(void *data, int fd);

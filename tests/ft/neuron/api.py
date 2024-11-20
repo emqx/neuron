@@ -378,6 +378,10 @@ def modbus_rtu_node_setting_base(node, port=502, connection_mode=0, transport_mo
                                     "max_retries": max_retries, "retry_interval": retry_interval, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data, "address_base": base})
 
+def modbus_tcp_node_setting_backup(node, port, backup_port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=2000, max_retries=2, retry_interval=1):
+    return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
+                                    "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "retry_interval": retry_interval, "backup_host": "127.0.0.1", "backup_port": backup_port})
+
 
 def mqtt_node_setting(node, client_id="neuron_aBcDeF", host="broker.emqx.io", port=1883):
     return node_setting(node, json={"client-id": client_id, "qos": 0, "format": 0,
