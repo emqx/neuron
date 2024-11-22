@@ -90,6 +90,8 @@ typedef struct {
     char *                    description;
     neu_datatag_addr_option_u option;
     uint8_t                   meta[NEU_TAG_META_LENGTH];
+    uint8_t                   format[NEU_TAG_FORMAT_LENGTH];
+    uint8_t                   n_format;
 } neu_datatag_t;
 
 typedef struct neu_tag_meta {
@@ -98,6 +100,9 @@ typedef struct neu_tag_meta {
 } neu_tag_meta_t;
 
 UT_icd *neu_tag_get_icd();
+
+void neu_tag_format_str(const neu_datatag_t *tag, char *buf, int len);
+int  neu_format_from_str(const char *format_str, uint8_t *formats);
 
 neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag);
 void           neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other);

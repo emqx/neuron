@@ -572,15 +572,20 @@ int neu_sqlite_persister_store_tag(neu_persister_t *    self,
                                    const char *         group_name,
                                    const neu_datatag_t *tag)
 {
-    int rv =
-        execute_sql(((neu_sqlite_persister_t *) self)->db,
-                    "INSERT INTO tags ("
-                    " driver_name, group_name, name, address, attribute,"
-                    " precision, type, decimal, bias, description, value"
-                    ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q)",
-                    driver_name, group_name, tag->name, tag->address,
-                    tag->attribute, tag->precision, tag->type, tag->decimal,
-                    tag->bias, tag->description, "");
+    char format_buf[128] = { 0 };
+    if (tag->n_format > 0) {
+        neu_tag_format_str(tag, format_buf, sizeof(format_buf));
+    }
+
+    int rv = execute_sql(
+        ((neu_sqlite_persister_t *) self)->db,
+        "INSERT INTO tags ("
+        " driver_name, group_name, name, address, attribute,"
+        " precision, type, decimal, bias, description, value, format"
+        ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q, %Q)",
+        driver_name, group_name, tag->name, tag->address, tag->attribute,
+        tag->precision, tag->type, tag->decimal, tag->bias, tag->description,
+        "", format_buf);
 
     return rv;
 }
@@ -589,7 +594,12 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
                     const neu_datatag_t *tags, size_t n)
 {
     for (size_t i = 0; i < n; ++i) {
-        const neu_datatag_t *tag = &tags[i];
+        const neu_datatag_t *tag             = &tags[i];
+        char                 format_buf[128] = { 0 };
+
+        if (tag->n_format > 0) {
+            neu_tag_format_str(tag, format_buf, sizeof(format_buf));
+        }
 
         sqlite3_reset(stmt);
 
@@ -648,6 +658,12 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
             return -1;
         }
 
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 12, format_buf, -1, NULL)) {
+            nlog_error("bind `%s` with format=`%s` fail: %s", query, format_buf,
+                       sqlite3_errmsg(db));
+            return -1;
+        }
+
         if (SQLITE_DONE != sqlite3_step(stmt)) {
             nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(db));
             return -1;
@@ -668,8 +684,8 @@ int neu_sqlite_persister_store_tags(neu_persister_t *    self,
     const char *  query =
         "INSERT INTO tags ("
         " driver_name, group_name, name, address, attribute,"
-        " precision, type, decimal, bias, description, value"
-        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)";
+        " precision, type, decimal, bias, description, value, format"
+        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)";
 
     if (SQLITE_OK != sqlite3_exec(persister->db, "BEGIN", NULL, NULL, NULL)) {
         nlog_error("begin transaction fail: %s", sqlite3_errmsg(persister->db));
@@ -719,6 +735,8 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
 {
     int step = sqlite3_step(stmt);
     while (SQLITE_ROW == step) {
+        const char *format = (const char *) sqlite3_column_text(stmt, 9);
+
         neu_datatag_t tag = {
             .name        = (char *) sqlite3_column_text(stmt, 0),
             .address     = (char *) sqlite3_column_text(stmt, 1),
@@ -729,6 +747,9 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
             .bias        = sqlite3_column_double(stmt, 6),
             .description = (char *) sqlite3_column_text(stmt, 7),
         };
+
+        tag.n_format = neu_format_from_str(format, tag.format);
+
         utarray_push_back(*tags, &tag);
 
         step = sqlite3_step(stmt);
@@ -749,7 +770,7 @@ int neu_sqlite_persister_load_tags(neu_persister_t *self,
 
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
-                        "decimal, bias, description, value "
+                        "decimal, bias, description, value, format "
                         "FROM tags WHERE driver_name=? AND group_name=? "
                         "ORDER BY rowid ASC";
 

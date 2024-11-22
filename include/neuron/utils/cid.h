@@ -130,6 +130,34 @@ inline static cid_basictype_e decode_basictype(const char *btype)
     return ret;
 }
 
+inline static const char *fc_to_str(cid_fc_e fc)
+{
+    switch (fc) {
+    case CO:
+        return "CO";
+    case ST:
+        return "ST";
+    case MX:
+        return "MX";
+    case SP:
+        return "SP";
+    case SG:
+        return "SG";
+    case SE:
+        return "SE";
+    case SV:
+        return "SV";
+    case CF:
+        return "CF";
+    case DC:
+        return "DC";
+    case EX:
+        return "EX";
+    default:
+        return "F_UNKNOWN";
+    }
+}
+
 inline static cid_fc_e decode_fc(const char *fc)
 {
     cid_fc_e ret = F_UNKNOWN;
@@ -170,7 +198,7 @@ typedef struct {
 
     cid_fc_e fc;
 
-    cid_basictype_e btypes[8]; // for do-[da]
+    cid_basictype_e btypes[NEU_TAG_FORMAT_LENGTH]; // for do-[da]
     int             n_btypes;
 } cid_fcda_t;
 

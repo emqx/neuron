@@ -41,6 +41,8 @@ static void tag_array_copy(void *_dst, const void *_src)
     dst->name        = strdup(src->name);
     dst->description = strdup(src->description);
 
+    memcpy(dst->format, src->format, sizeof(src->format));
+    dst->n_format = src->n_format;
     memcpy(dst->meta, src->meta, sizeof(src->meta));
 }
 
@@ -51,6 +53,39 @@ static void tag_array_free(void *_elt)
     free(elt->name);
     free(elt->address);
     free(elt->description);
+}
+
+void neu_tag_format_str(const neu_datatag_t *tag, char *buf, int len)
+{
+    int offset = 0;
+
+    for (int i = 0; i < tag->n_format; i++) {
+        if (i == 0) {
+            offset = snprintf(buf, len, "%d", (int) tag->format[i]);
+        } else {
+            offset += snprintf(buf + offset, len - offset, ",%d",
+                               (int) tag->format[i]);
+        }
+    }
+}
+
+int neu_format_from_str(const char *format_str, uint8_t *formats)
+{
+    int n = 0;
+
+    if (format_str == NULL || strlen(format_str) == 0) {
+        return n;
+    }
+
+    n = sscanf(format_str,
+               "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,"
+               "%hhu,%hhu,%hhu,%hhu",
+               &formats[0], &formats[1], &formats[2], &formats[3], &formats[4],
+               &formats[5], &formats[6], &formats[7], &formats[8], &formats[9],
+               &formats[10], &formats[11], &formats[12], &formats[13],
+               &formats[14], &formats[15]);
+
+    return n;
 }
 
 static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,

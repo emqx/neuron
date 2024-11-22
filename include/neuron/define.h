@@ -54,6 +54,7 @@
 
 #define NEU_TAG_META_LENGTH 20
 #define NEU_TAG_META_SIZE 32
+#define NEU_TAG_FORMAT_LENGTH 16
 
 #define NEU_LOG_LEVEL_DEBUG "debug"
 #define NEU_LOG_LEVEL_INFO "info"

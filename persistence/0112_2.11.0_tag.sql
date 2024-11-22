@@ -33,11 +33,26 @@ CREATE TABLE
     type INTEGER NOT NULL check (type BETWEEN 0 AND 40),
     description TEXT NULL check (length (description) <= 512),
     value TEXT,
+    format TEXT NULL,
     UNIQUE (driver_name, group_name, name),
     FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
   );
 
-INSERT INTO tags SELECT * FROM temp_tags;
+INSERT INTO tags 
+SELECT
+  driver_name,
+  group_name,
+  name,
+  address,
+  attribute,
+  precision,
+  decimal,
+  bias,
+  type,
+  description,
+  NULL,
+  ""
+FROM temp_tags;
 
 DROP TABLE temp_tags;
 
