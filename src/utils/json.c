@@ -64,6 +64,62 @@ static double format_tag_value(float ele_value)
     return value * negative;
 }
 
+void neu_json_elem_free(neu_json_elem_t *elem)
+{
+    if (elem == NULL) {
+        return;
+    }
+
+    switch (elem->t) {
+    case NEU_JSON_ARRAY_BOOL:
+        free(elem->v.val_array_bool.bools);
+        break;
+    case NEU_JSON_ARRAY_UINT8:
+        free(elem->v.val_array_uint8.u8s);
+        break;
+    case NEU_JSON_ARRAY_INT8:
+        free(elem->v.val_array_int8.i8s);
+        break;
+    case NEU_JSON_ARRAY_UINT16:
+        free(elem->v.val_array_uint16.u16s);
+        break;
+    case NEU_JSON_ARRAY_INT16:
+        free(elem->v.val_array_int16.i16s);
+        break;
+    case NEU_JSON_ARRAY_UINT32:
+        free(elem->v.val_array_uint32.u32s);
+        break;
+    case NEU_JSON_ARRAY_INT32:
+        free(elem->v.val_array_int32.i32s);
+        break;
+    case NEU_JSON_ARRAY_UINT64:
+        free(elem->v.val_array_uint64.u64s);
+        break;
+    case NEU_JSON_ARRAY_INT64:
+        free(elem->v.val_array_int64.i64s);
+        break;
+    case NEU_JSON_ARRAY_FLOAT:
+        free(elem->v.val_array_float.f32s);
+        break;
+    case NEU_JSON_ARRAY_DOUBLE:
+        free(elem->v.val_array_double.f64s);
+        break;
+    case NEU_JSON_ARRAY_STR:
+        for (int i = 0; i < elem->v.val_array_str.length; ++i) {
+            free(elem->v.val_array_str.p_strs[i]);
+        }
+        free(elem->v.val_array_str.p_strs);
+        break;
+    case NEU_JSON_OBJECT:
+        json_decref(elem->v.val_object);
+        break;
+    case NEU_JSON_STR:
+        free(elem->v.val_str);
+        break;
+    default:
+        break;
+    }
+}
 static json_t *encode_object_value(neu_json_elem_t *ele)
 {
     json_t *ob = NULL;
@@ -309,8 +365,12 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
                     break;
                 }
             }
+        } else if (json_is_object(ob)) {
+            ele->t = NEU_JSON_OBJECT;
         }
     }
+
+    ele->ok = true;
 
     switch (ele->t) {
     case NEU_JSON_BIT:
@@ -321,11 +381,13 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         break;
     case NEU_JSON_STR: {
         if (!json_is_string(ob)) {
+            ele->ok = false;
             zlog_error(neuron, "json decode: %s failed", ele->name);
             return -1;
         }
         const char *str_val = json_string_value(ob);
         if (str_val == NULL) {
+            ele->ok = false;
             zlog_error(neuron, "json decode: %s failed", ele->name);
             return -1;
         }
@@ -385,6 +447,160 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         }
         break;
     }
+    case NEU_JSON_ARRAY_UINT8: {
+        json_t *value = NULL;
+
+        ele->v.val_array_uint8.length = json_array_size(ob);
+        if (ele->v.val_array_uint8.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_uint8.u8s =
+                calloc(ele->v.val_array_uint8.length, sizeof(int8_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_uint8.u8s[index] =
+                        (uint8_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_uint8.u8s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_INT8: {
+        json_t *value = NULL;
+
+        ele->v.val_array_int8.length = json_array_size(ob);
+        if (ele->v.val_array_int8.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_int8.i8s =
+                calloc(ele->v.val_array_int8.length, sizeof(int8_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_int8.i8s[index] =
+                        (int8_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_int8.i8s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT16: {
+        json_t *value = NULL;
+
+        ele->v.val_array_uint16.length = json_array_size(ob);
+        if (ele->v.val_array_uint16.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_uint16.u16s =
+                calloc(ele->v.val_array_uint16.length, sizeof(int16_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_uint16.u16s[index] =
+                        (uint16_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_uint16.u16s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_INT16: {
+        json_t *value = NULL;
+
+        ele->v.val_array_int16.length = json_array_size(ob);
+        if (ele->v.val_array_int16.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_int16.i16s =
+                calloc(ele->v.val_array_int16.length, sizeof(int16_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_int16.i16s[index] =
+                        (int16_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_int16.i16s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT32: {
+        json_t *value = NULL;
+
+        ele->v.val_array_uint32.length = json_array_size(ob);
+        if (ele->v.val_array_uint32.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_uint32.u32s =
+                calloc(ele->v.val_array_uint32.length, sizeof(int32_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_uint32.u32s[index] =
+                        (uint32_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_uint32.u32s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_INT32: {
+        json_t *value = NULL;
+
+        ele->v.val_array_int32.length = json_array_size(ob);
+        if (ele->v.val_array_int32.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_int32.i32s =
+                calloc(ele->v.val_array_int32.length, sizeof(int32_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_int32.i32s[index] =
+                        (int32_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_int32.i32s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_UINT64: {
+        json_t *value = NULL;
+
+        ele->v.val_array_uint64.length = json_array_size(ob);
+        if (ele->v.val_array_uint64.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_uint64.u64s =
+                calloc(ele->v.val_array_uint64.length, sizeof(int64_t));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_real(value)) {
+                    ele->v.val_array_uint64.u64s[index] =
+                        (uint64_t) json_real_value(value);
+                } else {
+                    ele->v.val_array_uint64.u64s[index] =
+                        json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
     case NEU_JSON_ARRAY_INT64: {
         json_t *value = NULL;
 
@@ -402,6 +618,27 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
                 } else {
                     ele->v.val_array_int64.i64s[index] =
                         json_integer_value(value);
+                }
+            }
+        }
+        break;
+    }
+    case NEU_JSON_ARRAY_FLOAT: {
+        json_t *value = NULL;
+
+        ele->v.val_array_float.length = json_array_size(ob);
+        if (ele->v.val_array_float.length > 0) {
+            int index = 0;
+
+            ele->v.val_array_float.f32s =
+                calloc(ele->v.val_array_float.length, sizeof(float));
+            json_array_foreach(ob, index, value)
+            {
+                if (json_is_integer(value)) {
+                    ele->v.val_array_float.f32s[index] =
+                        (float) json_integer_value(value);
+                } else {
+                    ele->v.val_array_float.f32s[index] = json_real_value(value);
                 }
             }
         }
@@ -433,6 +670,7 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_object = ob;
         break;
     default:
+        ele->ok = false;
         zlog_error(neuron, "json decode unknown type: %d", ele->t);
         return -1;
     }

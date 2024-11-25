@@ -887,8 +887,6 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
         {
             if (tag_value->value.type == NEU_TYPE_PTR) {
                 free(tag_value->value.value.ptr.ptr);
-            } else if (tag_value->value.type == NEU_TYPE_CUSTOM) {
-                json_decref(tag_value->value.value.json);
             }
         }
         utarray_free(data->tags);
