@@ -139,9 +139,12 @@ typedef struct neu_json_elem {
     union neu_json_value v;
     uint8_t              precision;
     double               bias;
+    bool                 ok;
 } neu_json_elem_t;
 
 #define NEU_JSON_ELEM_SIZE(elems) sizeof(elems) / sizeof(neu_json_elem_t)
+
+void neu_json_elem_free(neu_json_elem_t *elem);
 
 /* New a empty josn array */
 void *neu_json_array();

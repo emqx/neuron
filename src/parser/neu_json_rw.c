@@ -395,6 +395,10 @@ int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
     req->t     = req_elems[3].t;
     req->value = req_elems[3].v;
 
+    if (req->t == NEU_JSON_OBJECT) {
+        json_incref(req->value.val_object);
+    }
+
     return ret;
 
 error:
@@ -540,6 +544,10 @@ static int decode_write_tags_req_json(void *                     json_obj,
         req->tags[i].tag   = v_elems[0].v.val_str;
         req->tags[i].t     = v_elems[1].t;
         req->tags[i].value = v_elems[1].v;
+
+        if (req->tags[i].t == NEU_JSON_OBJECT) {
+            json_incref(req->tags[i].value.val_object);
+        }
 
         if (ret != 0) {
             for (; i >= 0; --i) {
