@@ -363,6 +363,10 @@ void handle_write(nng_aio *aio)
                         req->value.val_array_bool.bools[i];
                 }
                 break;
+            case NEU_JSON_OBJECT:
+                cmd.value.type       = NEU_TYPE_CUSTOM;
+                cmd.value.value.json = req->value.val_object;
+                break;
             default:
                 assert(false);
                 break;
@@ -559,6 +563,11 @@ void handle_write_tags(nng_aio *aio)
                         cmd.tags[i].value.value.bools.bools[k] =
                             req->tags[i].value.val_array_bool.bools[k];
                     }
+                    break;
+                case NEU_JSON_OBJECT:
+                    cmd.tags[i].value.type = NEU_TYPE_CUSTOM;
+                    cmd.tags[i].value.value.json =
+                        req->tags[i].value.val_object;
                     break;
                 default:
                     assert(false);

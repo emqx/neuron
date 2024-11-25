@@ -751,6 +751,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_INT64:
     case NEU_TYPE_ARRAY_CHAR:
     case NEU_TYPE_ARRAY_BOOL:
+    case NEU_TYPE_CUSTOM:
         break;
     case NEU_TYPE_BIT:
         value->type     = NEU_TYPE_BIT;
