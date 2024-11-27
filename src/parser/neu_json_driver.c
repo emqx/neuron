@@ -25,8 +25,8 @@
 
 #include "json/neu_json_driver.h"
 
-int neu_json_decode_driver_cmd_req_json(void *                 json_obj,
-                                        neu_json_driver_cmd_t *req)
+int neu_json_decode_driver_action_req_json(void *                    json_obj,
+                                           neu_json_driver_action_t *req)
 {
     int ret = 0;
 
@@ -36,7 +36,7 @@ int neu_json_decode_driver_cmd_req_json(void *                 json_obj,
             .t    = NEU_JSON_STR,
         },
         {
-            .name = "cmd",
+            .name = "action",
             .t    = NEU_JSON_STR,
         },
     };
@@ -47,16 +47,17 @@ int neu_json_decode_driver_cmd_req_json(void *                 json_obj,
     }
 
     req->driver = req_elems[0].v.val_str;
-    req->cmd    = req_elems[1].v.val_str;
+    req->action = req_elems[1].v.val_str;
 
     return 0;
 }
 
-int neu_json_decode_driver_cmd_req(char *buf, neu_json_driver_cmd_t **result)
+int neu_json_decode_driver_action_req(char *                     buf,
+                                      neu_json_driver_action_t **result)
 {
-    int                    ret      = 0;
-    void *                 json_obj = NULL;
-    neu_json_driver_cmd_t *req      = calloc(1, sizeof(neu_json_driver_cmd_t));
+    int                       ret      = 0;
+    void *                    json_obj = NULL;
+    neu_json_driver_action_t *req = calloc(1, sizeof(neu_json_driver_action_t));
     if (req == NULL) {
         return -1;
     }
@@ -67,7 +68,7 @@ int neu_json_decode_driver_cmd_req(char *buf, neu_json_driver_cmd_t **result)
         return -1;
     }
 
-    ret = neu_json_decode_driver_cmd_req_json(json_obj, req);
+    ret = neu_json_decode_driver_action_req_json(json_obj, req);
     if (0 == ret) {
         *result = req;
     } else {
@@ -80,11 +81,11 @@ int neu_json_decode_driver_cmd_req(char *buf, neu_json_driver_cmd_t **result)
     return 0;
 }
 
-void neu_json_decode_driver_cmd_req_free(neu_json_driver_cmd_t *req)
+void neu_json_decode_driver_action_req_free(neu_json_driver_action_t *req)
 {
     if (req) {
         free(req->driver);
-        free(req->cmd);
+        free(req->action);
         free(req);
     }
 }

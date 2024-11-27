@@ -178,8 +178,6 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->read_resp_topic = NULL;
     free(plugin->upload_topic);
     plugin->upload_topic = NULL;
-    free(plugin->driver_cmd_topic);
-    plugin->driver_cmd_topic = NULL;
 
     route_tbl_free(plugin->route_tbl);
 
@@ -281,14 +279,6 @@ static int create_topic(neu_plugin_t *plugin)
         return -1;
     }
 
-    neu_asprintf(&plugin->driver_cmd_topic, "/neuron/%s/driver/cmd",
-                 plugin->common.name);
-    if (NULL == plugin->driver_cmd_topic) {
-        free(plugin->driver_cmd_topic);
-        plugin->driver_cmd_topic = NULL;
-        return -1;
-    }
-
     return 0;
 }
 
@@ -318,9 +308,10 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 
     if (0 !=
         neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                  plugin->driver_cmd_topic, plugin,
-                                  handle_driver_cmd_req)) {
-        plog_error(plugin, "subscribe [%s] fail", plugin->driver_cmd_topic);
+                                  config->driver_action_req_topic, plugin,
+                                  handle_driver_action_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_action_req_topic);
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }
 
@@ -331,7 +322,8 @@ static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 {
     neu_mqtt_client_unsubscribe(plugin->client, plugin->read_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
-    neu_mqtt_client_unsubscribe(plugin->client, plugin->driver_cmd_topic);
+    neu_mqtt_client_unsubscribe(plugin->client,
+                                config->driver_action_req_topic);
     neu_msleep(100); // wait for message completion
     return 0;
 }
@@ -503,6 +495,9 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_RESP_ERROR:
         error = handle_write_response(plugin, head->ctx, data, scope, trace,
                                       new_span_id);
+        break;
+    case NEU_RESP_DRIVER_ACTION:
+        error = handle_driver_action_response(plugin, head->ctx, data);
         break;
     case NEU_RESP_GET_NODES_STATE: {
         handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);

@@ -443,8 +443,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 
     strcpy(pheader->sender, adapter->name);
     switch (pheader->type) {
-    case NEU_REQ_DRIVER_CMD: {
-        neu_req_driver_cmd_t *cmd = (neu_req_driver_cmd_t *) data;
+    case NEU_REQ_DRIVER_ACTION: {
+        neu_req_driver_action_t *cmd = (neu_req_driver_action_t *) data;
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
@@ -728,6 +728,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_PRGFILE_PROCESS:
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_CHECK_SCHEMA:
+    case NEU_RESP_DRIVER_ACTION:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -1404,11 +1405,17 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_msg_free(msg);
         break;
     }
-    case NEU_REQ_DRIVER_CMD: {
-        neu_req_driver_cmd_t *cmd = (neu_req_driver_cmd_t *) &header[1];
+    case NEU_REQ_DRIVER_ACTION: {
+        neu_resp_driver_action_t error = { 0 };
+        neu_req_driver_action_t *cmd   = (neu_req_driver_action_t *) &header[1];
+
         neu_adapter_driver_cmd((neu_adapter_driver_t *) adapter,
-                               (const char *) cmd->cmd);
-        free(cmd->cmd);
+                               (const char *) cmd->action);
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_DRIVER_ACTION;
+        reply(adapter, header, &error);
+
+        free(cmd->action);
         break;
     }
     default:

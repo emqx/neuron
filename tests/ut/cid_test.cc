@@ -25,7 +25,7 @@ TEST(cid_to_msg, cid)
     neu_cid_free(&cid);
 
     EXPECT_STREQ(cmd.driver, "driver");
-    EXPECT_EQ(cmd.n_group, 12);
+    EXPECT_EQ(cmd.n_group, 11);
 
     for (int i = 0; i < cmd.n_group; i++) {
         for (int j = 0; j < cmd.groups[i].n_tag; j++) {

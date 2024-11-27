@@ -102,7 +102,8 @@ extern "C" {
     XX(NEU_RESP_SCAN_TAGS, neu_resp_scan_tags_t)                     \
     XX(NEU_REQ_CHECK_SCHEMA, neu_req_check_schema_t)                 \
     XX(NEU_RESP_CHECK_SCHEMA, neu_resp_check_schema_t)               \
-    XX(NEU_REQ_DRIVER_CMD, neu_req_driver_cmd_t)
+    XX(NEU_REQ_DRIVER_ACTION, neu_req_driver_action_t)               \
+    XX(NEU_RESP_DRIVER_ACTION, neu_resp_driver_action_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

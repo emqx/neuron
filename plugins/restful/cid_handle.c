@@ -36,11 +36,11 @@ void handle_cid(nng_aio *aio)
                         neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });
                 }
+                neu_cid_free(&cid);
             } else {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_CID, {
                     neu_http_response(aio, NEU_ERR_INVALID_CID, result_error);
                 });
             }
-            neu_cid_free(&cid);
         })
 }

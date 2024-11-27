@@ -275,6 +275,18 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         .v.val_str = NULL,
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
+    neu_json_elem_t driver_action_req_topic = {
+        .name      = "driver-action-req-topic",
+        .t         = NEU_JSON_STR,
+        .v.val_str = NULL,
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
+    neu_json_elem_t driver_action_resp_topic = {
+        .name      = "driver-action-resp-topic",
+        .t         = NEU_JSON_STR,
+        .v.val_str = NULL,
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
     neu_json_elem_t offline_cache       = { .name = "offline-cache",
                                       .t    = NEU_JSON_BOOL };
     neu_json_elem_t cache_mem_size      = { .name = "cache-mem-size",
@@ -342,6 +354,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    ret = neu_parse_param(setting, &err_param, 2, &driver_action_req_topic,
+                          &driver_action_resp_topic);
+    if (0 != ret) {
+        plog_warn(plugin, "parsing action topic fail, key: `%s`", err_param);
+    }
+
     // write request topic
     if (NULL == write_req_topic.v.val_str &&
         0 > neu_asprintf(&write_req_topic.v.val_str, "/neuron/%s/write/req",
@@ -355,6 +373,22 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         0 > neu_asprintf(&write_resp_topic.v.val_str, "/neuron/%s/write/resp",
                          plugin->common.name)) {
         plog_error(plugin, "setting write response topic error");
+        goto error;
+    }
+
+    // driver action request topic
+    if (NULL == driver_action_req_topic.v.val_str &&
+        0 > neu_asprintf(&driver_action_req_topic.v.val_str,
+                         "/neuron/%s/action/req", plugin->common.name)) {
+        plog_error(plugin, "setting driver action request topic error");
+        goto error;
+    }
+
+    // driver action response topic
+    if (NULL == driver_action_resp_topic.v.val_str &&
+        0 > neu_asprintf(&driver_action_resp_topic.v.val_str,
+                         "/neuron/%s/action/resp", plugin->common.name)) {
+        plog_error(plugin, "setting driver action response topic error");
         goto error;
     }
 
@@ -401,28 +435,30 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->version             = version.v.val_int;
-    config->client_id           = client_id.v.val_str;
-    config->qos                 = qos.v.val_int;
-    config->format              = format.v.val_int;
-    config->write_req_topic     = write_req_topic.v.val_str;
-    config->write_resp_topic    = write_resp_topic.v.val_str;
-    config->cache               = offline_cache.v.val_bool;
-    config->cache_mem_size      = cache_mem_size.v.val_int * MB;
-    config->cache_disk_size     = cache_disk_size.v.val_int * MB;
-    config->cache_sync_interval = cache_sync_interval.v.val_int;
-    config->host                = host.v.val_str;
-    config->port                = port.v.val_int;
-    config->username            = username.v.val_str;
-    config->password            = password.v.val_str;
-    config->ssl                 = ssl.v.val_bool;
-    config->ca                  = ca.v.val_str;
-    config->cert                = cert.v.val_str;
-    config->key                 = key.v.val_str;
-    config->keypass             = keypass.v.val_str;
-    config->upload_drv_state    = upload_drv_state.v.val_bool;
-    config->heartbeat_topic     = upload_drv_state_topic.v.val_str;
-    config->heartbeat_interval  = upload_drv_state_interval.v.val_int;
+    config->version                  = version.v.val_int;
+    config->client_id                = client_id.v.val_str;
+    config->qos                      = qos.v.val_int;
+    config->format                   = format.v.val_int;
+    config->write_req_topic          = write_req_topic.v.val_str;
+    config->write_resp_topic         = write_resp_topic.v.val_str;
+    config->driver_action_req_topic  = driver_action_req_topic.v.val_str;
+    config->driver_action_resp_topic = driver_action_resp_topic.v.val_str;
+    config->cache                    = offline_cache.v.val_bool;
+    config->cache_mem_size           = cache_mem_size.v.val_int * MB;
+    config->cache_disk_size          = cache_disk_size.v.val_int * MB;
+    config->cache_sync_interval      = cache_sync_interval.v.val_int;
+    config->host                     = host.v.val_str;
+    config->port                     = port.v.val_int;
+    config->username                 = username.v.val_str;
+    config->password                 = password.v.val_str;
+    config->ssl                      = ssl.v.val_bool;
+    config->ca                       = ca.v.val_str;
+    config->cert                     = cert.v.val_str;
+    config->key                      = key.v.val_str;
+    config->keypass                  = keypass.v.val_str;
+    config->upload_drv_state         = upload_drv_state.v.val_bool;
+    config->heartbeat_topic          = upload_drv_state_topic.v.val_str;
+    config->heartbeat_interval       = upload_drv_state_interval.v.val_int;
 
     plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
@@ -432,6 +468,10 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config write-req-topic : %s", config->write_req_topic);
     plog_notice(plugin, "config write-resp-topic: %s",
                 config->write_resp_topic);
+    plog_notice(plugin, "config driver-action-req-topic : %s",
+                config->driver_action_req_topic);
+    plog_notice(plugin, "config driver-action-resp-topic: %s",
+                config->driver_action_resp_topic);
     plog_notice(plugin, "config upload-drv-state: %d",
                 config->upload_drv_state);
     if (config->upload_drv_state) {
@@ -488,6 +528,8 @@ error:
     free(key.v.val_str);
     free(keypass.v.val_str);
     free(upload_drv_state_topic.v.val_str);
+    free(driver_action_req_topic.v.val_str);
+    free(driver_action_resp_topic.v.val_str);
     return -1;
 }
 
@@ -496,6 +538,8 @@ void mqtt_config_fini(mqtt_config_t *config)
     free(config->client_id);
     free(config->write_req_topic);
     free(config->write_resp_topic);
+    free(config->driver_action_req_topic);
+    free(config->driver_action_resp_topic);
     free(config->host);
     free(config->username);
     free(config->password);

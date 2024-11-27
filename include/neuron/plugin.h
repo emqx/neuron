@@ -114,7 +114,7 @@ typedef struct neu_plugin_intf_funs {
                              char *ctx);
             int (*test_read_tag)(neu_plugin_t *plugin, void *req,
                                  neu_datatag_t tag);
-            int (*call)(neu_plugin_t *plugin, const char *cmd);
+            int (*action)(neu_plugin_t *plugin, const char *action);
         } driver;
     };
 

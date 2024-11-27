@@ -28,11 +28,12 @@ extern "C" {
 
 typedef struct {
     char *driver;
-    char *cmd;
-} neu_json_driver_cmd_t;
+    char *action;
+} neu_json_driver_action_t;
 
-int  neu_json_decode_driver_cmd_req(char *buf, neu_json_driver_cmd_t **result);
-void neu_json_decode_driver_cmd_req_free(neu_json_driver_cmd_t *req);
+int  neu_json_decode_driver_action_req(char *                     buf,
+                                       neu_json_driver_action_t **result);
+void neu_json_decode_driver_action_req_free(neu_json_driver_action_t *req);
 
 #ifdef __cplusplus
 }
