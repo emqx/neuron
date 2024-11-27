@@ -648,6 +648,17 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
             memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
                    value.value.ptr.length);
+<<<<<<< HEAD
+=======
+        } else if (value.type == NEU_TYPE_CUSTOM ||
+                   value.type == NEU_TYPE_ERROR) {
+            if (elem->value.type == NEU_TYPE_CUSTOM &&
+                elem->value.value.json != NULL) {
+                json_decref(elem->value.value.json);
+                elem->value.value.json = NULL;
+            }
+            elem->value.value.json = value.value.json;
+>>>>>>> d52ee1bb (fix mem leak)
         } else {
             elem->value.value = value.value;
         }

@@ -29,6 +29,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef enum {
     NEU_TYPE_INT8          = 1,
@@ -240,6 +241,8 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
 {
     static __thread char str[128] = { 0 };
 
+    memset(str, 0, sizeof(str));
+
     switch (type) {
     case NEU_TYPE_INT8:
         snprintf(str, sizeof(str), "type: %s, value: %i", neu_type_string(type),
@@ -304,6 +307,16 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
                  value.str[2]);
         break;
     }
+<<<<<<< HEAD
+=======
+    case NEU_TYPE_CUSTOM: {
+        char *result = json_dumps(value.json, JSON_REAL_PRECISION(16));
+        snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
+                 result);
+        free(result);
+        break;
+    }
+>>>>>>> d52ee1bb (fix mem leak)
     default:
         break;
     }
