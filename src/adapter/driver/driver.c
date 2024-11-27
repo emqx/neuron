@@ -3029,9 +3029,9 @@ int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd)
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
-    if (driver->adapter.module->intf_funs->driver.call == NULL) {
-        return NEU_ERR_PLUGIN_NOT_SUPPORT_CMD_CALL;
+    if (driver->adapter.module->intf_funs->driver.action == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_EXE_ACTION;
     }
-    return driver->adapter.module->intf_funs->driver.call(
+    return driver->adapter.module->intf_funs->driver.action(
         driver->adapter.plugin, cmd);
 }
