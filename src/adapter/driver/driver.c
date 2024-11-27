@@ -834,7 +834,6 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         break;
     case NEU_TYPE_BYTES:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.bytes.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.bytes.bytes[i] =
                     (uint8_t) value->value.i64s.i64s[i];
@@ -842,44 +841,44 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.bytes.bytes[i] = 0;
             }
+            value->value.bytes.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_INT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.i8s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.i8s.i8s[i] = (int8_t) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.i8s.i8s[i] = 0;
             }
+            value->value.i8s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_UINT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.u8s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.u8s.u8s[i] = (uint8_t) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.u8s.u8s[i] = 0;
             }
+            value->value.u8s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_INT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.i16s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.i16s.i16s[i] = (int16_t) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.i16s.i16s[i] = 0;
             }
+            value->value.i16s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_UINT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.u16s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.u16s.u16s[i] =
                     (uint16_t) value->value.i64s.i64s[i];
@@ -887,22 +886,22 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.u16s.u16s[i] = 0;
             }
+            value->value.u16s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_INT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.i32s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.i32s.i32s[i] = (int32_t) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.i32s.i32s[i] = 0;
             }
+            value->value.i32s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_UINT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.u32s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.u32s.u32s[i] =
                     (uint32_t) value->value.i64s.i64s[i];
@@ -910,11 +909,11 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.u32s.u32s[i] = 0;
             }
+            value->value.u32s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_UINT64:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.u64s.length = value->value.i64s.length;
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.u64s.u64s[i] =
                     (uint64_t) value->value.i64s.i64s[i];
@@ -922,37 +921,41 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.u64s.u64s[i] = 0;
             }
+            value->value.u64s.length = value->value.i64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_FLOAT:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.f32s.length = value->value.i64s.length;
+
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.f32s.f32s[i] = (float) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.f32s.f32s[i] = 0;
             }
+            value->value.f32s.length = value->value.i64s.length;
         }
         if (value->type == NEU_TYPE_ARRAY_DOUBLE) {
-            value->value.f32s.length = value->value.f64s.length;
+
             for (int i = 0; i < value->value.f64s.length; i++) {
                 value->value.f32s.f32s[i] = (float) value->value.f64s.f64s[i];
             }
             for (int i = value->value.f64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.f32s.f32s[i] = 0;
             }
+            value->value.f32s.length = value->value.f64s.length;
         }
         break;
     case NEU_TYPE_ARRAY_DOUBLE:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            value->value.f64s.length = value->value.i64s.length;
+
             for (int i = 0; i < value->value.i64s.length; i++) {
                 value->value.f64s.f64s[i] = (double) value->value.i64s.i64s[i];
             }
             for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
                 value->value.f64s.f64s[i] = 0;
             }
+            value->value.f64s.length = value->value.i64s.length;
         }
         break;
     default:
