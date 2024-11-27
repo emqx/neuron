@@ -528,6 +528,8 @@ error:
     free(key.v.val_str);
     free(keypass.v.val_str);
     free(upload_drv_state_topic.v.val_str);
+    free(driver_action_req_topic.v.val_str);
+    free(driver_action_resp_topic.v.val_str);
     return -1;
 }
 
