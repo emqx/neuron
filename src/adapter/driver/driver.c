@@ -1178,26 +1178,12 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
             } else {
                 return NEU_ERR_SUCCESS;
             }
-        case NEU_TYPE_DOUBLE:
-            if (write_type != NEU_TYPE_DOUBLE) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_STRING:
-            if (write_type != NEU_TYPE_STRING) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_CUSTOM:
-            if (write_type != NEU_TYPE_CUSTOM) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
         default:
-            return NEU_ERR_SUCCESS;
+            if (tag_type != write_type) {
+                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+            } else {
+                return NEU_ERR_SUCCESS;
+            }
         }
     }
 }
