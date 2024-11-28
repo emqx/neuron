@@ -23,7 +23,7 @@
 #include <stdbool.h>
 
 #define NEU_VERSION_MAJOR 2
-#define NEU_VERSION_MINOR 10
+#define NEU_VERSION_MINOR 11
 #define NEU_VERSION_FIX 0
 
 #define NEU_GET_VERSION_MAJOR(V) ((0xffff0000 & V) >> 16)
