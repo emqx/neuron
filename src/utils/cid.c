@@ -419,123 +419,65 @@ static void fill_fcda_type(cid_t *cid)
 static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
                        cid_template_t *template)
 {
-    cid_tm_lno_type_t *tm_lno = NULL;
-    for (int i = 0; i < template->n_lnotypes; i++) {
-        if (strcmp(template->lnotypes[i].id, ref_type) == 0) {
-            tm_lno = &template->lnotypes[i];
-            break;
-        }
-    }
-
-    if (tm_lno == NULL) {
-        nlog_warn("Failed to find lno type %s", ref_type);
-        return;
-    }
-
     for (int i = 0; i < n_dois; i++) {
-        // find the doi type
-        char *do_ref_type = NULL;
-        char *do_name_end = strchr(dois[i].name, '.');
-        for (int k = 0; k < tm_lno->n_dos; k++) {
-            if (do_name_end != NULL) {
-                if (strncmp(tm_lno->dos[k].name, dois[i].name,
-                            strlen(tm_lno->dos[k].name)) == 0) {
-                    do_ref_type = tm_lno->dos[k].ref_type;
-                    break;
-                }
-            } else {
-                if (strcmp(tm_lno->dos[k].name, dois[i].name) == 0) {
-                    do_ref_type = tm_lno->dos[k].ref_type;
-                    break;
-                }
-            }
+        cid_tm_do_type_t *tm_do =
+            find_do_type(template, ref_type, dois[i].name);
+
+        if (tm_do == NULL) {
+            continue;
         }
 
-        if (do_ref_type != NULL) {
-            if (do_name_end != NULL) {
-                do_ref_type = NULL;
-                for (int k = 0; k < template->n_dotypes; k++) {
-                    if (strcmp(template->dotypes[k].id, do_ref_type) == 0) {
-                        for (int l = 0; l < template->dotypes[k].n_sdos; l++) {
-                            if (strcmp(template->dotypes[k].sdos[l].name,
-                                       do_name_end + 1) == 0) {
-                                do_ref_type =
-                                    template->dotypes[k].sdos[l].ref_type;
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+        for (int k = 0; k < tm_do->n_das; k++) {
+            cid_tm_do_da_t *da = &tm_do->das[k];
 
-        cid_tm_do_type_t *tm_do = NULL;
-        if (do_ref_type != NULL) {
-            for (int k = 0; k < template->n_dotypes; k++) {
-                if (strcmp(template->dotypes[k].id, do_ref_type) == 0) {
-                    tm_do = &template->dotypes[k];
-                    break;
-                }
-            }
-        } else {
-            nlog_warn("Failed to find do type %s", do_ref_type);
-        }
-
-        if (tm_do != NULL) {
-            for (int k = 0; k < tm_do->n_das; k++) {
-                if (tm_do->das[k].fc == CO) {
+            if (da->btype != Struct) {
+                // CO must be Struct
+                if (da->fc == SP || da->fc == SG) {
                     dois[i].n_ctls += 1;
                     dois[i].ctls = realloc(
                         dois[i].ctls, dois[i].n_ctls * sizeof(cid_doi_ctl_t));
                     cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
                     memset(ctl, 0, sizeof(cid_doi_ctl_t));
 
-                    strcpy(ctl->da_name, tm_do->das[k].name);
-                    ctl->fc = tm_do->das[k].fc;
-                    for (int j = 0; j < template->n_datypes; j++) {
-                        if (strcmp(template->datypes[j].id,
-                                   tm_do->das[k].ref_type) == 0) {
-                            ctl->btype = template->datypes[j].bdas[0].btype;
-                            break;
-                        }
-                    }
-                }
-
-                if (tm_do->das[k].fc == SP || tm_do->das[k].fc == SG) {
-                    if (tm_do->das[k].btype != Struct) {
-                        dois[i].n_ctls += 1;
-                        dois[i].ctls =
-                            realloc(dois[i].ctls,
-                                    dois[i].n_ctls * sizeof(cid_doi_ctl_t));
-                        cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
-                        memset(ctl, 0, sizeof(cid_doi_ctl_t));
-
-                        ctl->btype = tm_do->das[k].btype;
-                        ctl->fc    = tm_do->das[k].fc;
-                        strcpy(ctl->da_name, tm_do->das[k].name);
-                    } else {
-                        dois[i].n_ctls += 1;
-                        dois[i].ctls =
-                            realloc(dois[i].ctls,
-                                    dois[i].n_ctls * sizeof(cid_doi_ctl_t));
-                        cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
-                        memset(ctl, 0, sizeof(cid_doi_ctl_t));
-
-                        strcpy(ctl->da_name, tm_do->das[k].name);
-                        ctl->fc = tm_do->das[k].fc;
-                        for (int j = 0; j < template->n_datypes; j++) {
-                            if (strcmp(template->datypes[j].id,
-                                       tm_do->das[k].ref_type) == 0) {
-                                ctl->btype = template->datypes[j].bdas[0].btype;
-                                break;
-                            }
-                        }
-                    }
+                    ctl->btype = da->btype;
+                    ctl->fc    = da->fc;
+                    strcpy(ctl->da_name, da->name);
                 }
             }
-        } else {
-            nlog_warn("Failed to find do type %s", do_ref_type);
+
+            da_basic_type_t da_types[32] = { 0 };
+            int             n_da_types   = find_da_basic_type(
+                template, tm_do->das[k].ref_type, tm_do->das[k].name, da_types);
+
+            if (da->fc == SP || da->fc == SG) {
+                for (int j = 0; j < n_da_types; j++) {
+                    dois[i].n_ctls += 1;
+                    dois[i].ctls = realloc(
+                        dois[i].ctls, dois[i].n_ctls * sizeof(cid_doi_ctl_t));
+                    cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
+                    memset(ctl, 0, sizeof(cid_doi_ctl_t));
+
+                    ctl->btype = da_types[j].btype;
+                    ctl->fc    = da->fc;
+                    strcpy(ctl->da_name, da_types[j].all_name);
+                }
+            }
+
+            if (da->fc == CO) {
+                dois[i].n_ctls += 1;
+                dois[i].ctls       = realloc(dois[i].ctls,
+                                       dois[i].n_ctls * sizeof(cid_doi_ctl_t));
+                cid_doi_ctl_t *ctl = &dois[i].ctls[dois[i].n_ctls - 1];
+                memset(ctl, 0, sizeof(cid_doi_ctl_t));
+
+                ctl->btype = da_types[0].btype;
+                ctl->fc    = da->fc;
+                strcpy(ctl->da_name, da->name);
+                ctl->n_co_types = n_da_types;
+                for (int j = 0; j < n_da_types; j++) {
+                    ctl->co_types[j] = da_types[j].btype;
+                }
+            }
         }
     }
 }
@@ -1287,6 +1229,174 @@ cid_dataset_info_t *neu_cid_info_from_string(const char *str)
     }
 }
 
+static void ld_ctrl_do_to_group(const char *ied_name, const char *ap_name,
+                                cid_ldevice_t *ld, neu_req_add_gtag_t *cmd)
+{
+    bool exist_ctl = false;
+    for (int i = 0; i < ld->n_lns; i++) {
+        for (int k = 0; k < ld->lns[i].n_dois; k++) {
+            if (ld->lns[i].dois[k].n_ctls > 0) {
+                exist_ctl = true;
+                break;
+            }
+        }
+    }
+
+    if (!exist_ctl) {
+        return;
+    }
+
+    cmd->n_group += 1;
+    cmd->groups = realloc(cmd->groups, cmd->n_group * sizeof(neu_gdatatag_t));
+    neu_gdatatag_t *group = &cmd->groups[cmd->n_group - 1];
+    memset(group, 0, sizeof(neu_gdatatag_t));
+
+    cid_dataset_info_t *g_info = calloc(1, sizeof(cid_dataset_info_t));
+
+    g_info->control = true;
+    strcpy(g_info->ied_name, ied_name);
+    strcpy(g_info->ldevice_inst, ld->inst);
+
+    group->context = g_info;
+    snprintf(group->group, NEU_GROUP_NAME_LEN, "%s/%s$Control", ap_name,
+             ld->inst);
+    group->interval = 10000;
+
+    for (int i = 0; i < ld->n_lns; i++) {
+        for (int j = 0; j < ld->lns[i].n_dois; j++) {
+            for (int k = 0; k < ld->lns[i].dois[j].n_ctls; k++) {
+                cid_doi_ctl_t *ctl = &ld->lns[i].dois[j].ctls[k];
+                char           ln_name[NEU_CID_LEN32] = { 0 };
+                int            offset                 = 0;
+
+                if (strlen(ld->lns[i].lnprefix) > 0) {
+                    offset += snprintf(ln_name, NEU_CID_LEN32 - offset, "%s",
+                                       ld->lns[i].lnprefix);
+                }
+                offset += snprintf(ln_name + offset, NEU_CID_LEN32 - offset,
+                                   "%s", ld->lns[i].lnclass);
+                if (strlen(ld->lns[i].lninst) > 0) {
+                    offset += snprintf(ln_name + offset, NEU_CID_LEN32 - offset,
+                                       "%s", ld->lns[i].lninst);
+                }
+
+                group->n_tag += 1;
+                group->tags =
+                    realloc(group->tags, group->n_tag * sizeof(neu_datatag_t));
+                neu_datatag_t *tag = &group->tags[group->n_tag - 1];
+                memset(tag, 0, sizeof(neu_datatag_t));
+
+                tag->name = calloc(1, NEU_TAG_NAME_LEN);
+                snprintf(tag->name, NEU_TAG_NAME_LEN, "%s$%s$%s", ln_name,
+                         ld->lns[i].dois[j].name, ctl->da_name);
+                tag->attribute   = NEU_ATTRIBUTE_WRITE;
+                tag->address     = calloc(1, NEU_TAG_ADDRESS_LEN);
+                tag->description = calloc(1, NEU_TAG_DESCRIPTION_LEN);
+                snprintf(tag->description, NEU_TAG_DESCRIPTION_LEN, "%s",
+                         fc_to_str(ctl->fc));
+                snprintf(tag->address, NEU_TAG_ADDRESS_LEN, "%s%s/%s$%s$%s$%s",
+                         ied_name, ld->inst, ln_name, fc_to_str(ctl->fc),
+                         ld->lns[i].dois[j].name, ctl->da_name);
+                if (ctl->fc == CO) {
+                    tag->n_format = ctl->n_co_types;
+                    for (int l = 0; l < ctl->n_co_types; l++) {
+                        tag->format[l] = ctl->co_types[l];
+                    }
+                } else {
+                    for (size_t index = 0; index < strlen(tag->address);
+                         index++) {
+                        if (tag->address[index] == '.') {
+                            tag->address[index] = '$';
+                        }
+                    }
+                    tag->n_format  = 1;
+                    tag->format[0] = ctl->btype;
+                }
+                switch (ctl->btype & 0x7f) {
+                case BOOLEAN:
+                    tag->type = NEU_TYPE_BOOL;
+                    break;
+                case INT8:
+                    tag->type = NEU_TYPE_INT8;
+                    break;
+                case INT16:
+                    tag->type = NEU_TYPE_INT16;
+                    break;
+                case INT24:
+                    tag->type = NEU_TYPE_INT32;
+                    break;
+                case INT32:
+                    tag->type = NEU_TYPE_INT32;
+                    break;
+                case INT128:
+                    tag->type = NEU_TYPE_INT64;
+                    break;
+                case INT8U:
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case INT16U:
+                    tag->type = NEU_TYPE_UINT16;
+                    break;
+                case INT24U:
+                    tag->type = NEU_TYPE_UINT32;
+                    break;
+                case INT32U:
+                    tag->type = NEU_TYPE_UINT32;
+                    break;
+                case FLOAT32:
+                    tag->type = NEU_TYPE_FLOAT;
+                    break;
+                case FLOAT64:
+                    tag->type = NEU_TYPE_DOUBLE;
+                    break;
+                case Enum:
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case Dbpos: // TODO
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case Tcmd:
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case Quality:
+                    tag->type = NEU_TYPE_UINT16;
+                    break;
+                case Timestamp:
+                    tag->type = NEU_TYPE_INT64;
+                    break;
+                case VisString32:
+                    tag->type = NEU_TYPE_STRING;
+                    break;
+                case VisString64:
+                    tag->type = NEU_TYPE_STRING;
+                    break;
+                case VisString255:
+                    tag->type = NEU_TYPE_STRING;
+                    break;
+                case Octet64: // TODO
+                    tag->type = NEU_TYPE_UINT64;
+                    break;
+                case Struct: // TODO
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case EntryTime: // TODO
+                    tag->type = NEU_TYPE_INT64;
+                    break;
+                case Unicode255: // TODO
+                    tag->type = NEU_TYPE_STRING;
+                    break;
+                case Check: // TODO
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                case T_UNKNOWN:
+                    tag->type = NEU_TYPE_UINT8;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
                                 const char *ld_inst, const cid_ln_t *ln,
                                 neu_req_add_gtag_t *cmd)
@@ -1465,22 +1575,10 @@ void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
     cmd->n_group = 0;
     cmd->groups  = NULL;
 
-    // cmd->n_group += 1;
-    // cmd->groups = realloc(cmd->groups, cmd->n_group *
-    // sizeof(neu_gdatatag_t)); neu_gdatatag_t *ctl_group =
-    // &cmd->groups[cmd->n_group - 1]; memset(ctl_group, 0,
-    // sizeof(neu_gdatatag_t));
-
-    // strcpy(ctl_group->group, "Control");
-    // ctl_group->interval = 5000;
-
-    // cid_dataset_info_t *ctl_info = calloc(1, sizeof(cid_dataset_info_t));
-    // ctl_info->control            = true;
-    // strcpy(ctl_info->ied_name, cid->ied.name);
-    // ctl_group->context = ctl_info;
-
     for (int i = 0; i < cid->ied.n_access_points; i++) {
         for (int j = 0; j < cid->ied.access_points[i].n_ldevices; j++) {
+            ld_ctrl_do_to_group(cid->ied.name, cid->ied.access_points[i].name,
+                                &cid->ied.access_points[i].ldevices[j], cmd);
             for (int k = 0; k < cid->ied.access_points[i].ldevices[j].n_lns;
                  k++) {
                 ln_dataset_to_group(
