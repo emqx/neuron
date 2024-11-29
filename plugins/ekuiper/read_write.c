@@ -112,7 +112,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     do {
 
         rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
-        if (0 != rv) {
+        if (0 != rv || json_str == NULL) {
             plog_error(plugin, "fail encode trans data to json");
             break;
         }
