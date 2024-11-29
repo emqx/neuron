@@ -2134,6 +2134,15 @@ static int report_callback(void *usr_data)
 
             utarray_foreach(group->apps, sub_app_t *, app)
             {
+
+                utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
+                                tag_value)
+                {
+                    if (tag_value->value.type == NEU_TYPE_CUSTOM) {
+                        json_incref(tag_value->value.value.json);
+                    }
+                }
+
                 if (group->driver->adapter.cb_funs.responseto(
                         &group->driver->adapter, &header, data, app->addr) !=
                     0) {
@@ -2148,6 +2157,13 @@ static int report_callback(void *usr_data)
                         neu_otel_scope_add_span_attr_int(trans_scope, app->app,
                                                          1);
                     }
+                }
+            }
+
+            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
+            {
+                if (tag_value->value.type == NEU_TYPE_CUSTOM) {
+                    json_decref(tag_value->value.value.json);
                 }
             }
 
