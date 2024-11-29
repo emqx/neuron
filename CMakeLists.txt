@@ -160,7 +160,8 @@ set(NEURON_SOURCES
     plugins/restful/version_handle.c
     plugins/restful/scan_handle.c
     plugins/restful/otel_handle.c
-	plugins/restful/cid_handle.c
+    plugins/restful/cid_handle.c
+    plugins/restful/system_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)
 
