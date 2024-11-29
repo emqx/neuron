@@ -307,8 +307,6 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
                  value.str[2]);
         break;
     }
-<<<<<<< HEAD
-=======
     case NEU_TYPE_CUSTOM: {
         char *result = json_dumps(value.json, JSON_REAL_PRECISION(16));
         snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
@@ -316,7 +314,6 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
         free(result);
         break;
     }
->>>>>>> d52ee1bb (fix mem leak)
     default:
         break;
     }
