@@ -4,6 +4,8 @@
 
 #include "utils/log.h"
 
+#include "parser/neu_json_system.h"
+
 zlog_category_t *neuron = NULL;
 TEST(JsonTest, DecodeField)
 {
@@ -327,6 +329,17 @@ TEST(JsonTest, EncodeArray)
 
     free(result);
     neu_json_decode_free(ob);
+}
+
+TEST(JsonTest, System_ctl)
+{
+    char *                     buf  = (char *) "{\"action\": 1}";
+    char *                     buf1 = (char *) "{\"action1\": 1}";
+    neu_json_system_ctl_req_t *req  = NULL;
+    EXPECT_EQ(-1, neu_json_decode_system_ctl_req(buf1, &req));
+    EXPECT_EQ(0, neu_json_decode_system_ctl_req(buf, &req));
+    EXPECT_EQ(1, req->action);
+    free(req);
 }
 
 int main(int argc, char **argv)
