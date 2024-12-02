@@ -227,6 +227,9 @@ typedef struct {
     char            da_name[NEU_CID_LEN32];
     cid_basictype_e btype;
     cid_fc_e        fc;
+
+    cid_basictype_e co_types[16];
+    int             n_co_types;
 } cid_doi_ctl_t;
 
 typedef struct {
