@@ -126,3 +126,15 @@ class TestLog:
         response = api.get_nodes_state(node='')
         assert 200 == response.status_code
         assert "notice" == response.json()['neuron_core']
+    
+    @description(given="neuron started", when="get log list", then="success")
+    def test_get_log_list(self):
+        response = api.get_log_list()
+        assert 200 == response.status_code
+        print(response.json())
+        assert "neuron.log" in [item['file'] for item in response.json()["files"]]
+
+    @description(given="neuron started", when="get log file", then="success")
+    def test_get_log_file(self):
+        response = api.get_log_file(file_name='neuron.log')
+        assert 200 == response.status_code

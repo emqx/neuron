@@ -46,10 +46,16 @@ typedef struct {
     int64_t                      error;
 } neu_json_get_log_resp_t;
 
+typedef struct {
+    char file[128];
+    int  size;
+} neu_resp_log_file_t;
+
 void neu_json_decode_update_log_level_req_free(
     neu_json_update_log_level_req_t *req);
 int neu_json_decode_update_log_level_req(
     char *buf, neu_json_update_log_level_req_t **result);
+int neu_json_encode_log_list_resp(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

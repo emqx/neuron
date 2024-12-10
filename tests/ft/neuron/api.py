@@ -408,3 +408,9 @@ def otel_stop():
 
 def otel_get():
     return requests.get(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt})
+
+def get_log_list():
+    return requests.get(url=config.BASE_URL + "/api/v2/log/list", headers={"Authorization": config.default_jwt})
+
+def get_log_file(file_name=""):
+    return requests.get(url=config.BASE_URL + "/api/v2/log/file?name=" + file_name, headers={"Authorization": config.default_jwt})
