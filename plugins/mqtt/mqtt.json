@@ -122,6 +122,16 @@
 			"length": 255
 		}
 	},
+	"skip_err": {
+		"name": "Skip Error Tag",
+		"name_zh": "跳过错误点位",
+		"description": "Do not report tags with errors.",
+		"description_zh": "不上报读取错误的点位。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": false,
+		"valid": {}
+	},
 	"upload_drv_state": {
 		"name": "Driver Status Report",
 		"name_zh": "驱动状态上报",

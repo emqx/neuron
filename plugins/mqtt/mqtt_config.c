@@ -315,6 +315,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t upload_drv_state_interval = {
         .name = "upload_drv_state_interval", .t = NEU_JSON_INT
     };
+    neu_json_elem_t skip_err = {
+        .name       = "skip_err",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = false,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -435,6 +441,11 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    ret = neu_parse_param(setting, NULL, 1, &skip_err);
+    if (0 != ret) {
+        plog_notice(plugin, "setting skip_err failed");
+    }
+
     config->version                  = version.v.val_int;
     config->client_id                = client_id.v.val_str;
     config->qos                      = qos.v.val_int;
@@ -459,6 +470,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->upload_drv_state         = upload_drv_state.v.val_bool;
     config->heartbeat_topic          = upload_drv_state_topic.v.val_str;
     config->heartbeat_interval       = upload_drv_state_interval.v.val_int;
+    config->skip_err                 = skip_err.v.val_bool;
 
     plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
@@ -474,6 +486,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
                 config->driver_action_resp_topic);
     plog_notice(plugin, "config upload-drv-state: %d",
                 config->upload_drv_state);
+    plog_notice(plugin, "config skip-err: %d", config->skip_err);
     if (config->upload_drv_state) {
         if (config->heartbeat_topic) {
             plog_notice(plugin, "config upload-drv-state-topic: %s",
