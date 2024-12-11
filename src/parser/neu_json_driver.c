@@ -32,7 +32,7 @@ int neu_json_decode_driver_action_req_json(void *                    json_obj,
 
     neu_json_elem_t req_elems[] = {
         {
-            .name = "driver",
+            .name = "node",
             .t    = NEU_JSON_STR,
         },
         {

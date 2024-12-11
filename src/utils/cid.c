@@ -1362,7 +1362,7 @@ static void ld_ctrl_do_to_group(const char *ied_name, const char *ap_name,
                     tag->type = NEU_TYPE_UINT16;
                     break;
                 case Timestamp:
-                    tag->type = NEU_TYPE_INT64;
+                    tag->type = NEU_TYPE_UINT64;
                     break;
                 case VisString32:
                     tag->type = NEU_TYPE_STRING;
@@ -1525,7 +1525,7 @@ static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
                         tag->type = NEU_TYPE_UINT16;
                         break;
                     case Timestamp:
-                        tag->type = NEU_TYPE_INT64;
+                        tag->type = NEU_TYPE_UINT64;
                         break;
                     case VisString32:
                         tag->type = NEU_TYPE_STRING;
