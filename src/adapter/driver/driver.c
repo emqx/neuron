@@ -2132,9 +2132,7 @@ static int report_callback(void *usr_data)
             data->ctx->index = utarray_len(group->apps);
             pthread_mutex_init(&data->ctx->mtx, NULL);
 
-            utarray_foreach(group->apps, sub_app_t *, app)
-            {
-
+            for (uint16_t i = 0; i < utarray_len(group->apps) - 1; i++) {
                 utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
                                 tag_value)
                 {
@@ -2142,10 +2140,21 @@ static int report_callback(void *usr_data)
                         json_incref(tag_value->value.value.json);
                     }
                 }
+            }
+
+            utarray_foreach(group->apps, sub_app_t *, app)
+            {
 
                 if (group->driver->adapter.cb_funs.responseto(
                         &group->driver->adapter, &header, data, app->addr) !=
                     0) {
+                    utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
+                                    tag_value)
+                    {
+                        if (tag_value->value.type == NEU_TYPE_CUSTOM) {
+                            json_decref(tag_value->value.value.json);
+                        }
+                    }
                     neu_trans_data_free(data);
                     if (trans_trace) {
                         neu_otel_scope_add_span_attr_int(trans_scope, app->app,
@@ -2157,13 +2166,6 @@ static int report_callback(void *usr_data)
                         neu_otel_scope_add_span_attr_int(trans_scope, app->app,
                                                          1);
                     }
-                }
-            }
-
-            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
-            {
-                if (tag_value->value.type == NEU_TYPE_CUSTOM) {
-                    json_decref(tag_value->value.value.json);
                 }
             }
 
