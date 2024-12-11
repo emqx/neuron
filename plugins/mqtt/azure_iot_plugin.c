@@ -300,7 +300,7 @@ static int azure_handle_trans_data(neu_plugin_t *            plugin,
     }
 
     char *json_str =
-        generate_upload_json(plugin, trans_data, plugin->config.format);
+        generate_upload_json(plugin, trans_data, plugin->config.format, NULL);
     if (NULL == json_str) {
         plog_error(plugin, "generate upload json fail");
         return NEU_ERR_EINTERNAL;
