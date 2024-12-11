@@ -56,6 +56,7 @@ typedef struct {
     char *               write_resp_topic;        // write response topic
     char *               driver_action_req_topic; // driver action request topic
     char *   driver_action_resp_topic; // driver action response topic
+    bool     upload_err;               // Upload tag error code flag
     bool     upload_drv_state;         // upload driver state flag
     char *   heartbeat_topic;          // upload driver state topic
     uint16_t heartbeat_interval;       // upload driver state interval
