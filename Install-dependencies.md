@@ -75,8 +75,10 @@ $ make && sudo make install
 ```
 
 [libxml2](https://github.com/GNOME/libxml2.git)
+```shell
 $ git clone -b v2.9.14 https://github.com/GNOME/libxml2.git
 $ cd libxml2
 $ ./autogen.sh
 $ ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
 $ make && sudo make install
+```
