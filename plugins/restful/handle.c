@@ -119,6 +119,12 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/log/level",
     },
     {
+        .url = "/api/v2/log/list",
+    },
+    {
+        .url = "/api/v2/log/file",
+    },
+    {
         .url = "/api/v2/global/config",
     },
     {
@@ -382,6 +388,18 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/log/level",
         .value.handler = handle_log_level,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/list",
+        .value.handler = handle_log_list,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/file",
+        .value.handler = handle_log_file,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

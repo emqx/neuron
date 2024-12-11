@@ -29,6 +29,8 @@
 
 #include "neu_json_log.h"
 #include "utils/log.h"
+#include "utils/utarray.h"
+#include "utils/utextend.h"
 
 int neu_json_decode_update_log_level_req(
     char *buf, neu_json_update_log_level_req_t **result)
@@ -99,4 +101,45 @@ void neu_json_decode_update_log_level_req_free(
     if (req != NULL) {
         free(req);
     }
+}
+
+int neu_json_encode_log_list_resp(void *json_object, void *param)
+{
+    int       ret       = 0;
+    UT_array *log_files = (UT_array *) param;
+    void *    log_array = neu_json_array();
+
+    if (NULL != log_files) {
+        utarray_foreach(log_files, neu_resp_log_file_t *, p_log)
+        {
+            if (NULL != p_log) {
+                neu_json_elem_t log_elems[] = {
+                    {
+                        .name      = "file",
+                        .t         = NEU_JSON_STR,
+                        .v.val_str = p_log->file,
+                    },
+                    {
+                        .name      = "size",
+                        .t         = NEU_JSON_INT,
+                        .v.val_int = p_log->size,
+                    },
+                };
+
+                neu_json_encode_array(log_array, log_elems,
+                                      NEU_JSON_ELEM_SIZE(log_elems));
+            }
+        }
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "files",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = log_array,
+    } };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
 }
