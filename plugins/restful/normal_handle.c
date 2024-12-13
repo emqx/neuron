@@ -99,6 +99,21 @@ void handle_login(nng_aio *aio)
         })
 }
 
+void handle_add_user(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_delete_user(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_update_user(nng_aio *aio)
+{
+    (void) aio;
+}
+
 void handle_password(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(

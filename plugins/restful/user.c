@@ -372,6 +372,44 @@ void neu_user_free(neu_user_t *user)
     }
 }
 
+int neu_user_list()
+{
+    return 0;
+}
+
+int neu_user_add(const char *name, const char *password)
+{
+    neu_persist_user_info_t *info = NULL;
+    if (0 != neu_persister_load_user(name, &info)) {
+        return 1;
+    }
+
+    neu_user_t *user = neu_user_new(name, password);
+    if (NULL == user) {
+        return -1;
+    }
+
+    neu_save_user(user);
+    return 0;
+}
+
+int neu_user_update(const char *name, const char *password)
+{
+    neu_user_t *user = neu_load_user(name);
+    if (NULL == user) {
+        return -1;
+    }
+
+    neu_user_update_password(user, password);
+    neu_save_user(user);
+    return 0;
+}
+
+int neu_user_delete(const char *name)
+{
+    return neu_persister_delete_user(name);
+}
+
 bool neu_user_check_password(neu_user_t *user, const char *password)
 {
     char *salt = user->hash + 3;
