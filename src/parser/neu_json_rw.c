@@ -345,6 +345,55 @@ int neu_json_encode_read_resp2(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_read_resp_ecp(void *json_object, void *param)
+{
+    int                   ret  = 0;
+    neu_json_read_resp_t *resp = (neu_json_read_resp_t *) param;
+
+    void *                    tag_array = neu_json_array();
+    neu_json_read_resp_tag_t *p_tag     = resp->tags;
+    for (int i = 0; i < resp->n_tag; i++) {
+        neu_json_elem_t tag_elems[2 + NEU_TAG_META_SIZE] = { 0 };
+
+        tag_elems[0].name      = "name";
+        tag_elems[0].t         = NEU_JSON_STR;
+        tag_elems[0].v.val_str = p_tag->name;
+
+        if (p_tag->error != 0) {
+            continue;
+        } else {
+            tag_elems[1].name      = "value";
+            tag_elems[1].t         = p_tag->t;
+            tag_elems[1].v         = p_tag->value;
+            tag_elems[1].precision = p_tag->precision;
+
+            tag_elems[2].name      = "type";
+            tag_elems[2].t         = NEU_JSON_INT;
+            tag_elems[2].v.val_int = neu_json_type_transfer(p_tag->t);
+        }
+
+        for (int k = 0; k < p_tag->n_meta; k++) {
+            tag_elems[3 + k].name = p_tag->metas[k].name;
+            tag_elems[3 + k].t    = p_tag->metas[k].t;
+            tag_elems[3 + k].v    = p_tag->metas[k].value;
+        }
+
+        tag_array =
+            neu_json_encode_array(tag_array, tag_elems, 3 + p_tag->n_meta);
+        p_tag++;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "tags",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = tag_array,
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
 int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
 {
     void *json_obj = neu_json_decode_new(buf);

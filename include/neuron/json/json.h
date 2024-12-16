@@ -28,6 +28,14 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+typedef enum neu_json_type_ecp {
+    NEU_JSON_ECP_UNDEFINE = 0,
+    NEU_JSON_ECP_BOOL     = 1,
+    NEU_JSON_ECP_INT      = 2,
+    NEU_JSON_ECP_FLOAT    = 3,
+    NEU_JSON_ECP_STRING   = 4,
+} neu_json_type_ecp_e;
+
 typedef enum neu_json_type {
     NEU_JSON_UNDEFINE = 0,
     NEU_JSON_INT      = 1,
@@ -156,6 +164,8 @@ void neu_json_elem_free(neu_json_elem_t *elem);
 
 /* New a empty josn array */
 void *neu_json_array();
+
+int neu_json_type_transfer(neu_json_type_e type);
 
 int   neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele);
 int   neu_json_decode(char *buf, int size, neu_json_elem_t *ele);

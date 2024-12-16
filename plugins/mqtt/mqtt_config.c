@@ -315,6 +315,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t upload_drv_state_interval = {
         .name = "upload_drv_state_interval", .t = NEU_JSON_INT
     };
+    neu_json_elem_t upload_err = {
+        .name       = "upload_err",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = true,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -348,7 +354,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     // format, required
     if (MQTT_UPLOAD_FORMAT_VALUES != format.v.val_int &&
-        MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int) {
+        MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int &&
+        MQTT_UPLOAD_FORMAT_ECP != format.v.val_int) {
         plog_error(plugin, "setting invalid format: %" PRIi64,
                    format.v.val_int);
         goto error;
@@ -435,6 +442,11 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    ret = neu_parse_param(setting, NULL, 1, &upload_err);
+    if (0 != ret) {
+        plog_notice(plugin, "setting upload_err failed");
+    }
+
     config->version                  = version.v.val_int;
     config->client_id                = client_id.v.val_str;
     config->qos                      = qos.v.val_int;
@@ -459,6 +471,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->upload_drv_state         = upload_drv_state.v.val_bool;
     config->heartbeat_topic          = upload_drv_state_topic.v.val_str;
     config->heartbeat_interval       = upload_drv_state_interval.v.val_int;
+    config->upload_err               = upload_err.v.val_bool;
 
     plog_notice(plugin, "config MQTT version    : %d", config->version);
     plog_notice(plugin, "config client-id       : %s", config->client_id);
@@ -474,6 +487,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
                 config->driver_action_resp_topic);
     plog_notice(plugin, "config upload-drv-state: %d",
                 config->upload_drv_state);
+    plog_notice(plugin, "config upload-err: %d", config->upload_err);
     if (config->upload_drv_state) {
         if (config->heartbeat_topic) {
             plog_notice(plugin, "config upload-drv-state-topic: %s",

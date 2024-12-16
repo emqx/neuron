@@ -62,8 +62,9 @@ typedef struct {
 } neu_json_read_resp_t;
 
 int neu_json_encode_read_resp(void *json_object, void *param);
-int neu_json_encode_read_resp1(void *json_object, void *param);
-int neu_json_encode_read_resp2(void *json_object, void *param);
+int neu_json_encode_read_resp1(void *json_object, void *param); // values
+int neu_json_encode_read_resp2(void *json_object, void *param); // tags
+int neu_json_encode_read_resp_ecp(void *json_object, void *param);
 int neu_json_encode_read_paginate_resp(void *json_object, void *param);
 
 typedef struct {

@@ -64,8 +64,29 @@ static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
     return 0;
 }
 
+void filter_error_tags(neu_reqresp_trans_data_t *data)
+{
+    if (!data || !data->tags) {
+        return;
+    }
+
+    UT_array *filtered_tags;
+    utarray_new(filtered_tags, neu_resp_tag_value_meta_icd());
+
+    neu_resp_tag_value_meta_t *tag_ptr = NULL;
+    while ((tag_ptr = (neu_resp_tag_value_meta_t *) utarray_next(data->tags,
+                                                                 tag_ptr))) {
+        if (tag_ptr->value.type != NEU_TYPE_ERROR) {
+            utarray_push_back(filtered_tags, tag_ptr);
+        }
+    }
+
+    utarray_free(data->tags);
+    data->tags = filtered_tags;
+}
+
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
-                           mqtt_upload_format_e format)
+                           mqtt_upload_format_e format, bool *skip)
 {
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
@@ -73,21 +94,39 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                                         .timestamp = global_timestamp };
     neu_json_read_resp_t     json     = { 0 };
 
+    if (!plugin->config.upload_err && skip != NULL) {
+        filter_error_tags(data);
+
+        if (utarray_len(data->tags) == 0) {
+            *skip = true;
+            return NULL;
+        }
+    }
+
     if (0 != tag_values_to_json(data->tags, &json)) {
         plog_error(plugin, "tag_values_to_json fail");
         return NULL;
     }
 
-    if (MQTT_UPLOAD_FORMAT_VALUES == format) { // values
+    switch (format) {
+    case MQTT_UPLOAD_FORMAT_VALUES:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else if (MQTT_UPLOAD_FORMAT_TAGS == format) { // tags
+        break;
+    case MQTT_UPLOAD_FORMAT_TAGS:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp2, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else {
+        break;
+    case MQTT_UPLOAD_FORMAT_ECP:
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp_ecp, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+        break;
+    default:
         plog_warn(plugin, "invalid upload format: %d", format);
+        break;
     }
 
     for (int i = 0; i < json.n_tag; i++) {
@@ -802,8 +841,12 @@ int handle_trans_data(neu_plugin_t *            plugin,
             break;
         }
 
-        char *json_str =
-            generate_upload_json(plugin, trans_data, plugin->config.format);
+        bool  skip_none = false;
+        char *json_str  = generate_upload_json(
+            plugin, trans_data, plugin->config.format, &skip_none);
+        if (skip_none) {
+            break;
+        }
         if (NULL == json_str) {
             plog_error(plugin, "generate upload json fail");
             rv = NEU_ERR_EINTERNAL;

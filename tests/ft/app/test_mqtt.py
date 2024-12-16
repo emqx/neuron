@@ -24,7 +24,13 @@ GROUP = "group"
 INTERVAL = 100
 TAG0 = {
     "name": "tag0",
-    "address": "1!400001.",
+    "address": "1!400001",
+    "attribute": config.NEU_TAG_ATTRIBUTE_RW,
+    "type": config.NEU_TYPE_INT16,
+}
+TAG_ERR = {
+    "name": "tag_err",
+    "address": "100!400001",
     "attribute": config.NEU_TAG_ATTRIBUTE_RW,
     "type": config.NEU_TYPE_INT16,
 }
@@ -200,6 +206,14 @@ def conf_upload_driver_state(conf_base):
         "upload_drv_state": True,
         "upload_drv_state_topic": f"/neuron/{NODE}/state/update",
         "upload_drv_state_interval": 1,
+    }
+
+
+@pytest.fixture(scope="function")
+def conf_upload_err(conf_base):
+    return {
+        **conf_base,
+        "upload_err": False,
     }
 
 
@@ -461,6 +475,24 @@ class TestMQTT:
                 len(TAGS) + 1 == len(msg["values"]) + len(msg["errors"])
         finally:
             api.del_tags(DRIVER, GROUP, [tag["name"] for tag in TAGS])
+
+    @description(
+        given="MQTT node",
+        when="read an error tag and set upload_err false",
+        then="broker should not receive error data on upload topic",
+    )
+    def test_mqtt_upload_err(self, mocker, conf_upload_err):
+        api.node_setting_check(NODE, conf_upload_err)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+
+        try:
+            api.add_tags_check(DRIVER, GROUP, tags=[TAG_ERR])
+            msg = mocker.get(UPLOAD_TOPIC, timeout=3)
+            assert msg is not None
+            assert 0 == len(msg["errors"])
+
+        finally:
+            api.del_tags(DRIVER, GROUP, [TAG_ERR["name"]])
 
     @description(
         given="MQTT node",
