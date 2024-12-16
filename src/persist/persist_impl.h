@@ -256,6 +256,14 @@ struct neu_persister_vtbl_s {
                         const char *group_name);
 
     /**
+     * Load all user infos.
+     * @param[out] user_infos           used to return pointer to heap allocated
+     *                                  vector of neu_persist_user_info_t.
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*load_users)(neu_persister_t *self, UT_array **user_infos);
+
+    /**
      * Save user info.
      * @param user                      user info
      * @return 0 on success, none-zero on failure

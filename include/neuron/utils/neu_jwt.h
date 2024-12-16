@@ -29,7 +29,7 @@ int  neu_jwt_init(const char *dir_path);
 int  neu_jwt_new(char **token, const char *user);
 int  neu_jwt_validate(char *b_token);
 void neu_jwt_destroy();
-int  neu_jwt_decode_user(char *token, char *user);
+void neu_jwt_decode_user_after_valid(char *bearer, char *user);
 
 #ifdef __cplusplus
 }

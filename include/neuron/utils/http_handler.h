@@ -90,7 +90,7 @@
                     free(result_error);                                      \
                     return;                                                  \
                 } else {                                                     \
-                    neu_jwt_decode_user(jwt, user);                          \
+                    neu_jwt_decode_user_after_valid(jwt, user);              \
                 }                                                            \
             });                                                              \
         }                                                                    \

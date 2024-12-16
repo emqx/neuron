@@ -110,6 +110,8 @@ int neu_sqlite_persister_load_node_setting(neu_persister_t *  self,
                                            const char **const setting);
 int neu_sqlite_persister_delete_node_setting(neu_persister_t *self,
                                              const char *     node_name);
+int neu_sqlite_persister_load_users(neu_persister_t *self,
+                                    UT_array **      user_infos);
 int neu_sqlite_persister_store_user(neu_persister_t *              self,
                                     const neu_persist_user_info_t *user);
 int neu_sqlite_persister_update_user(neu_persister_t *              self,

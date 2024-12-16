@@ -28,8 +28,6 @@ extern "C" {
 
 #include "persist/persist.h"
 
-#define USER_NAME_LEN 32
-
 typedef struct {
     char *name;
     char *hash;
@@ -43,9 +41,9 @@ int neu_user_update_password(neu_user_t *user, const char *new_password);
 neu_user_t *neu_load_user(const char *name);
 int         neu_save_user(neu_user_t *user);
 
-int neu_user_list();
-int neu_user_add(const char *name, const char *password);
-int neu_user_delete(const char *name);
+UT_array *neu_user_list();
+int       neu_user_add(const char *name, const char *password);
+int       neu_user_delete(const char *name);
 
 #ifdef __cplusplus
 }

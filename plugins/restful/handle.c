@@ -145,6 +145,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/system/ctl",
     },
+    {
+        .url = "/api/v2/user",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -466,6 +469,30 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/system/ctl",
         .value.handler = handle_system_ctl,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/user",
+        .value.handler = handle_get_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/user",
+        .value.handler = handle_add_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/user",
+        .value.handler = handle_update_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/user",
+        .value.handler = handle_delete_user,
     },
 };
 

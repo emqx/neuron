@@ -222,30 +222,6 @@ err_out:
     return -1;
 }
 
-int neu_jwt_decode_user(char *token, char *user)
-{
-    jwt_t *jwt = NULL;
-    int    ret = -1;
-
-    ret = jwt_decode(&jwt, token, NULL, 0);
-    if (ret != 0) {
-        zlog_error(neuron, "jwt decode error: %d", ret);
-        return -1;
-    }
-
-    const char *user_grant = jwt_get_grant(jwt, "user");
-
-    if (NULL == user_grant) {
-        zlog_error(neuron, "jwt get user grant error, the token is: %s", token);
-        jwt_free(jwt);
-        return -1;
-    }
-
-    strncpy(user, user_grant, strlen(user_grant));
-    jwt_free(jwt);
-    return 0;
-}
-
 static void *neu_jwt_decode(char *token)
 {
     jwt_t *     jwt      = NULL;
@@ -363,6 +339,26 @@ int neu_jwt_validate(char *b_token)
     jwt_free(jwt);
 
     return NEU_ERR_SUCCESS;
+}
+
+void neu_jwt_decode_user_after_valid(char *bearer, char *user)
+{
+    char * token = &bearer[strlen("Bearar ")];
+    jwt_t *jwt   = NULL;
+    if (0 != jwt_decode(&jwt, token, NULL, 0)) {
+        return;
+    }
+
+    const char *user_grant = jwt_get_grant(jwt, "user");
+    if (NULL == user_grant) {
+        const char *admin = "admin";
+        strncpy(user, admin, strlen(admin));
+        jwt_free(jwt);
+        return;
+    }
+
+    strncpy(user, user_grant, strlen(user_grant));
+    jwt_free(jwt);
 }
 
 void neu_jwt_destroy()

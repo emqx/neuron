@@ -31,4 +31,9 @@ void handle_get_plugin_schema(nng_aio *aio);
 void handle_get_plugin_schema_resp(nng_aio *aio, neu_resp_check_schema_t *resp);
 void handle_status(nng_aio *aio);
 
+void handle_get_user(nng_aio *aio);
+void handle_add_user(nng_aio *aio);
+void handle_update_user(nng_aio *aio);
+void handle_delete_user(nng_aio *aio);
+
 #endif
