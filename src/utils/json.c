@@ -155,6 +155,26 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
     return ob;
 }
 
+int neu_json_type_transfer(neu_json_type_e type)
+{
+    switch (type) {
+    case NEU_JSON_BOOL:
+        return NEU_JSON_ECP_BOOL;
+    case NEU_JSON_INT:
+    case NEU_JSON_BIT:
+        return NEU_JSON_ECP_INT;
+    case NEU_JSON_FLOAT:
+    case NEU_JSON_DOUBLE:
+        return NEU_JSON_ECP_FLOAT;
+    case NEU_JSON_STR:
+        return NEU_JSON_ECP_STRING;
+    default:
+        break;
+    }
+
+    return NEU_JSON_ECP_STRING;
+}
+
 static json_t *encode_object(json_t *object, neu_json_elem_t ele)
 {
     json_t *ob = object;

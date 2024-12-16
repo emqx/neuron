@@ -70,6 +70,10 @@
 				{
 					"key": "tags-format",
 					"value": 1
+				},
+				{
+					"key": "ECP-format",
+					"value": 2
 				}
 			]
 		}

@@ -108,16 +108,25 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
         return NULL;
     }
 
-    if (MQTT_UPLOAD_FORMAT_VALUES == format) { // values
+    switch (format) {
+    case MQTT_UPLOAD_FORMAT_VALUES:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else if (MQTT_UPLOAD_FORMAT_TAGS == format) { // tags
+        break;
+    case MQTT_UPLOAD_FORMAT_TAGS:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp2, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else {
+        break;
+    case MQTT_UPLOAD_FORMAT_ECP:
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp_ecp, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+        break;
+    default:
         plog_warn(plugin, "invalid upload format: %d", format);
+        break;
     }
 
     for (int i = 0; i < json.n_tag; i++) {

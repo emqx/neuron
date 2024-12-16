@@ -354,7 +354,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     // format, required
     if (MQTT_UPLOAD_FORMAT_VALUES != format.v.val_int &&
-        MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int) {
+        MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int &&
+        MQTT_UPLOAD_FORMAT_ECP != format.v.val_int) {
         plog_error(plugin, "setting invalid format: %" PRIi64,
                    format.v.val_int);
         goto error;

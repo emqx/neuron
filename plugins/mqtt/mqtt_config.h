@@ -33,6 +33,7 @@ extern "C" {
 typedef enum {
     MQTT_UPLOAD_FORMAT_VALUES = 0,
     MQTT_UPLOAD_FORMAT_TAGS   = 1,
+    MQTT_UPLOAD_FORMAT_ECP    = 2,
 } mqtt_upload_format_e;
 
 static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
@@ -42,6 +43,8 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
         return "format-values";
     case MQTT_UPLOAD_FORMAT_TAGS:
         return "format-tags";
+    case MQTT_UPLOAD_FORMAT_ECP:
+        return "ECP-format";
     default:
         return NULL;
     }
