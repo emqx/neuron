@@ -73,7 +73,7 @@ void handle_login(nng_aio *aio)
                 char *token  = NULL;
                 char *result = NULL;
 
-                int ret = neu_jwt_new(&token);
+                int ret = neu_jwt_new(&token, req->name);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
                         neu_http_response(aio, error_code.error, result_error);
@@ -101,7 +101,62 @@ void handle_login(nng_aio *aio)
 
 void handle_add_user(nng_aio *aio)
 {
-    (void) aio;
+    char current_user[USER_NAME_LEN] = { 0 };
+    NEU_VALIDATE_JWT_WITH_USER(aio, current_user);
+    NEU_PROCESS_HTTP_REQUEST(
+        aio, neu_json_login_req_t, neu_json_decode_login_req, {
+            neu_json_login_resp_t login_resp = { 0 };
+            neu_user_t *          user       = neu_load_user(req->name);
+            int                   pass_len   = strlen(req->pass);
+
+            if (0 == strlen(current_user)) {
+                nlog_error("check current user failed");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+
+            if (NULL == user) {
+                nlog_error("could not find user `%s`", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            } else if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
+                       pass_len > NEU_USER_PASSWORD_MAX_LEN) {
+                nlog_error("user `%s` password too short or too long",
+                           req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            } else if (neu_user_check_password(user, req->pass)) {
+
+                char *token  = NULL;
+                char *result = NULL;
+
+                int ret = neu_jwt_new(&token, req->name);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
+                        neu_http_response(aio, error_code.error, result_error);
+                        jwt_free_str(token);
+                    });
+                }
+
+                login_resp.token = token;
+
+                neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp,
+                                      &result);
+                neu_http_ok(aio, result);
+                jwt_free_str(token);
+                free(result);
+            } else {
+                nlog_error("user `%s` password check fail", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+
+            neu_user_free(user);
+        })
 }
 
 void handle_delete_user(nng_aio *aio)

@@ -145,7 +145,7 @@ int neu_jwt_init(const char *dir_path)
     return 0;
 }
 
-int neu_jwt_new(char **token)
+int neu_jwt_new(char **token, const char *user)
 {
     struct timeval tv      = { 0 };
     jwt_alg_t      opt_alg = JWT_ALG_RS256;
@@ -185,6 +185,14 @@ int neu_jwt_new(char **token)
         goto err_out;
     }
 
+    // only normal user need to add user grant
+    // do not change the original logic
+    if (0 != strcmp(user, "admin")) {
+        if (0 != jwt_add_grant(jwt, "user", user)) {
+            goto err_out;
+        }
+    }
+
     ret = jwt_set_alg(jwt, opt_alg, (const unsigned char *) neuron_private_key,
                       strlen(neuron_private_key));
     if (ret != 0) {
@@ -212,6 +220,30 @@ err_out:
 
     jwt_free(jwt);
     return -1;
+}
+
+int neu_jwt_decode_user(char *token, char *user)
+{
+    jwt_t *jwt = NULL;
+    int    ret = -1;
+
+    ret = jwt_decode(&jwt, token, NULL, 0);
+    if (ret != 0) {
+        zlog_error(neuron, "jwt decode error: %d", ret);
+        return -1;
+    }
+
+    const char *user_grant = jwt_get_grant(jwt, "user");
+
+    if (NULL == user_grant) {
+        zlog_error(neuron, "jwt get user grant error, the token is: %s", token);
+        jwt_free(jwt);
+        return -1;
+    }
+
+    strncpy(user, user_grant, strlen(user_grant));
+    jwt_free(jwt);
+    return 0;
 }
 
 static void *neu_jwt_decode(char *token)

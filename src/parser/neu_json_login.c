@@ -129,3 +129,66 @@ int neu_json_encode_login_resp(void *json_object, void *param)
 
     return ret;
 }
+
+int neu_json_decode_add_user_req(char *buf, neu_json_password_req_t **result)
+{
+    int ret = 0;
+
+    neu_json_password_req_t *req = calloc(1, sizeof(neu_json_password_req_t));
+    neu_json_elem_t          req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "old_pass",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "new_pass",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->name     = req_elems[0].v.val_str;
+    req->old_pass = req_elems[1].v.val_str;
+    req->new_pass = req_elems[2].v.val_str;
+
+    *result = req;
+    return ret;
+
+decode_fail:
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_add_user_req_free(neu_json_password_req_t *req)
+{
+    if (req) {
+        free(req->name);
+        free(req->old_pass);
+        free(req->new_pass);
+
+        free(req);
+    }
+}
+
+int neu_json_encode_add_user_resp(void *json_object, void *param)
+{
+    int                    ret  = 0;
+    neu_json_login_resp_t *resp = (neu_json_login_resp_t *) param;
+
+    neu_json_elem_t resp_elems[] = { {
+        .name      = "token",
+        .t         = NEU_JSON_STR,
+        .v.val_str = resp->token,
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}

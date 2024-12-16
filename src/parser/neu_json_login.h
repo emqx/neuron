@@ -54,6 +54,9 @@ typedef struct {
 
 int neu_json_encode_login_resp(void *json_object, void *param);
 
+int  neu_json_decode_add_user_req(char *buf, neu_json_password_req_t **result);
+void neu_json_decode_add_user_req_free(neu_json_password_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif
