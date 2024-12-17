@@ -143,7 +143,7 @@ int neu_json_decode_add_user_req(char *buf, neu_json_add_user_req_t **result)
             .t    = NEU_JSON_STR,
         },
         {
-            .name = "pass",
+            .name = "password",
             .t    = NEU_JSON_STR,
         },
 
@@ -175,12 +175,41 @@ void neu_json_decode_add_user_req_free(neu_json_add_user_req_t *req)
 
 int neu_json_decode_update_user_req(char *buf, neu_json_password_req_t **result)
 {
-    return neu_json_decode_password_req(buf, result);
+    int                      ret = 0;
+    neu_json_password_req_t *req = calloc(1, sizeof(neu_json_password_req_t));
+    neu_json_elem_t          req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "new_password",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->name     = req_elems[0].v.val_str;
+    req->new_pass = req_elems[1].v.val_str;
+
+    *result = req;
+    return ret;
+
+decode_fail:
+    free(req);
+    return -1;
 }
 
 void neu_json_decode_update_user_req_free(neu_json_password_req_t *req)
 {
-    neu_json_decode_password_req_free(req);
+    if (req) {
+        free(req->name);
+        free(req->new_pass);
+        free(req);
+    }
 }
 
 int neu_json_decode_delete_user_req(char *                       buf,

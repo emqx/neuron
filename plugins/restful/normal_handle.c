@@ -218,18 +218,6 @@ void handle_update_user(nng_aio *aio)
                 return;
             }
 
-            // old password length check
-            int old_pass_len = strlen(req->old_pass);
-            if (old_pass_len < NEU_USER_PASSWORD_MIN_LEN ||
-                old_pass_len > NEU_USER_PASSWORD_MAX_LEN) {
-                nlog_error("user `%s` old password too short or too long",
-                           req->name);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD_LEN, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-
             // only admin & current user can update user
             if (0 != strcmp(req->name, "admin") &&
                 0 != strcmp(req->name, current_user)) {
@@ -247,17 +235,6 @@ void handle_update_user(nng_aio *aio)
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NOT_EXISTS, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
-                return;
-            }
-
-            // check old password
-            if (!neu_user_check_password(user, req->old_pass)) {
-                nlog_error("user `%s` old password check fail", req->name);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-
-                neu_user_free(user);
                 return;
             }
 
