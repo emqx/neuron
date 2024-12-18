@@ -79,7 +79,7 @@
 		}
 	},
 	"upload_err": {
-		"name": "Upload Tag Error Code ",
+		"name": "Upload Tag Error Code",
 		"name_zh": "上报点位错误码",
 		"description": "When data tag collection reports an error, report the tag error code.",
 		"description_zh": "点位采集报错时，上报点位错误码。",

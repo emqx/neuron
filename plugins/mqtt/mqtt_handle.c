@@ -108,6 +108,8 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
         return NULL;
     }
 
+    int ret;
+
     switch (format) {
     case MQTT_UPLOAD_FORMAT_VALUES:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
@@ -120,9 +122,14 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                                   &json_str);
         break;
     case MQTT_UPLOAD_FORMAT_ECP:
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp_ecp, &header,
-                                  neu_json_encode_read_periodic_resp,
-                                  &json_str);
+        ret = neu_json_encode_with_mqtt_ecp(
+            &json, neu_json_encode_read_resp_ecp, &header,
+            neu_json_encode_read_periodic_resp, &json_str);
+        if (ret == -2) {
+            *skip = true;
+            plog_warn(plugin, "driver:%s group:%s, no valid tags", data->driver,
+                      data->group);
+        }
         break;
     default:
         plog_warn(plugin, "invalid upload format: %d", format);
