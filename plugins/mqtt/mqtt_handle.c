@@ -293,6 +293,13 @@ static int json_value_to_tag_value(union neu_json_value *req,
             value->value.i64s.i64s[i] = req->val_array_int64.i64s[i];
         }
         break;
+    case NEU_JSON_ARRAY_STR:
+        value->type              = NEU_TYPE_ARRAY_STRING;
+        value->value.strs.length = req->val_array_str.length;
+        for (int i = 0; i < req->val_array_str.length; i++) {
+            value->value.strs.strs[i] = req->val_array_str.p_strs[i];
+        }
+        break;
     case NEU_JSON_OBJECT:
         value->type       = NEU_TYPE_CUSTOM;
         value->value.json = req->val_object;

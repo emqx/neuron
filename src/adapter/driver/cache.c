@@ -104,6 +104,11 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
                 json_decref(elem->value.value.json);
                 elem->value.value.json = NULL;
             }
+        } else if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
+            for (int i = 0; i < elem->value.value.strs.length; i++) {
+                free(elem->value.value.strs.strs[i]);
+                elem->value.value.strs.strs[i] = NULL;
+            }
         }
 
         free(elem);
@@ -399,6 +404,18 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     }
                 }
                 break;
+            case NEU_TYPE_ARRAY_STRING:
+                if (elem->value_old.value.strs.length !=
+                    value.value.strs.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value_old.value.strs.strs,
+                               value.value.strs.strs,
+                               value.value.strs.length * sizeof(char *)) != 0) {
+                        elem->changed = true;
+                    }
+                }
+                break;
             case NEU_TYPE_CUSTOM: {
                 if (json_equal(elem->value_old.value.json, value.value.json) !=
                     0) {
@@ -602,6 +619,17 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     }
                 }
                 break;
+            case NEU_TYPE_ARRAY_STRING:
+                if (elem->value.value.strs.length != value.value.strs.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value.value.strs.strs,
+                               value.value.strs.strs,
+                               value.value.strs.length * sizeof(char *)) != 0) {
+                        elem->changed = true;
+                    }
+                }
+                break;
             case NEU_TYPE_PTR: {
                 if (elem->value.value.ptr.length != value.value.ptr.length) {
                     elem->changed = true;
@@ -668,14 +696,43 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
             memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
                    value.value.ptr.length);
-        } else if (value.type == NEU_TYPE_CUSTOM ||
-                   value.type == NEU_TYPE_ERROR) {
-            if (elem->value.type == NEU_TYPE_CUSTOM &&
-                elem->value.value.json != NULL) {
-                json_decref(elem->value.value.json);
-                elem->value.value.json = NULL;
+        } else if (value.type == NEU_TYPE_CUSTOM) {
+            if (elem->value.type == NEU_TYPE_CUSTOM) {
+                if (elem->value.value.json != NULL) {
+                    json_decref(elem->value.value.json);
+                    elem->value.value.json = NULL;
+                }
             }
+
             elem->value.value.json = value.value.json;
+
+        } else if (value.type == NEU_TYPE_ARRAY_STRING) {
+            if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
+                for (int i = 0; i < elem->value.value.strs.length; i++) {
+                    free(elem->value.value.strs.strs[i]);
+                    elem->value.value.strs.strs[i] = NULL;
+                }
+            }
+            elem->value.value.strs.length = value.value.strs.length;
+            for (int i = 0; i < value.value.strs.length; i++) {
+                elem->value.value.strs.strs[i] = value.value.strs.strs[i];
+            }
+
+        } else if (value.type == NEU_TYPE_ERROR) {
+            if (elem->value.type == NEU_TYPE_CUSTOM) {
+                if (elem->value.value.json != NULL) {
+                    json_decref(elem->value.value.json);
+                    elem->value.value.json = NULL;
+                }
+            }
+
+            if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
+                for (int i = 0; i < elem->value.value.strs.length; i++) {
+                    free(elem->value.value.strs.strs[i]);
+                    elem->value.value.strs.strs[i] = NULL;
+                }
+            }
+            elem->value.value = value.value;
         } else {
             elem->value.value = value.value;
         }
@@ -813,6 +870,13 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             value->value.value.f64s.length = elem->value.value.f64s.length;
             memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
                    elem->value.value.f64s.length * sizeof(double));
+            break;
+        case NEU_TYPE_ARRAY_STRING:
+            value->value.value.strs.length = elem->value.value.strs.length;
+            for (int i = 0; i < elem->value.value.strs.length; i++) {
+                value->value.value.strs.strs[i] =
+                    strdup(elem->value.value.strs.strs[i]);
+            }
             break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;
@@ -958,6 +1022,13 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
                    elem->value.value.f64s.length * sizeof(double));
             break;
+        case NEU_TYPE_ARRAY_STRING:
+            value->value.value.strs.length = elem->value.value.strs.length;
+            for (int i = 0; i < elem->value.value.strs.length; i++) {
+                value->value.value.strs.strs[i] =
+                    strdup(elem->value.value.strs.strs[i]);
+            }
+            break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;
             value->value.value.ptr.type   = elem->value.value.ptr.type;
@@ -1009,6 +1080,11 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
             if (elem->value.value.json != NULL) {
                 json_decref(elem->value.value.json);
                 elem->value.value.json = NULL;
+            }
+        } else if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
+            for (int i = 0; i < elem->value.value.strs.length; i++) {
+                free(elem->value.value.strs.strs[i]);
+                elem->value.value.strs.strs[i] = NULL;
             }
         }
         free(elem);

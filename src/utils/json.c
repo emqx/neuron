@@ -305,6 +305,17 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         json_object_set_new(ob, ele.name, array);
         break;
     }
+    case NEU_JSON_ARRAY_STR: {
+        void *array = json_array();
+
+        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+            json_array_append_new(array,
+                                  json_string(ele.v.val_array_str.p_strs[i]));
+        }
+
+        json_object_set_new(ob, ele.name, array);
+        break;
+    }
     case NEU_JSON_OBJECT:
         json_object_set_new(ob, ele.name, ele.v.val_object);
         break;
@@ -668,6 +679,9 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     }
     case NEU_JSON_OBJECT:
         ele->v.val_object = ob;
+        if (ele->name == NULL) {
+            json_incref(ele->v.val_object);
+        }
         break;
     default:
         ele->ok = false;
