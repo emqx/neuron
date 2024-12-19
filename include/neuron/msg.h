@@ -893,6 +893,11 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
         {
             if (tag_value->value.type == NEU_TYPE_PTR) {
                 free(tag_value->value.value.ptr.ptr);
+            } else if (tag_value->value.type == NEU_TYPE_ARRAY_STRING) {
+                for (size_t i = 0; i < tag_value->value.value.strs.length;
+                     ++i) {
+                    free(tag_value->value.value.strs.strs[i]);
+                }
             }
         }
         utarray_free(data->tags);
@@ -1086,6 +1091,12 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
             tag_value->value.value.f64s.length;
         tag_json->value.val_array_double.f64s =
             tag_value->value.value.f64s.f64s;
+        break;
+    case NEU_TYPE_ARRAY_STRING:
+        tag_json->t = NEU_JSON_ARRAY_STR;
+        tag_json->value.val_array_str.length =
+            tag_value->value.value.strs.length;
+        tag_json->value.val_array_str.p_strs = tag_value->value.value.strs.strs;
         break;
     case NEU_TYPE_CUSTOM:
         tag_json->t                = NEU_JSON_OBJECT;
@@ -1288,6 +1299,12 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
             tag_value->value.value.f64s.length;
         tag_json->value.val_array_double.f64s =
             tag_value->value.value.f64s.f64s;
+        break;
+    case NEU_TYPE_ARRAY_STRING:
+        tag_json->t = NEU_JSON_ARRAY_STR;
+        tag_json->value.val_array_str.length =
+            tag_value->value.value.strs.length;
+        tag_json->value.val_array_str.p_strs = tag_value->value.value.strs.strs;
         break;
     case NEU_TYPE_CUSTOM:
         tag_json->t                = NEU_JSON_OBJECT;

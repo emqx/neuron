@@ -363,6 +363,14 @@ void handle_write(nng_aio *aio)
                         req->value.val_array_bool.bools[i];
                 }
                 break;
+            case NEU_JSON_ARRAY_STR:
+                cmd.value.type              = NEU_TYPE_ARRAY_STRING;
+                cmd.value.value.strs.length = req->value.val_array_str.length;
+                for (int i = 0; i < req->value.val_array_str.length; i++) {
+                    cmd.value.value.strs.strs[i] =
+                        req->value.val_array_str.p_strs[i];
+                }
+                break;
             case NEU_JSON_OBJECT:
                 cmd.value.type       = NEU_TYPE_CUSTOM;
                 cmd.value.value.json = req->value.val_object;
@@ -562,6 +570,16 @@ void handle_write_tags(nng_aio *aio)
                          k < req->tags[i].value.val_array_bool.length; k++) {
                         cmd.tags[i].value.value.bools.bools[k] =
                             req->tags[i].value.val_array_bool.bools[k];
+                    }
+                    break;
+                case NEU_JSON_ARRAY_STR:
+                    cmd.tags[i].value.type = NEU_TYPE_ARRAY_STRING;
+                    cmd.tags[i].value.value.strs.length =
+                        req->tags[i].value.val_array_str.length;
+                    for (int k = 0; k < req->tags[i].value.val_array_str.length;
+                         k++) {
+                        cmd.tags[i].value.value.strs.strs[k] =
+                            req->tags[i].value.val_array_str.p_strs[k];
                     }
                     break;
                 case NEU_JSON_OBJECT:
@@ -802,6 +820,13 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
         }
+
+        if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
+            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
+                 j++) {
+                free(api_res.tags[i].value.val_array_str.p_strs[j]);
+            }
+        }
     }
     neu_http_ok(aio, result);
     free(api_res.tags);
@@ -941,6 +966,13 @@ void handle_read_paginate_resp(nng_aio *                       aio,
     for (int i = 0; i < api_res.n_tag; i++) {
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
+        }
+
+        if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
+            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
+                 j++) {
+                free(api_res.tags[i].value.val_array_str.p_strs[j]);
+            }
         }
     }
     neu_http_ok(aio, result);

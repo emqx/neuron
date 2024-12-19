@@ -751,6 +751,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_INT64:
     case NEU_TYPE_ARRAY_CHAR:
     case NEU_TYPE_ARRAY_BOOL:
+    case NEU_TYPE_ARRAY_STRING:
     case NEU_TYPE_CUSTOM:
         break;
     case NEU_TYPE_BIT:
@@ -2184,6 +2185,11 @@ static int report_callback(void *usr_data)
                     free(tag_value->value.value.ptr.ptr);
                 } else if (tag_value->value.type == NEU_TYPE_CUSTOM) {
                     json_decref(tag_value->value.value.json);
+                } else if (tag_value->value.type == NEU_TYPE_ARRAY_STRING) {
+                    for (size_t i = 0; i < tag_value->value.value.strs.length;
+                         ++i) {
+                        free(tag_value->value.value.strs.strs[i]);
+                    }
                 }
             }
             utarray_free(data->tags);
@@ -2487,6 +2493,10 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                 free(value.value.value.ptr.ptr);
             } else if (value.value.type == NEU_TYPE_CUSTOM) {
                 json_decref(value.value.value.json);
+            } else if (value.value.type == NEU_TYPE_ARRAY_STRING) {
+                for (size_t i = 0; i < value.value.value.strs.length; ++i) {
+                    free(value.value.value.strs.strs[i]);
+                }
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
@@ -2651,6 +2661,12 @@ static void read_group(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else if (value.value.type == NEU_TYPE_CUSTOM) {
+                json_decref(value.value.value.json);
+            } else if (value.value.type == NEU_TYPE_ARRAY_STRING) {
+                for (size_t i = 0; i < value.value.value.strs.length; ++i) {
+                    free(value.value.value.strs.strs[i]);
+                }
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
@@ -2829,6 +2845,12 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else if (value.value.type == NEU_TYPE_CUSTOM) {
+                json_decref(value.value.value.json);
+            } else if (value.value.type == NEU_TYPE_ARRAY_STRING) {
+                for (size_t i = 0; i < value.value.value.strs.length; ++i) {
+                    free(value.value.value.strs.strs[i]);
+                }
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;

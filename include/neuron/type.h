@@ -67,6 +67,7 @@ typedef enum {
     NEU_TYPE_ARRAY_FLOAT   = 31,
     NEU_TYPE_ARRAY_DOUBLE  = 32,
     NEU_TYPE_ARRAY_BOOL    = 33,
+    NEU_TYPE_ARRAY_STRING  = 34,
     NEU_TYPE_CUSTOM        = 40,
 } neu_type_e;
 
@@ -139,6 +140,8 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_ARRAY_FLOAT";
     case NEU_TYPE_ARRAY_BOOL:
         return "NEU_TYPE_ARRAY_BOOL";
+    case NEU_TYPE_ARRAY_STRING:
+        return "NEU_TYPE_ARRAY_STRING";
     case NEU_TYPE_CUSTOM:
         return "NEU_TYPE_CUSTOM";
     }
@@ -214,6 +217,11 @@ typedef struct {
     uint8_t length;
 } neu_value_array_bool_t;
 
+typedef struct {
+    char *  strs[NEU_VALUE_SIZE];
+    uint8_t length;
+} neu_value_array_string_t;
+
 typedef union {
     bool                     boolean;
     int8_t                   i8;
@@ -241,6 +249,7 @@ typedef union {
     neu_value_array_float_t  f32s;
     neu_value_array_double_t f64s;
     neu_value_array_bool_t   bools;
+    neu_value_array_string_t strs;
 } neu_value_u;
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)
