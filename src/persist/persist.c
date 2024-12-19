@@ -480,3 +480,8 @@ int neu_persister_delete_user(const char *user_name)
 {
     return g_impl->vtbl->delete_user(g_impl, user_name);
 }
+
+int neu_persister_load_users(UT_array **user_infos)
+{
+    return g_impl->vtbl->load_users(g_impl, user_infos);
+}

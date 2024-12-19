@@ -78,6 +78,24 @@
         }                                                                    \
     }
 
+#define NEU_VALIDATE_JWT_WITH_USER(aio, user)                                \
+    {                                                                        \
+        if (!disable_jwt) {                                                  \
+            char *jwt =                                                      \
+                (char *) neu_http_get_header(aio, (char *) "Authorization"); \
+                                                                             \
+            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                 \
+                if (error_code.error != NEU_ERR_SUCCESS) {                   \
+                    neu_http_response(aio, error_code.error, result_error);  \
+                    free(result_error);                                      \
+                    return;                                                  \
+                } else {                                                     \
+                    neu_jwt_decode_user_after_valid(jwt, user);              \
+                }                                                            \
+            });                                                              \
+        }                                                                    \
+    }
+
 enum neu_http_method {
     NEU_HTTP_METHOD_UNDEFINE = 0x0,
     NEU_HTTP_METHOD_GET,

@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils/utarray.h"
+#include "utils/utextend.h"
 #include "json/json.h"
 
 #include "neu_json_login.h"
@@ -124,6 +126,157 @@ int neu_json_encode_login_resp(void *json_object, void *param)
         .t         = NEU_JSON_STR,
         .v.val_str = resp->token,
     } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
+int neu_json_decode_add_user_req(char *buf, neu_json_add_user_req_t **result)
+{
+    int ret = 0;
+
+    neu_json_add_user_req_t *req = calloc(1, sizeof(neu_json_add_user_req_t));
+    neu_json_elem_t          req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "password",
+            .t    = NEU_JSON_STR,
+        },
+
+    };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->name = req_elems[0].v.val_str;
+    req->pass = req_elems[1].v.val_str;
+
+    *result = req;
+    return ret;
+
+decode_fail:
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_add_user_req_free(neu_json_add_user_req_t *req)
+{
+    if (req) {
+        free(req->name);
+        free(req->pass);
+        free(req);
+    }
+}
+
+int neu_json_decode_update_user_req(char *buf, neu_json_password_req_t **result)
+{
+    int                      ret = 0;
+    neu_json_password_req_t *req = calloc(1, sizeof(neu_json_password_req_t));
+    neu_json_elem_t          req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "new_password",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->name     = req_elems[0].v.val_str;
+    req->new_pass = req_elems[1].v.val_str;
+
+    *result = req;
+    return ret;
+
+decode_fail:
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_update_user_req_free(neu_json_password_req_t *req)
+{
+    if (req) {
+        free(req->name);
+        free(req->new_pass);
+        free(req);
+    }
+}
+
+int neu_json_decode_delete_user_req(char *                       buf,
+                                    neu_json_delete_user_req_t **result)
+{
+    int                         ret = 0;
+    neu_json_delete_user_req_t *req =
+        calloc(1, sizeof(neu_json_delete_user_req_t));
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->name = req_elems[0].v.val_str;
+
+    *result = req;
+    return ret;
+
+decode_fail:
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_delete_user_req_free(neu_json_delete_user_req_t *req)
+{
+    if (req) {
+        free(req->name);
+        free(req);
+    }
+}
+
+int neu_json_encode_user_list_resp(void *json_object, void *param)
+{
+    int       ret        = 0;
+    UT_array *user_list  = (UT_array *) param;
+    void *    user_array = neu_json_array();
+
+    if (NULL != user_list) {
+        utarray_foreach(user_list, neu_json_user_resp_t *, p_user)
+        {
+            if (NULL != p_user) {
+                neu_json_elem_t user_elems[] = {
+                    {
+                        .name      = "name",
+                        .t         = NEU_JSON_STR,
+                        .v.val_str = p_user->name,
+                    },
+                };
+
+                neu_json_encode_array(user_array, user_elems,
+                                      NEU_JSON_ELEM_SIZE(user_elems));
+            }
+        }
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "users",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = user_array,
+    } };
+
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 

@@ -145,7 +145,7 @@ int neu_jwt_init(const char *dir_path)
     return 0;
 }
 
-int neu_jwt_new(char **token)
+int neu_jwt_new(char **token, const char *user)
 {
     struct timeval tv      = { 0 };
     jwt_alg_t      opt_alg = JWT_ALG_RS256;
@@ -183,6 +183,14 @@ int neu_jwt_new(char **token)
     ret = jwt_add_grant_int(jwt, "bodyEncode", 0);
     if (ret != 0) {
         goto err_out;
+    }
+
+    // only normal user need to add user grant
+    // do not change the original logic
+    if (0 != strcmp(user, "admin")) {
+        if (0 != jwt_add_grant(jwt, "user", user)) {
+            goto err_out;
+        }
     }
 
     ret = jwt_set_alg(jwt, opt_alg, (const unsigned char *) neuron_private_key,
@@ -331,6 +339,26 @@ int neu_jwt_validate(char *b_token)
     jwt_free(jwt);
 
     return NEU_ERR_SUCCESS;
+}
+
+void neu_jwt_decode_user_after_valid(char *bearer, char *user)
+{
+    char * token = &bearer[strlen("Bearar ")];
+    jwt_t *jwt   = NULL;
+    if (0 != jwt_decode(&jwt, token, NULL, 0)) {
+        return;
+    }
+
+    const char *user_grant = jwt_get_grant(jwt, "user");
+    if (NULL == user_grant) {
+        const char *admin = "admin";
+        strncpy(user, admin, strlen(admin));
+        jwt_free(jwt);
+        return;
+    }
+
+    strncpy(user, user_grant, strlen(user_grant));
+    jwt_free(jwt);
 }
 
 void neu_jwt_destroy()

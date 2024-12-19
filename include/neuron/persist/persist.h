@@ -311,6 +311,14 @@ int neu_persister_load_node_setting(const char *       node_name,
 int neu_persister_delete_node_setting(const char *node_name);
 
 /**
+ * Load all user infos.
+ * @param[out] user_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_user_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_users(UT_array **user_infos);
+
+/**
  * Save user info.
  * @param user                      user info
  * @return 0 on success, none-zero on failure

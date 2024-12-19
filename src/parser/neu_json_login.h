@@ -25,6 +25,7 @@
 #ifndef _NEU_JSON_API_NEU_JSON_LOGIN_H_
 #define _NEU_JSON_API_NEU_JSON_LOGIN_H_
 
+#include "define.h"
 #include "json/json.h"
 
 #ifdef __cplusplus
@@ -49,10 +50,34 @@ int  neu_json_decode_password_req(char *buf, neu_json_password_req_t **result);
 void neu_json_decode_password_req_free(neu_json_password_req_t *req);
 
 typedef struct {
+    char name[NEU_USER_NAME_MAX_LEN + 1];
+} neu_json_user_resp_t;
+
+typedef struct {
+    char *name;
+    char *pass;
+} neu_json_add_user_req_t;
+
+typedef struct {
+    char *name;
+} neu_json_delete_user_req_t;
+
+typedef struct {
     char *token;
 } neu_json_login_resp_t;
 
 int neu_json_encode_login_resp(void *json_object, void *param);
+
+int  neu_json_decode_add_user_req(char *buf, neu_json_add_user_req_t **result);
+void neu_json_decode_add_user_req_free(neu_json_add_user_req_t *req);
+int  neu_json_decode_update_user_req(char *                    buf,
+                                     neu_json_password_req_t **result);
+void neu_json_decode_update_user_req_free(neu_json_password_req_t *req);
+
+int  neu_json_decode_delete_user_req(char *                       buf,
+                                     neu_json_delete_user_req_t **result);
+void neu_json_decode_delete_user_req_free(neu_json_delete_user_req_t *req);
+int  neu_json_encode_user_list_resp(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

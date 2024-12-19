@@ -49,6 +49,10 @@ typedef enum {
     NEU_ERR_IP_ADDRESS_IN_USE        = 1016,
     NEU_ERR_BODY_TOO_BIG             = 1017,
     NEU_ERR_INVALID_CID              = 1018,
+    NEU_ERR_USER_ALREADY_EXISTS      = 1019,
+    NEU_ERR_USER_NOT_EXISTS          = 1020,
+    NEU_ERR_INVALID_USER_LEN         = 1021,
+    NEU_ERR_USER_NO_PERMISSION       = 1022,
 
     NEU_ERR_NODE_EXIST               = 2002,
     NEU_ERR_NODE_NOT_EXIST           = 2003,

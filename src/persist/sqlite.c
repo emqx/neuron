@@ -433,6 +433,7 @@ static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
     .store_node_setting  = neu_sqlite_persister_store_node_setting,
     .load_node_setting   = neu_sqlite_persister_load_node_setting,
     .delete_node_setting = neu_sqlite_persister_delete_node_setting,
+    .load_users          = neu_sqlite_persister_load_users,
     .store_user          = neu_sqlite_persister_store_user,
     .update_user         = neu_sqlite_persister_update_user,
     .load_user           = neu_sqlite_persister_load_user,
@@ -1153,6 +1154,71 @@ int neu_sqlite_persister_delete_node_setting(neu_persister_t *self,
 {
     return execute_sql(((neu_sqlite_persister_t *) self)->db,
                        "DELETE FROM settings WHERE node_name=%Q", node_name);
+}
+
+static UT_icd user_info_icd = {
+    sizeof(neu_persist_user_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_user_info_fini,
+};
+
+static int collect_user_info(sqlite3_stmt *stmt, UT_array **user_infos)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_user_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
+        }
+
+        info.name = name;
+        info.hash = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == info.hash) {
+            break;
+        }
+        utarray_push_back(*user_infos, &info);
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int neu_sqlite_persister_load_users(neu_persister_t *self,
+                                    UT_array **      user_infos)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, password FROM users";
+
+    utarray_new(*user_infos, &user_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (0 != collect_user_info(stmt, user_infos)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*user_infos);
+    *user_infos = NULL;
+    return NEU_ERR_EINTERNAL;
 }
 
 int neu_sqlite_persister_store_user(neu_persister_t *              self,

@@ -73,7 +73,7 @@ void handle_login(nng_aio *aio)
                 char *token  = NULL;
                 char *result = NULL;
 
-                int ret = neu_jwt_new(&token);
+                int ret = neu_jwt_new(&token, req->name);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
                         neu_http_response(aio, error_code.error, result_error);
@@ -94,6 +94,233 @@ void handle_login(nng_aio *aio)
                     neu_http_response(aio, error_code.error, result_error);
                 });
             }
+
+            neu_user_free(user);
+        })
+}
+
+void handle_get_user(nng_aio *aio)
+{
+    char current_user[NEU_USER_NAME_MAX_LEN + 1] = { 0 };
+    NEU_VALIDATE_JWT_WITH_USER(aio, current_user);
+
+    UT_icd    icd       = { sizeof(neu_json_user_resp_t), NULL, NULL, NULL };
+    UT_array *user_list = NULL;
+    utarray_new(user_list, &icd);
+
+    UT_array *user_infos = neu_user_list();
+    utarray_foreach(user_infos, neu_persist_user_info_t *, p_info)
+    {
+        neu_json_user_resp_t resp = { 0 };
+        strcpy(resp.name, p_info->name);
+        utarray_push_back(user_list, &resp);
+    }
+    utarray_free(user_infos);
+
+    char *result = NULL;
+    neu_json_encode_by_fn(user_list, neu_json_encode_user_list_resp, &result);
+    neu_http_ok(aio, result);
+    free(result);
+    utarray_free(user_list);
+}
+
+void handle_add_user(nng_aio *aio)
+{
+    char current_user[NEU_USER_NAME_MAX_LEN + 1] = { 0 };
+    NEU_VALIDATE_JWT_WITH_USER(aio, current_user);
+    NEU_PROCESS_HTTP_REQUEST(
+        aio, neu_json_add_user_req_t, neu_json_decode_add_user_req, {
+            // user name length check
+            int name_len = strlen(req->name);
+            if (name_len < NEU_USER_NAME_MIN_LEN ||
+                name_len > NEU_USER_NAME_MAX_LEN) {
+                nlog_error("user name too short or too long");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // user password length check
+            int pass_len = strlen(req->pass);
+            if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
+                pass_len > NEU_USER_PASSWORD_MAX_LEN) {
+                nlog_error("user `%s` password too short or too long",
+                           req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // only admin can add user
+            if (0 != strcmp(req->name, "admin")) {
+                nlog_error("only admin can add user");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // user already exists
+            neu_user_t *user = neu_load_user(req->name);
+            if (NULL != user) {
+                nlog_error("user `%s` already exists", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_ALREADY_EXISTS, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+
+                neu_user_free(user);
+                return;
+            }
+
+            // add user
+            if (0 != neu_user_add(req->name, req->pass)) {
+                nlog_error("add user `%s` fail", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
+        })
+}
+
+void handle_update_user(nng_aio *aio)
+{
+    char current_user[NEU_USER_NAME_MAX_LEN + 1] = { 0 };
+    NEU_VALIDATE_JWT_WITH_USER(aio, current_user);
+    NEU_PROCESS_HTTP_REQUEST(
+        aio, neu_json_password_req_t, neu_json_decode_update_user_req, {
+            // user name length check
+            int name_len = strlen(req->name);
+            if (name_len < NEU_USER_NAME_MIN_LEN ||
+                name_len > NEU_USER_NAME_MAX_LEN) {
+                nlog_error("user name too short or too long");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // new password length check
+            int new_pass_len = strlen(req->new_pass);
+            if (new_pass_len < NEU_USER_PASSWORD_MIN_LEN ||
+                new_pass_len > NEU_USER_PASSWORD_MAX_LEN) {
+                nlog_error("user `%s` new password too short or too long",
+                           req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // only admin & current user can update user
+            if (0 != strcmp(req->name, "admin") &&
+                0 != strcmp(req->name, current_user)) {
+                nlog_error("only admin & current user can update user");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // user not exists
+            neu_user_t *user = neu_load_user(req->name);
+            if (NULL == user) {
+                nlog_error("user `%s` not exists", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NOT_EXISTS, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // update user password
+            int rv = neu_user_update_password(user, req->new_pass);
+            if (0 != rv) {
+                nlog_error("update user `%s` fail", req->name);
+                NEU_JSON_RESPONSE_ERROR(rv, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+
+                neu_user_free(user);
+                return;
+            }
+
+            // save user
+            rv = neu_save_user(user);
+            if (0 != rv) {
+                nlog_error("update user `%s` fail", req->name);
+                NEU_JSON_RESPONSE_ERROR(rv, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+
+                neu_user_free(user);
+                return;
+            }
+
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
+
+            neu_user_free(user);
+        })
+}
+
+void handle_delete_user(nng_aio *aio)
+{
+    char current_user[NEU_USER_NAME_MAX_LEN + 1] = { 0 };
+    NEU_VALIDATE_JWT_WITH_USER(aio, current_user);
+    NEU_PROCESS_HTTP_REQUEST(
+        aio, neu_json_delete_user_req_t, neu_json_decode_delete_user_req, {
+            // user name length check
+            int name_len = strlen(req->name);
+            if (name_len < NEU_USER_NAME_MIN_LEN ||
+                name_len > NEU_USER_NAME_MAX_LEN) {
+                nlog_error("user name too short or too long");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_LEN, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // only admin can delete user
+            if (0 != strcmp(req->name, "admin")) {
+                nlog_error("only admin can add user");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // user not exists
+            neu_user_t *user = neu_load_user(req->name);
+            if (NULL == user) {
+                nlog_error("user `%s` not exists", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NOT_EXISTS, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+
+                return;
+            }
+
+            // delete user
+            if (0 != neu_user_delete(req->name)) {
+                nlog_error("delete user `%s` fail", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+
+                neu_user_free(user);
+                return;
+            }
+
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
 
             neu_user_free(user);
         })

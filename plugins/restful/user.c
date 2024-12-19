@@ -12,6 +12,10 @@
 #include "user.h"
 #include "utils/log.h"
 
+typedef struct {
+    const char *name;
+} neu_json_user_resp_t;
+
 static const unsigned char cov_2char[64] = {
     0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
     0x39, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A,
@@ -370,6 +374,41 @@ void neu_user_free(neu_user_t *user)
         free(user->hash);
         free(user);
     }
+}
+
+UT_array *neu_user_list()
+{
+    UT_array *user_infos = NULL;
+    neu_persister_load_users(&user_infos);
+    return user_infos;
+}
+
+int neu_user_add(const char *name, const char *password)
+{
+    neu_persist_user_info_t *info = NULL;
+    if (0 == neu_persister_load_user(name, &info)) {
+        free(info);
+        return -1;
+    }
+
+    neu_user_t *user = neu_user_new(name, password);
+    if (NULL == user) {
+        return -1;
+    }
+
+    neu_persist_user_info_t info_new = {
+        .name = user->name,
+        .hash = user->hash,
+    };
+
+    neu_persister_store_user(&info_new);
+    free(user);
+    return 0;
+}
+
+int neu_user_delete(const char *name)
+{
+    return neu_persister_delete_user(name);
 }
 
 bool neu_user_check_password(neu_user_t *user, const char *password)

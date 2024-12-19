@@ -14,7 +14,7 @@ TEST(JwtTest, SetJwt)
 
     EXPECT_EQ(0, neu_jwt_init((char *) "./config"));
 
-    EXPECT_EQ(0, neu_jwt_new(&token));
+    EXPECT_EQ(0, neu_jwt_new(&token, "admin"));
     EXPECT_GE(strlen(token), 400);
 
     jwt_free_str(token);
@@ -26,7 +26,7 @@ TEST(JwtTest, JwtValidate)
     char  b_token[1024] = { 0 };
 
     EXPECT_EQ(0, neu_jwt_init((char *) "./config"));
-    EXPECT_EQ(0, neu_jwt_new(&token));
+    EXPECT_EQ(0, neu_jwt_new(&token, "admin"));
 
     snprintf(b_token, sizeof(b_token), "Bearer %s", token);
 
