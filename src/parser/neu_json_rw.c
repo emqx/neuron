@@ -347,8 +347,9 @@ int neu_json_encode_read_resp2(void *json_object, void *param)
 
 int neu_json_encode_read_resp_ecp(void *json_object, void *param)
 {
-    int                   ret  = 0;
-    neu_json_read_resp_t *resp = (neu_json_read_resp_t *) param;
+    int                   ret      = 0;
+    int                   has_data = 0;
+    neu_json_read_resp_t *resp     = (neu_json_read_resp_t *) param;
 
     void *                    tag_array = neu_json_array();
     neu_json_read_resp_tag_t *p_tag     = resp->tags;
@@ -380,6 +381,7 @@ int neu_json_encode_read_resp_ecp(void *json_object, void *param)
 
         tag_array =
             neu_json_encode_array(tag_array, tag_elems, 3 + p_tag->n_meta);
+        has_data = 1;
         p_tag++;
     }
 
@@ -390,6 +392,10 @@ int neu_json_encode_read_resp_ecp(void *json_object, void *param)
     } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
+
+    if (!has_data) {
+        return -2;
+    }
 
     return ret;
 }

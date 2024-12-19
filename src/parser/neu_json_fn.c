@@ -71,6 +71,36 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
     return ret;
 }
 
+int neu_json_encode_with_mqtt_ecp(void *param, neu_json_encode_fn fn,
+                                  void *mqtt_param, neu_json_encode_fn mqtt_fn,
+                                  char **result)
+{
+    void *object = neu_json_encode_new();
+
+    if (mqtt_fn != NULL) {
+        if (mqtt_fn(object, mqtt_param) != 0) {
+            neu_json_encode_free(object);
+            return -1;
+        }
+    }
+
+    if (fn != NULL) {
+        int encode_ret = fn(object, param);
+        if (encode_ret == -2) {
+            neu_json_encode_free(object);
+            return encode_ret;
+        }
+        if (encode_ret != 0) {
+            neu_json_encode_free(object);
+            return -1;
+        }
+    }
+
+    int ret = neu_json_encode(object, result);
+    neu_json_decode_free(object);
+    return ret;
+}
+
 int neu_parse_param(const char *buf, char **err_param, int n,
                     neu_json_elem_t *ele, ...)
 {
