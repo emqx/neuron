@@ -409,11 +409,23 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
 void neu_conn_clear_recv_buffer(neu_conn_t *conn)
 {
-    if (conn->is_connected && conn->param.type == NEU_CONN_TCP_CLIENT) {
-        uint8_t temp_buf[256];
-        ssize_t ret;
+    if (!conn->is_connected) {
+        return;
+    }
+
+    uint8_t temp_buf[256];
+    ssize_t ret;
+
+    switch (conn->param.type) {
+    case NEU_CONN_TCP_CLIENT:
+    case NEU_CONN_TTY_CLIENT:
         do {
-            ret = recv(conn->fd, temp_buf, sizeof(temp_buf), MSG_DONTWAIT);
+            if (conn->param.type == NEU_CONN_TCP_CLIENT) {
+                ret = recv(conn->fd, temp_buf, sizeof(temp_buf), MSG_DONTWAIT);
+            } else { // NEU_CONN_TTY_CLIENT
+                ret = read(conn->fd, temp_buf, sizeof(temp_buf));
+            }
+
             if (ret > 0) {
                 continue;
             } else if (ret == 0) {
@@ -428,6 +440,9 @@ void neu_conn_clear_recv_buffer(neu_conn_t *conn)
                 break;
             }
         } while (ret > 0);
+        break;
+    default:
+        break;
     }
 }
 
