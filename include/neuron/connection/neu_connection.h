@@ -254,6 +254,8 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len);
 ssize_t neu_conn_udp_recvfrom(neu_conn_t *conn, uint8_t *buf, ssize_t len,
                               void *src);
 
+void neu_conn_clear_recv_buffer(neu_conn_t *conn);
+
 /**
  * @brief Specify the client to send data.
  *
