@@ -25,8 +25,6 @@ mkdir -p ${neuron_bin}/plugins
 cp ./neuron ${neuron_bin}/
 cp config/sdk-zlog.conf ${neuron_bin}/config/zlog.conf
 cp config/dev.conf ${neuron_bin}/config/
-cp config/neuron.key ${neuron_bin}/config/
-cp config/neuron.pem ${neuron_bin}/config/
 cp config/default_plugins.json ${neuron_bin}/config/
 cp config/*.sql ${neuron_bin}/config/
 
