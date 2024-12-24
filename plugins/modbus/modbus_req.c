@@ -107,6 +107,8 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
     int           ret    = 0;
 
+    neu_conn_clear_recv_buffer(plugin->conn);
+
     plog_send_protocol(plugin, bytes, n_byte);
 
     if (plugin->is_server) {
