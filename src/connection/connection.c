@@ -407,6 +407,40 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     return ret;
 }
 
+void neu_conn_clear_recv_buffer(neu_conn_t *conn)
+{
+    if (!conn->is_connected) {
+        return;
+    }
+
+    uint8_t temp_buf[256];
+    ssize_t ret;
+
+    switch (conn->param.type) {
+    case NEU_CONN_TCP_CLIENT:
+        do {
+            ret = recv(conn->fd, temp_buf, sizeof(temp_buf), MSG_DONTWAIT);
+
+            if (ret > 0) {
+                continue;
+            } else if (ret == 0) {
+                zlog_info(conn->param.log,
+                          "Connection closed while clearing buffer.");
+                break;
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            } else {
+                zlog_error(conn->param.log, "Error clearing buffer: %s",
+                           strerror(errno));
+                break;
+            }
+        } while (ret > 0);
+        break;
+    default:
+        break;
+    }
+}
+
 ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 {
     ssize_t ret = 0;
