@@ -463,18 +463,11 @@ class TestPersist:
 
     @description(given="upload pem in certs", when="login", then="success")
     def test_jwt(self):
-        if not os.path.exists('./build/certs/'):
-            os.makedirs('./build/certs/')
-
-        shutil.copyfile('./build/config/neuron.pem', './build/certs/neuron.pem')
-
         p = process.NeuronProcess()
         p.start()
 
         response = api.login()
         assert 200 == response.status_code
-
-        shutil.rmtree('./build/certs/')
 
         p.stop()
 
