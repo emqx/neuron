@@ -1552,6 +1552,47 @@ static char *file_save_tmp(const char *data, const char *suffix)
     return tmp_path;
 }
 
+static int copy_file(const char *src, const char *dst)
+{
+    FILE * source, *destination;
+    char   buffer[1024];
+    size_t bytes_read;
+
+    source = fopen(src, "rb");
+    if (source == NULL) {
+        nlog_error("failed to open source file!");
+        return -1;
+    }
+
+    destination = fopen(dst, "wb");
+    if (destination == NULL) {
+        nlog_error("failed to open destination file!");
+        fclose(source);
+        return -1;
+    }
+
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), source)) > 0) {
+        if (fwrite(buffer, 1, bytes_read, destination) != bytes_read) {
+            nlog_error("failed to write to destination file!");
+            fclose(source);
+            fclose(destination);
+            return -1;
+        }
+    }
+
+    if (ferror(source)) {
+        nlog_error("error reading source file");
+        fclose(source);
+        fclose(destination);
+        return -1;
+    }
+
+    fclose(source);
+    fclose(destination);
+
+    return 0;
+}
+
 static bool mv_tmp_library_file(neu_plugin_kind_e kind, const char *tmp_path,
                                 const char *library)
 {
@@ -1578,9 +1619,8 @@ static bool mv_tmp_library_file(neu_plugin_kind_e kind, const char *tmp_path,
         }
     }
 
-    if (rename(tmp_path, file_name) != 0) {
-        nlog_error("%s rename %s fail, err:%s", tmp_path, file_name,
-                   strerror(errno));
+    if (copy_file(tmp_path, file_name) != 0) {
+        nlog_error("%s copy_file %s fail!", tmp_path, file_name);
         return false;
     } else {
         return true;
@@ -1618,9 +1658,8 @@ static bool mv_tmp_schema_file(neu_plugin_kind_e kind, const char *tmp_path,
         }
     }
 
-    if (rename(tmp_path, file_name) != 0) {
-        nlog_error("%s rename %s fail, err:%s", tmp_path, file_name,
-                   strerror(errno));
+    if (copy_file(tmp_path, file_name) != 0) {
+        nlog_error("%s copy_file %s fail!", tmp_path, file_name);
         return false;
     } else {
         return true;
