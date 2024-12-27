@@ -880,7 +880,8 @@ void neu_otel_scope_set_status_code(neu_otel_scope_ctx     ctx,
     scope->span->status =
         calloc(1, sizeof(Opentelemetry__Proto__Trace__V1__Status));
     opentelemetry__proto__trace__v1__status__init(scope->span->status);
-    scope->span->status->code    = code;
+    scope->span->status->code =
+        (Opentelemetry__Proto__Trace__V1__Status__StatusCode) code;
     scope->span->status->message = strdup(desc);
 }
 
@@ -893,7 +894,8 @@ void neu_otel_scope_set_status_code2(neu_otel_scope_ctx     ctx,
     opentelemetry__proto__trace__v1__status__init(scope->span->status);
     char *error_buf = calloc(1, 16);
     sprintf(error_buf, "%d", errorno);
-    scope->span->status->code    = code;
+    scope->span->status->code =
+        (Opentelemetry__Proto__Trace__V1__Status__StatusCode) code;
     scope->span->status->message = error_buf;
 }
 
