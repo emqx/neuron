@@ -71,11 +71,9 @@ int neu_sqlite_persister_delete_tag(neu_persister_t *self,
                                     const char *     driver_name,
                                     const char *     group_name,
                                     const char *     tag_name);
-int neu_sqlite_persister_store_subscription(neu_persister_t *self,
-                                            const char *     app_name,
-                                            const char *     driver_name,
-                                            const char *     group_name,
-                                            const char *     params);
+int neu_sqlite_persister_store_subscription(
+    neu_persister_t *self, const char *app_name, const char *driver_name,
+    const char *group_name, const char *params, const char *static_tags);
 int neu_sqlite_persister_update_subscription(neu_persister_t *self,
                                              const char *     app_name,
                                              const char *     driver_name,

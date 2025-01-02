@@ -467,9 +467,10 @@ void handle_grp_get_subscribe_resp(nng_aio *                       aio,
     utarray_foreach(groups->groups, neu_resp_subscribe_info_t *, group)
     {
         int index = utarray_eltidx(groups->groups, group);
-        sub_grp_configs.groups[index].driver = group->driver;
-        sub_grp_configs.groups[index].group  = group->group;
-        sub_grp_configs.groups[index].params = group->params;
+        sub_grp_configs.groups[index].driver      = group->driver;
+        sub_grp_configs.groups[index].group       = group->group;
+        sub_grp_configs.groups[index].params      = group->params;
+        sub_grp_configs.groups[index].static_tags = group->static_tags;
     }
 
     neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,

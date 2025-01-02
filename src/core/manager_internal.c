@@ -206,7 +206,7 @@ UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 
 static inline int manager_subscribe(neu_manager_t *manager, const char *app,
                                     const char *driver, const char *group,
-                                    const char *params)
+                                    const char *params, const char *static_tags)
 {
     int                ret  = NEU_ERR_SUCCESS;
     struct sockaddr_un addr = { 0 };
@@ -225,12 +225,13 @@ static inline int manager_subscribe(neu_manager_t *manager, const char *app,
 
     addr = neu_node_manager_get_addr(manager->node_manager, app);
     return neu_subscribe_manager_sub(manager->subscribe_manager, driver, app,
-                                     group, params, addr);
+                                     group, params, static_tags, addr);
 }
 
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                           const char *driver, const char *group,
-                          const char *params, uint16_t *app_port)
+                          const char *params, const char *static_tags,
+                          uint16_t *app_port)
 {
     neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, app);
 
@@ -258,7 +259,7 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
         return NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE;
     }
 
-    return manager_subscribe(manager, app, driver, group, params);
+    return manager_subscribe(manager, app, driver, group, params, static_tags);
 }
 
 int neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
@@ -354,6 +355,9 @@ UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
     {
         if (sub->params) {
             sub->params = strdup(sub->params);
+        }
+        if (sub->static_tags) {
+            sub->static_tags = strdup(sub->static_tags);
         }
     }
 

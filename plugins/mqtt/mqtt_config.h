@@ -30,10 +30,13 @@ extern "C" {
 #include "connection/mqtt_client.h"
 #include "plugin.h"
 
+#include "schema.h"
+
 typedef enum {
     MQTT_UPLOAD_FORMAT_VALUES = 0,
     MQTT_UPLOAD_FORMAT_TAGS   = 1,
     MQTT_UPLOAD_FORMAT_ECP    = 2,
+    MQTT_UPLOAD_FORMAT_CUSTOM = 3,
 } mqtt_upload_format_e;
 
 static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
@@ -45,6 +48,8 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
         return "format-tags";
     case MQTT_UPLOAD_FORMAT_ECP:
         return "ECP-format";
+    case MQTT_UPLOAD_FORMAT_CUSTOM:
+        return "custom";
     default:
         return NULL;
     }
@@ -78,6 +83,9 @@ typedef struct {
     char *   keypass;                  // client key password
                                        // remove in 2.6, keep it here
                                        // for backward compatibility
+
+    size_t            n_schema_vt;
+    mqtt_schema_vt_t *schema_vts;
 } mqtt_config_t;
 
 int decode_b64_param(neu_plugin_t *plugin, neu_json_elem_t *el);

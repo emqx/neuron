@@ -494,6 +494,7 @@ typedef struct {
     char     group[NEU_GROUP_NAME_LEN];
     uint16_t port;
     char *   params;
+    char *   static_tags;
 } neu_req_subscribe_t;
 
 typedef struct {
@@ -507,6 +508,7 @@ typedef struct {
     char *   group;
     uint16_t port;
     char *   params;
+    char *   static_tags;
 } neu_req_subscribe_group_info_t;
 
 typedef struct {
@@ -522,6 +524,7 @@ neu_req_subscribe_groups_fini(neu_req_subscribe_groups_t *req)
         free(req->groups[i].driver);
         free(req->groups[i].group);
         free(req->groups[i].params);
+        free(req->groups[i].static_tags);
     }
     free(req->groups);
     free(req->app);
@@ -542,6 +545,7 @@ typedef struct neu_resp_subscribe_info {
     char  driver[NEU_NODE_NAME_LEN];
     char  group[NEU_GROUP_NAME_LEN];
     char *params;
+    char *static_tags;
 } neu_resp_subscribe_info_t;
 
 static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)

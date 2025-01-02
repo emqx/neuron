@@ -339,6 +339,13 @@ int neu_json_encode_get_subscribe_resp(void *object, void *param)
             json_decref(t);
         }
 
+        if (p_group->static_tags) {
+            json_t *t = json_loads(p_group->static_tags, 0, NULL);
+            json_t *p = json_object_get(t, "static_tags");
+            json_object_set(ob, "static_tags", p);
+            json_decref(t);
+        }
+
         json_array_append_new(group_array, ob);
 
         p_group++;
@@ -579,6 +586,13 @@ int neu_json_decode_subscribe_groups_info_json(
     info->group  = req_elems[1].v.val_str;
 
     ret = dump_params(json_obj, &info->params);
+    if (0 != ret) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        return -1;
+    }
+
+    ret = neu_json_dump_key(json_obj, "static_tags", &info->static_tags, false);
     if (0 != ret) {
         free(req_elems[0].v.val_str);
         free(req_elems[1].v.val_str);

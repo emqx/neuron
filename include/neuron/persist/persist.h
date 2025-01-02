@@ -48,6 +48,7 @@ typedef struct {
     char *driver_name;
     char *group_name;
     char *params;
+    char *static_tags;
 } neu_persist_subscription_info_t;
 
 typedef struct {
@@ -215,8 +216,8 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
  */
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
-                                     const char *group_name,
-                                     const char *params);
+                                     const char *group_name, const char *params,
+                                     const char *static_tags);
 
 /**
  * Update subscriptions.

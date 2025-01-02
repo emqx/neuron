@@ -355,10 +355,27 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     // format, required
     if (MQTT_UPLOAD_FORMAT_VALUES != format.v.val_int &&
         MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int &&
-        MQTT_UPLOAD_FORMAT_ECP != format.v.val_int) {
+        MQTT_UPLOAD_FORMAT_ECP != format.v.val_int &&
+        MQTT_UPLOAD_FORMAT_CUSTOM != format.v.val_int) {
         plog_error(plugin, "setting invalid format: %" PRIi64,
                    format.v.val_int);
         goto error;
+    }
+
+    if (format.v.val_int == MQTT_UPLOAD_FORMAT_CUSTOM) {
+        neu_json_elem_t schema = { .name = "schema", .t = NEU_JSON_STR };
+        ret = neu_parse_param(setting, &err_param, 1, &schema);
+        if (0 != ret) {
+            plog_error(plugin, "parsing schema fail, key: `%s`", err_param);
+            goto error;
+        }
+
+        ret = mqtt_schema_validate(schema.v.val_str, &config->schema_vts,
+                                   &config->n_schema_vt);
+        if (0 != ret) {
+            plog_error(plugin, "schema validation fail");
+            goto error;
+        }
     }
 
     ret = neu_parse_param(setting, &err_param, 2, &driver_action_req_topic,
@@ -564,4 +581,7 @@ void mqtt_config_fini(mqtt_config_t *config)
     free(config->heartbeat_topic);
 
     memset(config, 0, sizeof(*config));
+    if (config->schema_vts) {
+        free(config->schema_vts);
+    }
 }

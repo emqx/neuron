@@ -29,8 +29,10 @@
 typedef struct neu_subscribe_mgr neu_subscribe_mgr_t;
 
 typedef struct neu_app_subscribe {
-    char  app_name[NEU_NODE_NAME_LEN];
+    char app_name[NEU_NODE_NAME_LEN];
+
     char *params;
+    char *static_tags;
 
     struct sockaddr_un addr;
 } neu_app_subscribe_t;
@@ -38,6 +40,7 @@ typedef struct neu_app_subscribe {
 static inline void neu_app_subscribe_fini(neu_app_subscribe_t *app_sub)
 {
     free(app_sub->params);
+    free(app_sub->static_tags);
 }
 
 neu_subscribe_mgr_t *neu_subscribe_manager_create();
@@ -55,7 +58,8 @@ size_t    neu_subscribe_manager_group_count(const neu_subscribe_mgr_t *mgr,
 void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app);
 int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                const char *app, const char *group,
-                               const char *params, struct sockaddr_un addr);
+                               const char *params, const char *static_tags,
+                               struct sockaddr_un addr);
 int  neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
                                  const char *app, const char *group);
 void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,

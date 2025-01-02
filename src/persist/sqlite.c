@@ -850,17 +850,15 @@ int neu_sqlite_persister_delete_tag(neu_persister_t *self,
     return rv;
 }
 
-int neu_sqlite_persister_store_subscription(neu_persister_t *self,
-                                            const char *     app_name,
-                                            const char *     driver_name,
-                                            const char *     group_name,
-                                            const char *     params)
+int neu_sqlite_persister_store_subscription(
+    neu_persister_t *self, const char *app_name, const char *driver_name,
+    const char *group_name, const char *params, const char *static_tags)
 {
-    return execute_sql(
-        ((neu_sqlite_persister_t *) self)->db,
-        "INSERT INTO subscriptions (app_name, driver_name, group_name, params) "
-        "VALUES (%Q, %Q, %Q, %Q)",
-        app_name, driver_name, group_name, params);
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "INSERT INTO subscriptions (app_name, driver_name, "
+                       "group_name, params, static_tags) "
+                       "VALUES (%Q, %Q, %Q, %Q, %Q)",
+                       app_name, driver_name, group_name, params, static_tags);
 }
 
 int neu_sqlite_persister_update_subscription(neu_persister_t *self,
@@ -889,7 +887,7 @@ int neu_sqlite_persister_load_subscriptions(neu_persister_t *self,
     neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
 
     sqlite3_stmt *stmt  = NULL;
-    const char *  query = "SELECT driver_name, group_name, params "
+    const char *  query = "SELECT driver_name, group_name, params, static_tags "
                         "FROM subscriptions WHERE app_name=?";
 
     utarray_new(*subscription_infos, &subscription_info_icd);
@@ -928,10 +926,20 @@ int neu_sqlite_persister_load_subscriptions(neu_persister_t *self,
             break;
         }
 
+        char *static_tags = (char *) sqlite3_column_text(stmt, 3);
+        // copy if params not NULL
+        if (NULL != static_tags &&
+            NULL == (static_tags = strdup(static_tags))) {
+            free(group_name);
+            free(driver_name);
+            break;
+        }
+
         neu_persist_subscription_info_t info = {
             .driver_name = driver_name,
             .group_name  = group_name,
             .params      = params,
+            .static_tags = static_tags,
         };
         utarray_push_back(*subscription_infos, &info);
 

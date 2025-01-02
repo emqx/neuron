@@ -38,6 +38,7 @@ typedef struct {
     route_key_t key;
 
     char *topic;
+    char *static_tags;
 
     UT_hash_handle hh;
 } route_entry_t;
@@ -63,6 +64,9 @@ struct neu_plugin {
 static inline void route_entry_free(route_entry_t *e)
 {
     free(e->topic);
+    if (e->static_tags) {
+        free(e->static_tags);
+    }
     free(e);
 }
 
@@ -91,7 +95,8 @@ route_tbl_get(route_entry_t **tbl, const char *driver, const char *group)
 
 // NOTE: we take ownership of `topic`
 static inline int route_tbl_add_new(route_entry_t **tbl, const char *driver,
-                                    const char *group, char *topic)
+                                    const char *group, char *topic,
+                                    char *static_tags)
 {
     route_entry_t *find = NULL;
 
@@ -109,7 +114,8 @@ static inline int route_tbl_add_new(route_entry_t **tbl, const char *driver,
 
     strncpy(find->key.driver, driver, sizeof(find->key.driver));
     strncpy(find->key.group, group, sizeof(find->key.group));
-    find->topic = topic;
+    find->topic       = topic;
+    find->static_tags = static_tags;
     HASH_ADD(hh, *tbl, key, sizeof(find->key), find);
 
     return 0;
@@ -117,7 +123,8 @@ static inline int route_tbl_add_new(route_entry_t **tbl, const char *driver,
 
 // NOTE: we take ownership of `topic`
 static inline int route_tbl_update(route_entry_t **tbl, const char *driver,
-                                   const char *group, char *topic)
+                                   const char *group, char *topic,
+                                   char *static_tags)
 {
     route_entry_t *find = NULL;
 
@@ -129,6 +136,10 @@ static inline int route_tbl_update(route_entry_t **tbl, const char *driver,
 
     free(find->topic);
     find->topic = topic;
+    if (find->static_tags) {
+        free(find->static_tags);
+    }
+    find->static_tags = static_tags;
 
     return 0;
 }
