@@ -551,6 +551,7 @@ typedef struct neu_resp_subscribe_info {
 static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)
 {
     free(info->params);
+    free(info->static_tags);
 }
 
 typedef struct {

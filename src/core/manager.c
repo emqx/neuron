@@ -922,9 +922,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
-            error.error = neu_manager_send_subscribe(manager, cmd->app,
-                                                     info->driver, info->group,
-                                                     info->port, info->params);
+            error.error = neu_manager_send_subscribe(
+                manager, cmd->app, info->driver, info->group, info->port,
+                info->params, info->static_tags);
             if (0 != error.error) {
                 break;
             }
@@ -947,12 +947,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     cmd->app, cmd->driver, cmd->group,
                     cmd->params != NULL ? cmd->params : "");
         error.error = neu_manager_update_subscribe(
-            manager, cmd->app, cmd->driver, cmd->group, cmd->params);
+            manager, cmd->app, cmd->driver, cmd->group, cmd->params,
+            cmd->static_tags);
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg_copy(manager, header, cmd->app);
             manager_storage_update_subscribe(manager, cmd->app, cmd->driver,
-                                             cmd->group, cmd->params);
+                                             cmd->group, cmd->params,
+                                             cmd->static_tags);
         } else {
             free(cmd->params);
         }

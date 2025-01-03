@@ -405,6 +405,11 @@ int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
         goto decode_fail;
     }
 
+    ret = neu_json_dump_key(json_obj, "static_tags", &req->static_tags, false);
+    if (0 != ret) {
+        goto decode_fail;
+    }
+
     *result = req;
     goto decode_exit;
 
@@ -425,6 +430,9 @@ void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req)
     free(req->driver);
     free(req->group);
     free(req->params);
+    if (req->static_tags) {
+        free(req->static_tags);
+    }
 
     free(req);
 }

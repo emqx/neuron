@@ -70,10 +70,11 @@ int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
                                 uint16_t *app_port);
 int       neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
                                        const char *driver, const char *group,
-                                       const char *params);
+                                       const char *params, const char *static_tags);
 int       neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                      const char *driver, const char *group,
-                                     uint16_t app_port, const char *params);
+                                     uint16_t app_port, const char *params,
+                                     const char *static_tags);
 int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);

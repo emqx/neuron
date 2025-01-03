@@ -77,6 +77,7 @@ int neu_subscribe_manager_update_group_name(neu_subscribe_mgr_t *mgr,
                                             const char *         new_name);
 int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
                                         const char *app, const char *driver,
-                                        const char *group, const char *params);
+                                        const char *group, const char *params,
+                                        const char *static_tags);
 
 #endif

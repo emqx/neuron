@@ -125,7 +125,8 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app,
                 strncpy(info.driver, el->key.driver, sizeof(info.driver));
                 strncpy(info.app, app, sizeof(info.app));
                 strncpy(info.group, el->key.group, sizeof(info.group));
-                info.params = sub_app->params; // borrowed reference
+                info.params      = sub_app->params;      // borrowed reference
+                info.static_tags = sub_app->static_tags; // borrowed reference
 
                 utarray_push_back(groups, &info);
             }
@@ -216,7 +217,8 @@ int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
 
 int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
                                         const char *app, const char *driver,
-                                        const char *group, const char *params)
+                                        const char *group, const char *params,
+                                        const char *static_tags)
 {
     sub_elem_key_t key = { 0 };
     strncpy(key.driver, driver, sizeof(key.driver));
@@ -247,8 +249,15 @@ int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
         return NEU_ERR_EINTERNAL;
     }
 
+    char *s = NULL;
+    if (static_tags && NULL == (s = strdup(static_tags))) {
+        return NEU_ERR_EINTERNAL;
+    }
+
     free(app_sub->params);
     app_sub->params = p;
+    free(app_sub->static_tags);
+    app_sub->static_tags = s;
     return NEU_ERR_SUCCESS;
 }
 

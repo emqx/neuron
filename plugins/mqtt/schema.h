@@ -51,9 +51,6 @@ typedef struct {
 int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
                          size_t *vts_len);
 
-int mqtt_schema_encode(char *driver, char *group, neu_json_read_resp_t *tags,
-                       mqtt_schema_vt_t *vts, size_t n_vts, char **result_str);
-
 typedef struct {
     char name[128];
 
@@ -61,7 +58,12 @@ typedef struct {
     neu_json_value_u jvalue;
 } mqtt_static_vt_t;
 
-int  mqtt_static_validate(const char *static_tags, mqtt_static_vt_t *vts,
+int mqtt_schema_encode(char *driver, char *group, neu_json_read_resp_t *tags,
+                       mqtt_schema_vt_t *vts, size_t n_vts,
+                       mqtt_static_vt_t *s_tags, size_t n_s_tags,
+                       char **result_str);
+
+int  mqtt_static_validate(const char *static_tags, mqtt_static_vt_t **vts,
                           size_t *vts_len);
 void mqtt_static_free(mqtt_static_vt_t *vts, size_t vts_len);
 

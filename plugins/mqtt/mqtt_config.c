@@ -376,6 +376,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
             plog_error(plugin, "schema validation fail");
             goto error;
         }
+        free(schema.v.val_str);
     }
 
     ret = neu_parse_param(setting, &err_param, 2, &driver_action_req_topic,
@@ -580,8 +581,8 @@ void mqtt_config_fini(mqtt_config_t *config)
     free(config->keypass);
     free(config->heartbeat_topic);
 
-    memset(config, 0, sizeof(*config));
     if (config->schema_vts) {
         free(config->schema_vts);
     }
+    memset(config, 0, sizeof(*config));
 }

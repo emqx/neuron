@@ -81,6 +81,9 @@ neu_persist_subscription_info_fini(neu_persist_subscription_info_t *info)
     free(info->driver_name);
     free(info->group_name);
     free(info->params);
+    if (info->static_tags) {
+        free(info->static_tags);
+    }
 }
 
 static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
@@ -230,7 +233,8 @@ int neu_persister_store_subscription(const char *app_name,
 int neu_persister_update_subscription(const char *app_name,
                                       const char *driver_name,
                                       const char *group_name,
-                                      const char *params);
+                                      const char *params,
+                                      const char *static_tags);
 
 /**
  * Load adapter subscriptions.

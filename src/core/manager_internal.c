@@ -264,15 +264,16 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
 
 int neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
                                  const char *driver, const char *group,
-                                 const char *params)
+                                 const char *params, const char *static_tags)
 {
-    return neu_subscribe_manager_update_params(manager->subscribe_manager, app,
-                                               driver, group, params);
+    return neu_subscribe_manager_update_params(
+        manager->subscribe_manager, app, driver, group, params, static_tags);
 }
 
 int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
-                               uint16_t app_port, const char *params)
+                               uint16_t app_port, const char *params,
+                               const char *static_tags)
 {
     neu_req_subscribe_t cmd = { 0 };
     strcpy(cmd.app, app);
@@ -281,6 +282,10 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     cmd.port = app_port;
 
     if (params && NULL == (cmd.params = strdup(params))) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (static_tags && NULL == (cmd.static_tags = strdup(static_tags))) {
         return NEU_ERR_EINTERNAL;
     }
 

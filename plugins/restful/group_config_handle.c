@@ -270,8 +270,10 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     strcpy(cmd.app, req->app);
     strcpy(cmd.driver, req->driver);
     strcpy(cmd.group, req->group);
-    cmd.params  = req->params; // ownership moved
-    req->params = NULL;
+    cmd.params       = req->params;      // ownership moved
+    cmd.static_tags  = req->static_tags; // ownership moved
+    req->params      = NULL;
+    req->static_tags = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;

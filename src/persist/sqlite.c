@@ -861,16 +861,14 @@ int neu_sqlite_persister_store_subscription(
                        app_name, driver_name, group_name, params, static_tags);
 }
 
-int neu_sqlite_persister_update_subscription(neu_persister_t *self,
-                                             const char *     app_name,
-                                             const char *     driver_name,
-                                             const char *     group_name,
-                                             const char *     params)
+int neu_sqlite_persister_update_subscription(
+    neu_persister_t *self, const char *app_name, const char *driver_name,
+    const char *group_name, const char *params, const char *static_tags)
 {
     return execute_sql(((neu_sqlite_persister_t *) self)->db,
-                       "UPDATE subscriptions SET params=%Q "
+                       "UPDATE subscriptions SET params=%Q, static_tags=%Q "
                        "WHERE app_name=%Q AND driver_name=%Q AND group_name=%Q",
-                       params, app_name, driver_name, group_name);
+                       params, static_tags, app_name, driver_name, group_name);
 }
 
 static UT_icd subscription_info_icd = {

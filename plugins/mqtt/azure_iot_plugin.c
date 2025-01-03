@@ -299,8 +299,8 @@ static int azure_handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_MQTT_FAILURE;
     }
 
-    char *json_str = generate_upload_json(plugin, trans_data,
-                                          plugin->config.format, NULL, 0, NULL);
+    char *json_str = generate_upload_json(
+        plugin, trans_data, plugin->config.format, NULL, 0, NULL, 0, NULL);
     if (NULL == json_str) {
         plog_error(plugin, "generate upload json fail");
         return NEU_ERR_EINTERNAL;
