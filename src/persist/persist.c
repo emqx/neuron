@@ -390,19 +390,21 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
 
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
-                                     const char *group_name, const char *params)
+                                     const char *group_name, const char *params,
+                                     const char *static_tags)
 {
     return g_impl->vtbl->store_subscription(g_impl, app_name, driver_name,
-                                            group_name, params);
+                                            group_name, params, static_tags);
 }
 
 int neu_persister_update_subscription(const char *app_name,
                                       const char *driver_name,
                                       const char *group_name,
-                                      const char *params)
+                                      const char *params,
+                                      const char *static_tags)
 {
     return g_impl->vtbl->update_subscription(g_impl, app_name, driver_name,
-                                             group_name, params);
+                                             group_name, params, static_tags);
 }
 
 int neu_persister_load_subscriptions(const char *app_name,

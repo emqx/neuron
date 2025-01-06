@@ -182,7 +182,7 @@ struct neu_persister_vtbl_s {
      */
     int (*store_subscription)(neu_persister_t *self, const char *app_name,
                               const char *driver_name, const char *group_name,
-                              const char *params);
+                              const char *params, const char *static_tags);
 
     /**
      * Update subscriptions.
@@ -194,7 +194,7 @@ struct neu_persister_vtbl_s {
      */
     int (*update_subscription)(neu_persister_t *self, const char *app_name,
                                const char *driver_name, const char *group_name,
-                               const char *params);
+                               const char *params, const char *static_tags);
 
     /**
      * Load adapter subscriptions.

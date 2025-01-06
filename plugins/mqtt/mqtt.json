@@ -74,8 +74,25 @@
 				{
 					"key": "ECP-format",
 					"value": 2
+				},
+				{
+					"key": "Custom",
+					"value": 3
 				}
 			]
+		}
+	},
+	"schema": {
+		"name": "Schema",
+		"name_zh": "数据模式",
+		"attribute": "optional",
+		"type": "string",
+		"condition": {
+			"field": "format",
+			"value": 3
+		},
+		"valid": {
+			"length": 81960
 		}
 	},
 	"upload_err": {

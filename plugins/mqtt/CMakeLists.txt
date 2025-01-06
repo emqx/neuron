@@ -11,6 +11,7 @@ add_library(${PROJECT_NAME} SHARED
   mqtt_handle.c
   mqtt_plugin.c
   mqtt_plugin_intf.c
+  schema.c
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -30,6 +31,7 @@ add_library(${AWS_PLUGIN} SHARED
   mqtt_handle.c
   mqtt_plugin_intf.c
   aws_iot_plugin.c
+  schema.c
 )
 
 target_include_directories(${AWS_PLUGIN} PRIVATE 
@@ -49,6 +51,7 @@ add_library(${AZURE_PLUGIN} SHARED
   mqtt_handle.c
   mqtt_plugin_intf.c
   azure_iot_plugin.c
+  schema.c
 )
 
 target_include_directories(${AZURE_PLUGIN} PRIVATE 

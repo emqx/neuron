@@ -270,8 +270,10 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     strcpy(cmd.app, req->app);
     strcpy(cmd.driver, req->driver);
     strcpy(cmd.group, req->group);
-    cmd.params  = req->params; // ownership moved
-    req->params = NULL;
+    cmd.params       = req->params;      // ownership moved
+    cmd.static_tags  = req->static_tags; // ownership moved
+    req->params      = NULL;
+    req->static_tags = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -467,9 +469,10 @@ void handle_grp_get_subscribe_resp(nng_aio *                       aio,
     utarray_foreach(groups->groups, neu_resp_subscribe_info_t *, group)
     {
         int index = utarray_eltidx(groups->groups, group);
-        sub_grp_configs.groups[index].driver = group->driver;
-        sub_grp_configs.groups[index].group  = group->group;
-        sub_grp_configs.groups[index].params = group->params;
+        sub_grp_configs.groups[index].driver      = group->driver;
+        sub_grp_configs.groups[index].group       = group->group;
+        sub_grp_configs.groups[index].params      = group->params;
+        sub_grp_configs.groups[index].static_tags = group->static_tags;
     }
 
     neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,

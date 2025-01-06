@@ -40,7 +40,8 @@ static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
     sprintf(out + size, "-%s-01", span_id);
 }
 
-static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
+static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
+                              size_t n_s_tags, neu_json_read_resp_t *json)
 {
     int index = 0;
 
@@ -48,7 +49,7 @@ static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
         return 0;
     }
 
-    json->n_tag = utarray_len(tags);
+    json->n_tag = utarray_len(tags) + n_s_tags;
     json->tags  = (neu_json_read_resp_tag_t *) calloc(
         json->n_tag, sizeof(neu_json_read_resp_tag_t));
     if (NULL == json->tags) {
@@ -59,6 +60,16 @@ static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
     {
         neu_tag_value_to_json(tag_value, &json->tags[index]);
         index += 1;
+    }
+
+    if (s_tags != NULL) {
+        for (size_t i = 0; i < n_s_tags; i++) {
+            neu_json_read_resp_tag_t *tag = &json->tags[index];
+            tag->name                     = s_tags[i].name;
+            tag->t                        = s_tags[i].jtype;
+            tag->value                    = s_tags[i].jvalue;
+            index += 1;
+        }
     }
 
     return 0;
@@ -86,7 +97,9 @@ void filter_error_tags(neu_reqresp_trans_data_t *data)
 }
 
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
-                           mqtt_upload_format_e format, bool *skip)
+                           mqtt_upload_format_e format, mqtt_schema_vt_t *vts,
+                           size_t n_vts, mqtt_static_vt_t *s_tags,
+                           size_t n_s_tags, bool *skip)
 {
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
@@ -103,9 +116,16 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
         }
     }
 
-    if (0 != tag_values_to_json(data->tags, &json)) {
-        plog_error(plugin, "tag_values_to_json fail");
-        return NULL;
+    if (format == MQTT_UPLOAD_FORMAT_CUSTOM) {
+        if (0 != tag_values_to_json(data->tags, NULL, 0, &json)) {
+            plog_error(plugin, "tag_values_to_json fail");
+            return NULL;
+        }
+    } else {
+        if (0 != tag_values_to_json(data->tags, s_tags, n_s_tags, &json)) {
+            plog_error(plugin, "tag_values_to_json fail");
+            return NULL;
+        }
     }
 
     int ret;
@@ -131,6 +151,11 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                       data->group);
         }
         break;
+    case MQTT_UPLOAD_FORMAT_CUSTOM: {
+        ret = mqtt_schema_encode(data->driver, data->group, &json, vts, n_vts,
+                                 s_tags, n_s_tags, &json_str);
+        break;
+    }
     default:
         plog_warn(plugin, "invalid upload format: %d", format);
         break;
@@ -157,7 +182,7 @@ static char *generate_read_resp_json(neu_plugin_t *         plugin,
     char *               json_str = NULL;
     neu_json_read_resp_t json     = { 0 };
 
-    if (0 != tag_values_to_json(data->tags, &json)) {
+    if (0 != tag_values_to_json(data->tags, NULL, 0, &json)) {
         plog_error(plugin, "tag_values_to_json fail");
         return NULL;
     }
@@ -855,9 +880,22 @@ int handle_trans_data(neu_plugin_t *            plugin,
             break;
         }
 
-        bool  skip_none = false;
-        char *json_str  = generate_upload_json(
-            plugin, trans_data, plugin->config.format, &skip_none);
+        bool              skip_none   = false;
+        size_t            n_satic_tag = 0;
+        mqtt_static_vt_t *static_tags = NULL;
+        if (route->static_tags != NULL && strlen(route->static_tags) > 0) {
+            mqtt_static_validate(route->static_tags, &static_tags,
+                                 &n_satic_tag);
+        }
+
+        char *json_str = generate_upload_json(
+            plugin, trans_data, plugin->config.format,
+            plugin->config.schema_vts, plugin->config.n_schema_vt, static_tags,
+            n_satic_tag, &skip_none);
+        if (n_satic_tag > 0) {
+            mqtt_static_free(static_tags, n_satic_tag);
+        }
+
         if (skip_none) {
             break;
         }
@@ -919,8 +957,9 @@ int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
         goto end;
     }
 
-    rv = route_tbl_add_new(&plugin->route_tbl, sub_info->driver,
-                           sub_info->group, topic.v.val_str);
+    rv =
+        route_tbl_add_new(&plugin->route_tbl, sub_info->driver, sub_info->group,
+                          topic.v.val_str, sub_info->static_tags);
     // topic.v.val_str ownership moved
     if (0 != rv) {
         plog_error(plugin, "route driver:%s group:%s fail, `%s`",
@@ -953,7 +992,7 @@ int handle_update_subscribe(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
     }
 
     rv = route_tbl_update(&plugin->route_tbl, sub_info->driver, sub_info->group,
-                          topic.v.val_str);
+                          topic.v.val_str, sub_info->static_tags);
     // topic.v.val_str ownership moved
     if (0 != rv) {
         plog_error(plugin, "route driver:%s group:%s fail, `%s`",

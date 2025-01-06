@@ -58,7 +58,9 @@ int  handle_driver_action_response(neu_plugin_t *            plugin,
                                    neu_resp_driver_action_t *data);
 
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
-                           mqtt_upload_format_e format, bool *skip);
+                           mqtt_upload_format_e format, mqtt_schema_vt_t *vts,
+                           size_t n_vts, mqtt_static_vt_t *s_tags,
+                           size_t n_s_tags, bool *skip);
 int   handle_trans_data(neu_plugin_t *            plugin,
                         neu_reqresp_trans_data_t *trans_data);
 

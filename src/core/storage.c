@@ -71,10 +71,11 @@ void manager_storage_del_node(neu_manager_t *manager, const char *node)
 
 void manager_storage_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
-                               const char *params)
+                               const char *params, const char *static_tags)
 {
     (void) manager;
-    int rv = neu_persister_store_subscription(app, driver, group, params);
+    int rv = neu_persister_store_subscription(app, driver, group, params,
+                                              static_tags);
     if (0 != rv) {
         nlog_error("fail store subscription app:%s driver:%s group:%s", app,
                    driver, group);
@@ -83,10 +84,12 @@ void manager_storage_subscribe(neu_manager_t *manager, const char *app,
 
 void manager_storage_update_subscribe(neu_manager_t *manager, const char *app,
                                       const char *driver, const char *group,
-                                      const char *params)
+                                      const char *params,
+                                      const char *static_tags)
 {
     (void) manager;
-    int rv = neu_persister_update_subscription(app, driver, group, params);
+    int rv = neu_persister_update_subscription(app, driver, group, params,
+                                               static_tags);
     if (0 != rv) {
         nlog_error("fail update subscription app:%s driver:%s group:%s", app,
                    driver, group);
@@ -169,17 +172,19 @@ int manager_load_subscribe(neu_manager_t *manager)
             utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
             {
                 uint16_t app_port = 0;
-                rv                = neu_manager_subscribe(manager, node->node,
-                                           info->driver_name, info->group_name,
-                                           info->params, &app_port);
+                rv                = neu_manager_subscribe(
+                    manager, node->node, info->driver_name, info->group_name,
+                    info->params, info->static_tags, &app_port);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
-                nlog_notice("%s load subscription app:%s driver:%s grp:%s",
-                            ok_or_err, node->node, info->driver_name,
-                            info->group_name);
+                nlog_notice(
+                    "%s load subscription app:%s driver:%s grp:%s, static:%s",
+                    ok_or_err, node->node, info->driver_name, info->group_name,
+                    info->static_tags);
                 if (0 == rv) {
-                    neu_manager_send_subscribe(
-                        manager, node->node, info->driver_name,
-                        info->group_name, app_port, info->params);
+                    neu_manager_send_subscribe(manager, node->node,
+                                               info->driver_name,
+                                               info->group_name, app_port,
+                                               info->params, info->static_tags);
                 }
             }
 

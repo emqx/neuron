@@ -100,6 +100,7 @@ typedef struct {
     char *group;
     char *driver;
     char *params;
+    char *static_tags;
 } neu_json_get_subscribe_resp_group_t;
 
 typedef struct {
@@ -114,6 +115,7 @@ typedef struct {
     char *app;
     char *driver;
     char *params;
+    char *static_tags;
 } neu_json_subscribe_req_t;
 
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result);
@@ -134,6 +136,7 @@ typedef struct {
     char *   group;
     uint16_t port;
     char *   params;
+    char *   static_tags;
 } neu_json_subscribe_groups_info_t;
 
 typedef struct {
