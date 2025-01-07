@@ -1372,9 +1372,11 @@ typedef struct neu_req_scan_tags {
 } neu_req_scan_tags_t;
 
 typedef struct {
-    char    name[NEU_TAG_NAME_LEN];
-    char    id[5 + 1 + NEU_TAG_ADDRESS_LEN]; // ns + ! + address
-    uint8_t tag;
+    char       name[NEU_TAG_NAME_LEN];
+    char       id[5 + 1 + NEU_TAG_ADDRESS_LEN]; // ns + ! + address
+    uint8_t    tag;
+    bool       is_last_layer;
+    neu_type_e type;
 } neu_scan_tag_t;
 
 typedef struct {
