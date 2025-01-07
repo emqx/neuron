@@ -107,26 +107,32 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
         utarray_foreach(resp->scan_tags, neu_scan_tag_t *, p_tag)
         {
             if (NULL != p_tag) {
-                neu_json_elem_t tag_elems[] = {
-                    {
-                        .name      = "name",
-                        .t         = NEU_JSON_STR,
-                        .v.val_str = p_tag->name,
-                    },
-                    {
-                        .name      = "id",
-                        .t         = NEU_JSON_STR,
-                        .v.val_str = p_tag->id,
-                    },
-                    {
-                        .name      = "tag",
-                        .t         = NEU_JSON_INT,
-                        .v.val_int = p_tag->tag,
-                    },
+                neu_json_elem_t tag_elems[4];
+                tag_elems[0] = (neu_json_elem_t) {
+                    .name      = "name",
+                    .t         = NEU_JSON_STR,
+                    .v.val_str = p_tag->name,
                 };
+                tag_elems[1] = (neu_json_elem_t) {
+                    .name      = "id",
+                    .t         = NEU_JSON_STR,
+                    .v.val_str = p_tag->id,
+                };
+                tag_elems[2] = (neu_json_elem_t) {
+                    .name      = "tag",
+                    .t         = NEU_JSON_INT,
+                    .v.val_int = p_tag->tag,
+                };
+                if (p_tag->is_last_layer) {
+                    tag_elems[3] = (neu_json_elem_t) {
+                        .name      = "tag_type",
+                        .t         = NEU_JSON_INT,
+                        .v.val_int = p_tag->type,
+                    };
+                }
 
                 neu_json_encode_array(tag_array, tag_elems,
-                                      NEU_JSON_ELEM_SIZE(tag_elems));
+                                      p_tag->is_last_layer ? 4 : 3);
             }
         }
 
