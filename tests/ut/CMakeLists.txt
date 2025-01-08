@@ -85,6 +85,14 @@ target_include_directories(cid_test PRIVATE
 )
 target_link_libraries(cid_test neuron-base gtest_main gtest)
 
+add_executable(mqtt_schema_test mqtt_schema_test.cc ${CMAKE_SOURCE_DIR}/plugins/mqtt/schema.c)
+target_include_directories(mqtt_schema_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+	${CMAKE_SOURCE_DIR}/plugins
+)
+target_link_libraries(mqtt_schema_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -97,3 +105,4 @@ gtest_discover_tests(rolling_counter_test)
 gtest_discover_tests(mqtt_client_test)
 gtest_discover_tests(common_test)
 gtest_discover_tests(cid_test)
+gtest_discover_tests(mqtt_schema_test)
