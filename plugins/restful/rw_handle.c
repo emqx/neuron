@@ -284,7 +284,7 @@ void handle_write(nng_aio *aio)
             }
 
             if (req->t == NEU_JSON_ARRAY_INT64 &&
-                req->value.val_array_int64.length > NEU_VALUE_SIZE) {
+                req->value.val_array_int64.length > 128) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
