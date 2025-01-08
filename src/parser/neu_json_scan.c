@@ -125,7 +125,7 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
                 };
                 if (p_tag->is_last_layer) {
                     tag_elems[3] = (neu_json_elem_t) {
-                        .name      = "tag_type",
+                        .name      = "type",
                         .t         = NEU_JSON_INT,
                         .v.val_int = p_tag->type,
                     };
