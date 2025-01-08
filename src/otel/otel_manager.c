@@ -458,7 +458,16 @@ neu_otel_trace_ctx neu_otel_find_trace(void *req_ctx)
     pthread_mutex_unlock(&table_mutex);
 
     if (find) {
-        return (void *) find->ctx;
+        if (find->ctx->final &&
+            find->ctx->span_num ==
+                find->ctx->trace_data.resource_spans[0]
+                    ->scope_spans[0]
+                    ->n_spans &&
+            find->ctx->expected_span_num <= 0) {
+            return NULL;
+        } else {
+            return (void *) find->ctx;
+        }
     } else {
         return NULL;
     }
@@ -932,8 +941,10 @@ int neu_otel_trace_pack(neu_otel_trace_ctx ctx, uint8_t *out)
 
 void neu_otel_new_span_id(char *id)
 {
+    int64_t p_id = (int64_t) pthread_self();
     for (int i = SPAN_ID_LENGTH - 1; i >= 0; i--) {
-        id[i] = ID_CHARSET[rand() % 16];
+        int64_t rand_id = (int64_t) rand() + neu_time_ns() + p_id;
+        id[i]           = ID_CHARSET[rand_id % 16];
     }
     id[SPAN_ID_LENGTH] = '\0';
 }
@@ -1009,6 +1020,8 @@ static int otel_timer_cb(void *data)
                 HASH_DEL(traces_table, el);
                 neu_otel_free_trace(el->ctx);
                 free(el);
+            } else {
+                break;
             }
         } else if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
             nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
@@ -1035,7 +1048,7 @@ void neu_otel_start()
         param.usr_data = NULL;
 
         param.second      = 0;
-        param.millisecond = 100;
+        param.millisecond = 80;
         param.cb          = otel_timer_cb;
         param.type        = NEU_EVENT_TIMER_BLOCK;
 
