@@ -463,7 +463,7 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     neu_otel_trace_ctx trace           = NULL;
     neu_otel_scope_ctx scope           = NULL;
     char               new_span_id[36] = { 0 };
-    if (neu_otel_control_is_started()) {
+    if (neu_otel_control_is_started() && head->ctx) {
         trace = neu_otel_find_trace(head->ctx);
         if (trace) {
             scope = neu_otel_add_span(trace);
