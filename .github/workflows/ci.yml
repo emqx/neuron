@@ -21,7 +21,7 @@ jobs:
           - [aarch64-linux-gnu, aarch64, arm64]
           - [arm-linux-gnueabihf, armv4, armhf]
           - [x86_64-linux-gnu, x86_64, amd64]
-    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
+    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-v2.11
 
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
       matrix:
         arch:
           - [x86_64-linux-gnu, x86_64, amd64]
-    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
+    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-v2.11
 
     steps:
       - uses: actions/checkout@v4
