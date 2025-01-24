@@ -153,15 +153,6 @@ void handle_add_user(nng_aio *aio)
                 return;
             }
 
-            // only admin can add user
-            if (0 != strcmp(req->name, "admin")) {
-                nlog_error("only admin can add user");
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-
             // user already exists
             neu_user_t *user = neu_load_user(req->name);
             if (NULL != user) {
@@ -219,7 +210,7 @@ void handle_update_user(nng_aio *aio)
             }
 
             // only admin & current user can update user
-            if (0 != strcmp(req->name, "admin") &&
+            if (0 != strcmp("admin", current_user) &&
                 0 != strcmp(req->name, current_user)) {
                 nlog_error("only admin & current user can update user");
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
@@ -288,8 +279,17 @@ void handle_delete_user(nng_aio *aio)
             }
 
             // only admin can delete user
-            if (0 != strcmp(req->name, "admin")) {
-                nlog_error("only admin can add user");
+            if (0 != strcmp(current_user, "admin")) {
+                nlog_error("only admin can delete user");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            // admin can not be deleted
+            if (0 == strcmp(req->name, "admin")) {
+                nlog_error("admin can not be deleted");
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_USER_NO_PERMISSION, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
