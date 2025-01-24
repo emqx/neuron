@@ -177,7 +177,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
 
     neu_otel_trace_ctx trace = NULL;
     neu_otel_scope_ctx scope = NULL;
-    if (neu_otel_control_is_started()) {
+    if (neu_otel_control_is_started() && header->ctx) {
         trace = neu_otel_find_trace(header->ctx);
         if (trace) {
             scope = neu_otel_add_span(trace);
