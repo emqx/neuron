@@ -103,7 +103,24 @@ extern "C" {
     XX(NEU_REQ_CHECK_SCHEMA, neu_req_check_schema_t)                 \
     XX(NEU_RESP_CHECK_SCHEMA, neu_resp_check_schema_t)               \
     XX(NEU_REQ_DRIVER_ACTION, neu_req_driver_action_t)               \
-    XX(NEU_RESP_DRIVER_ACTION, neu_resp_driver_action_t)
+    XX(NEU_RESP_DRIVER_ACTION, neu_resp_driver_action_t)             \
+    XX(NEU_REQ_ADD_NODE_EVENT, neu_req_add_node_t)                   \
+    XX(NEU_REQ_DEL_NODE_EVENT, neu_req_del_node_t)                   \
+    XX(NEU_REQ_NODE_CTL_EVENT, neu_req_node_ctl_t)                   \
+    XX(NEU_REQ_NODE_SETTING_EVENT, neu_req_node_setting_t)           \
+    XX(NEU_REQ_ADD_GROUP_EVENT, neu_req_add_group_t)                 \
+    XX(NEU_REQ_DEL_GROUP_EVENT, neu_req_del_group_t)                 \
+    XX(NEU_REQ_UPDATE_GROUP_EVENT, neu_req_update_group_t)           \
+    XX(NEU_REQ_ADD_TAG_EVENT, neu_req_add_tag_t)                     \
+    XX(NEU_REQ_DEL_TAG_EVENT, neu_req_del_tag_t)                     \
+    XX(NEU_REQ_UPDATE_TAG_EVENT, neu_req_update_tag_t)               \
+    XX(NEU_REQ_ADD_GTAG_EVENT, neu_req_add_gtag_t)                   \
+    XX(NEU_REQ_ADD_PLUGIN_EVENT, neu_req_add_plugin_t)               \
+    XX(NEU_REQ_DEL_PLUGIN_EVENT, neu_req_del_plugin_t)               \
+    XX(NEU_REQ_SUBSCRIBE_GROUP_EVENT, neu_req_subscribe_t)           \
+    XX(NEU_REQ_UNSUBSCRIBE_GROUP_EVENT, neu_req_unsubscribe_t)       \
+    XX(NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT, neu_req_subscribe_t)    \
+    XX(NEU_REQ_SUBSCRIBE_GROUPS_EVENT, neu_req_subscribe_groups_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {
