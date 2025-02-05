@@ -64,6 +64,8 @@ UT_array *neu_node_manager_get_addrs_all(neu_node_manager_t *mgr);
 struct sockaddr_un neu_node_manager_get_addr(neu_node_manager_t *mgr,
                                              const char *        name);
 
+bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name);
+
 // neu_nodes_state_t array
 UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr);
 
