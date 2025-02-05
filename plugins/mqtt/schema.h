@@ -32,13 +32,16 @@ extern "C" {
 #include "plugin.h"
 
 typedef enum {
-    MQTT_SCHEMA_TIMESTAMP         = 0,
-    MQTT_SCHEMA_NODE_NAME         = 1,
-    MQTT_SCHEMA_GROUP_NAME        = 2,
-    MQTT_SCHEMA_TAG_VALUES        = 3,
-    MQTT_SCHEMA_STATIC_TAG_VALUES = 4,
-    MQTT_SCHEMA_TAG_ERRORS        = 5,
-    MQTT_SCHEMA_UD                = 6,
+    MQTT_SCHEMA_TIMESTAMP        = 0,
+    MQTT_SCHEMA_NODE_NAME        = 1,
+    MQTT_SCHEMA_GROUP_NAME       = 2,
+    MQTT_SCHEMA_TAGS             = 3,
+    MQTT_SCHEMA_STATIC_TAGS      = 4,
+    MQTT_SCHEMA_TAGVALUES        = 5,
+    MQTT_SCHEMA_STATIC_TAGVALUES = 6,
+    MQTT_SCHEMA_TAG_ERRORS       = 7,
+    MQTT_SCHEMA_TAG_ERROR_VALUES = 8,
+    MQTT_SCHEMA_UD               = 9,
 } mqtt_schema_vt_e;
 
 typedef struct {

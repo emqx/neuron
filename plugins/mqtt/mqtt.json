@@ -56,8 +56,8 @@
 	"format": {
 		"name": "Upload Format",
 		"name_zh": "上报数据格式",
-		"description": "JSON format of the data reported. In Values-format mode, data are split into `values` and `errors` sub objects. In Tags-format mode, tag data are put in a single array. ECP-format is the format for connecting to ECP data storage. Custom format supports user-defined data format. For variable definition specifications, please refer to [https://docs.emqx.com/en/neuronex/latest/configuration/north-apps/mqtt/api.html].",
-		"description_zh": "上报数据的 JSON 格式。在 Values-format 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 Tags-format 格式下，数据被放在一个数组中。 ECP-format 为对接 ECP 数据存储的格式。自定义格式，支持用户自定义上报数据格式，变量定义规范请参考【https://docs.emqx.com/zh/neuronex/latest/configuration/north-apps/mqtt/api.html】。",
+		"description": "JSON format of the data reported. In Values-format mode, data are split into `values` and `errors` sub objects. In Tags-format mode, tag data are put in a single array. ECP-format is the format for connecting to ECP data storage. Custom format supports user-defined data format. For variable definition specifications, please refer to 'https://docs.emqx.com/en/neuronex/latest/configuration/north-apps/mqtt/api.html'.",
+		"description_zh": "上报数据的 JSON 格式。在 Values-format 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 Tags-format 格式下，数据被放在一个数组中。 ECP-format 为对接 ECP 数据存储的格式。自定义格式，支持用户自定义上报数据格式，变量定义规范请参考'https://docs.emqx.com/zh/neuronex/latest/configuration/north-apps/mqtt/api.html'。",
 		"attribute": "required",
 		"type": "map",
 		"default": 0,

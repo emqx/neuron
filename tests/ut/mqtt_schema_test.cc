@@ -29,10 +29,10 @@ TEST(validate_success, schema)
     EXPECT_EQ(vts[2].vt, MQTT_SCHEMA_GROUP_NAME);
 
     EXPECT_STREQ(vts[3].name, "tags");
-    EXPECT_EQ(vts[3].vt, MQTT_SCHEMA_TAG_VALUES);
+    EXPECT_EQ(vts[3].vt, MQTT_SCHEMA_TAGVALUES);
 
     EXPECT_STREQ(vts[4].name, "static");
-    EXPECT_EQ(vts[4].vt, MQTT_SCHEMA_STATIC_TAG_VALUES);
+    EXPECT_EQ(vts[4].vt, MQTT_SCHEMA_STATIC_TAGS);
 
     EXPECT_STREQ(vts[5].name, "errors");
     EXPECT_EQ(vts[5].vt, MQTT_SCHEMA_TAG_ERRORS);
