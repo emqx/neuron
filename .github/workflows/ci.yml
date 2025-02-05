@@ -52,9 +52,9 @@ jobs:
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-$VERSION
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: neuron-sdk
+          name: neuron-sdk-${{ matrix.arch[2] }}
           path: |
             neuron-sdk-*.tar.gz
 
@@ -83,9 +83,9 @@ jobs:
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-debug-$VERSION
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: neuron-sdk
+          name: neuron-sdk-debug
           path: |
             neuron-sdk-debug-*.tar.gz
   
@@ -102,9 +102,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: neuron-sdk
+          name: neuron-sdk-debug
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-sdk-arm64
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-sdk-armhf
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-sdk-amd64
       
       - uses: softprops/action-gh-release@v1
         env:
