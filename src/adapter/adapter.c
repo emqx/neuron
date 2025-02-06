@@ -443,6 +443,31 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 
     strcpy(pheader->sender, adapter->name);
     switch (pheader->type) {
+    case NEU_REQ_DRIVER_DIRECTORY: {
+        neu_req_driver_directory_t *cmd = (neu_req_driver_directory_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FUP_OPEN: {
+        neu_req_fup_open_t *cmd = (neu_req_fup_open_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FUP_DATA: {
+        neu_req_fup_data_t *cmd = (neu_req_fup_data_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FDOWN_OPEN: {
+        neu_req_fdown_open_t *cmd = (neu_req_fdown_open_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_RESP_FDOWN_DATA: {
+        neu_resp_fdown_data_t *cmd = (neu_resp_fdown_data_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
     case NEU_REQ_DRIVER_ACTION: {
         neu_req_driver_action_t *cmd = (neu_req_driver_action_t *) data;
         strcpy(pheader->receiver, cmd->driver);

@@ -1088,3 +1088,118 @@ end:
 
     return rv;
 }
+
+void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
+                                 const uint8_t *payload, uint32_t len,
+                                 void *data, trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) payload;
+    (void) len;
+    (void) data;
+    (void) trace_w3c;
+    return;
+}
+
+int handle_driver_directory_response(neu_plugin_t *               plugin,
+                                     neu_json_mqtt_t *            mqtt_json,
+                                     neu_resp_driver_directory_t *data)
+{
+    (void) plugin;
+    (void) mqtt_json;
+    (void) data;
+    return 0;
+}
+
+void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,
+                                const uint8_t *payload, uint32_t len,
+                                void *data, trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) payload;
+    (void) len;
+    (void) data;
+    (void) trace_w3c;
+    return;
+}
+
+int handle_driver_fup_open_response(neu_plugin_t *       plugin,
+                                    neu_json_mqtt_t *    mqtt_json,
+                                    neu_resp_fup_open_t *data)
+{
+    (void) plugin;
+    (void) mqtt_json;
+    (void) data;
+    return 0;
+}
+
+void handle_driver_fup_data_req(neu_mqtt_qos_e qos, const char *topic,
+                                const uint8_t *payload, uint32_t len,
+                                void *data, trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) payload;
+    (void) len;
+    (void) data;
+    (void) trace_w3c;
+    return;
+}
+
+int handle_driver_fup_data_response(neu_plugin_t *       plugin,
+                                    neu_json_mqtt_t *    mqtt_json,
+                                    neu_resp_fup_data_t *data)
+{
+    (void) plugin;
+    (void) mqtt_json;
+    (void) data;
+    return 0;
+}
+
+void handle_driver_fdown_open_req(neu_mqtt_qos_e qos, const char *topic,
+                                  const uint8_t *payload, uint32_t len,
+                                  void *data, trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) payload;
+    (void) len;
+    (void) data;
+    (void) trace_w3c;
+    return;
+}
+
+int handle_driver_fdown_open_response(neu_plugin_t *         plugin,
+                                      neu_json_mqtt_t *      mqtt_json,
+                                      neu_resp_fdown_open_t *data)
+{
+    (void) plugin;
+    (void) mqtt_json;
+    (void) data;
+    return 0;
+}
+
+void handle_driver_fdown_data_req(neu_mqtt_qos_e qos, const char *topic,
+                                  const uint8_t *payload, uint32_t len,
+                                  void *data, trace_w3c_t *trace_w3c)
+{
+    (void) qos;
+    (void) topic;
+    (void) payload;
+    (void) len;
+    (void) data;
+    (void) trace_w3c;
+    return;
+}
+
+int handle_driver_fdown_data_response(neu_plugin_t *        plugin,
+                                      neu_json_mqtt_t *     mqtt_json,
+                                      neu_req_fdown_data_t *data)
+{
+    (void) plugin;
+    (void) mqtt_json;
+    (void) data;
+    return 0;
+}

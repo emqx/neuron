@@ -128,6 +128,21 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_DRIVER_ACTION,
     NEU_RESP_DRIVER_ACTION,
+
+    NEU_REQ_DRIVER_DIRECTORY,
+    NEU_RESP_DRIVER_DIRECTORY,
+
+    NEU_REQ_FUP_OPEN,
+    NEU_RESP_FUP_OPEN,
+
+    NEU_REQ_FUP_DATA,
+    NEU_RESP_FUP_DATA,
+
+    NEU_REQ_FDOWN_OPEN,
+    NEU_RESP_FDOWN_OPEN,
+
+    NEU_REQ_FDOWN_DATA,
+    NEU_RESP_FDOWN_DATA,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -216,6 +231,21 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_DRIVER_ACTION]  = "NEU_REQ_DRIVER_ACTION",
     [NEU_RESP_DRIVER_ACTION] = "NEU_RESP_DRIVER_ACTION",
+
+    [NEU_REQ_DRIVER_DIRECTORY]  = "NEU_REQ_DRIVER_DIRECTORY",
+    [NEU_RESP_DRIVER_DIRECTORY] = "NEU_RESP_DRIVER_DIRECTORY",
+
+    [NEU_REQ_FUP_OPEN]  = "NEU_REQ_FUP_OPEN",
+    [NEU_RESP_FUP_OPEN] = "NEU_RESP_FUP_OPEN",
+
+    [NEU_REQ_FUP_DATA]  = "NEU_REQ_FUP_DATA",
+    [NEU_RESP_FUP_DATA] = "NEU_RESP_FUP_DATA",
+
+    [NEU_REQ_FDOWN_OPEN]  = "NEU_REQ_FDOWN_OPEN",
+    [NEU_RESP_FDOWN_OPEN] = "NEU_RESP_FDOWN_OPEN",
+
+    [NEU_REQ_FDOWN_DATA]  = "NEU_REQ_FDOWN_DATA",
+    [NEU_RESP_FDOWN_DATA] = "NEU_RESP_FDOWN_DATA",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -252,6 +282,66 @@ typedef struct neu_req_driver_action {
 typedef struct neu_resp_driver_action {
     int error;
 } neu_resp_driver_action_t;
+
+typedef struct neu_req_driver_directory {
+    char driver[NEU_NODE_NAME_LEN];
+    char path[NEU_PATH_LEN];
+} neu_req_driver_directory_t;
+
+typedef struct neu_resp_driver_directory {
+    // char *name;
+    // int type;
+    // int size;
+    // int timestamp;
+    UT_array *files; // array of file
+} neu_resp_driver_directory_t;
+
+typedef struct neu_req_fup_open {
+    char driver[NEU_NODE_NAME_LEN];
+    char path[NEU_PATH_LEN];
+} neu_req_fup_open_t;
+
+typedef struct neu_resp_fup_open {
+    int      error;
+    uint64_t size;
+} neu_resp_fup_open_t;
+
+typedef struct neu_req_fup_data {
+    char driver[NEU_NODE_NAME_LEN];
+    char path[NEU_PATH_LEN];
+} neu_req_fup_data_t;
+
+typedef struct neu_resp_fup_data {
+    int      error;
+    bool     more;
+    uint8_t *data;
+    uint32_t len;
+} neu_resp_fup_data_t;
+
+typedef struct neu_req_fdown_open {
+    char driver[NEU_NODE_NAME_LEN];
+    char src_path[NEU_PATH_LEN];
+    char dst_path[NEU_PATH_LEN];
+} neu_req_fdown_open_t;
+
+typedef struct neu_resp_fdown_open {
+    int error;
+} neu_resp_fdown_open_t;
+
+typedef struct neu_req_fdown_data {
+    char driver[NEU_NODE_NAME_LEN];
+    char src_path[NEU_PATH_LEN];
+} neu_req_fdown_data_t;
+
+typedef struct neu_resp_down_data {
+    char driver[NEU_NODE_NAME_LEN];
+    char src_path[NEU_PATH_LEN];
+
+    bool more;
+
+    uint8_t *data;
+    uint32_t len;
+} neu_resp_fdown_data_t;
 
 typedef struct neu_req_check_schema {
     char schema[NEU_PLUGIN_NAME_LEN];

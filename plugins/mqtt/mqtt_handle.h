@@ -57,6 +57,41 @@ int  handle_driver_action_response(neu_plugin_t *            plugin,
                                    neu_json_mqtt_t *         mqtt_json,
                                    neu_resp_driver_action_t *data);
 
+void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
+                                 const uint8_t *payload, uint32_t len,
+                                 void *data, trace_w3c_t *trace_w3c);
+int  handle_driver_directory_response(neu_plugin_t *               plugin,
+                                      neu_json_mqtt_t *            mqtt_json,
+                                      neu_resp_driver_directory_t *data);
+
+void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,
+                                const uint8_t *payload, uint32_t len,
+                                void *data, trace_w3c_t *trace_w3c);
+int  handle_driver_fup_open_response(neu_plugin_t *       plugin,
+                                     neu_json_mqtt_t *    mqtt_json,
+                                     neu_resp_fup_open_t *data);
+
+void handle_driver_fup_data_req(neu_mqtt_qos_e qos, const char *topic,
+                                const uint8_t *payload, uint32_t len,
+                                void *data, trace_w3c_t *trace_w3c);
+int  handle_driver_fup_data_response(neu_plugin_t *       plugin,
+                                     neu_json_mqtt_t *    mqtt_json,
+                                     neu_resp_fup_data_t *data);
+
+void handle_driver_fdown_open_req(neu_mqtt_qos_e qos, const char *topic,
+                                  const uint8_t *payload, uint32_t len,
+                                  void *data, trace_w3c_t *trace_w3c);
+int  handle_driver_fdown_open_response(neu_plugin_t *         plugin,
+                                       neu_json_mqtt_t *      mqtt_json,
+                                       neu_resp_fdown_open_t *data);
+
+void handle_driver_fdown_data_req(neu_mqtt_qos_e qos, const char *topic,
+                                  const uint8_t *payload, uint32_t len,
+                                  void *data, trace_w3c_t *trace_w3c);
+int  handle_driver_fdown_data_response(neu_plugin_t *        plugin,
+                                       neu_json_mqtt_t *     mqtt_json,
+                                       neu_req_fdown_data_t *data);
+
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                            mqtt_upload_format_e format, mqtt_schema_vt_t *vts,
                            size_t n_vts, mqtt_static_vt_t *s_tags,
