@@ -44,6 +44,51 @@ TEST(validate_success, schema)
     free(vts);
 }
 
+TEST(validate_deep_success, schema)
+{
+    const char *schema = "{\"timestamp\": \"${timestamp}\", \"object\": "
+                         "{\"group\":\"${group}\", \"sub_object\": "
+                         "{\"tags\":\"${tags}\", \"cus\":\"aabb\"}}}";
+    mqtt_schema_vt_t *vts;
+    size_t            n_vts;
+    int               ret = mqtt_schema_validate(schema, &vts, &n_vts);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(n_vts, 2);
+
+    EXPECT_STREQ(vts[0].name, "timestamp");
+    EXPECT_EQ(vts[0].vt, MQTT_SCHEMA_TIMESTAMP);
+
+    EXPECT_STREQ(vts[1].name, "object");
+    EXPECT_EQ(vts[1].vt, MQTT_SCHEMA_OBJECT);
+    EXPECT_EQ(vts[1].n_sub_vts, 2);
+
+    EXPECT_STREQ(vts[1].sub_vts[0].name, "group");
+    EXPECT_EQ(vts[1].sub_vts[0].vt, MQTT_SCHEMA_GROUP_NAME);
+
+    EXPECT_STREQ(vts[1].sub_vts[1].name, "sub_object");
+    EXPECT_EQ(vts[1].sub_vts[1].vt, MQTT_SCHEMA_OBJECT);
+    EXPECT_EQ(vts[1].sub_vts[1].n_sub_vts, 2);
+
+    EXPECT_STREQ(vts[1].sub_vts[1].sub_vts[0].name, "tags");
+    EXPECT_EQ(vts[1].sub_vts[1].sub_vts[0].vt, MQTT_SCHEMA_TAGS);
+
+    EXPECT_STREQ(vts[1].sub_vts[1].sub_vts[1].name, "cus");
+    EXPECT_EQ(vts[1].sub_vts[1].sub_vts[1].vt, MQTT_SCHEMA_UD);
+
+    for (size_t i = 0; i < n_vts; i++) {
+        if (vts[i].vt == MQTT_SCHEMA_OBJECT) {
+            for (size_t k = 0; k < vts[i].n_sub_vts; k++) {
+                if (vts[i].sub_vts[k].vt == MQTT_SCHEMA_OBJECT) {
+                    free(vts[i].sub_vts[k].sub_vts);
+                }
+            }
+            free(vts[i].sub_vts);
+        }
+    }
+
+    free(vts);
+}
+
 TEST(validate_failed, schema)
 {
     const char *schema =
@@ -100,6 +145,41 @@ TEST(validate_success, schema_static)
     mqtt_static_free(vts, n_vts);
 }
 
+TEST(schema_encode_deep, schema_encode)
+{
+    const char *schema = "{\"timestamp\": \"${timestamp}\", \"object\": "
+                         "{\"group\":\"${group}\", \"sub_object\": "
+                         "{\"node\":\"${node}\", \"cus\":\"aabb\"}}}";
+    mqtt_schema_vt_t *vts;
+    size_t            n_vts;
+    int               ret = mqtt_schema_validate(schema, &vts, &n_vts);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(n_vts, 2);
+
+    char *               result = NULL;
+    neu_json_read_resp_t tags   = { 0 };
+    ret = mqtt_schema_encode((char *) "driver", (char *) "group", &tags, vts,
+                             n_vts, NULL, 0, &result);
+    EXPECT_EQ(ret, 0);
+    EXPECT_STREQ(result,
+                 "{\"timestamp\": 0, \"object\": {\"group\": \"group\", "
+                 "\"sub_object\": {\"node\": \"driver\", \"cus\": \"aabb\"}}}");
+    free(result);
+
+    for (size_t i = 0; i < n_vts; i++) {
+        if (vts[i].vt == MQTT_SCHEMA_OBJECT) {
+            for (size_t k = 0; k < vts[i].n_sub_vts; k++) {
+                if (vts[i].sub_vts[k].vt == MQTT_SCHEMA_OBJECT) {
+                    free(vts[i].sub_vts[k].sub_vts);
+                }
+            }
+            free(vts[i].sub_vts);
+        }
+    }
+
+    free(vts);
+}
+
 TEST(schema_encode, schema_static)
 {
     const char *schema =
@@ -134,7 +214,7 @@ TEST(schema_encode, schema_static)
     EXPECT_STREQ(
         result,
         "{\"timestamp\": 0, \"node\": \"driver\", \"group\": \"group\", "
-        "\"tags\": [], \"static\": [{\"name\": \"static_tag1\", \"value\": "
+        "\"tags\": {}, \"static\": [{\"name\": \"static_tag1\", \"value\": "
         "\"string\"}, {\"name\": \"static_tag2\", \"value\": 1234}, {\"name\": "
         "\"static_tag3\", \"value\": 11.44}, {\"name\": \"static_tag4\", "
         "\"value\": true}, {\"name\": \"static_tag5\", \"value\": \"[1, 3, "
