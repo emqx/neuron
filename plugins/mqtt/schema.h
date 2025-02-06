@@ -32,20 +32,29 @@ extern "C" {
 #include "plugin.h"
 
 typedef enum {
-    MQTT_SCHEMA_TIMESTAMP         = 0,
-    MQTT_SCHEMA_NODE_NAME         = 1,
-    MQTT_SCHEMA_GROUP_NAME        = 2,
-    MQTT_SCHEMA_TAG_VALUES        = 3,
-    MQTT_SCHEMA_STATIC_TAG_VALUES = 4,
-    MQTT_SCHEMA_TAG_ERRORS        = 5,
-    MQTT_SCHEMA_UD                = 6,
+    MQTT_SCHEMA_TIMESTAMP        = 0,
+    MQTT_SCHEMA_NODE_NAME        = 1,
+    MQTT_SCHEMA_GROUP_NAME       = 2,
+    MQTT_SCHEMA_TAGS             = 3,
+    MQTT_SCHEMA_STATIC_TAGS      = 4,
+    MQTT_SCHEMA_TAGVALUES        = 5,
+    MQTT_SCHEMA_STATIC_TAGVALUES = 6,
+    MQTT_SCHEMA_TAG_ERRORS       = 7,
+    MQTT_SCHEMA_TAG_ERROR_VALUES = 8,
+    MQTT_SCHEMA_UD               = 9,
+    MQTT_SCHEMA_OBJECT           = 10,
 } mqtt_schema_vt_e;
 
-typedef struct {
+typedef struct mqtt_schema_vt mqtt_schema_vt_t;
+typedef struct mqtt_schema_vt {
     char name[128];
 
     mqtt_schema_vt_e vt;
-    char             ud[128];
+
+    char ud[128];
+
+    mqtt_schema_vt_t *sub_vts;
+    size_t            n_sub_vts;
 } mqtt_schema_vt_t;
 
 int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
