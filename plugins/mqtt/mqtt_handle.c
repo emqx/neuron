@@ -679,7 +679,7 @@ int handle_driver_action_response(neu_plugin_t *            plugin,
         goto end;
     }
 
-    char *         topic = plugin->config.driver_action_resp_topic;
+    char *         topic = plugin->config.driver_topic.action_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;

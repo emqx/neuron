@@ -308,10 +308,10 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 
     if (0 !=
         neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                  config->driver_action_req_topic, plugin,
+                                  config->driver_topic.action_req, plugin,
                                   handle_driver_action_req)) {
         plog_error(plugin, "subscribe [%s] fail",
-                   plugin->config.driver_action_req_topic);
+                   plugin->config.driver_topic.action_req);
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }
 
@@ -323,7 +323,7 @@ static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
     neu_mqtt_client_unsubscribe(plugin->client, plugin->read_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client,
-                                config->driver_action_req_topic);
+                                config->driver_topic.action_req);
     neu_msleep(100); // wait for message completion
     return 0;
 }

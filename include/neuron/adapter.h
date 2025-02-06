@@ -44,6 +44,12 @@ typedef int (*neu_adapter_register_metric_cb_t)(neu_adapter_t *   adapter,
                                                 neu_metric_type_e type,
                                                 uint64_t          init);
 
+typedef struct {
+    char *   path;
+    uint64_t size;
+    uint64_t mtime;
+} neu_driver_file_info_t;
+
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
@@ -75,6 +81,9 @@ typedef struct adapter_callbacks {
                                            neu_json_type_e t, neu_type_e type,
                                            neu_json_value_u value,
                                            int64_t          error);
+            void (*directory_response)(neu_adapter_t *adapter, void *req,
+                                       int error, neu_driver_file_info_t *infos,
+                                       int n_info);
         } driver;
     };
 } adapter_callbacks_t;

@@ -116,6 +116,8 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
+static void directory_response(neu_adapter_t *adapter, void *req, int error,
+                               neu_driver_file_info_t *infos, int n_info);
 static group_t *   find_group(neu_adapter_driver_t *driver, const char *name);
 static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
 static inline void start_group_timer(neu_adapter_driver_t *driver,
@@ -216,6 +218,18 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
         neu_otel_scope_set_span_end_time(scope, neu_time_ns());
     }
+}
+
+static void directory_response(neu_adapter_t *adapter, void *r, int error,
+                               neu_driver_file_info_t *infos, int n_info)
+{
+    (void) infos;
+    (void) n_info;
+    (void) error;
+    (void) adapter;
+    (void) r;
+
+    // nlog_notice("directory response start <%p>", req->ctx);
 }
 
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
@@ -425,6 +439,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->driver_events                             = neu_event_new();
     driver->adapter.cb_funs.driver.update             = update;
     driver->adapter.cb_funs.driver.write_response     = write_response;
+    driver->adapter.cb_funs.driver.directory_response = directory_response;
     driver->adapter.cb_funs.driver.update_im          = update_im;
     driver->adapter.cb_funs.driver.update_with_trace  = update_with_trace;
     driver->adapter.cb_funs.driver.update_with_meta   = update_with_meta;
