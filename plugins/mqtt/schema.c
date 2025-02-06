@@ -2,14 +2,9 @@
 
 #include "schema.h"
 
-int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
-                         size_t *vts_len)
+static int mqtt_schema_parse(json_t *root, mqtt_schema_vt_t **vts,
+                             size_t *vts_len, int deep)
 {
-    json_t *root = json_loads(schema, 0, NULL);
-    if (root == NULL) {
-        return -1;
-    }
-
     *vts_len = 0;
     *vts     = NULL;
 
@@ -18,69 +13,95 @@ int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
 
     json_object_foreach(root, key, value)
     {
-        if (!json_is_string(value)) {
-            json_decref(root);
-            if (*vts_len > 0) {
-                free(*vts);
-            }
-            return -1;
-        }
-
-        const char *str_val = json_string_value(value);
-        if (str_val == NULL) {
-            json_decref(root);
-            if (*vts_len > 0) {
-                free(*vts);
-            }
-            return -1;
-        }
-
-        *vts_len += 1;
-        *vts = realloc(*vts, *vts_len * sizeof(mqtt_schema_vt_t));
-        mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
-
-        memset(vt, 0, sizeof(mqtt_schema_vt_t));
-        strcpy(vt->name, key);
-
-        if (strcmp(str_val, "${timestamp}") == 0) {
-            vt->vt = MQTT_SCHEMA_TIMESTAMP;
-        } else if (strcmp(str_val, "${node}") == 0) {
-            vt->vt = MQTT_SCHEMA_NODE_NAME;
-        } else if (strcmp(str_val, "${group}") == 0) {
-            vt->vt = MQTT_SCHEMA_GROUP_NAME;
-        } else if (strcmp(str_val, "${tags}") == 0) {
-            vt->vt = MQTT_SCHEMA_TAGS;
-        } else if (strcmp(str_val, "${static_tags}") == 0) {
-            vt->vt = MQTT_SCHEMA_STATIC_TAGS;
-        } else if (strcmp(str_val, "${tag_values}") == 0) {
-            vt->vt = MQTT_SCHEMA_TAGVALUES;
-        } else if (strcmp(str_val, "${static_tag_values}") == 0) {
-            vt->vt = MQTT_SCHEMA_STATIC_TAGVALUES;
-        } else if (strcmp(str_val, "${tag_error_values}") == 0) {
-            vt->vt = MQTT_SCHEMA_TAG_ERROR_VALUES;
-        } else if (strcmp(str_val, "${tag_errors}") == 0) {
-            vt->vt = MQTT_SCHEMA_TAG_ERRORS;
-        } else {
-            if (str_val[0] == '$' && str_val[1] == '{' &&
-                str_val[strlen(str_val) - 1] == '}') {
-                json_decref(root);
-                free(*vts);
+        if (json_is_string(value)) {
+            const char *str_val = json_string_value(value);
+            if (str_val == NULL) {
                 return -1;
-            } else {
-                vt->vt = MQTT_SCHEMA_UD;
-                strcpy(vt->ud, str_val);
             }
+
+            *vts_len += 1;
+            *vts = realloc(*vts, *vts_len * sizeof(mqtt_schema_vt_t));
+            mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
+
+            memset(vt, 0, sizeof(mqtt_schema_vt_t));
+            strcpy(vt->name, key);
+
+            if (strcmp(str_val, "${timestamp}") == 0) {
+                vt->vt = MQTT_SCHEMA_TIMESTAMP;
+            } else if (strcmp(str_val, "${node}") == 0) {
+                vt->vt = MQTT_SCHEMA_NODE_NAME;
+            } else if (strcmp(str_val, "${group}") == 0) {
+                vt->vt = MQTT_SCHEMA_GROUP_NAME;
+            } else if (strcmp(str_val, "${tags}") == 0) {
+                vt->vt = MQTT_SCHEMA_TAGS;
+            } else if (strcmp(str_val, "${static_tags}") == 0) {
+                vt->vt = MQTT_SCHEMA_STATIC_TAGS;
+            } else if (strcmp(str_val, "${tag_values}") == 0) {
+                vt->vt = MQTT_SCHEMA_TAGVALUES;
+            } else if (strcmp(str_val, "${static_tag_values}") == 0) {
+                vt->vt = MQTT_SCHEMA_STATIC_TAGVALUES;
+            } else if (strcmp(str_val, "${tag_error_values}") == 0) {
+                vt->vt = MQTT_SCHEMA_TAG_ERROR_VALUES;
+            } else if (strcmp(str_val, "${tag_errors}") == 0) {
+                vt->vt = MQTT_SCHEMA_TAG_ERRORS;
+            } else {
+                if (str_val[0] == '$' && str_val[1] == '{' &&
+                    str_val[strlen(str_val) - 1] == '}') {
+                    return -1;
+                } else {
+                    vt->vt = MQTT_SCHEMA_UD;
+                    strcpy(vt->ud, str_val);
+                }
+            }
+        } else if (json_is_object(value)) {
+            if (deep >= 3) {
+                return -1;
+            }
+
+            *vts_len += 1;
+            *vts = realloc(*vts, *vts_len * sizeof(mqtt_schema_vt_t));
+            mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
+
+            memset(vt, 0, sizeof(mqtt_schema_vt_t));
+            strcpy(vt->name, key);
+
+            vt->vt = MQTT_SCHEMA_OBJECT;
+            return mqtt_schema_parse(value, &vt->sub_vts, &vt->n_sub_vts,
+                                     deep + 1);
+        } else {
+            return -1;
         }
+    }
+
+    return 0;
+}
+
+int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
+                         size_t *vts_len)
+{
+    json_t *root = json_loads(schema, 0, NULL);
+    if (root == NULL) {
+        return -1;
+    }
+
+    int ret = mqtt_schema_parse(root, vts, vts_len, 1);
+    if (ret != 0) {
+        if (*vts != NULL) {
+            free(*vts);
+            *vts = NULL;
+        }
+        json_decref(root);
+        return -1;
     }
 
     json_decref(root);
     return 0;
 }
 
-int mqtt_schema_encode(char *driver, char *group, neu_json_read_resp_t *tags,
-                       mqtt_schema_vt_t *vts, size_t n_vts,
-                       mqtt_static_vt_t *s_tags, size_t n_s_tags,
-                       char **result_str)
+static void *schema_encode(char *driver, char *group,
+                           neu_json_read_resp_t *tags, mqtt_schema_vt_t *vts,
+                           size_t n_vts, mqtt_static_vt_t *s_tags,
+                           size_t n_s_tags)
 {
     void *root = neu_json_encode_new();
 
@@ -262,10 +283,28 @@ int mqtt_schema_encode(char *driver, char *group, neu_json_read_resp_t *tags,
             elem.t         = NEU_JSON_STR;
             elem.v.val_str = vts[i].ud;
             break;
+        case MQTT_SCHEMA_OBJECT: {
+            void *sub_root = schema_encode(driver, group, tags, vts[i].sub_vts,
+                                           vts[i].n_sub_vts, s_tags, n_s_tags);
+            elem.t         = NEU_JSON_OBJECT;
+            elem.v.val_object = sub_root;
+            break;
+        }
         }
 
         neu_json_encode_field(root, &elem, 1);
     }
+
+    return root;
+}
+
+int mqtt_schema_encode(char *driver, char *group, neu_json_read_resp_t *tags,
+                       mqtt_schema_vt_t *vts, size_t n_vts,
+                       mqtt_static_vt_t *s_tags, size_t n_s_tags,
+                       char **result_str)
+{
+    void *root =
+        schema_encode(driver, group, tags, vts, n_vts, s_tags, n_s_tags);
 
     int ret = neu_json_encode(root, result_str);
     neu_json_decode_free(root);

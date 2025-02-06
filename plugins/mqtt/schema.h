@@ -42,13 +42,19 @@ typedef enum {
     MQTT_SCHEMA_TAG_ERRORS       = 7,
     MQTT_SCHEMA_TAG_ERROR_VALUES = 8,
     MQTT_SCHEMA_UD               = 9,
+    MQTT_SCHEMA_OBJECT           = 10,
 } mqtt_schema_vt_e;
 
-typedef struct {
+typedef struct mqtt_schema_vt mqtt_schema_vt_t;
+typedef struct mqtt_schema_vt {
     char name[128];
 
     mqtt_schema_vt_e vt;
-    char             ud[128];
+
+    char ud[128];
+
+    mqtt_schema_vt_t *sub_vts;
+    size_t            n_sub_vts;
 } mqtt_schema_vt_t;
 
 int mqtt_schema_validate(const char *schema, mqtt_schema_vt_t **vts,
