@@ -108,13 +108,13 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: neuron-sdk-aarch64
+          name: neuron-sdk-arm64
       - uses: actions/download-artifact@v4
         with:
-          name: neuron-sdk-armv4
+          name: neuron-sdk-armhf
       - uses: actions/download-artifact@v4
         with:
-          name: neuron-sdk-x86_64
+          name: neuron-sdk-amd64
       
       - uses: softprops/action-gh-release@v1
         env:
