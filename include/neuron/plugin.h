@@ -117,6 +117,10 @@ typedef struct neu_plugin_intf_funs {
             int (*action)(neu_plugin_t *plugin, const char *action);
 
             int (*directory)(neu_plugin_t *plugin, void *req, const char *path);
+            int (*fup_open)(neu_plugin_t *plugin, void *req, const char *path);
+            int (*fup_data)(neu_plugin_t *plugin, void *req, const char *path);
+            int (*fdown_open)(neu_plugin_t *plugin, void *req,
+                              const char *src_path, const char *dst_path);
         } driver;
     };
 

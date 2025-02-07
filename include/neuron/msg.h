@@ -306,8 +306,8 @@ typedef struct neu_req_fup_open {
 } neu_req_fup_open_t;
 
 typedef struct neu_resp_fup_open {
-    int      error;
-    uint64_t size;
+    int     error;
+    int64_t size;
 } neu_resp_fup_open_t;
 
 typedef struct neu_req_fup_data {
@@ -319,7 +319,7 @@ typedef struct neu_resp_fup_data {
     int      error;
     bool     more;
     uint8_t *data;
-    uint32_t len;
+    uint16_t len;
 } neu_resp_fup_data_t;
 
 typedef struct neu_req_fdown_open {

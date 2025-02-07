@@ -183,3 +183,214 @@ int neu_json_encode_driver_directory_resp(void *json_object, void *param)
                                     NEU_JSON_ELEM_SIZE(resp_elems));
     return ret;
 }
+
+int neu_json_decode_driver_fup_open_req(char *                           buf,
+                                        neu_json_driver_fup_open_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "path",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        return -1;
+    }
+
+    *result = calloc(1, sizeof(neu_json_driver_fup_open_req_t));
+
+    (*result)->driver = req_elems[0].v.val_str;
+    (*result)->path   = req_elems[1].v.val_str;
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_driver_fup_open_req_free(
+    neu_json_driver_fup_open_req_t *req)
+{
+    if (req) {
+        free(req->driver);
+        free(req->path);
+        free(req);
+    }
+}
+
+int neu_json_encode_driver_fup_open_resp(void *json_object, void *param)
+{
+    neu_json_driver_fup_open_resp_t *resp =
+        (neu_json_driver_fup_open_resp_t *) param;
+
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->error,
+        },
+        {
+            .name      = "size",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->size,
+        },
+    };
+
+    int ret = neu_json_encode_field(json_object, resp_elems,
+                                    NEU_JSON_ELEM_SIZE(resp_elems));
+    return ret;
+}
+
+int neu_json_decode_driver_fdown_open_req(
+    char *buf, neu_json_driver_fdown_open_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "src path",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "dst path",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        return -1;
+    }
+
+    *result = calloc(1, sizeof(neu_json_driver_fdown_open_req_t));
+
+    (*result)->driver   = req_elems[0].v.val_str;
+    (*result)->src_path = req_elems[1].v.val_str;
+    (*result)->dst_path = req_elems[2].v.val_str;
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_driver_fdown_open_req_free(
+    neu_json_driver_fdown_open_req_t *req)
+{
+    if (req) {
+        free(req->driver);
+        free(req->src_path);
+        free(req->dst_path);
+        free(req);
+    }
+}
+
+int neu_json_encode_driver_fdown_open_resp(void *json_object, void *param)
+{
+    neu_json_driver_fdown_open_resp_t *resp =
+        (neu_json_driver_fdown_open_resp_t *) param;
+
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->error,
+        },
+    };
+
+    int ret = neu_json_encode_field(json_object, resp_elems,
+                                    NEU_JSON_ELEM_SIZE(resp_elems));
+    return ret;
+}
+
+int neu_json_decode_driver_fup_data_req(char *                           buf,
+                                        neu_json_driver_fup_data_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "path",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        return -1;
+    }
+
+    *result = calloc(1, sizeof(neu_json_driver_fup_data_req_t));
+
+    (*result)->driver = req_elems[0].v.val_str;
+    (*result)->path   = req_elems[1].v.val_str;
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_driver_fup_data_req_free(
+    neu_json_driver_fup_data_req_t *req)
+{
+    if (req) {
+        free(req->driver);
+        free(req->path);
+        free(req);
+    }
+}
+
+int neu_json_encode_driver_fup_data_resp(void *json_object, void *param)
+{
+    neu_json_driver_fup_data_resp_t *resp =
+        (neu_json_driver_fup_data_resp_t *) param;
+    void *array = neu_json_array();
+
+    for (int i = 0; i < resp->len; i++) {
+        neu_json_elem_t elem = {
+            .name      = "data",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->data[i],
+        };
+        array = neu_json_encode_array_value(array, &elem, 1);
+    }
+
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->error,
+        },
+        {
+            .name       = "more",
+            .t          = NEU_JSON_BOOL,
+            .v.val_bool = resp->more,
+        },
+        {
+            .name         = "data",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = array,
+        },
+    };
+
+    int ret = neu_json_encode_field(json_object, resp_elems,
+                                    NEU_JSON_ELEM_SIZE(resp_elems));
+    return ret;
+}

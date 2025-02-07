@@ -85,6 +85,13 @@ typedef struct adapter_callbacks {
             void (*directory_response)(neu_adapter_t *adapter, void *req,
                                        int error, neu_driver_file_info_t *infos,
                                        int n_info);
+            void (*fup_open_response)(neu_adapter_t *adapter, void *req,
+                                      int error, int64_t size);
+            void (*fup_data_response)(neu_adapter_t *adapter, void *req,
+                                      int error, uint8_t *bytes,
+                                      uint16_t n_bytes, bool more);
+            void (*fdown_open_response)(neu_adapter_t *adapter, void *req,
+                                        int error);
         } driver;
     };
 } adapter_callbacks_t;

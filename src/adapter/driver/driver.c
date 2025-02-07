@@ -118,6 +118,12 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
 static void directory_response(neu_adapter_t *adapter, void *req, int error,
                                neu_driver_file_info_t *infos, int n_info);
+static void fup_open_response(neu_adapter_t *adapter, void *req, int error,
+                              int64_t size);
+static void fdown_open_response(neu_adapter_t *adapter, void *req, int error);
+static void fup_data_response(neu_adapter_t *adapter, void *req, int error,
+                              uint8_t *bytes, uint16_t n_bytes, bool more);
+
 static group_t *   find_group(neu_adapter_driver_t *driver, const char *name);
 static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
 static inline void start_group_timer(neu_adapter_driver_t *driver,
@@ -218,6 +224,50 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
         neu_otel_scope_set_span_end_time(scope, neu_time_ns());
     }
+}
+
+static void fup_data_response(neu_adapter_t *adapter, void *r, int error,
+                              uint8_t *bytes, uint16_t n_bytes, bool more)
+{
+    neu_reqresp_head_t *req = (neu_reqresp_head_t *) r;
+    req->type               = NEU_RESP_FUP_DATA;
+
+    neu_resp_fup_data_t resp = { 0 };
+
+    resp.error = error;
+    if (resp.error == 0) {
+        resp.more = more;
+        resp.len  = n_bytes;
+        resp.data = calloc(1, n_bytes);
+        memcpy(resp.data, bytes, n_bytes);
+    }
+
+    adapter->cb_funs.response(adapter, req, &resp);
+}
+
+static void fdown_open_response(neu_adapter_t *adapter, void *req, int error)
+{
+    neu_reqresp_head_t *r = (neu_reqresp_head_t *) req;
+    r->type               = NEU_RESP_FDOWN_OPEN;
+
+    neu_resp_fup_data_t resp = { 0 };
+    resp.error               = error;
+
+    adapter->cb_funs.response(adapter, r, &resp);
+}
+
+static void fup_open_response(neu_adapter_t *adapter, void *r, int error,
+                              int64_t size)
+{
+    neu_reqresp_head_t *req = (neu_reqresp_head_t *) r;
+    req->type               = NEU_RESP_FUP_OPEN;
+
+    neu_resp_fup_open_t resp = { 0 };
+
+    resp.error = error;
+    resp.size  = size;
+
+    adapter->cb_funs.response(adapter, req, &resp);
 }
 
 static void directory_response(neu_adapter_t *adapter, void *r, int error,
@@ -453,15 +503,18 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    driver->cache                                     = neu_driver_cache_new();
-    driver->driver_events                             = neu_event_new();
-    driver->adapter.cb_funs.driver.update             = update;
-    driver->adapter.cb_funs.driver.write_response     = write_response;
-    driver->adapter.cb_funs.driver.directory_response = directory_response;
-    driver->adapter.cb_funs.driver.update_im          = update_im;
-    driver->adapter.cb_funs.driver.update_with_trace  = update_with_trace;
-    driver->adapter.cb_funs.driver.update_with_meta   = update_with_meta;
-    driver->adapter.cb_funs.driver.scan_tags_response = scan_tags_response;
+    driver->cache                                      = neu_driver_cache_new();
+    driver->driver_events                              = neu_event_new();
+    driver->adapter.cb_funs.driver.update              = update;
+    driver->adapter.cb_funs.driver.write_response      = write_response;
+    driver->adapter.cb_funs.driver.directory_response  = directory_response;
+    driver->adapter.cb_funs.driver.fup_open_response   = fup_open_response;
+    driver->adapter.cb_funs.driver.fdown_open_response = fdown_open_response;
+    driver->adapter.cb_funs.driver.fup_data_response   = fup_data_response;
+    driver->adapter.cb_funs.driver.update_im           = update_im;
+    driver->adapter.cb_funs.driver.update_with_trace   = update_with_trace;
+    driver->adapter.cb_funs.driver.update_with_meta    = update_with_meta;
+    driver->adapter.cb_funs.driver.scan_tags_response  = scan_tags_response;
     driver->adapter.cb_funs.driver.test_read_tag_response =
         test_read_tag_response;
 
@@ -3130,4 +3183,44 @@ int neu_adapter_driver_directory(neu_adapter_driver_t *      driver,
     }
     return driver->adapter.module->intf_funs->driver.directory(
         driver->adapter.plugin, (void *) req, cmd->path);
+}
+
+int neu_adapter_driver_fup_open(neu_adapter_driver_t *driver,
+                                neu_reqresp_head_t *req, const char *path)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.fup_open == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+    }
+    return driver->adapter.module->intf_funs->driver.fup_open(
+        driver->adapter.plugin, (void *) req, path);
+}
+
+int neu_adapter_driver_fdown_open(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *req, const char *src_path,
+                                  const char *dst_path)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.fdown_open == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+    }
+    return driver->adapter.module->intf_funs->driver.fdown_open(
+        driver->adapter.plugin, (void *) req, src_path, dst_path);
+}
+
+int neu_adapter_driver_fup_data(neu_adapter_driver_t *driver,
+                                neu_reqresp_head_t *req, const char *path)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.fup_data == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+    }
+    return driver->adapter.module->intf_funs->driver.fup_data(
+        driver->adapter.plugin, (void *) req, path);
 }

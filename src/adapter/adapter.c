@@ -755,6 +755,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_CHECK_SCHEMA:
     case NEU_RESP_DRIVER_ACTION:
     case NEU_RESP_DRIVER_DIRECTORY:
+    case NEU_RESP_FUP_OPEN:
+    case NEU_RESP_FDOWN_OPEN:
+    case NEU_RESP_FUP_DATA:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -1450,6 +1453,28 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_adapter_driver_directory((neu_adapter_driver_t *) adapter,
                                      (neu_reqresp_head_t *) header, cmd);
+        break;
+    }
+    case NEU_REQ_FUP_OPEN: {
+        neu_req_fup_open_t *cmd = (neu_req_fup_open_t *) &header[1];
+
+        neu_adapter_driver_fup_open((neu_adapter_driver_t *) adapter,
+                                    (neu_reqresp_head_t *) header, cmd->path);
+        break;
+    }
+    case NEU_REQ_FDOWN_OPEN: {
+        neu_req_fdown_open_t *cmd = (neu_req_fdown_open_t *) &header[1];
+
+        neu_adapter_driver_fdown_open((neu_adapter_driver_t *) adapter,
+                                      (neu_reqresp_head_t *) header,
+                                      cmd->src_path, cmd->dst_path);
+        break;
+    }
+    case NEU_REQ_FUP_DATA: {
+        neu_req_fup_data_t *cmd = (neu_req_fup_data_t *) &header[1];
+
+        neu_adapter_driver_fup_data((neu_adapter_driver_t *) adapter,
+                                    (neu_reqresp_head_t *) header, cmd->path);
         break;
     }
     default:
