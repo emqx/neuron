@@ -1068,6 +1068,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_DRIVER_ACTION:
+    case NEU_REQ_DRIVER_DIRECTORY:
     case NEU_REQ_ADD_GROUP: {
         neu_otel_trace_ctx trace = NULL;
         neu_otel_scope_ctx scope = NULL;
@@ -1348,6 +1349,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_ERROR:
     case NEU_RESP_DRIVER_ACTION:
+    case NEU_RESP_DRIVER_DIRECTORY:
     case NEU_RESP_READ_GROUP:
     case NEU_RESP_READ_GROUP_PAGINATE:
     case NEU_RESP_TEST_READ_TAG:

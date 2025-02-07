@@ -754,6 +754,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_CHECK_SCHEMA:
     case NEU_RESP_DRIVER_ACTION:
+    case NEU_RESP_DRIVER_DIRECTORY:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -1441,6 +1442,14 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(adapter, header, &error);
 
         free(cmd->action);
+        break;
+    }
+    case NEU_REQ_DRIVER_DIRECTORY: {
+        neu_req_driver_directory_t *cmd =
+            (neu_req_driver_directory_t *) &header[1];
+
+        neu_adapter_driver_directory((neu_adapter_driver_t *) adapter,
+                                     (neu_reqresp_head_t *) header, cmd);
         break;
     }
     default:

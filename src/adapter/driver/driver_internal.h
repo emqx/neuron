@@ -96,5 +96,8 @@ void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req);
 
 int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd);
+int neu_adapter_driver_directory(neu_adapter_driver_t *      driver,
+                                 neu_reqresp_head_t *        req,
+                                 neu_req_driver_directory_t *cmd);
 
 #endif

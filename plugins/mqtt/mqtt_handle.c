@@ -1095,10 +1095,46 @@ void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
 {
     (void) qos;
     (void) topic;
-    (void) payload;
-    (void) len;
-    (void) data;
     (void) trace_w3c;
+
+    neu_plugin_t *                   plugin = data;
+    neu_json_driver_directory_req_t *req    = NULL;
+
+    char *json_str = calloc(len + 1, sizeof(char));
+    memcpy(json_str, payload, len);
+
+    neu_json_mqtt_t *mqtt = NULL;
+    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
+    if (0 != rv) {
+        plog_error(plugin, "neu_json_decode_mqtt_req failed");
+        free(json_str);
+        return;
+    }
+
+    rv = neu_json_decode_driver_directory_req(json_str, &req);
+    if (rv != 0) {
+        plog_error(plugin, "neu_json_decode_driver_action_req failed");
+        free(json_str);
+        return;
+    }
+
+    neu_reqresp_head_t         header = { 0 };
+    neu_req_driver_directory_t cmd    = { 0 };
+
+    header.ctx  = mqtt;
+    header.type = NEU_REQ_DRIVER_DIRECTORY;
+
+    strcpy(cmd.driver, req->driver);
+    strcpy(cmd.path, req->path);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_DIRECTORY) fail");
+        return;
+    }
+
+    neu_json_decode_driver_directory_req_free(req);
+    free(json_str);
+
     return;
 }
 
@@ -1106,10 +1142,62 @@ int handle_driver_directory_response(neu_plugin_t *               plugin,
                                      neu_json_mqtt_t *            mqtt_json,
                                      neu_resp_driver_directory_t *data)
 {
-    (void) plugin;
-    (void) mqtt_json;
-    (void) data;
-    return 0;
+    int                              rv        = 0;
+    char *                           json_str  = NULL;
+    neu_json_driver_directory_resp_t directory = { 0 };
+
+    if (NULL == plugin->client) {
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
+    }
+
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
+        rv = NEU_ERR_MQTT_FAILURE;
+        goto end;
+    }
+
+    directory.error = data->error;
+    if (directory.error == 0) {
+        directory.n_files = utarray_len(data->files);
+        directory.files =
+            calloc(directory.n_files, sizeof(neu_json_driver_directory_file_t));
+
+        utarray_foreach(data->files, neu_resp_driver_directory_file_t *, file)
+        {
+            neu_json_driver_directory_file_t *f =
+                &directory.files[utarray_eltidx(data->files, file)];
+
+            f->ftype     = file->ftype;
+            f->name      = file->name;
+            f->size      = file->size;
+            f->timestamp = file->timestamp;
+        }
+    }
+
+    neu_json_encode_with_mqtt(&directory, neu_json_encode_driver_directory_resp,
+                              mqtt_json, neu_json_encode_mqtt_resp, &json_str);
+    if (NULL == json_str) {
+        plog_error(plugin, "generate driver directory resp json fail, uuid:%s",
+                   mqtt_json->uuid);
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    char *         topic = plugin->config.driver_topic.files_resp;
+    neu_mqtt_qos_e qos   = plugin->config.qos;
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
+
+end:
+    neu_json_decode_mqtt_req_free(mqtt_json);
+    if (directory.error == 0) {
+        free(directory.files);
+        utarray_free(data->files);
+    }
+
+    return rv;
 }
 
 void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,

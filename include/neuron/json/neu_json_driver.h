@@ -35,6 +35,31 @@ int  neu_json_decode_driver_action_req(char *                     buf,
                                        neu_json_driver_action_t **result);
 void neu_json_decode_driver_action_req_free(neu_json_driver_action_t *req);
 
+typedef struct {
+    char *driver;
+    char *path;
+} neu_json_driver_directory_req_t;
+
+int neu_json_decode_driver_directory_req(
+    char *buf, neu_json_driver_directory_req_t **result);
+void neu_json_decode_driver_directory_req_free(
+    neu_json_driver_directory_req_t *req);
+
+typedef struct {
+    char *  name;
+    int     ftype;
+    int64_t size;
+    int64_t timestamp;
+} neu_json_driver_directory_file_t;
+
+typedef struct {
+    int                               error;
+    neu_json_driver_directory_file_t *files;
+    int                               n_files;
+} neu_json_driver_directory_resp_t;
+
+int neu_json_encode_driver_directory_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

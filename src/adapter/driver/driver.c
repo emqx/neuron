@@ -223,13 +223,31 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 static void directory_response(neu_adapter_t *adapter, void *r, int error,
                                neu_driver_file_info_t *infos, int n_info)
 {
-    (void) infos;
-    (void) n_info;
-    (void) error;
-    (void) adapter;
-    (void) r;
+    neu_reqresp_head_t *req = (neu_reqresp_head_t *) r;
+    req->type               = NEU_RESP_DRIVER_DIRECTORY;
 
-    // nlog_notice("directory response start <%p>", req->ctx);
+    neu_resp_driver_directory_t resp = { 0 };
+    UT_icd directory_file_icd = { sizeof(neu_resp_driver_directory_file_t),
+                                  NULL, NULL, NULL };
+
+    resp.error = error;
+    if (error == NEU_ERR_SUCCESS) {
+        utarray_new(resp.files, &directory_file_icd);
+
+        for (int i = 0; i < n_info; i++) {
+            neu_driver_file_info_t *         info = &infos[i];
+            neu_resp_driver_directory_file_t file = { 0 };
+
+            strcpy(file.name, info->path);
+            file.ftype     = info->ftype;
+            file.size      = info->size;
+            file.timestamp = info->mtime;
+
+            utarray_push_back(resp.files, &file);
+        }
+    }
+
+    adapter->cb_funs.response(adapter, req, &resp);
 }
 
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
@@ -3098,4 +3116,18 @@ int neu_adapter_driver_cmd(neu_adapter_driver_t *driver, const char *cmd)
     }
     return driver->adapter.module->intf_funs->driver.action(
         driver->adapter.plugin, cmd);
+}
+
+int neu_adapter_driver_directory(neu_adapter_driver_t *      driver,
+                                 neu_reqresp_head_t *        req,
+                                 neu_req_driver_directory_t *cmd)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.directory == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+    }
+    return driver->adapter.module->intf_funs->driver.directory(
+        driver->adapter.plugin, (void *) req, cmd->path);
 }

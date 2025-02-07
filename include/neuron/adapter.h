@@ -45,9 +45,10 @@ typedef int (*neu_adapter_register_metric_cb_t)(neu_adapter_t *   adapter,
                                                 uint64_t          init);
 
 typedef struct {
-    char *   path;
-    uint64_t size;
-    uint64_t mtime;
+    char    path[NEU_PATH_LEN];
+    int     ftype;
+    int64_t size;
+    int64_t mtime;
 } neu_driver_file_info_t;
 
 typedef struct adapter_callbacks {

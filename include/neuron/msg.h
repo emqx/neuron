@@ -288,12 +288,16 @@ typedef struct neu_req_driver_directory {
     char path[NEU_PATH_LEN];
 } neu_req_driver_directory_t;
 
+typedef struct neu_resp_driver_directory_file {
+    char    name[NEU_PATH_LEN];
+    int     ftype;
+    int64_t size;
+    int64_t timestamp;
+} neu_resp_driver_directory_file_t;
+
 typedef struct neu_resp_driver_directory {
-    // char *name;
-    // int type;
-    // int size;
-    // int timestamp;
-    UT_array *files; // array of file
+    int       error;
+    UT_array *files; // array of neu_resp_driver_directory_file_t
 } neu_resp_driver_directory_t;
 
 typedef struct neu_req_fup_open {
