@@ -55,34 +55,71 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
     }
 }
 
+#define ACTION_REQ_TOPIC "action/req"
+#define ACTION_RESP_TOPIC "action/resp"
+#define FILES_REQ_TOPIC "flist/req"
+#define FILES_RESP_TOPIC "flist/resp"
+
+#define FILE_UP_REQ_TOPIC "fup/req"
+#define FILE_UP_RESP_TOPIC "fup/resp"
+#define FILE_UP_DATA_REQ_TOPIC "fupdata/req"
+#define FILE_UP_DATA_RESP_TOPIC "fupdata/resp"
+
+#define FILE_DOWN_REQ_TOPIC "fdown/req"
+#define FILE_DOWN_RESP_TOPIC "fdown/resp"
+#define FILE_DOWN_DATA_REQ_TOPIC "fdowndata/req"
+#define FILE_DOWN_DATA_RESP_TOPIC "fdowndata/resp"
+
 typedef struct {
-    neu_mqtt_version_e   version;                 // mqtt version
-    char *               client_id;               // client id
-    neu_mqtt_qos_e       qos;                     // message QoS
-    mqtt_upload_format_e format;                  // upload format
-    char *               write_req_topic;         // write request topic
-    char *               write_resp_topic;        // write response topic
-    char *               driver_action_req_topic; // driver action request topic
-    char *   driver_action_resp_topic; // driver action response topic
-    bool     upload_err;               // Upload tag error code flag
-    bool     upload_drv_state;         // upload driver state flag
-    char *   heartbeat_topic;          // upload driver state topic
-    uint16_t heartbeat_interval;       // upload driver state interval
-    size_t   cache;                    // cache enable flag
-    size_t   cache_mem_size;           // cache memory size in bytes
-    size_t   cache_disk_size;          // cache disk size in bytes
-    size_t   cache_sync_interval;      // cache sync interval
-    char *   host;                     // broker host
-    uint16_t port;                     // broker port
-    char *   username;                 // user name
-    char *   password;                 // user password
-    bool     ssl;                      // ssl flag
-    char *   ca;                       // CA
-    char *   cert;                     // client cert
-    char *   key;                      // client key
-    char *   keypass;                  // client key password
-                                       // remove in 2.6, keep it here
-                                       // for backward compatibility
+    char action_req[256];
+    char action_resp[256];
+
+    char files_req[256];
+    char files_resp[256];
+
+    char file_up_req[256];
+    char file_up_resp[256];
+
+    char file_up_data_req[256];
+    char file_up_data_resp[256];
+
+    char file_down_req[256];
+    char file_down_resp[256];
+
+    char file_down_data_req[256];
+    char file_down_data_resp[256];
+} mqtt_driver_topic_t;
+
+typedef struct {
+    neu_mqtt_version_e   version;          // mqtt version
+    char *               client_id;        // client id
+    neu_mqtt_qos_e       qos;              // message QoS
+    mqtt_upload_format_e format;           // upload format
+    char *               write_req_topic;  // write request topic
+    char *               write_resp_topic; // write response topic
+
+    char *              driver_topic_prefix; // driver topic prefix
+    mqtt_driver_topic_t driver_topic;
+
+    bool     upload_err;          // Upload tag error code flag
+    bool     upload_drv_state;    // upload driver state flag
+    char *   heartbeat_topic;     // upload driver state topic
+    uint16_t heartbeat_interval;  // upload driver state interval
+    size_t   cache;               // cache enable flag
+    size_t   cache_mem_size;      // cache memory size in bytes
+    size_t   cache_disk_size;     // cache disk size in bytes
+    size_t   cache_sync_interval; // cache sync interval
+    char *   host;                // broker host
+    uint16_t port;                // broker port
+    char *   username;            // user name
+    char *   password;            // user password
+    bool     ssl;                 // ssl flag
+    char *   ca;                  // CA
+    char *   cert;                // client cert
+    char *   key;                 // client key
+    char *   keypass;             // client key password
+                                  // remove in 2.6, keep it here
+                                  // for backward compatibility
 
     size_t            n_schema_vt;
     mqtt_schema_vt_t *schema_vts;

@@ -443,6 +443,35 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 
     strcpy(pheader->sender, adapter->name);
     switch (pheader->type) {
+    case NEU_REQ_DRIVER_DIRECTORY: {
+        neu_req_driver_directory_t *cmd = (neu_req_driver_directory_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FUP_OPEN: {
+        neu_req_fup_open_t *cmd = (neu_req_fup_open_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FUP_DATA: {
+        neu_req_fup_data_t *cmd = (neu_req_fup_data_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FDOWN_OPEN: {
+        neu_req_fdown_open_t *cmd = (neu_req_fdown_open_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_FDOWN_DATA: {
+        strcpy(pheader->receiver, header.receiver);
+        break;
+    }
+    case NEU_RESP_FDOWN_DATA: {
+        neu_resp_fdown_data_t *cmd = (neu_resp_fdown_data_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
     case NEU_REQ_DRIVER_ACTION: {
         neu_req_driver_action_t *cmd = (neu_req_driver_action_t *) data;
         strcpy(pheader->receiver, cmd->driver);
@@ -729,6 +758,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_CHECK_SCHEMA:
     case NEU_RESP_DRIVER_ACTION:
+    case NEU_RESP_DRIVER_DIRECTORY:
+    case NEU_RESP_FUP_OPEN:
+    case NEU_RESP_FDOWN_OPEN:
+    case NEU_RESP_FUP_DATA:
+    case NEU_REQ_FDOWN_DATA:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -1416,6 +1450,45 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(adapter, header, &error);
 
         free(cmd->action);
+        break;
+    }
+    case NEU_REQ_DRIVER_DIRECTORY: {
+        neu_req_driver_directory_t *cmd =
+            (neu_req_driver_directory_t *) &header[1];
+
+        neu_adapter_driver_directory((neu_adapter_driver_t *) adapter,
+                                     (neu_reqresp_head_t *) header, cmd);
+        break;
+    }
+    case NEU_REQ_FUP_OPEN: {
+        neu_req_fup_open_t *cmd = (neu_req_fup_open_t *) &header[1];
+
+        neu_adapter_driver_fup_open((neu_adapter_driver_t *) adapter,
+                                    (neu_reqresp_head_t *) header, cmd->path);
+        break;
+    }
+    case NEU_REQ_FDOWN_OPEN: {
+        neu_req_fdown_open_t *cmd = (neu_req_fdown_open_t *) &header[1];
+
+        neu_adapter_driver_fdown_open(
+            (neu_adapter_driver_t *) adapter, (neu_reqresp_head_t *) header,
+            header->sender, cmd->src_path, cmd->dst_path, cmd->size);
+        break;
+    }
+    case NEU_RESP_FDOWN_DATA: {
+        neu_resp_fdown_data_t *cmd = (neu_resp_fdown_data_t *) &header[1];
+        neu_adapter_driver_fdown_data((neu_adapter_driver_t *) adapter,
+                                      (neu_reqresp_head_t *) header, cmd->data,
+                                      cmd->len, cmd->more);
+        free(cmd->data);
+        neu_msg_free(msg);
+        break;
+    }
+    case NEU_REQ_FUP_DATA: {
+        neu_req_fup_data_t *cmd = (neu_req_fup_data_t *) &header[1];
+
+        neu_adapter_driver_fup_data((neu_adapter_driver_t *) adapter,
+                                    (neu_reqresp_head_t *) header, cmd->path);
         break;
     }
     default:

@@ -103,7 +103,17 @@ extern "C" {
     XX(NEU_REQ_CHECK_SCHEMA, neu_req_check_schema_t)                 \
     XX(NEU_RESP_CHECK_SCHEMA, neu_resp_check_schema_t)               \
     XX(NEU_REQ_DRIVER_ACTION, neu_req_driver_action_t)               \
-    XX(NEU_RESP_DRIVER_ACTION, neu_resp_driver_action_t)
+    XX(NEU_RESP_DRIVER_ACTION, neu_resp_driver_action_t)             \
+    XX(NEU_REQ_DRIVER_DIRECTORY, neu_req_driver_directory_t)         \
+    XX(NEU_RESP_DRIVER_DIRECTORY, neu_resp_driver_directory_t)       \
+    XX(NEU_REQ_FUP_OPEN, neu_req_fup_open_t)                         \
+    XX(NEU_RESP_FUP_OPEN, neu_resp_fup_open_t)                       \
+    XX(NEU_REQ_FUP_DATA, neu_req_fup_data_t)                         \
+    XX(NEU_RESP_FUP_DATA, neu_resp_fup_data_t)                       \
+    XX(NEU_REQ_FDOWN_OPEN, neu_req_fdown_open_t)                     \
+    XX(NEU_RESP_FDOWN_OPEN, neu_resp_fdown_open_t)                   \
+    XX(NEU_REQ_FDOWN_DATA, neu_req_fdown_data_t)                     \
+    XX(NEU_RESP_FDOWN_DATA, neu_resp_fdown_data_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

@@ -129,28 +129,15 @@
 			"length": 255
 		}
 	},
-	"driver-action-req-topic": {
-		"name": "Driver Action Request Topic",
-		"name_zh": "驱动执行动作请求主题",
-		"description": "MQTT topic to receive driver action request messages.",
-		"description_zh": "驱动执行动作请求的 MQTT 主题。",
+	"driver-topic-prefix": {
+		"name": "Driver Topic Prefix",
+		"name_zh": "驱动主题前缀",
+		"description": "MQTT topic prefix for driver function.",
 		"attribute": "required",
 		"type": "string",
-		"default": "/neuron/${random_str}/action/req",
+		"default": "/neuron/${random_str}",
 		"valid": {
-			"length": 255
-		}
-	},
-	"driver-action-resp-topic": {
-		"name": "Driver Action Response Topic",
-		"name_zh": "驱动执行动作响应主题",
-		"description": "MQTT topic to send driver action response messages.",
-		"description_zh": "驱动执行动作响应的 MQTT 主题。",
-		"attribute": "required",
-		"type": "string",
-		"default": "/neuron/${random_str}/action/resp",
-		"valid": {
-			"length": 255
+			"length": 128
 		}
 	},
 	"upload_drv_state": {

@@ -62,6 +62,11 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .driver.add_tags      = NULL,
     .driver.load_tags     = NULL,
     .driver.del_tags      = NULL,
+    .driver.directory     = NULL,
+    .driver.fup_open      = NULL,
+    .driver.fup_data      = NULL,
+    .driver.fdown_open    = NULL,
+    .driver.fdown_data    = NULL,
 };
 
 const neu_plugin_module_t neu_plugin_module = {

@@ -308,10 +308,55 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 
     if (0 !=
         neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                  config->driver_action_req_topic, plugin,
+                                  config->driver_topic.action_req, plugin,
                                   handle_driver_action_req)) {
         plog_error(plugin, "subscribe [%s] fail",
-                   plugin->config.driver_action_req_topic);
+                   plugin->config.driver_topic.action_req);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->driver_topic.files_req, plugin,
+                                  handle_driver_directory_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_topic.files_req);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->driver_topic.file_up_req, plugin,
+                                  handle_driver_fup_open_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_topic.file_up_req);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->driver_topic.file_up_data_req, plugin,
+                                  handle_driver_fup_data_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_topic.file_up_data_req);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->driver_topic.file_down_req, plugin,
+                                  handle_driver_fdown_open_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_topic.file_down_req);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->driver_topic.file_down_data_resp,
+                                  plugin, handle_driver_fdown_data_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.driver_topic.file_down_data_resp);
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }
 
@@ -323,7 +368,16 @@ static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
     neu_mqtt_client_unsubscribe(plugin->client, plugin->read_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
     neu_mqtt_client_unsubscribe(plugin->client,
-                                config->driver_action_req_topic);
+                                config->driver_topic.action_req);
+    neu_mqtt_client_unsubscribe(plugin->client, config->driver_topic.files_req);
+    neu_mqtt_client_unsubscribe(plugin->client,
+                                config->driver_topic.file_up_req);
+    neu_mqtt_client_unsubscribe(plugin->client,
+                                config->driver_topic.file_up_data_req);
+    neu_mqtt_client_unsubscribe(plugin->client,
+                                config->driver_topic.file_down_req);
+    neu_mqtt_client_unsubscribe(plugin->client,
+                                config->driver_topic.file_down_data_resp);
     neu_msleep(100); // wait for message completion
     return 0;
 }
@@ -498,6 +552,21 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_RESP_DRIVER_ACTION:
         error = handle_driver_action_response(plugin, head->ctx, data);
+        break;
+    case NEU_RESP_DRIVER_DIRECTORY:
+        error = handle_driver_directory_response(plugin, head->ctx, data);
+        break;
+    case NEU_RESP_FUP_OPEN:
+        error = handle_driver_fup_open_response(plugin, head->ctx, data);
+        break;
+    case NEU_RESP_FUP_DATA:
+        error = handle_driver_fup_data_response(plugin, head->ctx, data);
+        break;
+    case NEU_RESP_FDOWN_OPEN:
+        error = handle_driver_fdown_open_response(plugin, head->ctx, data);
+        break;
+    case NEU_REQ_FDOWN_DATA:
+        error = handle_driver_fdown_data_response(plugin, head->ctx, data);
         break;
     case NEU_RESP_GET_NODES_STATE: {
         handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);

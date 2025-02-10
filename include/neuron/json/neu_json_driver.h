@@ -35,6 +35,105 @@ int  neu_json_decode_driver_action_req(char *                     buf,
                                        neu_json_driver_action_t **result);
 void neu_json_decode_driver_action_req_free(neu_json_driver_action_t *req);
 
+typedef struct {
+    char *driver;
+    char *path;
+} neu_json_driver_directory_req_t;
+
+int neu_json_decode_driver_directory_req(
+    char *buf, neu_json_driver_directory_req_t **result);
+void neu_json_decode_driver_directory_req_free(
+    neu_json_driver_directory_req_t *req);
+
+typedef struct {
+    char *  name;
+    int     ftype;
+    int64_t size;
+    int64_t timestamp;
+} neu_json_driver_directory_file_t;
+
+typedef struct {
+    int                               error;
+    neu_json_driver_directory_file_t *files;
+    int                               n_files;
+} neu_json_driver_directory_resp_t;
+
+int neu_json_encode_driver_directory_resp(void *json_object, void *param);
+
+typedef struct {
+    char *driver;
+    char *path;
+} neu_json_driver_fup_open_req_t;
+
+int neu_json_decode_driver_fup_open_req(
+    char *buf, neu_json_driver_fup_open_req_t **result);
+void neu_json_decode_driver_fup_open_req_free(
+    neu_json_driver_fup_open_req_t *req);
+
+typedef struct {
+    int     error;
+    int64_t size;
+} neu_json_driver_fup_open_resp_t;
+
+int neu_json_encode_driver_fup_open_resp(void *json_object, void *param);
+
+typedef struct {
+    char *  driver;
+    char *  src_path;
+    char *  dst_path;
+    int64_t size;
+} neu_json_driver_fdown_open_req_t;
+
+int neu_json_decode_driver_fdown_open_req(
+    char *buf, neu_json_driver_fdown_open_req_t **result);
+void neu_json_decode_driver_fdown_open_req_free(
+    neu_json_driver_fdown_open_req_t *req);
+
+typedef struct {
+    int error;
+} neu_json_driver_fdown_open_resp_t;
+
+int neu_json_encode_driver_fdown_open_resp(void *json_object, void *param);
+
+typedef struct {
+    char *driver;
+    char *path;
+} neu_json_driver_fup_data_req_t;
+
+int neu_json_decode_driver_fup_data_req(
+    char *buf, neu_json_driver_fup_data_req_t **result);
+void neu_json_decode_driver_fup_data_req_free(
+    neu_json_driver_fup_data_req_t *req);
+
+typedef struct {
+    int      error;
+    bool     more;
+    uint8_t *data;
+    uint16_t len;
+} neu_json_driver_fup_data_resp_t;
+
+int neu_json_encode_driver_fup_data_resp(void *json_object, void *param);
+
+typedef struct {
+    char *driver;
+    char *src_path;
+} neu_json_driver_fdown_data_resp_t;
+
+int neu_json_encode_driver_fdown_data_resp(void *json_object, void *param);
+
+typedef struct {
+    char *   driver;
+    char *   src_path;
+    bool     more;
+    uint8_t *data;
+    uint16_t len;
+} neu_json_driver_fdown_data_req_t;
+
+int neu_json_decode_driver_fdown_data_req(
+    char *buf, neu_json_driver_fdown_data_req_t **result);
+void neu_json_decode_driver_fdown_data_req_free(
+    neu_json_driver_fdown_data_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif
