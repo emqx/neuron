@@ -185,6 +185,7 @@ int   neu_json_decode_value(void *object, neu_json_elem_t *ele);
 void *neu_json_encode_new();
 void  neu_json_encode_free(void *json_object);
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
+void *neu_json_encode_array_ecp(void *array, neu_json_elem_t *t, int n);
 void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n);
 int   neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n);
 int   neu_json_encode(void *json_object, char **str);

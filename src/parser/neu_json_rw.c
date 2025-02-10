@@ -379,9 +379,9 @@ int neu_json_encode_read_resp_ecp(void *json_object, void *param)
             tag_elems[3 + k].v    = p_tag[i].metas[k].value;
         }
 
-        tag_array =
-            neu_json_encode_array(tag_array, tag_elems, 3 + p_tag[i].n_meta);
-        has_data = 1;
+        tag_array = neu_json_encode_array_ecp(tag_array, tag_elems,
+                                              3 + p_tag[i].n_meta);
+        has_data  = 1;
     }
 
     neu_json_elem_t resp_elems[] = { {
