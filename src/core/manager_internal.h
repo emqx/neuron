@@ -104,8 +104,9 @@ inline static void forward_msg(neu_manager_t *     manager,
     if (0 == ret) {
         nlog_info("forward msg %s to %s", neu_reqresp_type_string(t), receiver);
     } else {
-        nlog_warn("forward msg %s to node (%s)%s fail",
-                  neu_reqresp_type_string(t), receiver, &addr.sun_path[1]);
+        nlog_warn("forward msg %s to node (%s)%s %s %s fail",
+                  neu_reqresp_type_string(t), receiver, &addr.sun_path[1], node,
+                  header->sender);
         neu_msg_free(msg);
     }
 }

@@ -565,6 +565,9 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_RESP_FDOWN_OPEN:
         error = handle_driver_fdown_open_response(plugin, head->ctx, data);
         break;
+    case NEU_REQ_FDOWN_DATA:
+        error = handle_driver_fdown_data_response(plugin, head->ctx, data);
+        break;
     case NEU_RESP_GET_NODES_STATE: {
         handle_nodes_state(head->ctx, (neu_resp_get_nodes_state_t *) data);
         break;

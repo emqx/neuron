@@ -3192,24 +3192,25 @@ int neu_adapter_driver_fup_open(neu_adapter_driver_t *driver,
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
     if (driver->adapter.module->intf_funs->driver.fup_open == NULL) {
-        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_FUP_OPEN;
     }
     return driver->adapter.module->intf_funs->driver.fup_open(
         driver->adapter.plugin, (void *) req, path);
 }
 
 int neu_adapter_driver_fdown_open(neu_adapter_driver_t *driver,
-                                  neu_reqresp_head_t *req, const char *src_path,
-                                  const char *dst_path)
+                                  neu_reqresp_head_t *req, const char *node,
+                                  const char *src_path, const char *dst_path,
+                                  int64_t size)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
     if (driver->adapter.module->intf_funs->driver.fdown_open == NULL) {
-        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_FDOWN_OPEN;
     }
     return driver->adapter.module->intf_funs->driver.fdown_open(
-        driver->adapter.plugin, (void *) req, src_path, dst_path);
+        driver->adapter.plugin, (void *) req, node, src_path, dst_path, size);
 }
 
 int neu_adapter_driver_fup_data(neu_adapter_driver_t *driver,
@@ -3219,8 +3220,22 @@ int neu_adapter_driver_fup_data(neu_adapter_driver_t *driver,
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
     if (driver->adapter.module->intf_funs->driver.fup_data == NULL) {
-        return NEU_ERR_PLUGIN_NOT_SUPPORT_DIRECTORY;
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_FUP_DATA;
     }
     return driver->adapter.module->intf_funs->driver.fup_data(
         driver->adapter.plugin, (void *) req, path);
+}
+
+int neu_adapter_driver_fdown_data(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *req, uint8_t *data,
+                                  uint16_t len, bool more)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (driver->adapter.module->intf_funs->driver.fdown_data == NULL) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_FDOWN_DATA;
+    }
+    return driver->adapter.module->intf_funs->driver.fdown_data(
+        driver->adapter.plugin, (void *) req, data, len, more);
 }

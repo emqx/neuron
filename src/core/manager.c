@@ -1071,6 +1071,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DRIVER_DIRECTORY:
     case NEU_REQ_FUP_OPEN:
     case NEU_REQ_FDOWN_OPEN:
+    case NEU_RESP_FDOWN_DATA:
     case NEU_REQ_FUP_DATA:
     case NEU_REQ_ADD_GROUP: {
         neu_otel_trace_ctx trace = NULL;
@@ -1355,6 +1356,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_DRIVER_DIRECTORY:
     case NEU_RESP_FUP_OPEN:
     case NEU_RESP_FDOWN_OPEN:
+    case NEU_REQ_FDOWN_DATA:
     case NEU_RESP_FUP_DATA:
     case NEU_RESP_READ_GROUP:
     case NEU_RESP_READ_GROUP_PAGINATE:

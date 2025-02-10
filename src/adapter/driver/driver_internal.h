@@ -102,9 +102,13 @@ int neu_adapter_driver_directory(neu_adapter_driver_t *      driver,
 int neu_adapter_driver_fup_open(neu_adapter_driver_t *driver,
                                 neu_reqresp_head_t *req, const char *path);
 int neu_adapter_driver_fdown_open(neu_adapter_driver_t *driver,
-                                  neu_reqresp_head_t *req, const char *src_path,
-                                  const char *dst_path);
+                                  neu_reqresp_head_t *req, const char *node,
+                                  const char *src_path, const char *dst_path,
+                                  int64_t size);
 int neu_adapter_driver_fup_data(neu_adapter_driver_t *driver,
                                 neu_reqresp_head_t *req, const char *path);
+int neu_adapter_driver_fdown_data(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *req, uint8_t *data,
+                                  uint16_t len, bool more);
 
 #endif

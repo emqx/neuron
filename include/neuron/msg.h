@@ -323,9 +323,10 @@ typedef struct neu_resp_fup_data {
 } neu_resp_fup_data_t;
 
 typedef struct neu_req_fdown_open {
-    char driver[NEU_NODE_NAME_LEN];
-    char src_path[NEU_PATH_LEN];
-    char dst_path[NEU_PATH_LEN];
+    char    driver[NEU_NODE_NAME_LEN];
+    char    src_path[NEU_PATH_LEN];
+    char    dst_path[NEU_PATH_LEN];
+    int64_t size;
 } neu_req_fdown_open_t;
 
 typedef struct neu_resp_fdown_open {
