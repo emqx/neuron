@@ -346,6 +346,136 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     return ob;
 }
 
+static json_t *encode_object_ecp(json_t *object, neu_json_elem_t ele)
+{
+    json_t *ob = object;
+
+    switch (ele.t) {
+    case NEU_JSON_BIT:
+        json_object_set_new(ob, ele.name, json_integer(ele.v.val_bit));
+        break;
+    case NEU_JSON_INT:
+        json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
+        break;
+    case NEU_JSON_STR:
+        json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
+        break;
+    case NEU_JSON_FLOAT: {
+        double t = ele.v.val_float;
+        if (ele.precision == 0 && ele.bias == 0) {
+            t = format_tag_value(ele.v.val_float);
+        }
+        json_object_set_new(ob, ele.name, json_realp(t, ele.precision));
+        break;
+    }
+    case NEU_JSON_DOUBLE:
+        json_object_set_new(ob, ele.name,
+                            json_realp(ele.v.val_double, ele.precision));
+        break;
+    case NEU_JSON_BOOL:
+        json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));
+        break;
+
+#define ENCODE_ARRAY_TO_STRING(TYPE, FIELD, DATA, FORMAT)                      \
+    case TYPE: {                                                               \
+        size_t buffer_size = 2;                                                \
+        for (int i = 0; i < ele.v.FIELD.length; i++) {                         \
+            buffer_size += snprintf(NULL, 0, FORMAT, ele.v.FIELD.DATA[i]) + 2; \
+        }                                                                      \
+        char *array_str = (char *) malloc(buffer_size);                        \
+        if (array_str == NULL) {                                               \
+            return NULL;                                                       \
+        }                                                                      \
+        char *ptr = array_str;                                                 \
+        *ptr++    = '[';                                                       \
+        for (int i = 0; i < ele.v.FIELD.length; i++) {                         \
+            int len = sprintf(ptr, FORMAT, ele.v.FIELD.DATA[i]);               \
+            ptr += len;                                                        \
+            if (i < ele.v.FIELD.length - 1) {                                  \
+                *ptr++ = ',';                                                  \
+                *ptr++ = ' ';                                                  \
+            }                                                                  \
+        }                                                                      \
+        *ptr++ = ']';                                                          \
+        *ptr   = '\0';                                                         \
+        json_object_set_new(ob, ele.name, json_string(array_str));             \
+        free(array_str);                                                       \
+        break;                                                                 \
+    }
+
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_BOOL, val_array_bool, bools, "%d")
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_INT8, val_array_int8, i8s,
+                               "%" PRId8)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_UINT8, val_array_uint8, u8s,
+                               "%" PRIu8)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_INT16, val_array_int16, i16s,
+                               "%" PRId16)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_UINT16, val_array_uint16, u16s,
+                               "%" PRIu16)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_INT32, val_array_int32, i32s,
+                               "%" PRId32)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_UINT32, val_array_uint32, u32s,
+                               "%" PRIu32)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_INT64, val_array_int64, i64s,
+                               "%" PRId64)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_UINT64, val_array_uint64, u64s,
+                               "%" PRIu64)
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_FLOAT, val_array_float, f32s,
+                               "%.6f")
+        ENCODE_ARRAY_TO_STRING(NEU_JSON_ARRAY_DOUBLE, val_array_double, f64s,
+                               "%.6f")
+
+#undef ENCODE_ARRAY_TO_STRING
+
+    case NEU_JSON_ARRAY_STR: {
+        size_t buffer_size = 2;
+        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+            buffer_size +=
+                snprintf(NULL, 0, "\"%s\"", ele.v.val_array_str.p_strs[i]) + 2;
+        }
+
+        char *array_str = (char *) malloc(buffer_size);
+        if (array_str == NULL) {
+            return NULL;
+        }
+
+        char *ptr = array_str;
+        *ptr++    = '[';
+
+        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+            int len = sprintf(ptr, "\"%s\"", ele.v.val_array_str.p_strs[i]);
+            ptr += len;
+
+            if (i < ele.v.val_array_str.length - 1) {
+                *ptr++ = ',';
+                *ptr++ = ' ';
+            }
+        }
+
+        *ptr++ = ']';
+        *ptr   = '\0';
+
+        json_object_set_new(ob, ele.name, json_string(array_str));
+        free(array_str);
+        break;
+    }
+    case NEU_JSON_OBJECT: {
+        char *json_str = json_dumps(ele.v.val_object, JSON_ENCODE_ANY);
+        if (json_str == NULL) {
+            return NULL;
+        }
+
+        json_object_set_new(ob, ele.name, json_string(json_str));
+        free(json_str);
+        break;
+    }
+    default:
+        break;
+    }
+
+    return ob;
+}
+
 static int decode_object(json_t *root, neu_json_elem_t *ele)
 {
     json_t *ob = NULL;
@@ -904,6 +1034,21 @@ void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n)
     json_t *ob = json_object();
     for (int j = 0; j < n; j++) {
         encode_object(ob, t[j]);
+    }
+
+    json_array_append_new(array, ob);
+    return array;
+}
+
+void *neu_json_encode_array_ecp(void *array, neu_json_elem_t *t, int n)
+{
+    if (array == NULL) {
+        array = json_array();
+    }
+
+    json_t *ob = json_object();
+    for (int j = 0; j < n; j++) {
+        encode_object_ecp(ob, t[j]);
     }
 
     json_array_append_new(array, ob);
