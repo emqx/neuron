@@ -78,6 +78,10 @@
 				{
 					"key": "Custom",
 					"value": 3
+				},
+				{
+					"key": "protobuf",
+					"value": 4
 				}
 			]
 		}

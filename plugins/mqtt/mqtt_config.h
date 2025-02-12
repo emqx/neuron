@@ -33,10 +33,11 @@ extern "C" {
 #include "schema.h"
 
 typedef enum {
-    MQTT_UPLOAD_FORMAT_VALUES = 0,
-    MQTT_UPLOAD_FORMAT_TAGS   = 1,
-    MQTT_UPLOAD_FORMAT_ECP    = 2,
-    MQTT_UPLOAD_FORMAT_CUSTOM = 3,
+    MQTT_UPLOAD_FORMAT_VALUES   = 0,
+    MQTT_UPLOAD_FORMAT_TAGS     = 1,
+    MQTT_UPLOAD_FORMAT_ECP      = 2,
+    MQTT_UPLOAD_FORMAT_CUSTOM   = 3,
+    MQTT_UPLOAD_FORMAT_PROTOBUF = 4,
 } mqtt_upload_format_e;
 
 static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
@@ -50,6 +51,8 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
         return "ECP-format";
     case MQTT_UPLOAD_FORMAT_CUSTOM:
         return "custom";
+    case MQTT_UPLOAD_FORMAT_PROTOBUF:
+        return "protobuf";
     default:
         return NULL;
     }

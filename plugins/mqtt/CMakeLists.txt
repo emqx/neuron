@@ -12,6 +12,7 @@ add_library(${PROJECT_NAME} SHARED
   mqtt_plugin.c
   mqtt_plugin_intf.c
   schema.c
+  ptformat.pb-c.c
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE 

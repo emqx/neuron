@@ -1,0 +1,164 @@
+syntax = "proto2";
+
+package model;
+
+/**Action-Begin*/
+message DriverActionRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string action = 3;
+}
+
+message DriverActionResponse {
+	required string uuid = 1;
+	required int32 error = 2;
+}
+/**Action-End*/
+
+/**Data-Report-Begin*/
+message DataItemValue {
+	oneof value {
+		int64 int_value = 1;
+		float float_value = 2;
+		string string_value = 3;
+		bool bool_value = 4;
+	}
+};
+
+message DataItem {
+	required string name = 1;
+	oneof item {
+		DataItemValue value = 2;
+		int32 error = 3;
+	}
+	optional int32 q = 4;
+	optional int64 t = 5;
+}
+
+message DataReport {
+	required string node = 1;
+	required string group = 2;
+	required int64 timestamp = 3;
+	repeated DataItem tags = 4;
+}
+/**Data-Report-End*/
+
+/**Read-Begin*/
+message ReadRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string group = 3;
+	repeated string tags = 4;
+}
+
+message ReadResponse {
+	required string uuid = 1;
+	repeated DataItem tags = 2;
+}
+///**Read-End*/
+
+/**Write-Begin*/
+message WriteRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string group = 3;
+	repeated DataItem tags = 4;
+}
+
+message WriteResponseItem {
+	required string name = 1;
+	required int32 error = 2;
+}
+
+message WriteResponse {
+	required string uuid = 1;
+	repeated WriteResponseItem errors = 2;
+}
+/**Write-End*/
+
+///**Node-State-Begin*/
+message NodeStateReport {
+	required int64 timestamp = 1;
+	repeated NodeState nodes = 2;
+}
+
+message NodeState {
+	required string node = 1;
+	required int32 link = 2;
+	required int32 running = 3;
+}
+/**Node-State-End*/
+
+/**Directory-Begin*/
+message FileListRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string path = 3;
+}
+
+message FileListResponse {
+	required string uuid = 1;
+	required int32 error = 2;
+	repeated FileItem files = 3;
+}
+
+message FileItem {
+	required string name = 1;
+	required int32 type = 2;
+	required int32 size = 3;
+	required int64 t = 4;
+}
+/**Directory-End*/
+
+/**File-Upload-Begin*/
+message FileUploadRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string path = 3;
+}
+
+message FileUploadResponse {
+	required string uuid = 1;
+	required int32 error = 2;
+}
+
+message FileUploadDataRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string path = 3;
+}
+
+message FileUploadDataResponse {
+	required string uuid = 1;
+	required bool more = 2;
+	required bytes data = 3;
+	required int32 error = 4;
+}
+/**File-Upload-End*/
+
+/**File-Download-Begin*/
+message FileDownloadRequest {
+	required string uuid = 1;
+	required string node = 2;
+	required string src_path = 3;
+	required string dst_path = 4;
+	required int64 size = 5;
+}
+
+message FileDownloadResponse {
+	required string uuid = 1;
+	required int32 error = 2;
+}
+
+message FileDownloadDataRequest {
+	required string node = 1;
+	required string path = 2;
+}
+
+message FileDownloadDataResponse {
+	required string node = 1;
+	required string path = 2;
+	required bool more = 3;
+	required bytes data = 4;
+}
+/**File-Download-End*/

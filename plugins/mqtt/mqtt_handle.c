@@ -29,6 +29,8 @@
 #include "mqtt_handle.h"
 #include "mqtt_plugin.h"
 
+#include "ptformat.pb-c.h"
+
 static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
 {
     int size = 0;
@@ -156,6 +158,8 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                                  s_tags, n_s_tags, &json_str);
         break;
     }
+    case MQTT_UPLOAD_FORMAT_PROTOBUF:
+        break;
     default:
         plog_warn(plugin, "invalid upload format: %d", format);
         break;
@@ -538,9 +542,11 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       const uint8_t *payload, uint32_t len, void *data,
                       trace_w3c_t *trace_w3c)
 {
-    int               rv     = 0;
-    neu_plugin_t *    plugin = data;
-    neu_json_write_t *req    = NULL;
+    int               rv       = 0;
+    neu_plugin_t *    plugin   = data;
+    neu_json_write_t *req      = NULL;
+    neu_json_mqtt_t * mqtt     = NULL;
+    char *            json_str = NULL;
 
     (void) qos;
     (void) topic;
@@ -553,58 +559,117 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_30S, 1, NULL);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_60S, 1, NULL);
 
-    char *json_str = malloc(len + 1);
-    if (NULL == json_str) {
-        return;
-    }
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__WriteRequest *wr =
+            model__write_request__unpack(NULL, len, payload);
+        if (wr == NULL) {
+            plog_error(plugin, "model__write_request__unpack fail");
+            return;
+        }
 
-    memcpy(json_str, payload, len);
-    json_str[len] = '\0';
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(wr->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    rv                    = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
+        neu_reqresp_head_t   header = { 0 };
+        neu_req_write_tags_t cmd    = { 0 };
 
-    if (trace_w3c && trace_w3c->traceparent) {
-        mqtt->traceparent = strdup(trace_w3c->traceparent);
-        mqtt->payload     = json_str;
-    }
+        header.type = NEU_REQ_WRITE_TAGS;
+        header.ctx  = mqtt;
+        cmd.driver  = wr->node;
+        cmd.group   = wr->group;
+        cmd.n_tag   = wr->n_tags;
+        cmd.tags    = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
 
-    if (trace_w3c && trace_w3c->tracestate) {
-        mqtt->tracestate = strdup(trace_w3c->tracestate);
-    }
+        for (int i = 0; i < cmd.n_tag; i++) {
+            strcpy(cmd.tags[i].tag, wr->tags[i]->name);
+            switch (wr->tags[i]->value->value_case) {
+            case MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE:
+                cmd.tags[i].value.type      = NEU_TYPE_INT64;
+                cmd.tags[i].value.value.i64 = wr->tags[i]->value->int_value;
+                break;
+            case MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE:
+                cmd.tags[i].value.type      = NEU_TYPE_DOUBLE;
+                cmd.tags[i].value.value.d64 = wr->tags[i]->value->float_value;
+                break;
+            case MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE:
+                cmd.tags[i].value.type = NEU_TYPE_BOOL;
+                cmd.tags[i].value.value.boolean =
+                    wr->tags[i]->value->bool_value;
+                break;
+            case MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE:
+                cmd.tags[i].value.type = NEU_TYPE_STRING;
+                strcpy(cmd.tags[i].value.value.str,
+                       wr->tags[i]->value->string_value);
+                break;
+            default:
+                break;
+            }
+        }
 
-    rv = neu_json_decode_write(json_str, &req);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_write fail");
-        neu_json_decode_mqtt_req_free(mqtt);
-        free(json_str);
-        return;
-    }
+        model__write_request__free_unpacked(wr, NULL);
 
-    if (req->singular) {
-        rv = send_write_tag_req(plugin, mqtt, &req->single);
+        if (0 != neu_plugin_op(plugin, header, &cmd)) {
+            plog_error(plugin, "neu_plugin_op(NEU_REQ_WRITE_TAGS) fail");
+            free(cmd.tags);
+            return;
+        }
     } else {
-        rv = send_write_tags_req(plugin, mqtt, &req->plural);
-    }
-    if (0 != rv) {
-        neu_json_decode_mqtt_req_free(mqtt);
-    }
+        json_str = calloc(1, len + 1);
+        if (NULL == json_str) {
+            return;
+        }
 
-    neu_json_decode_write_free(req);
-    free(json_str);
+        memcpy(json_str, payload, len);
+
+        rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        if (trace_w3c && trace_w3c->traceparent) {
+            mqtt->traceparent = strdup(trace_w3c->traceparent);
+            mqtt->payload     = json_str;
+        }
+
+        if (trace_w3c && trace_w3c->tracestate) {
+            mqtt->tracestate = strdup(trace_w3c->tracestate);
+        }
+
+        rv = neu_json_decode_write(json_str, &req);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_write fail");
+            neu_json_decode_mqtt_req_free(mqtt);
+            free(json_str);
+            return;
+        }
+
+        if (req->singular) {
+            rv = send_write_tag_req(plugin, mqtt, &req->single);
+        } else {
+            rv = send_write_tags_req(plugin, mqtt, &req->plural);
+        }
+        if (0 != rv) {
+            neu_json_decode_mqtt_req_free(mqtt);
+        }
+
+        neu_json_decode_write_free(req);
+        free(json_str);
+    }
 }
 
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                           neu_resp_error_t *data, void *trace_scope,
                           void *trace_ctx, char *span_id)
 {
-    int   rv       = 0;
-    char *json_str = NULL;
+    int    rv                = 0;
+    char * json_str          = NULL;
+    size_t size              = 0;
+    char   trace_parent[128] = { 0 };
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -618,32 +683,47 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    json_str = generate_write_resp_json(plugin, mqtt_json, data);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate write resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
-    }
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__WriteResponse resp = MODEL__WRITE_RESPONSE__INIT;
 
-    if (trace_scope) {
-        neu_otel_scope_add_span_attr_string(trace_scope, "playload", json_str);
-    }
+        resp.uuid             = mqtt_json->uuid;
+        resp.n_errors         = 1;
+        resp.errors           = calloc(1, sizeof(Model__WriteResponseItem));
+        resp.errors[0]->name  = strdup("");
+        resp.errors[0]->error = data->error;
 
-    char trace_parent[128] = { 0 };
+        size     = model__write_response__get_packed_size(&resp);
+        json_str = malloc(size);
+        model__write_response__pack(&resp, (uint8_t *) json_str);
+    } else {
+        json_str = generate_write_resp_json(plugin, mqtt_json, data);
+        if (NULL == json_str) {
+            plog_error(plugin, "generate write resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
 
-    if (trace_ctx && span_id) {
-        uint8_t *trace_id = neu_otel_get_trace_id(trace_ctx);
-        to_traceparent(trace_id, span_id, trace_parent);
+        if (trace_scope) {
+            neu_otel_scope_add_span_attr_string(trace_scope, "playload",
+                                                json_str);
+        }
+
+        if (trace_ctx && span_id) {
+            uint8_t *trace_id = neu_otel_get_trace_id(trace_ctx);
+            to_traceparent(trace_id, span_id, trace_parent);
+        }
+
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.write_resp_topic;
     neu_mqtt_qos_e qos   = plugin->config.qos;
     if (trace_ctx != 0 && strlen(trace_parent) != 0) {
-        rv = publish_with_trace(plugin, qos, topic, json_str, strlen(json_str),
+        rv = publish_with_trace(plugin, qos, topic, json_str, size,
                                 trace_parent);
     } else {
-        rv = publish(plugin, qos, topic, json_str, strlen(json_str));
+        rv = publish(plugin, qos, topic, json_str, size);
     }
     json_str = NULL;
 
@@ -656,8 +736,9 @@ int handle_driver_action_response(neu_plugin_t *            plugin,
                                   neu_json_mqtt_t *         mqtt_json,
                                   neu_resp_driver_action_t *data)
 {
-    int   rv       = 0;
-    char *json_str = NULL;
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -671,18 +752,30 @@ int handle_driver_action_response(neu_plugin_t *            plugin,
         goto end;
     }
 
-    json_str = generate_driver_action_resp_json(plugin, mqtt_json, data);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver action resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__DriverActionResponse resp = MODEL__DRIVER_ACTION_RESPONSE__INIT;
+
+        resp.uuid  = mqtt_json->uuid;
+        resp.error = data->error;
+
+        size     = model__driver_action_response__get_packed_size(&resp);
+        json_str = malloc(size);
+        model__driver_action_response__pack(&resp, (uint8_t *) json_str);
+    } else {
+        json_str = generate_driver_action_resp_json(plugin, mqtt_json, data);
+        if (NULL == json_str) {
+            plog_error(plugin, "generate driver action resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.driver_topic.action_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
@@ -696,52 +789,76 @@ void handle_driver_action_req(neu_mqtt_qos_e qos, const char *topic,
     (void) qos;
     (void) topic;
     (void) trace_w3c;
-    neu_plugin_t *            plugin = data;
-    neu_json_driver_action_t *req    = NULL;
+    neu_plugin_t *plugin = data;
 
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
+    neu_reqresp_head_t        header   = { 0 };
+    neu_req_driver_action_t   cmd      = { 0 };
+    neu_json_driver_action_t *req      = NULL;
+    neu_json_mqtt_t *         mqtt     = NULL;
+    char *                    json_str = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_action_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_action_req failed");
-        free(json_str);
-        return;
-    }
-
-    neu_reqresp_head_t      header = { 0 };
-    neu_req_driver_action_t cmd    = { 0 };
-
-    header.ctx  = mqtt;
     header.type = NEU_REQ_DRIVER_ACTION;
 
-    strcpy(cmd.driver, req->driver);
-    cmd.action = strdup(req->action);
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__DriverActionRequest *dar =
+            model__driver_action_request__unpack(NULL, len, payload);
+        if (NULL == dar) {
+            plog_error(plugin, "model__driver_action_request__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(dar->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, dar->node);
+        cmd.action = strdup(dar->action);
+
+        model__driver_action_request__free_unpacked(dar, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_action_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_action_req failed");
+            free(json_str);
+            return;
+        }
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, req->driver);
+        cmd.action = strdup(req->action);
+        neu_json_decode_driver_action_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_ACTION) fail");
         return;
     }
-
-    neu_json_decode_driver_action_req_free(req);
-    free(json_str);
 }
 
 void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
                      const uint8_t *payload, uint32_t len, void *data,
                      trace_w3c_t *trace_w3c)
 {
-    int                  rv     = 0;
-    neu_plugin_t *       plugin = data;
-    neu_json_read_req_t *req    = NULL;
+    int           rv     = 0;
+    neu_plugin_t *plugin = data;
+
+    neu_json_read_req_t *req      = NULL;
+    neu_json_mqtt_t *    mqtt     = NULL;
+    char *               json_str = NULL;
 
     (void) qos;
     (void) topic;
@@ -754,53 +871,88 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_30S, 1, NULL);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_60S, 1, NULL);
 
-    char *json_str = malloc(len + 1);
-    if (NULL == json_str) {
-        return;
-    }
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__ReadRequest *read_req =
+            model__read_request__unpack(NULL, len, payload);
+        if (NULL == read_req) {
+            plog_error(plugin, "model__read_request__unpack failed");
+            return;
+        }
 
-    memcpy(json_str, payload, len);
-    json_str[len] = '\0';
+        neu_reqresp_head_t header = { 0 };
 
-    neu_json_mqtt_t *mqtt = NULL;
-    rv                    = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(read_req->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.type = NEU_REQ_READ_GROUP;
+        header.ctx  = mqtt;
+
+        neu_req_read_group_t cmd = { 0 };
+
+        cmd.driver = read_req->node;
+        cmd.group  = read_req->group;
+        cmd.sync   = false;
+        cmd.n_tag  = read_req->n_tags;
+        cmd.tags   = read_req->tags;
+
+        if (0 != neu_plugin_op(plugin, header, &cmd)) {
+            neu_req_read_group_fini(&cmd);
+            plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail");
+            return;
+        }
+
+        model__read_request__free_unpacked(read_req, NULL);
+    } else {
+        json_str = calloc(1, len + 1);
+        if (NULL == json_str) {
+            return;
+        }
+
+        memcpy(json_str, payload, len);
+
+        rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        if (trace_w3c && trace_w3c->traceparent) {
+            mqtt->traceparent = strdup(trace_w3c->traceparent);
+            mqtt->payload     = json_str;
+        }
+
+        if (trace_w3c && trace_w3c->tracestate) {
+            mqtt->tracestate = strdup(trace_w3c->tracestate);
+        }
+
+        rv = neu_json_decode_read_req(json_str, &req);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_read_req fail");
+            neu_json_decode_mqtt_req_free(mqtt);
+            free(json_str);
+            return;
+        }
+
+        rv = send_read_req(plugin, mqtt, req);
+        if (0 != rv) {
+            neu_json_decode_mqtt_req_free(mqtt);
+        }
+
+        neu_json_decode_read_req_free(req);
         free(json_str);
-        return;
     }
-
-    if (trace_w3c && trace_w3c->traceparent) {
-        mqtt->traceparent = strdup(trace_w3c->traceparent);
-        mqtt->payload     = json_str;
-    }
-
-    if (trace_w3c && trace_w3c->tracestate) {
-        mqtt->tracestate = strdup(trace_w3c->tracestate);
-    }
-
-    rv = neu_json_decode_read_req(json_str, &req);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_read_req fail");
-        neu_json_decode_mqtt_req_free(mqtt);
-        free(json_str);
-        return;
-    }
-
-    rv = send_read_req(plugin, mqtt, req);
-    if (0 != rv) {
-        neu_json_decode_mqtt_req_free(mqtt);
-    }
-
-    neu_json_decode_read_req_free(req);
-    free(json_str);
 }
 
 int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                          neu_resp_read_group_t *data)
 {
-    int   rv       = 0;
-    char *json_str = NULL;
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -814,17 +966,142 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    json_str = generate_read_resp_json(plugin, mqtt_json, data);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate read resp json fail");
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__ReadResponse resp = MODEL__READ_RESPONSE__INIT;
+
+        resp.uuid   = mqtt_json->uuid;
+        resp.n_tags = utarray_len(data->tags);
+
+        Model__DataItem **tags = calloc(resp.n_tags, sizeof(Model__DataItem *));
+
+        int index = 0;
+        utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
+        {
+            Model__DataItem *tag = malloc(sizeof(Model__DataItem));
+            model__data_item__init(tag);
+            tag->name = tag_value->tag;
+            switch (tag_value->value.type) {
+            case NEU_TYPE_ERROR:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_ERROR;
+                tag->error     = tag_value->value.value.i32;
+                break;
+            case NEU_TYPE_UINT8:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.u8;
+                break;
+            case NEU_TYPE_INT8:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.i8;
+                break;
+            case NEU_TYPE_INT16:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.i16;
+                break;
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_UINT16:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.u16;
+                break;
+            case NEU_TYPE_INT32:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.i32;
+                break;
+            case NEU_TYPE_DWORD:
+            case NEU_TYPE_UINT32:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.u32;
+                break;
+            case NEU_TYPE_INT64:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.i64;
+                break;
+            case NEU_TYPE_LWORD:
+            case NEU_TYPE_UINT64:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                tag->value->int_value = tag_value->value.value.u64;
+                break;
+            case NEU_TYPE_FLOAT:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
+                tag->value->float_value = tag_value->value.value.f32;
+                break;
+            case NEU_TYPE_DOUBLE:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
+                tag->value->float_value = tag_value->value.value.d64;
+                break;
+            case NEU_TYPE_BOOL:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE;
+                tag->value->bool_value = tag_value->value.value.boolean;
+                break;
+            case NEU_TYPE_STRING:
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value->value_case =
+                    MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE;
+                tag->value->string_value = tag_value->value.value.str;
+                break;
+            default:
+                break;
+            }
+
+            for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+                if (strlen(tag_value->metas[i].name) > 0) {
+                    if (strncmp(tag_value->metas[i].name, "q", 1) == 0) {
+                        tag->has_q = true;
+                        tag->q     = tag_value->metas[i].value.value.i32;
+                    }
+
+                    if (strncmp(tag_value->metas[i].name, "t", 1) == 0) {
+                        tag->has_t = true;
+                        tag->t     = tag_value->metas[i].value.value.i64;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            tags[index] = tag;
+            index++;
+        }
+
+        resp.tags = tags;
+
+        size     = model__read_response__get_packed_size(&resp);
+        json_str = malloc(size);
+        model__read_response__pack(&resp, (uint8_t *) json_str);
+    } else {
+        json_str = generate_read_resp_json(plugin, mqtt_json, data);
+        if (NULL == json_str) {
+            plog_error(plugin, "generate read resp json fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
     }
 
     char *         topic = plugin->read_resp_topic;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
@@ -840,6 +1117,9 @@ int handle_trans_data(neu_plugin_t *            plugin,
     neu_otel_scope_ctx trans_scope       = NULL;
     uint8_t *          trace_id          = NULL;
     char               trace_parent[128] = { 0 };
+    char *             json_str          = NULL;
+    size_t             size              = 0;
+
     if (neu_otel_data_is_started() && trans_data->trace_ctx) {
         trans_trace = neu_otel_find_trace(trans_data->trace_ctx);
         if (trans_trace) {
@@ -888,10 +1168,167 @@ int handle_trans_data(neu_plugin_t *            plugin,
                                  &n_satic_tag);
         }
 
-        char *json_str = generate_upload_json(
-            plugin, trans_data, plugin->config.format,
-            plugin->config.schema_vts, plugin->config.n_schema_vt, static_tags,
-            n_satic_tag, &skip_none);
+        if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+            Model__DataReport data_report = MODEL__DATA_REPORT__INIT;
+
+            data_report.node      = trans_data->driver;
+            data_report.group     = trans_data->group;
+            data_report.timestamp = global_timestamp;
+            data_report.n_tags    = utarray_len(trans_data->tags) + n_satic_tag;
+            data_report.tags =
+                calloc(data_report.n_tags, sizeof(Model__DataItem *));
+
+            int index = 0;
+            utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *,
+                            tag_value)
+            {
+                Model__DataItem *tag = malloc(sizeof(Model__DataItem));
+                model__data_item__init(tag);
+                tag->name = tag_value->tag;
+                switch (tag_value->value.type) {
+                case NEU_TYPE_ERROR:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_ERROR;
+                    tag->error     = tag_value->value.value.i32;
+                    break;
+                case NEU_TYPE_UINT8:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.u8;
+                    break;
+                case NEU_TYPE_INT8:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.i8;
+                    break;
+                case NEU_TYPE_INT16:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.i16;
+                    break;
+                case NEU_TYPE_WORD:
+                case NEU_TYPE_UINT16:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.u16;
+                    break;
+                case NEU_TYPE_INT32:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.i32;
+                    break;
+                case NEU_TYPE_DWORD:
+                case NEU_TYPE_UINT32:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.u32;
+                    break;
+                case NEU_TYPE_INT64:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = tag_value->value.value.i64;
+                    break;
+                case NEU_TYPE_FLOAT:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
+                    tag->value->float_value = tag_value->value.value.f32;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
+                    tag->value->float_value = tag_value->value.value.d64;
+                    break;
+                case NEU_TYPE_BOOL:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE;
+                    tag->value->bool_value = tag_value->value.value.boolean;
+                    break;
+                case NEU_TYPE_STRING:
+                    tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE;
+                    tag->value->string_value = tag_value->value.value.str;
+                    break;
+                default:
+                    break;
+                }
+
+                for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+                    if (strlen(tag_value->metas[i].name) > 0) {
+                        if (strncmp(tag_value->metas[i].name, "q", 1) == 0) {
+                            tag->has_q = true;
+                            tag->q     = tag_value->metas[i].value.value.i32;
+                        }
+
+                        if (strncmp(tag_value->metas[i].name, "t", 1) == 0) {
+                            tag->has_t = true;
+                            tag->t     = tag_value->metas[i].value.value.i64;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                data_report.tags[index] = tag;
+                index++;
+            }
+
+            for (size_t i = 0; i < n_satic_tag; i++) {
+                Model__DataItem *tag = malloc(sizeof(Model__DataItem));
+                model__data_item__init(tag);
+                tag->name      = static_tags[i].name;
+                tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                switch (static_tags[i].jtype) {
+                case NEU_TYPE_INT64:
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = static_tags[i].jvalue.val_int;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
+                    tag->value->float_value = static_tags[i].jvalue.val_double;
+                    break;
+                case NEU_TYPE_BOOL:
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE;
+                    tag->value->bool_value = static_tags[i].jvalue.val_bool;
+                    break;
+                case NEU_TYPE_STRING:
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE;
+                    tag->value->string_value = static_tags[i].jvalue.val_str;
+                    break;
+                default:
+                    tag->value->value_case =
+                        MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
+                    tag->value->int_value = 0;
+                    break;
+                }
+                data_report.tags[index] = tag;
+                index++;
+            }
+
+            size     = model__data_report__get_packed_size(&data_report);
+            json_str = malloc(size);
+
+            model__data_report__pack(&data_report, (uint8_t *) json_str);
+        } else {
+            json_str = generate_upload_json(
+                plugin, trans_data, plugin->config.format,
+                plugin->config.schema_vts, plugin->config.n_schema_vt,
+                static_tags, n_satic_tag, &skip_none);
+            size = strlen(json_str);
+        }
         if (n_satic_tag > 0) {
             mqtt_static_free(static_tags, n_satic_tag);
         }
@@ -909,10 +1346,10 @@ int handle_trans_data(neu_plugin_t *            plugin,
         neu_mqtt_qos_e qos   = plugin->config.qos;
 
         if (plugin->config.version == NEU_MQTT_VERSION_V5 && trans_trace) {
-            rv = publish_with_trace(plugin, qos, topic, json_str,
-                                    strlen(json_str), trace_parent);
+            rv = publish_with_trace(plugin, qos, topic, json_str, size,
+                                    trace_parent);
         } else {
-            rv = publish(plugin, qos, topic, json_str, strlen(json_str));
+            rv = publish(plugin, qos, topic, json_str, size);
         }
 
         json_str = NULL;
@@ -1051,8 +1488,10 @@ int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req)
 
 int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
 {
-    int   rv       = 0;
-    char *json_str = NULL;
+    int    rv          = 0;
+    char * json_str    = NULL;
+    size_t size        = 0;
+    bool   driver_none = false;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1065,23 +1504,59 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
         goto end;
     }
 
-    bool driver_none = false;
-    json_str = generate_heartbeat_json(plugin, states->states, &driver_none);
-    if (driver_none == true) {
-        plog_notice(plugin, "no driver found");
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
-    }
-    if (NULL == json_str) {
-        plog_error(plugin, "generate heartbeat json fail");
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__NodeStateReport nsr = MODEL__NODE_STATE_REPORT__INIT;
+
+        nsr.timestamp = global_timestamp;
+        nsr.n_nodes   = utarray_len(states->states);
+
+        Model__NodeState **node_states =
+            malloc(nsr.n_nodes * sizeof(Model__NodeState *));
+        if (NULL == node_states) {
+            plog_error(plugin, "malloc fail");
+            goto end;
+        }
+
+        utarray_foreach(states->states, neu_nodes_state_t *, state)
+        {
+            Model__NodeState *ns = malloc(sizeof(Model__NodeState));
+            if (NULL == ns) {
+                plog_error(plugin, "malloc fail");
+                goto end;
+            }
+
+            model__node_state__init(ns);
+            ns->node    = state->node;
+            ns->link    = state->state.link;
+            ns->running = state->state.running;
+
+            node_states[utarray_eltidx(states->states, state)] = ns;
+        }
+
+        size     = model__node_state_report__get_packed_size(&nsr);
+        json_str = malloc(size);
+        model__node_state_report__pack(&nsr, (uint8_t *) json_str);
+    } else {
+        json_str =
+            generate_heartbeat_json(plugin, states->states, &driver_none);
+        if (driver_none == true) {
+            plog_notice(plugin, "no driver found");
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+        if (NULL == json_str) {
+            plog_error(plugin, "generate heartbeat json fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.heartbeat_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     utarray_free(states->states);
@@ -1097,54 +1572,75 @@ void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
     (void) topic;
     (void) trace_w3c;
 
-    neu_plugin_t *                   plugin = data;
-    neu_json_driver_directory_req_t *req    = NULL;
-
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
-
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_directory_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_action_req failed");
-        free(json_str);
-        return;
-    }
-
     neu_reqresp_head_t         header = { 0 };
     neu_req_driver_directory_t cmd    = { 0 };
 
-    header.ctx  = mqtt;
+    neu_plugin_t *                   plugin   = data;
+    neu_json_driver_directory_req_t *req      = NULL;
+    neu_json_mqtt_t *                mqtt     = NULL;
+    char *                           json_str = NULL;
+
     header.type = NEU_REQ_DRIVER_DIRECTORY;
 
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.path, req->path);
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileListRequest *flr =
+            model__file_list_request__unpack(NULL, len, payload);
+        if (NULL == flr) {
+            plog_error(plugin, "model__file_list_request__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(flr->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, flr->node);
+        strcpy(cmd.path, flr->path);
+
+        model__file_list_request__free_unpacked(flr, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_directory_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_action_req failed");
+            free(json_str);
+            return;
+        }
+
+        header.ctx = mqtt;
+
+        strcpy(cmd.driver, req->driver);
+        strcpy(cmd.path, req->path);
+
+        neu_json_decode_driver_directory_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_DIRECTORY) fail");
         return;
     }
-
-    neu_json_decode_driver_directory_req_free(req);
-    free(json_str);
-
-    return;
 }
 
 int handle_driver_directory_response(neu_plugin_t *               plugin,
                                      neu_json_mqtt_t *            mqtt_json,
                                      neu_resp_driver_directory_t *data)
 {
-    int                              rv        = 0;
-    char *                           json_str  = NULL;
-    neu_json_driver_directory_resp_t directory = { 0 };
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1158,42 +1654,90 @@ int handle_driver_directory_response(neu_plugin_t *               plugin,
         goto end;
     }
 
-    directory.error = data->error;
-    if (directory.error == 0) {
-        directory.n_files = utarray_len(data->files);
-        directory.files =
-            calloc(directory.n_files, sizeof(neu_json_driver_directory_file_t));
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileListResponse flr = MODEL__FILE_LIST_RESPONSE__INIT;
 
-        utarray_foreach(data->files, neu_resp_driver_directory_file_t *, file)
-        {
-            neu_json_driver_directory_file_t *f =
-                &directory.files[utarray_eltidx(data->files, file)];
+        flr.uuid  = mqtt_json->uuid;
+        flr.error = data->error;
+        if (data->error == 0) {
+            flr.n_files = utarray_len(data->files);
 
-            f->ftype     = file->ftype;
-            f->name      = file->name;
-            f->size      = file->size;
-            f->timestamp = file->timestamp;
+            Model__FileItem **files =
+                malloc(flr.n_files * sizeof(Model__FileItem *));
+            if (NULL == files) {
+                plog_error(plugin, "malloc fail");
+                goto end;
+            }
+
+            utarray_foreach(data->files, neu_resp_driver_directory_file_t *,
+                            file)
+            {
+                Model__FileItem *fi = malloc(sizeof(Model__FileItem));
+                if (NULL == fi) {
+                    plog_error(plugin, "malloc fail");
+                    goto end;
+                }
+
+                model__file_item__init(fi);
+                fi->type = file->ftype;
+                fi->name = file->name;
+                fi->size = file->size;
+                fi->t    = file->timestamp;
+
+                files[utarray_eltidx(data->files, file)] = fi;
+            }
         }
-    }
 
-    neu_json_encode_with_mqtt(&directory, neu_json_encode_driver_directory_resp,
-                              mqtt_json, neu_json_encode_mqtt_resp, &json_str);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver directory resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+        size     = model__file_list_response__get_packed_size(&flr);
+        json_str = malloc(size);
+        model__file_list_response__pack(&flr, (uint8_t *) json_str);
+    } else {
+        neu_json_driver_directory_resp_t directory = { 0 };
+        directory.error                            = data->error;
+
+        if (directory.error == 0) {
+            directory.n_files = utarray_len(data->files);
+            directory.files   = calloc(directory.n_files,
+                                     sizeof(neu_json_driver_directory_file_t));
+
+            utarray_foreach(data->files, neu_resp_driver_directory_file_t *,
+                            file)
+            {
+                neu_json_driver_directory_file_t *f =
+                    &directory.files[utarray_eltidx(data->files, file)];
+
+                f->ftype     = file->ftype;
+                f->name      = file->name;
+                f->size      = file->size;
+                f->timestamp = file->timestamp;
+            }
+        }
+        neu_json_encode_with_mqtt(
+            &directory, neu_json_encode_driver_directory_resp, mqtt_json,
+            neu_json_encode_mqtt_resp, &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver directory resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        size = strlen(json_str);
+        if (directory.error == 0) {
+            free(directory.files);
+        }
     }
 
     char *         topic = plugin->config.driver_topic.files_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
-    if (directory.error == 0) {
-        free(directory.files);
+
+    if (data->error == 0) {
         utarray_free(data->files);
     }
 
@@ -1207,54 +1751,73 @@ void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,
     (void) qos;
     (void) topic;
     (void) trace_w3c;
-    neu_plugin_t *                  plugin = data;
-    neu_json_driver_fup_open_req_t *req    = NULL;
+    neu_plugin_t *plugin = data;
 
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
+    neu_reqresp_head_t              header   = { 0 };
+    neu_req_fup_open_t              cmd      = { 0 };
+    neu_json_driver_fup_open_req_t *req      = NULL;
+    neu_json_mqtt_t *               mqtt     = NULL;
+    char *                          json_str = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_fup_open_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_fup_open_req failed");
-        free(json_str);
-        return;
-    }
-
-    neu_reqresp_head_t header = { 0 };
-    neu_req_fup_open_t cmd    = { 0 };
-
-    header.ctx  = mqtt;
     header.type = NEU_REQ_FUP_OPEN;
 
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.path, req->path);
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileUploadRequest *fur =
+            model__file_upload_request__unpack(NULL, len, payload);
+        if (NULL == fur) {
+            plog_error(plugin, "model__file_upload_request__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(fur->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, fur->node);
+        strcpy(cmd.path, fur->path);
+
+        model__file_upload_request__free_unpacked(fur, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_fup_open_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_fup_open_req failed");
+            free(json_str);
+            return;
+        }
+        header.ctx = mqtt;
+        strcpy(cmd.driver, req->driver);
+        strcpy(cmd.path, req->path);
+
+        neu_json_decode_driver_fup_open_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_FUP_OPEN) fail");
         return;
     }
-
-    neu_json_decode_driver_fup_open_req_free(req);
-    free(json_str);
-
-    return;
 }
 
 int handle_driver_fup_open_response(neu_plugin_t *       plugin,
                                     neu_json_mqtt_t *    mqtt_json,
                                     neu_resp_fup_open_t *data)
 {
-    int                             rv       = 0;
-    char *                          json_str = NULL;
-    neu_json_driver_fup_open_resp_t resp     = { 0 };
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1268,22 +1831,38 @@ int handle_driver_fup_open_response(neu_plugin_t *       plugin,
         goto end;
     }
 
-    resp.error = data->error;
-    resp.size  = data->size;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileUploadResponse fur = MODEL__FILE_UPLOAD_RESPONSE__INIT;
 
-    neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fup_open_resp,
-                              mqtt_json, neu_json_encode_mqtt_resp, &json_str);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver fup open resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+        fur.uuid  = mqtt_json->uuid;
+        fur.error = data->error;
+
+        size     = model__file_upload_response__get_packed_size(&fur);
+        json_str = malloc(size);
+        model__file_upload_response__pack(&fur, (uint8_t *) json_str);
+    } else {
+        neu_json_driver_fup_open_resp_t resp = { 0 };
+
+        resp.error = data->error;
+        resp.size  = data->size;
+
+        neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fup_open_resp,
+                                  mqtt_json, neu_json_encode_mqtt_resp,
+                                  &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver fup open resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.driver_topic.file_up_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
@@ -1297,54 +1876,77 @@ void handle_driver_fup_data_req(neu_mqtt_qos_e qos, const char *topic,
     (void) qos;
     (void) topic;
     (void) trace_w3c;
-    neu_plugin_t *                  plugin = data;
-    neu_json_driver_fup_data_req_t *req    = NULL;
+    neu_plugin_t *plugin = data;
 
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
+    neu_reqresp_head_t              header   = { 0 };
+    neu_req_fup_data_t              cmd      = { 0 };
+    neu_json_driver_fup_data_req_t *req      = NULL;
+    neu_json_mqtt_t *               mqtt     = NULL;
+    char *                          json_str = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_fup_data_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_fup_data_req failed");
-        free(json_str);
-        return;
-    }
-
-    neu_reqresp_head_t header = { 0 };
-    neu_req_fup_data_t cmd    = { 0 };
-
-    header.ctx  = mqtt;
     header.type = NEU_REQ_FUP_DATA;
 
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.path, req->path);
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileUploadDataRequest *fudr =
+            model__file_upload_data_request__unpack(NULL, len, payload);
+        if (NULL == fudr) {
+            plog_error(plugin,
+                       "model__file_upload_data_request__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(fudr->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+
+        strcpy(cmd.driver, fudr->node);
+        strcpy(cmd.path, fudr->path);
+
+        model__file_upload_data_request__free_unpacked(fudr, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_fup_data_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_fup_data_req failed");
+            free(json_str);
+            return;
+        }
+
+        header.ctx = mqtt;
+
+        strcpy(cmd.driver, req->driver);
+        strcpy(cmd.path, req->path);
+
+        neu_json_decode_driver_fup_data_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_FUP_DATA) fail");
         return;
     }
-
-    neu_json_decode_driver_fup_data_req_free(req);
-    free(json_str);
-
-    return;
 }
 
 int handle_driver_fup_data_response(neu_plugin_t *       plugin,
                                     neu_json_mqtt_t *    mqtt_json,
                                     neu_resp_fup_data_t *data)
 {
-    int                             rv       = 0;
-    char *                          json_str = NULL;
-    neu_json_driver_fup_data_resp_t resp     = { 0 };
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1358,24 +1960,44 @@ int handle_driver_fup_data_response(neu_plugin_t *       plugin,
         goto end;
     }
 
-    resp.error = data->error;
-    resp.more  = data->more;
-    resp.len   = data->len;
-    resp.data  = data->data;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileUploadDataResponse fudr =
+            MODEL__FILE_UPLOAD_DATA_RESPONSE__INIT;
 
-    neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fup_data_resp,
-                              mqtt_json, neu_json_encode_mqtt_resp, &json_str);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver fup data resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+        fudr.uuid      = mqtt_json->uuid;
+        fudr.error     = data->error;
+        fudr.more      = data->more;
+        fudr.data.len  = data->len;
+        fudr.data.data = data->data;
+
+        size     = model__file_upload_data_response__get_packed_size(&fudr);
+        json_str = malloc(size);
+        model__file_upload_data_response__pack(&fudr, (uint8_t *) json_str);
+    } else {
+        neu_json_driver_fup_data_resp_t resp = { 0 };
+        resp.error                           = data->error;
+        resp.more                            = data->more;
+        resp.len                             = data->len;
+        resp.data                            = data->data;
+
+        neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fup_data_resp,
+                                  mqtt_json, neu_json_encode_mqtt_resp,
+                                  &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver fup data resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.driver_topic.file_up_data_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
@@ -1390,55 +2012,77 @@ void handle_driver_fdown_open_req(neu_mqtt_qos_e qos, const char *topic,
     (void) qos;
     (void) topic;
     (void) trace_w3c;
-    neu_plugin_t *                    plugin = data;
-    neu_json_driver_fdown_open_req_t *req    = NULL;
+    neu_plugin_t *plugin = data;
 
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
+    neu_reqresp_head_t                header   = { 0 };
+    neu_req_fdown_open_t              cmd      = { 0 };
+    neu_json_driver_fdown_open_req_t *req      = NULL;
+    neu_json_mqtt_t *                 mqtt     = NULL;
+    char *                            json_str = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_fdown_open_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_fdown_open_req failed");
-        free(json_str);
-        return;
-    }
-
-    neu_reqresp_head_t   header = { 0 };
-    neu_req_fdown_open_t cmd    = { 0 };
-
-    header.ctx  = mqtt;
     header.type = NEU_REQ_FDOWN_OPEN;
 
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.src_path, req->src_path);
-    strcpy(cmd.dst_path, req->dst_path);
-    cmd.size = req->size;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileDownloadRequest *fdr =
+            model__file_download_request__unpack(NULL, len, payload);
+        if (NULL == fdr) {
+            plog_error(plugin, "model__file_download_request__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = strdup(fdr->uuid);
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, fdr->node);
+        strcpy(cmd.src_path, fdr->src_path);
+        strcpy(cmd.dst_path, fdr->dst_path);
+        cmd.size = fdr->size;
+
+        model__file_download_request__free_unpacked(fdr, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_fdown_open_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_fdown_open_req failed");
+            free(json_str);
+            return;
+        }
+        header.ctx = mqtt;
+        strcpy(cmd.driver, req->driver);
+        strcpy(cmd.src_path, req->src_path);
+        strcpy(cmd.dst_path, req->dst_path);
+        cmd.size = req->size;
+
+        neu_json_decode_driver_fdown_open_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_FDOWN_OPEN) fail");
         return;
     }
-
-    neu_json_decode_driver_fdown_open_req_free(req);
-    free(json_str);
-    return;
 }
 
 int handle_driver_fdown_open_response(neu_plugin_t *         plugin,
                                       neu_json_mqtt_t *      mqtt_json,
                                       neu_resp_fdown_open_t *data)
 {
-    int                               rv       = 0;
-    char *                            json_str = NULL;
-    neu_json_driver_fdown_open_resp_t resp     = { 0 };
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1452,21 +2096,36 @@ int handle_driver_fdown_open_response(neu_plugin_t *         plugin,
         goto end;
     }
 
-    resp.error = data->error;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileDownloadResponse fdr = MODEL__FILE_DOWNLOAD_RESPONSE__INIT;
 
-    neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fdown_open_resp,
-                              mqtt_json, neu_json_encode_mqtt_resp, &json_str);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver fdown open resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+        fdr.uuid  = mqtt_json->uuid;
+        fdr.error = data->error;
+
+        size     = model__file_download_response__get_packed_size(&fdr);
+        json_str = malloc(size);
+        model__file_download_response__pack(&fdr, (uint8_t *) json_str);
+    } else {
+        neu_json_driver_fdown_open_resp_t resp = { 0 };
+        resp.error                             = data->error;
+
+        neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fdown_open_resp,
+                                  mqtt_json, neu_json_encode_mqtt_resp,
+                                  &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver fdown open resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.driver_topic.file_down_resp;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
@@ -1480,47 +2139,75 @@ void handle_driver_fdown_data_req(neu_mqtt_qos_e qos, const char *topic,
     (void) qos;
     (void) topic;
     (void) trace_w3c;
-    neu_plugin_t *                    plugin = data;
-    neu_json_driver_fdown_data_req_t *req    = NULL;
+    neu_plugin_t *plugin = data;
 
-    char *json_str = calloc(len + 1, sizeof(char));
-    memcpy(json_str, payload, len);
+    neu_reqresp_head_t                header   = { 0 };
+    neu_resp_fdown_data_t             cmd      = { 0 };
+    neu_json_driver_fdown_data_req_t *req      = NULL;
+    neu_json_mqtt_t *                 mqtt     = NULL;
+    char *                            json_str = NULL;
 
-    neu_json_mqtt_t *mqtt = NULL;
-    int              rv   = neu_json_decode_mqtt_req(json_str, &mqtt);
-    if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_mqtt_req failed");
-        free(json_str);
-        return;
-    }
-
-    rv = neu_json_decode_driver_fdown_data_req(json_str, &req);
-    if (rv != 0) {
-        plog_error(plugin, "neu_json_decode_driver_fdown_data_req failed");
-        free(json_str);
-        return;
-    }
-
-    neu_reqresp_head_t    header = { 0 };
-    neu_resp_fdown_data_t cmd    = { 0 };
-
-    header.ctx  = mqtt;
     header.type = NEU_RESP_FDOWN_DATA;
 
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.src_path, req->src_path);
-    cmd.more = req->more;
-    cmd.len  = req->len;
-    cmd.data = calloc(req->len, sizeof(uint8_t));
-    memcpy(cmd.data, req->data, req->len);
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileDownloadDataResponse *fddr =
+            model__file_download_data_response__unpack(NULL, len, payload);
+        if (NULL == fddr) {
+            plog_error(plugin,
+                       "model__file_download_data_response__unpack failed");
+            return;
+        }
+
+        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt->uuid        = NULL;
+        mqtt->payload     = NULL;
+        mqtt->traceparent = NULL;
+        mqtt->tracestate  = NULL;
+
+        header.ctx = mqtt;
+        strcpy(cmd.driver, fddr->node);
+        strcpy(cmd.src_path, fddr->path);
+        cmd.more = fddr->more;
+        cmd.len  = fddr->data.len;
+        cmd.data = calloc(fddr->data.len, sizeof(uint8_t));
+        memcpy(cmd.data, fddr->data.data, fddr->data.len);
+
+        model__file_download_data_response__free_unpacked(fddr, NULL);
+    } else {
+        json_str = calloc(len + 1, sizeof(char));
+        memcpy(json_str, payload, len);
+
+        int rv = neu_json_decode_mqtt_req(json_str, &mqtt);
+        if (0 != rv) {
+            plog_error(plugin, "neu_json_decode_mqtt_req failed");
+            free(json_str);
+            return;
+        }
+
+        rv = neu_json_decode_driver_fdown_data_req(json_str, &req);
+        if (rv != 0) {
+            plog_error(plugin, "neu_json_decode_driver_fdown_data_req failed");
+            free(json_str);
+            return;
+        }
+        header.ctx = mqtt;
+
+        strcpy(cmd.driver, req->driver);
+        strcpy(cmd.src_path, req->src_path);
+        cmd.more = req->more;
+        cmd.len  = req->len;
+        cmd.data = calloc(req->len, sizeof(uint8_t));
+        memcpy(cmd.data, req->data, req->len);
+
+        neu_json_decode_driver_fdown_data_req_free(req);
+        free(json_str);
+    }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_DRIVER_FDOWN_DATA) fail");
         return;
     }
 
-    neu_json_decode_driver_fdown_data_req_free(req);
-    free(json_str);
     return;
 }
 
@@ -1528,9 +2215,9 @@ int handle_driver_fdown_data_response(neu_plugin_t *        plugin,
                                       neu_json_mqtt_t *     mqtt_json,
                                       neu_req_fdown_data_t *data)
 {
-    int                               rv       = 0;
-    char *                            json_str = NULL;
-    neu_json_driver_fdown_data_resp_t resp     = { 0 };
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
 
     if (NULL == plugin->client) {
         rv = NEU_ERR_MQTT_IS_NULL;
@@ -1544,22 +2231,38 @@ int handle_driver_fdown_data_response(neu_plugin_t *        plugin,
         goto end;
     }
 
-    resp.driver   = data->driver;
-    resp.src_path = data->src_path;
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__FileDownloadDataRequest fddr =
+            MODEL__FILE_DOWNLOAD_DATA_REQUEST__INIT;
 
-    neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fdown_data_resp,
-                              NULL, NULL, &json_str);
-    if (NULL == json_str) {
-        plog_error(plugin, "generate driver fdown data resp json fail, uuid:%s",
-                   mqtt_json->uuid);
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
+        fddr.node = data->driver;
+        fddr.path = data->src_path;
+
+        size     = model__file_download_data_request__get_packed_size(&fddr);
+        json_str = malloc(size);
+        model__file_download_data_request__pack(&fddr, (uint8_t *) json_str);
+    } else {
+        neu_json_driver_fdown_data_resp_t resp = { 0 };
+        resp.driver                            = data->driver;
+        resp.src_path                          = data->src_path;
+
+        neu_json_encode_with_mqtt(&resp, neu_json_encode_driver_fdown_data_resp,
+                                  NULL, NULL, &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver fdown data resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->config.driver_topic.file_down_data_req;
     neu_mqtt_qos_e qos   = plugin->config.qos;
-    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
-    json_str = NULL;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
