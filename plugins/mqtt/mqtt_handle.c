@@ -578,10 +578,12 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 
         header.type = NEU_REQ_WRITE_TAGS;
         header.ctx  = mqtt;
-        cmd.driver  = wr->node;
-        cmd.group   = wr->group;
+        cmd.driver  = strdup(wr->node);
+        cmd.group   = strdup(wr->group);
         cmd.n_tag   = wr->n_tags;
-        cmd.tags    = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+        if (cmd.n_tag > 0) {
+            cmd.tags = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+        }
 
         for (int i = 0; i < cmd.n_tag; i++) {
             strcpy(cmd.tags[i].tag, wr->tags[i]->name);
@@ -686,15 +688,24 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
     if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
         Model__WriteResponse resp = MODEL__WRITE_RESPONSE__INIT;
 
-        resp.uuid             = mqtt_json->uuid;
-        resp.n_errors         = 1;
-        resp.errors           = calloc(1, sizeof(Model__WriteResponseItem));
+        resp.uuid      = mqtt_json->uuid;
+        resp.n_errors  = 1;
+        resp.errors    = calloc(1, sizeof(Model__WriteResponseItem *));
+        resp.errors[0] = calloc(1, sizeof(Model__WriteResponseItem));
+        model__write_response_item__init(resp.errors[0]);
+        // TODO
         resp.errors[0]->name  = strdup("");
         resp.errors[0]->error = data->error;
 
         size     = model__write_response__get_packed_size(&resp);
         json_str = malloc(size);
         model__write_response__pack(&resp, (uint8_t *) json_str);
+
+        for (size_t i = 0; i < resp.n_errors; i++) {
+            free(resp.errors[i]->name);
+            free(resp.errors[i]);
+        }
+        free(resp.errors);
     } else {
         json_str = generate_write_resp_json(plugin, mqtt_json, data);
         if (NULL == json_str) {
@@ -892,11 +903,16 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 
         neu_req_read_group_t cmd = { 0 };
 
-        cmd.driver = read_req->node;
-        cmd.group  = read_req->group;
+        cmd.driver = strdup(read_req->node);
+        cmd.group  = strdup(read_req->group);
         cmd.sync   = false;
         cmd.n_tag  = read_req->n_tags;
-        cmd.tags   = read_req->tags;
+        if (cmd.n_tag > 0) {
+            cmd.tags = calloc(cmd.n_tag, sizeof(char *));
+        }
+        for (int i = 0; i < cmd.n_tag; i++) {
+            cmd.tags[i] = strdup(read_req->tags[i]);
+        }
 
         if (0 != neu_plugin_op(plugin, header, &cmd)) {
             neu_req_read_group_fini(&cmd);
@@ -977,7 +993,7 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         int index = 0;
         utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
         {
-            Model__DataItem *tag = malloc(sizeof(Model__DataItem));
+            Model__DataItem *tag = calloc(1, sizeof(Model__DataItem));
             model__data_item__init(tag);
             tag->name = tag_value->tag;
             switch (tag_value->value.type) {
@@ -987,18 +1003,24 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                 break;
             case NEU_TYPE_UINT8:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.u8;
                 break;
             case NEU_TYPE_INT8:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.i8;
                 break;
             case NEU_TYPE_INT16:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.i16;
@@ -1006,12 +1028,16 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
             case NEU_TYPE_WORD:
             case NEU_TYPE_UINT16:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.u16;
                 break;
             case NEU_TYPE_INT32:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.i32;
@@ -1019,12 +1045,16 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
             case NEU_TYPE_DWORD:
             case NEU_TYPE_UINT32:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.u32;
                 break;
             case NEU_TYPE_INT64:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.i64;
@@ -1032,30 +1062,40 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
             case NEU_TYPE_LWORD:
             case NEU_TYPE_UINT64:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                 tag->value->int_value = tag_value->value.value.u64;
                 break;
             case NEU_TYPE_FLOAT:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
                 tag->value->float_value = tag_value->value.value.f32;
                 break;
             case NEU_TYPE_DOUBLE:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
                 tag->value->float_value = tag_value->value.value.d64;
                 break;
             case NEU_TYPE_BOOL:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE;
                 tag->value->bool_value = tag_value->value.value.boolean;
                 break;
             case NEU_TYPE_STRING:
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 tag->value->value_case =
                     MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE;
                 tag->value->string_value = tag_value->value.value.str;
@@ -1089,6 +1129,14 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         size     = model__read_response__get_packed_size(&resp);
         json_str = malloc(size);
         model__read_response__pack(&resp, (uint8_t *) json_str);
+
+        for (size_t i = 0; i < resp.n_tags; i++) {
+            if (resp.tags[i]->item_case == MODEL__DATA_ITEM__ITEM_VALUE) {
+                free(resp.tags[i]->value);
+            }
+            free(resp.tags[i]);
+        }
+        free(resp.tags);
     } else {
         json_str = generate_read_resp_json(plugin, mqtt_json, data);
         if (NULL == json_str) {
@@ -1182,7 +1230,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
             utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *,
                             tag_value)
             {
-                Model__DataItem *tag = malloc(sizeof(Model__DataItem));
+                Model__DataItem *tag = calloc(1, sizeof(Model__DataItem));
                 model__data_item__init(tag);
                 tag->name = tag_value->tag;
                 switch (tag_value->value.type) {
@@ -1192,18 +1240,24 @@ int handle_trans_data(neu_plugin_t *            plugin,
                     break;
                 case NEU_TYPE_UINT8:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.u8;
                     break;
                 case NEU_TYPE_INT8:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.i8;
                     break;
                 case NEU_TYPE_INT16:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.i16;
@@ -1211,12 +1265,16 @@ int handle_trans_data(neu_plugin_t *            plugin,
                 case NEU_TYPE_WORD:
                 case NEU_TYPE_UINT16:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.u16;
                     break;
                 case NEU_TYPE_INT32:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.i32;
@@ -1224,36 +1282,48 @@ int handle_trans_data(neu_plugin_t *            plugin,
                 case NEU_TYPE_DWORD:
                 case NEU_TYPE_UINT32:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.u32;
                     break;
                 case NEU_TYPE_INT64:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE;
                     tag->value->int_value = tag_value->value.value.i64;
                     break;
                 case NEU_TYPE_FLOAT:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
                     tag->value->float_value = tag_value->value.value.f32;
                     break;
                 case NEU_TYPE_DOUBLE:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_FLOAT_VALUE;
                     tag->value->float_value = tag_value->value.value.d64;
                     break;
                 case NEU_TYPE_BOOL:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_BOOL_VALUE;
                     tag->value->bool_value = tag_value->value.value.boolean;
                     break;
                 case NEU_TYPE_STRING:
                     tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                    tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                    model__data_item_value__init(tag->value);
                     tag->value->value_case =
                         MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE;
                     tag->value->string_value = tag_value->value.value.str;
@@ -1287,6 +1357,8 @@ int handle_trans_data(neu_plugin_t *            plugin,
                 model__data_item__init(tag);
                 tag->name      = static_tags[i].name;
                 tag->item_case = MODEL__DATA_ITEM__ITEM_VALUE;
+                tag->value     = calloc(1, sizeof(Model__DataItemValue));
+                model__data_item_value__init(tag->value);
                 switch (static_tags[i].jtype) {
                 case NEU_TYPE_INT64:
                     tag->value->value_case =
@@ -1322,6 +1394,14 @@ int handle_trans_data(neu_plugin_t *            plugin,
             json_str = malloc(size);
 
             model__data_report__pack(&data_report, (uint8_t *) json_str);
+            for (size_t i = 0; i < data_report.n_tags; i++) {
+                if (data_report.tags[i]->item_case ==
+                    MODEL__DATA_ITEM__ITEM_VALUE) {
+                    free(data_report.tags[i]->value);
+                }
+                free(data_report.tags[i]);
+            }
+            free(data_report.tags);
         } else {
             json_str = generate_upload_json(
                 plugin, trans_data, plugin->config.format,
@@ -1511,7 +1591,7 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
         nsr.n_nodes   = utarray_len(states->states);
 
         Model__NodeState **node_states =
-            malloc(nsr.n_nodes * sizeof(Model__NodeState *));
+            calloc(nsr.n_nodes, sizeof(Model__NodeState *));
         if (NULL == node_states) {
             plog_error(plugin, "malloc fail");
             goto end;
@@ -1519,12 +1599,11 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
 
         utarray_foreach(states->states, neu_nodes_state_t *, state)
         {
-            Model__NodeState *ns = malloc(sizeof(Model__NodeState));
+            Model__NodeState *ns = calloc(1, sizeof(Model__NodeState));
             if (NULL == ns) {
                 plog_error(plugin, "malloc fail");
                 goto end;
             }
-
             model__node_state__init(ns);
             ns->node    = state->node;
             ns->link    = state->state.link;
@@ -1533,9 +1612,15 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
             node_states[utarray_eltidx(states->states, state)] = ns;
         }
 
-        size     = model__node_state_report__get_packed_size(&nsr);
-        json_str = malloc(size);
+        nsr.nodes = node_states;
+        size      = model__node_state_report__get_packed_size(&nsr);
+        json_str  = malloc(size);
         model__node_state_report__pack(&nsr, (uint8_t *) json_str);
+
+        for (size_t i = 0; i < nsr.n_nodes; i++) {
+            free(node_states[i]);
+        }
+        free(node_states);
     } else {
         json_str =
             generate_heartbeat_json(plugin, states->states, &driver_none);
@@ -1661,10 +1746,10 @@ int handle_driver_directory_response(neu_plugin_t *               plugin,
         flr.error = data->error;
         if (data->error == 0) {
             flr.n_files = utarray_len(data->files);
+            int index   = 0;
 
-            Model__FileItem **files =
-                malloc(flr.n_files * sizeof(Model__FileItem *));
-            if (NULL == files) {
+            flr.files = calloc(flr.n_files, sizeof(Model__FileItem *));
+            if (NULL == flr.files) {
                 plog_error(plugin, "malloc fail");
                 goto end;
             }
@@ -1672,7 +1757,7 @@ int handle_driver_directory_response(neu_plugin_t *               plugin,
             utarray_foreach(data->files, neu_resp_driver_directory_file_t *,
                             file)
             {
-                Model__FileItem *fi = malloc(sizeof(Model__FileItem));
+                Model__FileItem *fi = calloc(1, sizeof(Model__FileItem));
                 if (NULL == fi) {
                     plog_error(plugin, "malloc fail");
                     goto end;
@@ -1684,13 +1769,23 @@ int handle_driver_directory_response(neu_plugin_t *               plugin,
                 fi->size = file->size;
                 fi->t    = file->timestamp;
 
-                files[utarray_eltidx(data->files, file)] = fi;
+                flr.files[index] = fi;
+                index++;
             }
+        } else {
+            flr.n_files = 0;
         }
 
         size     = model__file_list_response__get_packed_size(&flr);
         json_str = malloc(size);
         model__file_list_response__pack(&flr, (uint8_t *) json_str);
+
+        if (data->error == 0) {
+            for (size_t i = 0; i < flr.n_files; i++) {
+                free(flr.files[i]);
+            }
+            free(flr.files);
+        }
     } else {
         neu_json_driver_directory_resp_t directory = { 0 };
         directory.error                            = data->error;
