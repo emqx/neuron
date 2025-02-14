@@ -726,6 +726,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 }
             }
 
+            if (elem->value.type == NEU_TYPE_PTR) {
+                if (elem->value.value.ptr.ptr != NULL) {
+                    free(elem->value.value.ptr.ptr);
+                    elem->value.value.ptr.ptr = NULL;
+                }
+            }
+
             if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
                 for (int i = 0; i < elem->value.value.strs.length; i++) {
                     free(elem->value.value.strs.strs[i]);
