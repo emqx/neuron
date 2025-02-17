@@ -32,7 +32,7 @@ CREATE TABLE
     bias REAL NOT NULL check (bias BETWEEN -1000 AND 1000),
     type INTEGER NOT NULL check (type BETWEEN 0 AND 40),
     description TEXT NULL check (length (description) <= 512),
-    value TEXT,
+    value TEXT NULL,
     format TEXT NULL,
     UNIQUE (driver_name, group_name, name),
     FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
