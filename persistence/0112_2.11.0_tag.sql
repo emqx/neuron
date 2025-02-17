@@ -18,7 +18,22 @@
 **/
 BEGIN TRANSACTION;
 
-ALTER TABLE tags RENAME TO temp_tags;
+ALTER TABLE groups RENAME TO temp_groups;
+
+CREATE TABLE IF NOT EXISTS
+  groups (
+    driver_name TEXT NOT NULL,
+    name TEXT NULL check(length(name) <= 32),
+    interval INTEGER NOT NULL check(interval >= 100),
+	  context TEXT NULL check(length(context) <= 512),
+    UNIQUE (driver_name, name),
+    FOREIGN KEY (driver_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE
+  );
+INSERT INTO groups SELECT driver_name, name, interval, NULL FROM temp_groups;
+
+DROP TABLE temp_groups;
+
+ALTER TABLE tags RENAME TO old_tags;
 
 CREATE TABLE
   IF NOT EXISTS tags (
@@ -38,7 +53,8 @@ CREATE TABLE
     FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
   );
 
-INSERT INTO tags 
+INSERT INTO 
+  tags 
 SELECT
   driver_name,
   group_name,
@@ -51,10 +67,8 @@ SELECT
   type,
   description,
   NULL,
-  ""
-FROM temp_tags;
-
-DROP TABLE temp_tags;
+  NULL
+FROM old_tags;
 
 ALTER TABLE subscriptions RENAME TO temp_subscriptions;
 CREATE TABLE
