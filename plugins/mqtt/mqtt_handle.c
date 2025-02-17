@@ -1144,6 +1144,8 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
             rv = NEU_ERR_EINTERNAL;
             goto end;
         }
+
+        size = strlen(json_str);
     }
 
     char *         topic = plugin->read_resp_topic;

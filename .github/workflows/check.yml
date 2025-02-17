@@ -21,7 +21,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.18
         with:
           source: 'src plugins include tests'
-          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h src/otel/trace.pb-c.h src/otel/trace.pb-c.c src/otel/resource.pb-c.h src/otel/resource.pb-c.c src/otel/common.pb-c.c src/otel/common.pb-c.h' 
+          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h src/otel/trace.pb-c.h src/otel/trace.pb-c.c src/otel/resource.pb-c.h src/otel/resource.pb-c.c src/otel/common.pb-c.c src/otel/common.pb-c.h plugins/mqtt/ptformat.pb-c.h plugins/mqtt/ptformat.pb-c.c' 
           style: file
           clangFormatVersion: 10
 
