@@ -307,7 +307,7 @@ void handle_get_plugin_schema(nng_aio *aio)
         return;
     }
 
-    if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
+    if (0 > neu_asprintf(&schema_path, "%s/system/schema/%s.json", g_plugin_dir,
                          schema_name)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
             neu_http_response(aio, error_code.error, result_error);
@@ -332,8 +332,8 @@ void handle_get_plugin_schema(nng_aio *aio)
 
     if (NULL == buf) {
         free(schema_path);
-        if (0 > neu_asprintf(&schema_path, "%s/system/schema/%s.json",
-                             g_plugin_dir, schema_name)) {
+        if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
+                             schema_name)) {
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                 neu_http_response(aio, error_code.error, result_error);
             });
