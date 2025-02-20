@@ -244,7 +244,7 @@ class TestPlugin:
         assert 200 == response.status_code
         for plugin in response.json().get("plugins"):
             if plugin['name'] == 'c1':
-                assert plugin['version'] == '2.11.99'
+                assert plugin['version'] == '2.12.99'
 
     @description(given="incorrect configuration", when="update plugin", then="fail")
     def test_10_update_plugin_fail3(self):
