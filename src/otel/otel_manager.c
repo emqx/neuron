@@ -186,6 +186,20 @@ void neu_otel_free_span(Opentelemetry__Proto__Trace__V1__Span *span)
 neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
                                          uint32_t flags, const char *tracestate)
 {
+    trace_ctx_table_ele_t *find = NULL;
+
+    pthread_mutex_lock(&table_mutex);
+
+    HASH_FIND(hh, traces_table, &req_ctx, sizeof(req_ctx), find);
+
+    if (find) {
+        HASH_DEL(traces_table, find);
+        neu_otel_free_trace(find->ctx);
+        free(find);
+    }
+
+    pthread_mutex_unlock(&table_mutex);
+
     trace_ctx_t *ctx = calloc(1, sizeof(trace_ctx_t));
     opentelemetry__proto__trace__v1__traces_data__init(&ctx->trace_data);
     strncpy((char *) ctx->trace_id, trace_id, 64);
