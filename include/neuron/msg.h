@@ -143,6 +143,27 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_FDOWN_DATA,
     NEU_RESP_FDOWN_DATA,
+
+    NEU_REQ_ADD_NODE_EVENT,
+    NEU_REQ_DEL_NODE_EVENT,
+    NEU_REQ_NODE_CTL_EVENT,
+    NEU_REQ_NODE_SETTING_EVENT,
+    NEU_REQ_ADD_GROUP_EVENT,
+    NEU_REQ_DEL_GROUP_EVENT,
+    NEU_REQ_UPDATE_GROUP_EVENT,
+    NEU_REQ_ADD_TAG_EVENT,
+    NEU_REQ_DEL_TAG_EVENT,
+    NEU_REQ_UPDATE_TAG_EVENT,
+
+    NEU_REQ_ADD_GTAG_EVENT,
+
+    NEU_REQ_ADD_PLUGIN_EVENT,
+    NEU_REQ_DEL_PLUGIN_EVENT,
+
+    NEU_REQ_SUBSCRIBE_GROUP_EVENT,
+    NEU_REQ_UNSUBSCRIBE_GROUP_EVENT,
+    NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT,
+    NEU_REQ_SUBSCRIBE_GROUPS_EVENT,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -246,6 +267,25 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_FDOWN_DATA]  = "NEU_REQ_FDOWN_DATA",
     [NEU_RESP_FDOWN_DATA] = "NEU_RESP_FDOWN_DATA",
+
+    [NEU_REQ_ADD_NODE_EVENT]          = "NEU_REQ_ADD_NODE_EVENT",
+    [NEU_REQ_DEL_NODE_EVENT]          = "NEU_REQ_DEL_NODE_EVENT",
+    [NEU_REQ_NODE_CTL_EVENT]          = "NEU_REQ_NODE_CTL_EVENT",
+    [NEU_REQ_NODE_SETTING_EVENT]      = "NEU_REQ_NODE_SETTING_EVENT",
+    [NEU_REQ_ADD_GROUP_EVENT]         = "NEU_REQ_ADD_GROUP_EVENT",
+    [NEU_REQ_DEL_GROUP_EVENT]         = "NEU_REQ_DEL_GROUP_EVENT",
+    [NEU_REQ_UPDATE_GROUP_EVENT]      = "NEU_REQ_UPDATE_GROUP_EVENT",
+    [NEU_REQ_ADD_TAG_EVENT]           = "NEU_REQ_ADD_TAG_EVENT",
+    [NEU_REQ_DEL_TAG_EVENT]           = "NEU_REQ_DEL_TAG_EVENT",
+    [NEU_REQ_UPDATE_TAG_EVENT]        = "NEU_REQ_UPDATE_TAG_EVENT",
+    [NEU_REQ_ADD_GTAG_EVENT]          = "NEU_REQ_ADD_GTAG_EVENT",
+    [NEU_REQ_ADD_PLUGIN_EVENT]        = "NEU_REQ_ADD_PLUGIN_EVENT",
+    [NEU_REQ_DEL_PLUGIN_EVENT]        = "NEU_REQ_DEL_PLUGIN_EVENT",
+    [NEU_REQ_SUBSCRIBE_GROUP_EVENT]   = "NEU_REQ_SUBSCRIBE_GROUP_EVENT",
+    [NEU_REQ_UNSUBSCRIBE_GROUP_EVENT] = "NEU_REQ_UNSUBSCRIBE_GROUP_EVENT",
+    [NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT] =
+        "NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT",
+    [NEU_REQ_SUBSCRIBE_GROUPS_EVENT] = "NEU_REQ_SUBSCRIBE_GROUPS_EVENT",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -268,6 +308,7 @@ typedef struct neu_reqresp_head {
     char               receiver[NEU_NODE_NAME_LEN];
     uint8_t            otel_trace_type;
     uint32_t           len;
+    bool               monitor;
 } neu_reqresp_head_t;
 
 typedef struct neu_resp_error {
