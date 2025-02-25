@@ -86,7 +86,8 @@ static inline int send_node_update_req(nng_aio *                   aio,
         return NEU_ERR_NODE_NAME_EMPTY;
     }
 
-    if (strcmp(req->new_name, "monitor") == 0) {
+    if (strcmp(req->new_name, "monitor") == 0 ||
+        strcmp(req->name, "monitor") == 0) {
         return NEU_ERR_NODE_NOT_ALLOW_UPDATE;
     }
 
