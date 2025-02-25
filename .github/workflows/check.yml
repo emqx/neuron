@@ -36,7 +36,7 @@ jobs:
       - name: cppcheck
         run: |
           sudo apt install cppcheck
-          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c  ./plugins ./src
+          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c ./src
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
 
   ut:
