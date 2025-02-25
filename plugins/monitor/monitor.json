@@ -18,7 +18,7 @@
     "description_zh": "事件消息发布的主题前缀",
     "type": "string",
     "attribute": "required",
-    "default": "/neuron/{client-id}",
+    "default": "/neuron/monitor/${random_str}",
     "valid": {
       "length": 255
     }
@@ -42,7 +42,7 @@
     "description_zh": "心跳消息发布的主题",
     "type": "string",
     "attribute": "required",
-    "default": "/neuron/${node-name}/heartbeat",
+    "default": "/neuron/heartbeat/${random_str}",
     "valid": {
       "length": 255
     }
