@@ -206,6 +206,12 @@ void neu_json_decode_test_read_tag_req_free(neu_json_test_read_tag_req_t *req);
 
 int neu_json_encode_test_read_tag_resp(void *json_object, void *param);
 
+typedef struct {
+    UT_array *tags;
+} neu_json_write_tags_resp_t;
+
+int neu_json_encode_write_tags_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif
