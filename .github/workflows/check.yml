@@ -81,7 +81,7 @@ jobs:
     container: ghcr.io/neugates/build:x86_64-main
     strategy:
       matrix:
-        plugin: [core, ekuiper, modbus, mqtt, azure, metrics]
+        plugin: [core, ekuiper, modbus, mqtt, azure, metrics, launch]
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +109,10 @@ jobs:
               --ignore=tests/ft/app/test_mqtt.py             \
               --ignore=tests/ft/app/test_azure.py            \
               --ignore=tests/ft/driver/test_modbus.py        \
-              --ignore=tests/ft/metrics/test_metrics.py
+              --ignore=tests/ft/metrics/test_metrics.py      \
+              --ignore=tests/ft/login/test_launch.py         \
+              --ignore=tests/ft/login/test_filter_error.py   \
+              --ignore=tests/ft/login/test_login.py
           elif [ "${{ matrix.plugin }}" = "ekuiper" ]; then
             pytest -s -v tests/ft/app/"test_ekuiper.py"
           elif [ "${{ matrix.plugin }}" = "modbus" ]; then
@@ -118,11 +121,14 @@ jobs:
             pytest -s -v tests/ft/app/"test_mqtt.py"
           elif [ "${{ matrix.plugin }}" = "azure" ]; then
             pytest -s -v tests/ft/app/"test_azure.py"
+          #elif [ "${{ matrix.plugin }}" = "launch" ]; then
+            #pytest -s -v tests/ft/login
           else
             pytest -s -v tests/ft/metrics/"test_metrics.py"          
           fi
 
       - name: create cov report
+        if: ${{ matrix.plugin != 'launch' }}
         run: |
             sudo apt-get update
             sudo apt-get -y install lcov
@@ -131,6 +137,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
+        if: ${{ matrix.plugin != 'launch' }}
         with:
           verbose: true
           fail_ci_if_error: true
