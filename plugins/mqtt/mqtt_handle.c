@@ -743,6 +743,81 @@ end:
     return rv;
 }
 
+int handle_write_tags_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
+                               neu_resp_write_tags_t *data)
+{
+    int    rv       = 0;
+    char * json_str = NULL;
+    size_t size     = 0;
+
+    if (NULL == plugin->client) {
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
+    }
+
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
+        rv = NEU_ERR_MQTT_FAILURE;
+        goto end;
+    }
+
+    if (plugin->config.format == MQTT_UPLOAD_FORMAT_PROTOBUF) {
+        Model__WriteResponse resp = MODEL__WRITE_RESPONSE__INIT;
+
+        resp.uuid     = mqtt_json->uuid;
+        resp.n_errors = utarray_len(data->tags);
+        resp.errors = calloc(resp.n_errors, sizeof(Model__WriteResponseItem *));
+        int index   = 0;
+
+        utarray_foreach(data->tags, neu_resp_write_tags_ele_t *, tag)
+        {
+            resp.errors[index] = calloc(1, sizeof(Model__WriteResponseItem));
+            model__write_response_item__init(resp.errors[index]);
+            resp.errors[index]->name  = strdup(tag->tag);
+            resp.errors[index]->error = tag->error;
+
+            index++;
+        }
+
+        size     = model__write_response__get_packed_size(&resp);
+        json_str = malloc(size);
+        model__write_response__pack(&resp, (uint8_t *) json_str);
+
+        for (size_t i = 0; i < resp.n_errors; i++) {
+            free(resp.errors[i]->name);
+            free(resp.errors[i]);
+        }
+        free(resp.errors);
+    } else {
+        neu_json_write_tags_resp_t write_resp = { 0 };
+        write_resp.tags                       = data->tags;
+
+        neu_json_encode_with_mqtt(&write_resp, neu_json_encode_write_tags_resp,
+                                  mqtt_json, neu_json_encode_mqtt_resp,
+                                  &json_str);
+        if (NULL == json_str) {
+            plog_error(plugin,
+                       "generate driver write tags resp json fail, uuid:%s",
+                       mqtt_json->uuid);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        size = strlen(json_str);
+    }
+
+    char *         topic = plugin->config.write_resp_topic;
+    neu_mqtt_qos_e qos   = plugin->config.qos;
+    rv                   = publish(plugin, qos, topic, json_str, size);
+    json_str             = NULL;
+
+end:
+    neu_json_decode_mqtt_req_free(mqtt_json);
+    utarray_free(data->tags);
+    return rv;
+}
+
 int handle_driver_action_response(neu_plugin_t *            plugin,
                                   neu_json_mqtt_t *         mqtt_json,
                                   neu_resp_driver_action_t *data)

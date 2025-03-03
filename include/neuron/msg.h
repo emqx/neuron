@@ -52,6 +52,7 @@ typedef enum neu_reqresp_type {
     NEU_RESP_TEST_READ_TAG,
     NEU_REQ_WRITE_TAG,
     NEU_REQ_WRITE_TAGS,
+    NEU_RESP_WRITE_TAGS,
     NEU_REQ_WRITE_GTAGS,
 
     NEU_REQ_SUBSCRIBE_GROUP,
@@ -177,6 +178,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_TEST_READ_TAG]       = "NEU_RESP_TEST_READ_TAG",
     [NEU_REQ_WRITE_TAG]            = "NEU_REQ_WRITE_TAG",
     [NEU_REQ_WRITE_TAGS]           = "NEU_REQ_WRITE_TAGS",
+    [NEU_RESP_WRITE_TAGS]          = "NEU_RESP_WRITE_TAGS",
     [NEU_REQ_WRITE_GTAGS]          = "NEU_REQ_WRITE_GTAGS",
 
     [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
@@ -877,6 +879,16 @@ typedef struct neu_req_write_tags {
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_write_tags_t;
+
+typedef struct neu_resp_write_tags_ele {
+    char group[NEU_GROUP_NAME_LEN];
+    char tag[NEU_TAG_NAME_LEN];
+    int  error;
+} neu_resp_write_tags_ele_t;
+
+typedef struct neu_resp_write_tags {
+    UT_array *tags; // array neu_resp_write_tags_ele_t
+} neu_resp_write_tags_t;
 
 static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
 {

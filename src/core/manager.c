@@ -1374,6 +1374,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_TEST_READ_TAG:
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_SCAN_TAGS:
+    case NEU_RESP_WRITE_TAGS:
         forward_msg(manager, header, header->receiver);
         break;
 

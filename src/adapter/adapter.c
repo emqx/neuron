@@ -790,6 +790,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UNSUBSCRIBE_GROUP_EVENT:
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT:
     case NEU_REQ_SUBSCRIBE_GROUPS_EVENT:
+    case NEU_RESP_WRITE_TAGS:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);

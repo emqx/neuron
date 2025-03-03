@@ -550,6 +550,9 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = handle_write_response(plugin, head->ctx, data, scope, trace,
                                       new_span_id);
         break;
+    case NEU_RESP_WRITE_TAGS:
+        error = handle_write_tags_response(plugin, head->ctx, data);
+        break;
     case NEU_RESP_DRIVER_ACTION:
         error = handle_driver_action_response(plugin, head->ctx, data);
         break;
