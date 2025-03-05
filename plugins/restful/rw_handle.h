@@ -36,5 +36,6 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp);
 void handle_read_paginate_resp(nng_aio *                       aio,
                                neu_resp_read_group_paginate_t *resp);
 void handle_test_read_tag_resp(nng_aio *aio, neu_resp_test_read_tag_t *resp);
+void handle_write_tags_resp(nng_aio *aio, neu_resp_write_tags_t *resp);
 
 #endif

@@ -1436,3 +1436,43 @@ void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
     free(req->groups);
     free(req);
 }
+
+int neu_json_encode_write_tags_resp(void *json_object, void *param)
+{
+    int                         ret   = 0;
+    neu_json_write_tags_resp_t *resp  = (neu_json_write_tags_resp_t *) param;
+    void *                      array = json_array();
+
+    utarray_foreach(resp->tags, neu_resp_write_tags_ele_t *, ele)
+    {
+        neu_json_elem_t node_elems[] = {
+            {
+                .name      = "group",
+                .t         = NEU_JSON_STR,
+                .v.val_str = ele->group,
+            },
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = ele->tag,
+            },
+            {
+                .name      = "error",
+                .t         = NEU_JSON_INT,
+                .v.val_int = ele->error,
+            },
+        };
+        array = neu_json_encode_array(array, node_elems,
+                                      NEU_JSON_ELEM_SIZE(node_elems));
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "tags",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}

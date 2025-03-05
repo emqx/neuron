@@ -116,6 +116,9 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
+static void write_responses(neu_adapter_t *adapter, void *r,
+                            neu_driver_write_responses_t *response,
+                            int                           n_response);
 static void directory_response(neu_adapter_t *adapter, void *req, int error,
                                neu_driver_file_info_t *infos, int n_info);
 static void fup_open_response(neu_adapter_t *adapter, void *req, int error,
@@ -165,6 +168,32 @@ static void format_tag_value(neu_dvalue_t *value)
     }
 
     value->value.d64 *= negative;
+}
+
+static void write_responses(neu_adapter_t *adapter, void *r,
+                            neu_driver_write_responses_t *response,
+                            int                           n_response)
+{
+    neu_reqresp_head_t *  req   = (neu_reqresp_head_t *) r;
+    neu_resp_write_tags_t nresp = { 0 };
+    req->type                   = NEU_RESP_WRITE_TAGS;
+    UT_icd    icd   = { sizeof(neu_resp_write_tags_ele_t), NULL, NULL, NULL };
+    UT_array *array = NULL;
+
+    utarray_new(array, &icd);
+
+    for (int i = 0; i < n_response; i++) {
+        neu_driver_write_responses_t *resp = &response[i];
+        neu_resp_write_tags_ele_t     ele  = { 0 };
+
+        strcpy(ele.group, resp->group);
+        strcpy(ele.tag, resp->name);
+        ele.error = resp->error;
+        utarray_push_back(array, &ele);
+    }
+
+    nresp.tags = array;
+    adapter->cb_funs.response(adapter, req, &nresp);
 }
 
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
@@ -507,6 +536,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->driver_events                              = neu_event_new();
     driver->adapter.cb_funs.driver.update              = update;
     driver->adapter.cb_funs.driver.write_response      = write_response;
+    driver->adapter.cb_funs.driver.write_responses     = write_responses;
     driver->adapter.cb_funs.driver.directory_response  = directory_response;
     driver->adapter.cb_funs.driver.fup_open_response   = fup_open_response;
     driver->adapter.cb_funs.driver.fdown_open_response = fdown_open_response;

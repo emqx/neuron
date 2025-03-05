@@ -51,6 +51,13 @@ typedef struct {
     int64_t mtime;
 } neu_driver_file_info_t;
 
+typedef struct {
+    char group[NEU_GROUP_NAME_LEN];
+    char name[NEU_TAG_NAME_LEN];
+
+    int error;
+} neu_driver_write_responses_t;
+
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
@@ -73,6 +80,9 @@ typedef struct adapter_callbacks {
                                      neu_tag_meta_t *metas, int n_meta);
             void (*write_response)(neu_adapter_t *adapter, void *req,
                                    int error);
+            void (*write_responses)(neu_adapter_t *adapter, void *req,
+                                    neu_driver_write_responses_t *responses,
+                                    int                           n_response);
             void (*update_im)(neu_adapter_t *adapter, const char *group,
                               const char *tag, neu_dvalue_t value,
                               neu_tag_meta_t *metas, int n_meta);

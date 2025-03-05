@@ -130,7 +130,8 @@ extern "C" {
     XX(NEU_REQ_SUBSCRIBE_GROUP_EVENT, neu_req_subscribe_t)           \
     XX(NEU_REQ_UNSUBSCRIBE_GROUP_EVENT, neu_req_unsubscribe_t)       \
     XX(NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT, neu_req_subscribe_t)    \
-    XX(NEU_REQ_SUBSCRIBE_GROUPS_EVENT, neu_req_subscribe_groups_t)
+    XX(NEU_REQ_SUBSCRIBE_GROUPS_EVENT, neu_req_subscribe_groups_t)   \
+    XX(NEU_RESP_WRITE_TAGS, neu_resp_write_tags_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

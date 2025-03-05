@@ -987,3 +987,12 @@ void handle_test_read_tag_resp(nng_aio *aio, neu_resp_test_read_tag_t *resp)
     neu_http_ok(aio, result);
     free(result);
 }
+
+void handle_write_tags_resp(nng_aio *aio, neu_resp_write_tags_t *resp)
+{
+    char *result = NULL;
+    neu_json_encode_by_fn(resp, neu_json_encode_write_tags_resp, &result);
+    neu_http_ok(aio, result);
+    free(result);
+    utarray_free(resp->tags);
+}
