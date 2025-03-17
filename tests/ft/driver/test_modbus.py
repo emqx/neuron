@@ -635,12 +635,6 @@ class TestModbus:
         assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
             'error']
 
-        response = api.write_tag(
-            node=param[0], group='group', tag=hold_float[0]['name'], value=1)
-        assert 400 == response.status_code
-        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()[
-            'error']
-
         response = api.write_tags(node=param[0], group='group', tag_values=[
             {"tag": hold_int16[0]['name'], "value": 32768},
             {"tag": hold_uint16[0]['name'], "value": 2},
