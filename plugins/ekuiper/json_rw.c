@@ -195,10 +195,21 @@ static int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
             .name = "value",
             .t    = NEU_JSON_VALUE,
         },
+        {
+            .name      = "precision",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
-    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
-    req->node = req_elems[0].v.val_str;
+
+    if (req_elems[4].v.val_int > 0) {
+        req_elems[3].t            = NEU_JSON_DOUBLE;
+        req_elems[3].v.val_double = (double_t) req_elems[3].v.val_int;
+    }
+
+    req->node  = req_elems[0].v.val_str;
     req->group = req_elems[1].v.val_str;
     req->tag   = req_elems[2].v.val_str;
     req->t     = req_elems[3].t;
@@ -259,10 +270,21 @@ static int decode_write_tags_req_json(void *                     json_obj,
                 .name = "value",
                 .t    = NEU_JSON_VALUE,
             },
+            {
+                .name      = "precision",
+                .t         = NEU_JSON_INT,
+                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            },
         };
 
         ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(v_elems), v_elems);
+
+        if (v_elems[2].v.val_int > 0) {
+            v_elems[1].t            = NEU_JSON_DOUBLE;
+            v_elems[1].v.val_double = (double_t) v_elems[1].v.val_int;
+        }
+
         req->tags[i].tag   = v_elems[0].v.val_str;
         req->tags[i].t     = v_elems[1].t;
         req->tags[i].value = v_elems[1].v;
