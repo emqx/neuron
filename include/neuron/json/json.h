@@ -31,6 +31,7 @@ extern "C" {
 typedef enum neu_json_type {
     NEU_JSON_UNDEFINE = 0,
     NEU_JSON_INT      = 1,
+    NEU_JSON_UINT,
     NEU_JSON_BIT,
     NEU_JSON_STR,
     NEU_JSON_DOUBLE,
@@ -108,6 +109,7 @@ typedef struct {
 
 typedef union neu_json_value {
     int64_t                       val_int;
+    uint64_t                      val_uint;
     uint8_t                       val_bit;
     float                         val_float;
     double                        val_double;
