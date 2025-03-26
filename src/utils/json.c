@@ -73,7 +73,23 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
         ob = json_integer(ele->v.val_bit);
         break;
     case NEU_JSON_INT:
-        ob = json_integer(ele->v.val_int);
+        if (ele->v.val_int >= 0x1fffffffffffff) {
+            char tmp[32] = { 0 };
+            snprintf(tmp, sizeof(tmp), "%" PRId64 "", ele->v.val_int);
+            ob = json_string(tmp);
+        } else {
+            ob = json_integer(ele->v.val_int);
+        }
+        break;
+    case NEU_JSON_UINT:
+        if (ele->v.val_uint >= 0x1fffffffffffff) {
+            char tmp[32] = { 0 };
+            snprintf(tmp, sizeof(tmp), "%" PRIu64 "", ele->v.val_int);
+            ob = json_string(tmp);
+        } else {
+            ob = json_integer(ele->v.val_uint);
+        }
+
         break;
     case NEU_JSON_STR:
         ob = json_string(ele->v.val_str);
@@ -108,7 +124,22 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         json_object_set_new(ob, ele.name, json_integer(ele.v.val_bit));
         break;
     case NEU_JSON_INT:
-        json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
+        if (ele.v.val_int >= 0x1fffffffffffff) {
+            char tmp[32] = { 0 };
+            snprintf(tmp, sizeof(tmp), "%" PRId64 "", ele.v.val_int);
+            json_object_set_new(ob, ele.name, json_string(tmp));
+        } else {
+            json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
+        }
+        break;
+    case NEU_JSON_UINT:
+        if (ele.v.val_uint >= 0x1fffffffffffff) {
+            char tmp[32] = { 0 };
+            snprintf(tmp, sizeof(tmp), "%" PRIu64 "", ele.v.val_int);
+            json_object_set_new(ob, ele.name, json_string(tmp));
+        } else {
+            json_object_set_new(ob, ele.name, json_integer(ele.v.val_uint));
+        }
         break;
     case NEU_JSON_STR:
         json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
