@@ -1229,21 +1229,19 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
             }
         case NEU_TYPE_FLOAT:
-            if (write_type != NEU_TYPE_DOUBLE) {
+            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else if (result < (int64_t) -FLT_MAX ||
-                       result > (int64_t) FLT_MAX) {
+            }
+            if (result < (int64_t) -FLT_MAX || result > (int64_t) FLT_MAX) {
                 return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
             } else {
                 return NEU_ERR_SUCCESS;
             }
         case NEU_TYPE_DOUBLE:
-            if (write_type != NEU_TYPE_DOUBLE) {
+            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
             }
-            return check_value(write_type, result, INT16_MIN, INT16_MAX);
+            return NEU_ERR_SUCCESS;
         case NEU_TYPE_STRING:
         case NEU_TYPE_BOOL:
         case NEU_TYPE_BIT:
@@ -1287,20 +1285,19 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
             }
         case NEU_TYPE_FLOAT:
-            if (write_type != NEU_TYPE_DOUBLE) {
+            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else if (value < (int64_t) -FLT_MAX ||
-                       value > (int64_t) FLT_MAX) {
+            }
+            if (value < (int64_t) -FLT_MAX || value > (int64_t) FLT_MAX) {
                 return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
             } else {
                 return NEU_ERR_SUCCESS;
             }
         case NEU_TYPE_DOUBLE:
-            if (write_type != NEU_TYPE_DOUBLE) {
+            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
             }
+            return NEU_ERR_SUCCESS;
         case NEU_TYPE_STRING:
             if (write_type != NEU_TYPE_STRING) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
