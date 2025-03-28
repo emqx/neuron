@@ -155,7 +155,7 @@ typedef struct {
     uint8_t *  ptr;
 } neu_value_ptr_t;
 
-#define NEU_VALUE_SIZE 128
+#define NEU_VALUE_SIZE 256
 
 typedef struct {
     uint8_t bytes[NEU_VALUE_SIZE];
