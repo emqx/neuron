@@ -187,6 +187,7 @@ add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
 add_subdirectory(plugins/file)
 add_subdirectory(plugins/monitor)
+add_subdirectory(plugins/datalayers)
 
 add_subdirectory(simulator)
 

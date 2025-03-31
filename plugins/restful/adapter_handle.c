@@ -44,8 +44,9 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 CHECK_NODE_NAME_LENGTH_ERR;
-            } else if (strcmp(req->name, "monitor") == 0) {
-                CHECK_NODE_MONITOR_ERR;
+            } else if (strcmp(req->name, "monitor") == 0 ||
+                       strcmp(req->name, "datalayers") == 0) {
+                CHECK_NODE_SINGLE_ERR;
             } else {
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
@@ -87,7 +88,9 @@ static inline int send_node_update_req(nng_aio *                   aio,
     }
 
     if (strcmp(req->new_name, "monitor") == 0 ||
-        strcmp(req->name, "monitor") == 0) {
+        strcmp(req->name, "monitor") == 0 ||
+        strcmp(req->new_name, "datalayers") == 0 ||
+        strcmp(req->name, "datalayers") == 0) {
         return NEU_ERR_NODE_NOT_ALLOW_UPDATE;
     }
 
