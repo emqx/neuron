@@ -66,7 +66,7 @@ struct event_data {
     bool  use;
 };
 
-#define EVENT_SIZE 1400
+#define EVENT_SIZE 2800
 
 struct neu_events {
     int       epoll_fd;

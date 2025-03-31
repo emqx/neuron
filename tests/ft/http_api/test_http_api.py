@@ -348,12 +348,16 @@ class TestHttp:
 
     @description(given="running neuron", when="put drivers with too many groups", then="should fail")
     def test_put_drivers_with_too_many_groups(self):
+
         driver = {
             "name": driver_1["name"],
             "plugin": driver_1["plugin"],
             "params": driver_1["params"],
-            "groups": [{"group": "grp", "interval": 1000, "tags": []} for _ in range(1000)]
+            "groups": []
         }
+        for i in range(1025):
+            driver["groups"].append({"group": "grp" + str(i), "interval": 1000, "tags": []})
+
         response = api.put_drivers([driver])
         assert 400 == response.status_code
         assert error.NEU_ERR_GROUP_MAX_GROUPS == response.json()['error']
