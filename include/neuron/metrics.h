@@ -236,6 +236,18 @@ typedef enum {
 #define NEU_METRIC_DISCONNECTION_1800S_HELP \
     "Number of disconnection within the last 1800 seconds"
 
+// current cache queue size
+#define NEU_METRIC_CACHE_QUEUE_SIZE "cache_queue_size"
+#define NEU_METRIC_CACHE_QUEUE_SIZE_TYPE NEU_METRIC_TYPE_GAUGE
+#define NEU_METRIC_CACHE_QUEUE_SIZE_HELP \
+    "Current number of messages in the cache queue"
+
+// total number of dropped messages due to full cache
+#define NEU_METRIC_CACHE_DROPPED_MSGS_TOTAL "cache_dropped_msgs_total"
+#define NEU_METRIC_CACHE_DROPPED_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_CACHE_DROPPED_MSGS_TOTAL_HELP \
+    "Total number of messages dropped due to cache queue being full"
+
 typedef enum {
     NEU_METRICS_CATEGORY_GLOBAL,
     NEU_METRICS_CATEGORY_DRIVER,

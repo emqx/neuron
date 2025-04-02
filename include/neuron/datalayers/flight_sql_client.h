@@ -25,12 +25,12 @@ typedef struct {
 } datatag;
 
 typedef struct {
+    ValueType  value_type;
+    ValueUnion value;
     char       time[64];
     char       node_name[128];
     char       group_name[128];
     char       tag[128];
-    ValueUnion value;
-    ValueType  value_type;
 } datarow;
 
 typedef struct {
@@ -38,29 +38,30 @@ typedef struct {
     datarow *rows;
 } query_result;
 
-typedef struct Client Client;
+typedef struct Client neu_datalayers_client;
 
-Client *client_create(const char *host, int port, const char *username,
-                      const char *password);
+neu_datalayers_client *client_create(const char *host, int port,
+                                     const char *username,
+                                     const char *password);
 
-int client_execute(Client *client, const char *sql);
+int client_execute(neu_datalayers_client *client, const char *sql);
 
-void client_destroy(Client *client);
+void client_destroy(neu_datalayers_client *client);
 
-int client_insert(Client *client, ValueType type, datatag *tags,
+int client_insert(neu_datalayers_client *client, ValueType type, datatag *tags,
                   size_t tag_count);
 
-query_result *client_query(Client *client, ValueType type,
+query_result *client_query(neu_datalayers_client *client, ValueType type,
                            const char *node_name, const char *group_name,
                            const char *tag);
 
 void client_query_free(query_result *result);
 
-query_result *client_query_nodes_groups(Client *client, ValueType type);
+query_result *client_query_nodes_groups(neu_datalayers_client *client,
+                                        ValueType              type);
 
-query_result *client_query_all_data(Client *client, ValueType type);
-
-query_result *client_query_by_tag(Client *client, const char *tag);
+query_result *client_query_all_data(neu_datalayers_client *client,
+                                    ValueType              type);
 
 #ifdef __cplusplus
 }

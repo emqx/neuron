@@ -125,7 +125,7 @@
         });                                                         \
     } while (0)
 
-#define CHECK_NODE_MONITOR_ERR                                    \
+#define CHECK_NODE_SINGLE_ERR                                     \
     do {                                                          \
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_ALLOW_UPDATE, {  \
             neu_http_response(aio, NEU_ERR_NODE_NOT_ALLOW_UPDATE, \

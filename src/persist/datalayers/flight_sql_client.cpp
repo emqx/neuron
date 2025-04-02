@@ -23,7 +23,10 @@ public:
     arrow::Status Execute(const std::string &sql);
     arrow::Result<std::shared_ptr<arrow::Table>> Query(const std::string &sql);
 
+    bool IsInitialized() const { return initialized_; }
+
 private:
+    bool                                        initialized_ = false;
     flight::Location                            location_;
     std::shared_ptr<flight::FlightClient>       flight_client_;
     std::unique_ptr<flightsql::FlightSqlClient> client_;
@@ -41,9 +44,9 @@ Client::Client(const std::string &host, int port, const std::string &username,
     arrow::Result<flight::Location> location_result =
         flight::Location::ForGrpcTcp(host, port);
     if (!location_result.ok()) {
-        std::cerr << "Failed to create Flight location: "
-                  << location_result.status().ToString() << std::endl;
-        exit(EXIT_FAILURE);
+        // std::cerr << "Failed to create Flight location: " <<
+        // location_result.status().ToString() << std::endl;
+        return;
     }
     location_ = location_result.ValueOrDie();
 
@@ -52,21 +55,24 @@ Client::Client(const std::string &host, int port, const std::string &username,
     arrow::Result<std::shared_ptr<flight::FlightClient>> flight_client_result =
         flight::FlightClient::Connect(location_, client_options);
     if (!flight_client_result.ok()) {
-        std::cerr << "Failed to connect to Flight client: "
-                  << flight_client_result.status().ToString() << std::endl;
-        exit(EXIT_FAILURE);
+        // std::cerr << "Failed to connect to Flight client: " <<
+        // flight_client_result.status().ToString() << std::endl;
+        return;
     }
     flight_client_ = flight_client_result.ValueOrDie();
 
     flight::FlightCallOptions call_options;
     auto auth_result = AuthenticateBasicToken(call_options, username, password);
     if (!auth_result.ok()) {
-        std::cerr << "Authentication failed: "
-                  << auth_result.status().ToString() << std::endl;
-        exit(EXIT_FAILURE);
+        // std::cerr << "Authentication failed: " <<
+        // auth_result.status().ToString() << std::endl;
+        return;
     }
     bearer_token_ = auth_result.ValueOrDie();
     client_ = std::make_unique<flightsql::FlightSqlClient>(flight_client_);
+
+    initialized_ = true;
+    // std::cerr << "Client initialization succeeded!" << std::endl;
 }
 
 arrow::Status Client::Execute(const std::string &sql)
@@ -75,7 +81,7 @@ arrow::Status Client::Execute(const std::string &sql)
     call_options.headers.push_back(
         std::make_pair("authorization", "Bearer " + bearer_token_));
 
-    std::cout << "Executing SQL: " << sql << std::endl;
+    // std::cout << "Executing SQL: " << sql << std::endl;
 
     arrow::Result<std::unique_ptr<flight::FlightInfo>> flight_info_result =
         client_->Execute(call_options, sql);
@@ -156,12 +162,14 @@ Client::Query(const std::string &sql)
 extern "C" Client *client_create(const char *host, int port,
                                  const char *username, const char *password)
 {
-    try {
-        return new Client(host, port, username, password);
-    } catch (const std::exception &e) {
-        std::cerr << "Error creating client: " << e.what() << std::endl;
+    Client *client = new Client(host, port, username, password);
+    if (!client->IsInitialized()) {
+        delete client;
+        // std::cerr << "Client creation failed due to invalid parameters or
+        // connection issues." << std::endl;
         return nullptr;
     }
+    return client;
 }
 
 extern "C" int client_execute(Client *client, const char *sql)
@@ -169,7 +177,7 @@ extern "C" int client_execute(Client *client, const char *sql)
     if (!client)
         return -1;
     auto status = client->Execute(sql);
-    return status.ok() ? 0 : 1;
+    return status.ok() ? 0 : -1;
 }
 
 extern "C" void client_destroy(Client *client)
@@ -235,9 +243,9 @@ extern "C" int client_insert(Client *client, ValueType type, datatag *tags,
     }
 
     int status = client_execute(client, sql.c_str());
-    if (status != 0) {
+    /*if (status != 0) {
         std::cerr << "Error executing SQL: " << status << std::endl;
-    }
+    }*/
 
     return status;
 }
@@ -257,6 +265,20 @@ std::string convert_timestamp_to_utc8(int64_t timestamp)
     snprintf(time_str + strlen(time_str), sizeof(time_str) - strlen(time_str),
              "+08:00");
     return std::string(time_str);
+}
+
+extern "C" void client_query_free(query_result *result)
+{
+    if (result) {
+        for (size_t i = 0; i < result->row_count; ++i) {
+            if (result->rows[i].value_type == STRING_TYPE &&
+                result->rows[i].value.string_value) {
+                free((void *) result->rows[i].value.string_value);
+            }
+        }
+        free(result->rows);
+        free(result);
+    }
 }
 
 extern "C" query_result *client_query(Client *client, ValueType type,
@@ -363,27 +385,15 @@ extern "C" query_result *client_query(Client *client, ValueType type,
     return result;
 }
 
-extern "C" void client_query_free(query_result *result)
-{
-    if (result) {
-        for (size_t i = 0; i < result->row_count; ++i) {
-            if (result->rows[i].value_type == STRING_TYPE &&
-                result->rows[i].value.string_value) {
-                free((void *) result->rows[i].value.string_value);
-            }
-        }
-        free(result->rows);
-        free(result);
-    }
-}
-
 extern "C" query_result *client_query_nodes_groups(Client *  client,
                                                    ValueType type)
 {
-    if (!client)
+    if (!client) {
+        std::cerr << "Client is not initialized." << std::endl;
         return nullptr;
-    std::string table_name;
+    }
 
+    std::string table_name;
     switch (type) {
     case INT_TYPE:
         table_name = "neuronex.neuron_int";
@@ -398,11 +408,13 @@ extern "C" query_result *client_query_nodes_groups(Client *  client,
         table_name = "neuronex.neuron_string";
         break;
     default:
+        std::cerr << "Invalid ValueType." << std::endl;
         return nullptr;
     }
 
-    std::string sql = "SELECT node_name, group_name FROM " + table_name;
-    std::cout << "Generated SQL: " << sql << std::endl;
+    std::string sql =
+        "SELECT DISTINCT node_name, group_name FROM " + table_name;
+    std::cout << "Generated SQL for nodes/groups: " << sql << std::endl;
 
     auto table_result = client->Query(sql);
     if (!table_result.ok()) {
@@ -410,33 +422,52 @@ extern "C" query_result *client_query_nodes_groups(Client *  client,
                   << table_result.status().ToString() << std::endl;
         return nullptr;
     }
+    auto table = table_result.ValueOrDie();
 
-    auto    table    = table_result.ValueOrDie();
     int64_t num_rows = table->num_rows();
     if (num_rows == 0) {
-        std::cout << "No rows found." << std::endl;
+        std::cout << "No nodes/groups found." << std::endl;
         return nullptr;
     }
 
     query_result *result = (query_result *) malloc(sizeof(query_result));
-    result->row_count    = num_rows;
-    result->rows         = (datarow *) malloc(num_rows * sizeof(datarow));
-
-    auto node_col = std::dynamic_pointer_cast<arrow::StringArray>(
-        table->column(0)->chunk(0));
-    auto group_col = std::dynamic_pointer_cast<arrow::StringArray>(
-        table->column(1)->chunk(0));
-
-    if (!node_col || !group_col) {
-        std::cerr << "Failed to cast column to StringArray" << std::endl;
+    if (!result) {
+        std::cerr << "Failed to allocate memory for result." << std::endl;
+        return nullptr;
+    }
+    result->row_count = num_rows;
+    result->rows      = (datarow *) malloc(num_rows * sizeof(datarow));
+    if (!result->rows) {
+        std::cerr << "Failed to allocate memory for rows." << std::endl;
+        free(result);
         return nullptr;
     }
 
-    for (int64_t i = 0; i < num_rows; ++i) {
-        strncpy(result->rows[i].node_name, node_col->GetString(i).c_str(),
-                sizeof(result->rows[i].node_name));
-        strncpy(result->rows[i].group_name, group_col->GetString(i).c_str(),
-                sizeof(result->rows[i].group_name));
+    int64_t            row_index    = 0;
+    arrow::ArrayVector node_chunks  = table->column(0)->chunks();
+    arrow::ArrayVector group_chunks = table->column(1)->chunks();
+
+    for (size_t chunk_idx = 0; chunk_idx < node_chunks.size(); ++chunk_idx) {
+        auto node_col = std::dynamic_pointer_cast<arrow::StringArray>(
+            node_chunks[chunk_idx]);
+        auto group_col = std::dynamic_pointer_cast<arrow::StringArray>(
+            group_chunks[chunk_idx]);
+
+        if (!node_col || !group_col) {
+            std::cerr << "Chunk " << chunk_idx << " type mismatch."
+                      << std::endl;
+            continue;
+        }
+
+        for (int64_t i = 0; i < node_col->length(); ++i) {
+            snprintf(result->rows[row_index].node_name,
+                     sizeof(result->rows[row_index].node_name), "%s",
+                     node_col->GetString(i).c_str());
+            snprintf(result->rows[row_index].group_name,
+                     sizeof(result->rows[row_index].group_name), "%s",
+                     group_col->GetString(i).c_str());
+            row_index++;
+        }
     }
 
     return result;
@@ -444,10 +475,12 @@ extern "C" query_result *client_query_nodes_groups(Client *  client,
 
 extern "C" query_result *client_query_all_data(Client *client, ValueType type)
 {
-    if (!client)
+    if (!client) {
+        std::cerr << "Client is not initialized." << std::endl;
         return nullptr;
-    std::string table_name;
+    }
 
+    std::string table_name;
     switch (type) {
     case INT_TYPE:
         table_name = "neuronex.neuron_int";
@@ -462,11 +495,13 @@ extern "C" query_result *client_query_all_data(Client *client, ValueType type)
         table_name = "neuronex.neuron_string";
         break;
     default:
+        std::cerr << "Invalid ValueType." << std::endl;
         return nullptr;
     }
 
-    std::string sql = "SELECT * FROM " + table_name;
-    std::cout << "Generated SQL: " << sql << std::endl;
+    std::string sql = "SELECT node_name, group_name, tag FROM " + table_name;
+
+    std::cout << "Generated SQL for all data: " << sql << std::endl;
 
     auto table_result = client->Query(sql);
     if (!table_result.ok()) {
@@ -474,145 +509,60 @@ extern "C" query_result *client_query_all_data(Client *client, ValueType type)
                   << table_result.status().ToString() << std::endl;
         return nullptr;
     }
+    auto table = table_result.ValueOrDie();
 
-    auto    table    = table_result.ValueOrDie();
     int64_t num_rows = table->num_rows();
     if (num_rows == 0) {
-        std::cout << "No rows found." << std::endl;
+        std::cout << "No node/group/tag found." << std::endl;
         return nullptr;
     }
 
     query_result *result = (query_result *) malloc(sizeof(query_result));
-    result->row_count    = num_rows;
-    result->rows         = (datarow *) malloc(num_rows * sizeof(datarow));
-
-    auto time_col = std::dynamic_pointer_cast<arrow::TimestampArray>(
-        table->column(0)->chunk(0));
-    auto node_col = std::dynamic_pointer_cast<arrow::StringArray>(
-        table->column(1)->chunk(0));
-    auto group_col = std::dynamic_pointer_cast<arrow::StringArray>(
-        table->column(2)->chunk(0));
-    auto tag_col = std::dynamic_pointer_cast<arrow::StringArray>(
-        table->column(3)->chunk(0));
-    auto value_col = table->column(4);
-
-    if (!time_col || !node_col || !group_col || !tag_col) {
-        std::cerr << "Failed to cast columns to StringArray" << std::endl;
+    if (!result) {
+        std::cerr << "Failed to allocate memory for result." << std::endl;
         return nullptr;
     }
 
-    for (int64_t i = 0; i < num_rows; ++i) {
-        auto        timestamp = time_col->Value(i);
-        std::string time_str  = convert_timestamp_to_utc8(timestamp);
-        strncpy(result->rows[i].time, time_str.c_str(),
-                sizeof(result->rows[i].time));
+    result->row_count = num_rows;
+    result->rows      = (datarow *) malloc(num_rows * sizeof(datarow));
+    if (!result->rows) {
+        std::cerr << "Failed to allocate memory for rows." << std::endl;
+        free(result);
+        return nullptr;
+    }
 
-        strncpy(result->rows[i].node_name, node_col->GetString(i).c_str(),
-                sizeof(result->rows[i].node_name));
-        strncpy(result->rows[i].group_name, group_col->GetString(i).c_str(),
-                sizeof(result->rows[i].group_name));
-        strncpy(result->rows[i].tag, tag_col->GetString(i).c_str(),
-                sizeof(result->rows[i].tag));
+    int64_t            row_index    = 0;
+    arrow::ArrayVector node_chunks  = table->column(0)->chunks();
+    arrow::ArrayVector group_chunks = table->column(1)->chunks();
+    arrow::ArrayVector tag_chunks   = table->column(2)->chunks();
 
-        if (value_col->type()->Equals(arrow::int64())) {
-            auto value_col_int = std::dynamic_pointer_cast<arrow::Int64Array>(
-                value_col->chunk(0));
-            result->rows[i].value.int_value = value_col_int->Value(i);
-            result->rows[i].value_type      = INT_TYPE;
-        } else if (value_col->type()->Equals(arrow::float64())) {
-            auto value_col_float =
-                std::dynamic_pointer_cast<arrow::DoubleArray>(
-                    value_col->chunk(0));
-            result->rows[i].value.float_value = value_col_float->Value(i);
-            result->rows[i].value_type        = FLOAT_TYPE;
-        } else if (value_col->type()->Equals(arrow::boolean())) {
-            auto value_col_bool =
-                std::dynamic_pointer_cast<arrow::BooleanArray>(
-                    value_col->chunk(0));
-            result->rows[i].value.bool_value = value_col_bool->Value(i);
-            result->rows[i].value_type       = BOOL_TYPE;
-        } else if (value_col->type()->Equals(arrow::utf8())) {
-            auto value_col_string =
-                std::dynamic_pointer_cast<arrow::StringArray>(
-                    value_col->chunk(0));
-            result->rows[i].value.string_value =
-                strdup(value_col_string->GetString(i).c_str());
-            result->rows[i].value_type = STRING_TYPE;
+    for (size_t chunk_idx = 0; chunk_idx < node_chunks.size(); ++chunk_idx) {
+        auto node_col = std::dynamic_pointer_cast<arrow::StringArray>(
+            node_chunks[chunk_idx]);
+        auto group_col = std::dynamic_pointer_cast<arrow::StringArray>(
+            group_chunks[chunk_idx]);
+        auto tag_col = std::dynamic_pointer_cast<arrow::StringArray>(
+            tag_chunks[chunk_idx]);
+
+        if (!node_col || !group_col || !tag_col) {
+            std::cerr << "Chunk " << chunk_idx << " type mismatch."
+                      << std::endl;
+            continue;
+        }
+
+        for (int64_t i = 0; i < node_col->length(); ++i) {
+            snprintf(result->rows[row_index].node_name,
+                     sizeof(result->rows[row_index].node_name), "%s",
+                     node_col->GetString(i).c_str());
+            snprintf(result->rows[row_index].group_name,
+                     sizeof(result->rows[row_index].group_name), "%s",
+                     group_col->GetString(i).c_str());
+            snprintf(result->rows[row_index].tag,
+                     sizeof(result->rows[row_index].tag), "%s",
+                     tag_col->GetString(i).c_str());
+            row_index++;
         }
     }
 
     return result;
-}
-
-extern "C" query_result *client_query_by_tag(Client *client, const char *tag)
-{
-    if (!client || !tag)
-        return nullptr;
-    std::vector<std::string> table_names = { "neuronex.neuron_int",
-                                             "neuronex.neuron_float",
-                                             "neuronex.neuron_bool",
-                                             "neuronex.neuron_string" };
-
-    query_result *final_result = nullptr;
-
-    for (const std::string &table_name : table_names) {
-        std::string sql =
-            "SELECT * FROM " + table_name + " WHERE tag = '" + tag + "'";
-        std::cout << "Generated SQL: " << sql << std::endl;
-
-        auto table_result = client->Query(sql);
-        if (!table_result.ok()) {
-            std::cerr << "Error executing query: "
-                      << table_result.status().ToString() << std::endl;
-            continue;
-        }
-
-        auto    table    = table_result.ValueOrDie();
-        int64_t num_rows = table->num_rows();
-        if (num_rows == 0) {
-            continue;
-        }
-
-        query_result *result = (query_result *) malloc(sizeof(query_result));
-        result->row_count    = num_rows;
-        result->rows         = (datarow *) malloc(num_rows * sizeof(datarow));
-
-        auto time_col = std::dynamic_pointer_cast<arrow::TimestampArray>(
-            table->column(0)->chunk(0));
-        auto node_col = std::dynamic_pointer_cast<arrow::StringArray>(
-            table->column(1)->chunk(0));
-        auto group_col = std::dynamic_pointer_cast<arrow::StringArray>(
-            table->column(2)->chunk(0));
-        auto tag_col = std::dynamic_pointer_cast<arrow::StringArray>(
-            table->column(3)->chunk(0));
-
-        auto value_col = table->column(4);
-
-        if (!time_col || !node_col || !group_col || !tag_col) {
-            std::cerr << "Failed to cast columns to StringArray" << std::endl;
-            continue;
-        }
-
-        for (int64_t i = 0; i < num_rows; ++i) {
-            auto        timestamp = time_col->Value(i);
-            std::string time_str  = convert_timestamp_to_utc8(timestamp);
-            strncpy(result->rows[i].time, time_str.c_str(),
-                    sizeof(result->rows[i].time));
-
-            strncpy(result->rows[i].node_name, node_col->GetString(i).c_str(),
-                    sizeof(result->rows[i].node_name));
-            strncpy(result->rows[i].group_name, group_col->GetString(i).c_str(),
-                    sizeof(result->rows[i].group_name));
-            strncpy(result->rows[i].tag, tag_col->GetString(i).c_str(),
-                    sizeof(result->rows[i].tag));
-        }
-
-        if (!final_result) {
-            final_result = result;
-        } else {
-            ;
-        }
-    }
-
-    return final_result;
 }
