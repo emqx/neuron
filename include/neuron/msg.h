@@ -464,11 +464,20 @@ typedef struct neu_req_get_node {
     neu_node_type_e type;
     char            plugin[NEU_PLUGIN_NAME_LEN];
     char            node[NEU_NODE_NAME_LEN];
+
+    struct {
+        bool q_state;
+        int  state;
+        bool q_link;
+        int  link;
+        bool s_delay;
+    } query;
 } neu_req_get_node_t;
 
 typedef struct neu_resp_node_info {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
+    int64_t delay;
+    char    node[NEU_NODE_NAME_LEN];
+    char    plugin[NEU_PLUGIN_NAME_LEN];
 } neu_resp_node_info_t;
 
 typedef struct neu_resp_get_node {
