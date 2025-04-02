@@ -1103,11 +1103,7 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
             return check_value_decimal(write_type, result, 0, UINT32_MAX);
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
-            if (write_type == NEU_TYPE_STRING) {
-                return NEU_ERR_SUCCESS;
-            }
-            if (write_type != NEU_TYPE_INT64 && write_type != NEU_TYPE_DOUBLE &&
-                write_type != NEU_TYPE_STRING) {
+            if (write_type != NEU_TYPE_INT64 && write_type != NEU_TYPE_DOUBLE) {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
             } else if (almost_equal(ceil(result), result, EPSILON) ||
                        almost_equal(floor(result), result, EPSILON)) {
@@ -1166,8 +1162,7 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
             return check_value(write_type, value, 0, UINT32_MAX);
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
-            if (write_type == NEU_TYPE_INT64 || write_type == NEU_TYPE_UINT64 ||
-                write_type == NEU_TYPE_STRING) {
+            if (write_type == NEU_TYPE_INT64) {
                 return NEU_ERR_SUCCESS;
             } else {
                 return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
@@ -1239,22 +1234,6 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                   cmd->tags[i].value.type, tag->decimal);
         } else {
             value_check = NEU_ERR_TAG_NOT_EXIST;
-        }
-
-        if (tag->type == NEU_TYPE_INT64) {
-            if (cmd->tags[i].value.type == NEU_TYPE_STRING) {
-                cmd->tags[i].value.type = NEU_TYPE_INT64;
-                cmd->tags[i].value.value.i64 =
-                    strtoll(cmd->tags[i].value.value.str, NULL, 10);
-            }
-        }
-
-        if (tag->type == NEU_TYPE_UINT64) {
-            if (cmd->tags[i].value.type == NEU_TYPE_STRING) {
-                cmd->tags[i].value.type = NEU_TYPE_UINT64;
-                cmd->tags[i].value.value.u64 =
-                    strtoull(cmd->tags[i].value.value.str, NULL, 10);
-            }
         }
 
         if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
@@ -1483,20 +1462,6 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                                           value_check);
             neu_tag_free(tag);
             return value_check;
-        }
-
-        if (tag->type == NEU_TYPE_INT64) {
-            if (cmd->value.type == NEU_TYPE_STRING) {
-                cmd->value.type      = NEU_TYPE_INT64;
-                cmd->value.value.i64 = strtoll(cmd->value.value.str, NULL, 10);
-            }
-        }
-
-        if (tag->type == NEU_TYPE_UINT64) {
-            if (cmd->value.type == NEU_TYPE_STRING) {
-                cmd->value.type      = NEU_TYPE_UINT64;
-                cmd->value.value.u64 = strtoull(cmd->value.value.str, NULL, 10);
-            }
         }
 
         if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {

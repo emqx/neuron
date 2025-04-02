@@ -926,8 +926,8 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         break;
     case NEU_TYPE_LWORD:
     case NEU_TYPE_UINT64:
-        tag_json->t              = NEU_JSON_UINT;
-        tag_json->value.val_uint = tag_value->value.value.u64;
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u64;
         break;
     case NEU_TYPE_FLOAT:
         if (isnan(tag_value->value.value.f32)) {
@@ -1124,8 +1124,8 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
         break;
     case NEU_TYPE_LWORD:
     case NEU_TYPE_UINT64:
-        tag_json->t              = NEU_JSON_UINT;
-        tag_json->value.val_uint = tag_value->value.value.u64;
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u64;
         break;
     case NEU_TYPE_FLOAT:
         if (isnan(tag_value->value.value.f32)) {
