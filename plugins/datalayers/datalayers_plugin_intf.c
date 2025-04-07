@@ -167,6 +167,12 @@ int datalayers_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_REQRESP_TRANS_DATA: {
+        if (plugin->client == NULL) {
+            plog_notice(plugin, "datalayers client is NULL, reconnect");
+
+            config_datalayers_client(plugin, &plugin->config);
+        }
+
         error = handle_trans_data(plugin, data);
         break;
     }

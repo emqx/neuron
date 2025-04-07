@@ -89,7 +89,8 @@ void task_queue_push(neu_plugin_t *plugin, db_write_task_t *task)
 
     if (plugin->task_queue.size > plugin->task_queue.max_size) {
         plugin->task_queue.max_size = plugin->task_queue.size;
-        NEU_PLUGIN_UPDATE_MAX_CACHED_QUEUE_SIZE_METRIC(plugin, plugin->task_queue.max_size);
+        NEU_PLUGIN_UPDATE_MAX_CACHED_QUEUE_SIZE_METRIC(
+            plugin, plugin->task_queue.max_size);
     }
     NEU_PLUGIN_UPDATE_CACHED_QUEUE_SIZE_METRIC(plugin, plugin->task_queue.size);
 }
@@ -114,28 +115,37 @@ db_write_task_t *task_queue_pop(neu_plugin_t *plugin, task_queue_t *queue)
 
 static void db_write_task_cb(db_write_task_t *task, neu_plugin_t *plugin)
 {
+    int ret = 0;
     if (utarray_len(task->int_tags) > 0) {
-        client_insert(plugin->client, INT_TYPE,
-                      utarray_eltptr(task->int_tags, 0),
-                      utarray_len(task->int_tags));
+        ret = client_insert(plugin->client, INT_TYPE,
+                            utarray_eltptr(task->int_tags, 0),
+                            utarray_len(task->int_tags));
     }
 
     if (utarray_len(task->float_tags) > 0) {
-        client_insert(plugin->client, FLOAT_TYPE,
-                      utarray_eltptr(task->float_tags, 0),
-                      utarray_len(task->float_tags));
+        ret = client_insert(plugin->client, FLOAT_TYPE,
+                            utarray_eltptr(task->float_tags, 0),
+                            utarray_len(task->float_tags));
     }
 
     if (utarray_len(task->bool_tags) > 0) {
-        client_insert(plugin->client, BOOL_TYPE,
-                      utarray_eltptr(task->bool_tags, 0),
-                      utarray_len(task->bool_tags));
+        ret = client_insert(plugin->client, BOOL_TYPE,
+                            utarray_eltptr(task->bool_tags, 0),
+                            utarray_len(task->bool_tags));
     }
 
     if (utarray_len(task->string_tags) > 0) {
-        client_insert(plugin->client, STRING_TYPE,
-                      utarray_eltptr(task->string_tags, 0),
-                      utarray_len(task->string_tags));
+        ret = client_insert(plugin->client, STRING_TYPE,
+                            utarray_eltptr(task->string_tags, 0),
+                            utarray_len(task->string_tags));
+    }
+
+    if (ret != 0) {
+        plog_error(plugin, "insert data to datalayers failed, disconnected");
+        if (plugin->client) {
+            client_destroy(plugin->client);
+            plugin->client = NULL;
+        }
     }
 }
 
@@ -252,46 +262,64 @@ int handle_trans_data(neu_plugin_t *            plugin,
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64: {
-            datatag tag = { tag_meta->tag,
-                            "group",
-                            "tag_int",
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
                             { .int_value = tag_meta->value.value.i64 },
                             INT_TYPE };
             utarray_push_back(int_tags, &tag);
         } break;
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_DOUBLE: {
-            datatag tag = { tag_meta->tag,
-                            "group",
-                            "tag_float",
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
                             { .float_value = tag_meta->value.value.d64 },
                             FLOAT_TYPE };
             utarray_push_back(float_tags, &tag);
         } break;
         case NEU_TYPE_BOOL: {
-            datatag tag = { tag_meta->tag,
-                            "group",
-                            "tag_bool",
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
                             { .bool_value = tag_meta->value.value.boolean },
                             BOOL_TYPE };
             utarray_push_back(bool_tags, &tag);
         } break;
-        case NEU_TYPE_STRING: {
-            datatag tag = { tag_meta->tag,
-                            "group",
-                            "tag_string",
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_DATA_AND_TIME:
+        case NEU_TYPE_TIME: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
                             { .string_value = tag_meta->value.value.str },
                             STRING_TYPE };
             utarray_push_back(string_tags, &tag);
         } break;
-        default: {
-            datatag tag = { tag_meta->tag,
-                            "group",
-                            "tag_string",
-                            { .string_value = tag_meta->value.value.str },
+        case NEU_TYPE_BYTES: {
+            char formatted[NEU_VALUE_SIZE];
+            int  offset = 0;
+
+            offset +=
+                snprintf(formatted + offset, sizeof(formatted) - offset, "[ ");
+
+            for (int i = 0; i < tag_meta->value.value.bytes.length; ++i) {
+                offset += snprintf(
+                    formatted + offset, sizeof(formatted) - offset, "%u%s",
+                    tag_meta->value.value.bytes.bytes[i],
+                    (i == tag_meta->value.value.bytes.length - 1) ? " " : ", ");
+            }
+
+            snprintf(formatted + offset, sizeof(formatted) - offset, "]");
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .string_value = formatted },
                             STRING_TYPE };
             utarray_push_back(string_tags, &tag);
         } break;
+        default:
+            break;
         }
     }
 

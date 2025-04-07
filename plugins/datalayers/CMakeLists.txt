@@ -24,25 +24,18 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/src/persist/datalayers
 )
 
-if (NOT TARGET Arrow::Arrow)
-  target_link_libraries(${PROJECT_NAME} 
-    ${ARROW_LIB}
-    ${ARROW_FLIGHT_LIB}
-    ${ARROW_FLIGHT_SQL_LIB}
-    stdc++
-    gflags
-    ${CMAKE_THREAD_LIBS_INIT}
-  )
-else()
-  target_link_libraries(${PROJECT_NAME} 
-    Arrow::Arrow
-    Arrow::Flight
-    Arrow::FlightSql
-    stdc++
-    gflags
-    ${CMAKE_THREAD_LIBS_INIT}
-  )
-endif()
+find_package(Arrow REQUIRED)
+find_package(ArrowFlight REQUIRED)
+find_package(ArrowFlightSql REQUIRED)
+
+target_link_libraries(${PROJECT_NAME} 
+  Arrow::arrow_shared
+  ArrowFlight::arrow_flight_shared
+  ArrowFlightSql::arrow_flight_sql_shared
+  stdc++
+  gflags
+  ${CMAKE_THREAD_LIBS_INIT}
+)
 
 target_link_libraries(${PROJECT_NAME} neuron-base)
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
