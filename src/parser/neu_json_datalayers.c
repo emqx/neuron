@@ -68,12 +68,13 @@ int neu_json_encode_datalayers_get_groups_resp(void *object, void *param)
         char node_id[37];
         generate_fixed_uuid(g->driver, node_id);
 
-        json_t *node_obj = NULL;
+        json_t *node_obj       = NULL;
         json_t *children_array = NULL;
-        
+
         for (size_t j = 0; j < json_array_size(node_array); j++) {
             node_obj = json_array_get(node_array, j);
-            if (strcmp(json_string_value(json_object_get(node_obj, "id")), node_id) == 0) {
+            if (strcmp(json_string_value(json_object_get(node_obj, "id")),
+                       node_id) == 0) {
                 break;
             }
             node_obj = NULL;
@@ -93,7 +94,8 @@ int neu_json_encode_datalayers_get_groups_resp(void *object, void *param)
 
         char group_id[37];
         char group_uuid_input[256];
-        snprintf(group_uuid_input, sizeof(group_uuid_input), "%s-%s", g->driver, g->group);
+        snprintf(group_uuid_input, sizeof(group_uuid_input), "%s-%s", g->driver,
+                 g->group);
         generate_fixed_uuid(group_uuid_input, group_id);
 
         json_t *group_obj = json_object();

@@ -183,6 +183,28 @@ void handle_get_adapter(nng_aio *aio)
         strcpy(cmd.node, node_name);
     }
 
+    uintmax_t query_state = 0;
+    if (neu_http_get_param_uintmax(aio, "state", &query_state) == 0) {
+        if (query_state == 1 || query_state == 2 || query_state == 3 ||
+            query_state == 4) {
+            cmd.query.q_state = true;
+            cmd.query.state   = (int) query_state;
+        }
+    }
+
+    uintmax_t query_link = 0;
+    if (neu_http_get_param_uintmax(aio, "link", &query_link) == 0) {
+        if (query_link == 0 || query_link == 1) {
+            cmd.query.q_link = true;
+            cmd.query.link   = (int) query_link;
+        }
+    }
+
+    uintmax_t sort_delay = 0;
+    if (neu_http_get_param_uintmax(aio, "delay", &sort_delay) == 0) {
+        cmd.query.s_delay = true;
+    }
+
     cmd.type = node_type;
     ret      = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {

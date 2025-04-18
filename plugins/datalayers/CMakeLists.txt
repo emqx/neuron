@@ -24,14 +24,21 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_SOURCE_DIR}/src/persist/datalayers
 )
 
+set(ARROW_USE_STATIC_LIBS ON)
+set(ARROW_STATIC_LIB TRUE)
+
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED)
 find_package(ArrowFlightSql REQUIRED)
+find_package(gRPC REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} 
-  Arrow::arrow_shared
-  ArrowFlight::arrow_flight_shared
-  ArrowFlightSql::arrow_flight_sql_shared
+target_link_libraries(${PROJECT_NAME}
+  -Wl,--whole-archive
+  gRPC::grpc++
+  -Wl,--no-whole-archive
+  Arrow::arrow_static
+  ArrowFlight::arrow_flight_static
+  ArrowFlightSql::arrow_flight_sql_static
   stdc++
   gflags
   ${CMAKE_THREAD_LIBS_INIT}

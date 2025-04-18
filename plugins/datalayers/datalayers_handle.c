@@ -254,6 +254,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
         }
 
         switch (tag_meta->value.type) {
+        case NEU_TYPE_BIT:
         case NEU_TYPE_INT8:
         case NEU_TYPE_UINT8:
         case NEU_TYPE_INT16:
