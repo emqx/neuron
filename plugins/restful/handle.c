@@ -26,6 +26,7 @@
 
 #include "adapter_handle.h"
 #include "cid_handle.h"
+#include "datalayers_handle.h"
 #include "datatag_handle.h"
 #include "global_config_handle.h"
 #include "group_config_handle.h"
@@ -147,6 +148,12 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/users",
+    },
+    {
+        .url = "/api/v2/datalayers/group",
+    },
+    {
+        .url = "/api/v2/datalayers/tags",
     },
 };
 
@@ -493,6 +500,18 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/users",
         .value.handler = handle_delete_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/datalayers/groups",
+        .value.handler = handle_datalayers_get_groups,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/datalayers/tags",
+        .value.handler = handle_datalayers_get_tags,
     },
 };
 

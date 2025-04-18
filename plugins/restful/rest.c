@@ -26,6 +26,7 @@
 
 #include "adapter_handle.h"
 #include "argparse.h"
+#include "datalayers_handle.h"
 #include "datatag_handle.h"
 #include "define.h"
 #include "global_config_handle.h"
@@ -279,6 +280,20 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
         handle_grp_get_subscribe_resp(header->ctx,
                                       (neu_resp_get_subscribe_group_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_GET_DATALAYERS_GROUPS:
+        handle_datalayers_get_groups_resp(
+            header->ctx, (neu_resp_get_subscribe_group_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_GET_DATALAYERS_TAGS:
+        handle_datalayers_get_tags_resp(
+            header->ctx, (neu_resp_get_sub_driver_tags_t *) data);
         if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }

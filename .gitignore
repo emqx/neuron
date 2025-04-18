@@ -20,3 +20,4 @@ neuron-sdk
 log.html
 output.xml
 report.html
+*.cache

@@ -162,6 +162,7 @@ set(NEURON_SOURCES
     plugins/restful/otel_handle.c
     plugins/restful/cid_handle.c
     plugins/restful/system_handle.c
+    plugins/restful/datalayers_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)
 
@@ -187,6 +188,7 @@ add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
 add_subdirectory(plugins/file)
 add_subdirectory(plugins/monitor)
+add_subdirectory(plugins/datalayers)
 
 add_subdirectory(simulator)
 

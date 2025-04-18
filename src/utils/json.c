@@ -337,7 +337,16 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         break;
     }
     case NEU_JSON_OBJECT:
-        json_object_set_new(ob, ele.name, ele.v.val_object);
+        if (ele.name == NULL) {
+            const char *key;
+            json_t *    value;
+            json_object_foreach(ele.v.val_object, key, value)
+            {
+                json_object_set(ob, key, value);
+            }
+        } else {
+            json_object_set_new(ob, ele.name, ele.v.val_object);
+        }
         break;
     default:
         break;
