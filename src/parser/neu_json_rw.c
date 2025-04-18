@@ -495,6 +495,9 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
     }
+    if (req->t == NEU_JSON_ARRAY_STR && req->value.val_array_str.length > 0) {
+        free(req->value.val_array_str.p_strs);
+    }
     if (req->t == NEU_JSON_ARRAY_INT8 && req->value.val_array_int8.length > 0) {
         free(req->value.val_array_int8.i8s);
     }
