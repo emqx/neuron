@@ -12,12 +12,12 @@ TEST(validate_success, schema)
     const char *schema =
         "{\"timestamp\":\"${timestamp}\",\"node\":\"${node}\",\"group\":\"${"
         "group}\",\"tags\":\"${tag_values}\",\"static\":\"${static_"
-        "tags}\",\"errors\":\"${tag_errors}\", \"dmp\":\"${dmp_values}\", \"xxxxx\":\"yyy\"}";
+        "tags}\",\"errors\":\"${tag_errors}\", \"xxxxx\":\"yyy\"}";
     mqtt_schema_vt_t *vts;
     size_t            n_vts;
     int               ret = mqtt_schema_validate(schema, &vts, &n_vts);
     EXPECT_EQ(ret, 0);
-    EXPECT_EQ(n_vts, 8);
+    EXPECT_EQ(n_vts, 7);
 
     EXPECT_STREQ(vts[0].name, "timestamp");
     EXPECT_EQ(vts[0].vt, MQTT_SCHEMA_TIMESTAMP);
@@ -37,12 +37,9 @@ TEST(validate_success, schema)
     EXPECT_STREQ(vts[5].name, "errors");
     EXPECT_EQ(vts[5].vt, MQTT_SCHEMA_TAG_ERRORS);
 
-    EXPECT_STREQ(vts[6].name, "dmp");
-    EXPECT_EQ(vts[6].vt, MQTT_SCHEMA_DMP_VALUES);
-
-    EXPECT_STREQ(vts[7].name, "xxxxx");
-    EXPECT_EQ(vts[7].vt, MQTT_SCHEMA_UD);
-    EXPECT_STREQ(vts[7].ud, "yyy");
+    EXPECT_STREQ(vts[6].name, "xxxxx");
+    EXPECT_EQ(vts[6].vt, MQTT_SCHEMA_UD);
+    EXPECT_STREQ(vts[6].ud, "yyy");
 
     free(vts);
 }

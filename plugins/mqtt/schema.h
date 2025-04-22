@@ -43,7 +43,6 @@ typedef enum {
     MQTT_SCHEMA_TAG_ERROR_VALUES = 8,
     MQTT_SCHEMA_UD               = 9,
     MQTT_SCHEMA_OBJECT           = 10,
-    MQTT_SCHEMA_DMP_VALUES       = 11
 } mqtt_schema_vt_e;
 
 typedef struct mqtt_schema_vt mqtt_schema_vt_t;
