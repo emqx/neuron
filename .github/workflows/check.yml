@@ -9,7 +9,7 @@ on:
 
 jobs:
   clang_format_check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       # checkout
@@ -26,7 +26,8 @@ jobs:
           clangFormatVersion: 10
 
   cppcheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
 
     steps:
       - uses: actions/checkout@v4
@@ -35,12 +36,12 @@ jobs:
       
       - name: cppcheck
         run: |
-          sudo apt install cppcheck
+          sudo apt install -y cppcheck
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c  ./plugins ./src
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
 
-  ut:
-    runs-on: ubuntu-20.04
+  build:
+    runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-main
 
     steps:
@@ -53,11 +54,35 @@ jobs:
           git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
           cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
+          make -j4  
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neuron-build
+          path: |
+            build
+
+
+  ut:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
+    needs: [build]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-build
+          path: ./build
 
       - name: unit test
         run: |
+          chmod -R +x ./build/
           cd build
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           ctest --output-on-failure
 
       - name: create cov report
@@ -77,12 +102,12 @@ jobs:
           files: ./cov_report/cov-ut.info
 
   pft:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-main
+    needs: [build]
     strategy:
       matrix:
         plugin: [core, ekuiper, modbus, mqtt, azure, metrics, launch]
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -94,15 +119,17 @@ jobs:
           pip install -U pytest requests prometheus-client gmqtt pynng sniffio
           sudo apt-get install -y socat
 
-      - name: compile
-        run: |
-          git config --global --add safe.directory $(pwd)
-          mkdir -p build && cd build
-          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-build
+          path: ./build
 
       - name: function test
         run: |
+          chmod -R +x ./build/
+          cd build
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cd ..        
           if [ "${{ matrix.plugin }}" = "core" ]; then
             pytest -s -v tests/ft \
               --ignore=tests/ft/app/test_ekuiper.py          \
