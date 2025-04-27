@@ -1,0 +1,51 @@
+{
+	"host": {
+		"name": "Broker Host",
+		"name_zh": "服务器地址",
+		"description": "Datalayers broker host",
+		"description_zh": "Datalayers 服务器地址",
+		"attribute": "required",
+		"type": "string",
+		"default": "127.0.0.1",
+		"valid": {
+			"length": 255
+		}
+	},
+	"port": {
+		"name": "Broker Port",
+		"name_zh": "服务器端口",
+		"description": "Datalayers broker port",
+		"description_zh": "Datalayers 服务器端口",
+		"attribute": "required",
+		"type": "int",
+		"default": 8360,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		}
+	},
+	"username": {
+		"name": "Username",
+		"name_zh": "用户名",
+		"description": "Datalayers user name",
+		"description_zh": "Datalayers 用户名",
+		"attribute": "required",
+		"type": "string",
+		"default": "admin",
+		"valid": {
+			"length": 255
+		}
+	},
+	"password": {
+		"name": "Password",
+		"name_zh": "密码",
+		"description": "Datalayers user password",
+		"description_zh": "Datalayers 用户密码",
+		"attribute": "required",
+		"type": "string",
+		"default": "public",
+		"valid": {
+			"length": 255
+		}
+	}
+}

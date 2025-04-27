@@ -1039,6 +1039,47 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_GET_DATALAYERS_GROUPS: {
+        neu_req_get_subscribe_group_t *cmd =
+            (neu_req_get_subscribe_group_t *) &header[1];
+        UT_array *groups = neu_manager_get_sub_group_deep_copy(
+            manager, cmd->app, cmd->driver, cmd->group);
+        neu_resp_get_subscribe_group_t resp = { .groups = groups };
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DATALAYERS_GROUPS;
+        reply(manager, header, &resp);
+        break;
+    }
+    case NEU_REQ_GET_DATALAYERS_TAGS: {
+        neu_req_get_sub_driver_tags_t *cmd =
+            (neu_req_get_sub_driver_tags_t *) &header[1];
+        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+
+        utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
+        utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
+        {
+            neu_resp_get_sub_driver_tags_info_t in = { 0 };
+            neu_adapter_t *                     driver =
+                neu_node_manager_find(manager->node_manager, info->driver);
+            assert(driver != NULL);
+
+            strcpy(in.driver, info->driver);
+            strcpy(in.group, info->group);
+            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
+                                             info->group, &in.tags);
+
+            utarray_push_back(resp.infos, &in);
+        }
+        utarray_free(groups);
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DATALAYERS_TAGS;
+        reply(manager, header, &resp);
+
+        break;
+    }
     case NEU_REQ_GET_NODES_STATE: {
         neu_resp_get_nodes_state_t resp = { 0 };
         UT_array *states = neu_node_manager_get_state(manager->node_manager);

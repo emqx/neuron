@@ -6,10 +6,11 @@
 
 int main()
 {
-    Client *client = client_create("127.0.0.1", 8360, "admin", "public");
+    neu_datalayers_client *client =
+        client_create("127.0.0.1", 8360, "admin", "public");
 
     datatag tags[] = {
-        { "node_1", "group_1", "tag_1", { .string_value = "abc" }, STRING_TYPE }
+        { "node_1", "group_2", "tag_1", { .string_value = "abc" }, STRING_TYPE }
     };
     size_t tag_count = sizeof(tags) / sizeof(tags[0]);
 
@@ -53,6 +54,31 @@ int main()
             }
         }
         client_query_free(result);
+    } else {
+        printf("No data found\n");
+    }
+
+    query_result *result_tag = client_query_all_data(client, STRING_TYPE);
+    if (result_tag) {
+        printf("Query returned %zu rows\n", result_tag->row_count);
+        for (size_t i = 0; i < result_tag->row_count; ++i) {
+            printf("Node: %s, Group: %s, Tag: %s\n",
+                   result_tag->rows[i].node_name,
+                   result_tag->rows[i].group_name, result_tag->rows[i].tag);
+        }
+        client_query_free(result_tag);
+    } else {
+        printf("No data found\n");
+    }
+
+    query_result *result_group = client_query_nodes_groups(client, STRING_TYPE);
+    if (result_group) {
+        printf("Query returned %zu rows\n", result_group->row_count);
+        for (size_t i = 0; i < result_group->row_count; ++i) {
+            printf("Node: %s, Group: %s\n", result_group->rows[i].node_name,
+                   result_group->rows[i].group_name);
+        }
+        client_query_free(result_group);
     } else {
         printf("No data found\n");
     }

@@ -18,8 +18,6 @@ jobs:
     strategy:
       matrix:
         arch:
-          - [aarch64-linux-gnu, aarch64, arm64]
-          - [arm-linux-gnueabihf, armv4, armhf]
           - [x86_64-linux-gnu, x86_64, amd64]
     container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
 
@@ -106,12 +104,6 @@ jobs:
         with:
           name: neuron-sdk-debug
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: neuron-sdk-arm64
-      - uses: actions/download-artifact@v4
-        with:
-          name: neuron-sdk-armhf
       - uses: actions/download-artifact@v4
         with:
           name: neuron-sdk-amd64
