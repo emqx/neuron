@@ -268,6 +268,11 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_MQTT_PUBLISH_FAILURE:
     case NEU_ERR_STRING_TOO_LONG:
     case NEU_ERR_FILE_WRITE_FAILURE:
+    case NEU_ERR_DATALAYERS_FAILURE:
+    case NEU_ERR_DATALAYERS_INIT_FAILURE:
+    case NEU_ERR_DATALAYERS_CONNECT_FAILURE:
+    case NEU_ERR_DATALAYERS_IS_NULL:
+
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:

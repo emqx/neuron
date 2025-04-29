@@ -64,6 +64,11 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_SUB_DRIVER_TAGS,
     NEU_RESP_GET_SUB_DRIVER_TAGS,
 
+    NEU_REQ_GET_DATALAYERS_GROUPS,
+    NEU_RESP_GET_DATALAYERS_GROUPS,
+    NEU_REQ_GET_DATALAYERS_TAGS,
+    NEU_RESP_GET_DATALAYERS_TAGS,
+
     NEU_REQ_NODE_INIT,
     NEU_REQ_NODE_UNINIT,
     NEU_RESP_NODE_UNINIT,
@@ -189,6 +194,11 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_SUBSCRIBE_GROUP]   = "NEU_RESP_GET_SUBSCRIBE_GROUP",
     [NEU_REQ_GET_SUB_DRIVER_TAGS]    = "NEU_REQ_GET_SUB_DRIVER_TAGS",
     [NEU_RESP_GET_SUB_DRIVER_TAGS]   = "NEU_RESP_GET_SUB_DRIVER_TAGS",
+
+    [NEU_REQ_GET_DATALAYERS_GROUPS]  = "NEU_REQ_GET_DATALAYERS_GROUPS",
+    [NEU_RESP_GET_DATALAYERS_GROUPS] = "NEU_RESP_GET_DATALAYERS_GROUPS",
+    [NEU_REQ_GET_DATALAYERS_TAGS]    = "NEU_REQ_GET_DATALAYERS_TAGS",
+    [NEU_RESP_GET_DATALAYERS_TAGS]   = "NEU_RESP_GET_DATALAYERS_TAGS",
 
     [NEU_REQ_NODE_INIT]         = "NEU_REQ_NODE_INIT",
     [NEU_REQ_NODE_UNINIT]       = "NEU_REQ_NODE_UNINIT",
@@ -464,11 +474,20 @@ typedef struct neu_req_get_node {
     neu_node_type_e type;
     char            plugin[NEU_PLUGIN_NAME_LEN];
     char            node[NEU_NODE_NAME_LEN];
+
+    struct {
+        bool q_state;
+        int  state;
+        bool q_link;
+        int  link;
+        bool s_delay;
+    } query;
 } neu_req_get_node_t;
 
 typedef struct neu_resp_node_info {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
+    int64_t delay;
+    char    node[NEU_NODE_NAME_LEN];
+    char    plugin[NEU_PLUGIN_NAME_LEN];
 } neu_resp_node_info_t;
 
 typedef struct neu_resp_get_node {

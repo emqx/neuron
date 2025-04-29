@@ -439,8 +439,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_del_plugin_t *cmd = (neu_req_del_plugin_t *) &header[1];
         neu_resp_error_t      e   = { 0 };
 
-        UT_array *nodes = neu_manager_get_nodes(
-            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, cmd->plugin, "");
+        UT_array *nodes =
+            neu_manager_get_nodes(manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP,
+                                  cmd->plugin, "", false, false, 0, false, 0);
 
         if (nodes != NULL) {
             if (utarray_len(nodes) > 0) {
@@ -621,8 +622,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        UT_array *nodes = neu_manager_get_nodes(
-            manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, module_name, "");
+        UT_array *nodes =
+            neu_manager_get_nodes(manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP,
+                                  module_name, "", false, false, 0, false, 0);
 
         if (nodes != NULL) {
             if (utarray_len(nodes) > 0) {
@@ -874,9 +876,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_NODE: {
-        neu_req_get_node_t *cmd = (neu_req_get_node_t *) &header[1];
-        UT_array *          nodes =
-            neu_manager_get_nodes(manager, cmd->type, cmd->plugin, cmd->node);
+        neu_req_get_node_t *cmd   = (neu_req_get_node_t *) &header[1];
+        UT_array *          nodes = neu_manager_get_nodes(
+            manager, cmd->type, cmd->plugin, cmd->node, cmd->query.s_delay,
+            cmd->query.q_state, cmd->query.state, cmd->query.q_link,
+            cmd->query.link);
         neu_resp_get_node_t resp = { .nodes = nodes };
 
         header->type = NEU_RESP_GET_NODE;
@@ -1031,6 +1035,47 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         strcpy(header->receiver, header->sender);
         header->type = NEU_RESP_GET_SUB_DRIVER_TAGS;
+        reply(manager, header, &resp);
+
+        break;
+    }
+    case NEU_REQ_GET_DATALAYERS_GROUPS: {
+        neu_req_get_subscribe_group_t *cmd =
+            (neu_req_get_subscribe_group_t *) &header[1];
+        UT_array *groups = neu_manager_get_sub_group_deep_copy(
+            manager, cmd->app, cmd->driver, cmd->group);
+        neu_resp_get_subscribe_group_t resp = { .groups = groups };
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DATALAYERS_GROUPS;
+        reply(manager, header, &resp);
+        break;
+    }
+    case NEU_REQ_GET_DATALAYERS_TAGS: {
+        neu_req_get_sub_driver_tags_t *cmd =
+            (neu_req_get_sub_driver_tags_t *) &header[1];
+        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+
+        utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
+        utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
+        {
+            neu_resp_get_sub_driver_tags_info_t in = { 0 };
+            neu_adapter_t *                     driver =
+                neu_node_manager_find(manager->node_manager, info->driver);
+            assert(driver != NULL);
+
+            strcpy(in.driver, info->driver);
+            strcpy(in.group, info->group);
+            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
+                                             info->group, &in.tags);
+
+            utarray_push_back(resp.infos, &in);
+        }
+        utarray_free(groups);
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DATALAYERS_TAGS;
         reply(manager, header, &resp);
 
         break;
