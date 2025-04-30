@@ -88,7 +88,41 @@ sudo apt-get install ninja-build -y
 
 # Install gRPC
 echo "Installing gRPC..."
-sudo apt-get install -y libgrpc++-dev protobuf-compiler-grpc
+git clone -b RELEASE_TAG_HERE https://github.com/grpc/grpc
+cd grpc
+git submodule update --init
+mkdir -p cmake/build
+cd cmake/build
+cmake -DgRPC_INSTALL=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      ../..
+make && sudo make install
+cd ../../.. 
+
+
+# Install OpenSSL 3.5.0
+echo "Installing OpenSSL 3.5.0..."
+wget https://www.openssl.org/source/openssl-3.5.0.tar.gz
+tar -xzf openssl-3.5.0.tar.gz
+cd openssl-3.5.0
+./config --prefix=/usr/local \
+         --openssldir=/usr/local/ssl \
+         --libdir=/usr/local/lib \
+         no-shared \
+         enable-ec_nistp_64_gcc_128 \
+         no-ssl3 \
+         no-weak-ssl-ciphers \
+         no-comp \
+         -fPIC \
+         -fvisibility=default
+make 
+sudo make install
+cd ..
+
+# Install gflag
+echo "Installing gflag..."
+sudo apt-get install libgflags-dev
 
 # Install Apache Arrow
 echo "Installing Apache Arrow..."
