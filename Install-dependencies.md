@@ -83,27 +83,18 @@ $ ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
 $ make && sudo make install
 ```
 
-[arrow](https://github.com/apache/arrow)
-```shell
-$ wget https://github.com/apache/arrow/releases/download/apache-arrow-19.0.1/apache-arrow-19.0.1.tar.gz
-$ tar -xzvf apache-arrow-19.0.1.tar.gz
-$ cd apache-arrow-19.0.1/cpp
-$ mkdir build && cd build
-$ cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DARROW_BUILD_SHARED=ON \
-  -DARROW_COMPUTE=ON \
-  -DARROW_CSV=ON \
-  -DARROW_JSON=ON \
-  -DARROW_PARQUET=ON \
-  -DARROW_DATASET=ON \
-  -DARROW_FLIGHT=ON \
-  -DARROW_FLIGHT_SQL=ON \
-  -DARROW_WITH_GRPC=ON \
-  -DARROW_PROTOBUF_USE_SHARED=ON \
-  -DProtobuf_ROOT=/usr \
-  -DgRPC_ROOT=/usr \
-  -GNinja
-$ ninja
-$ sudo ninja install
-```
+
+To build Apache Arrow C++ for the datalayers plugin, please refer to the [official Arrow](https://github.com/apache/arrow) for the most up-to-date information on dependencies, configuration, and build steps.
+
+You must enable the following features at a minimum for the datalayers plugin:
+
+```cmake
+-DARROW_FLIGHT=ON \
+-DARROW_FLIGHT_SQL=ON
+
+Required Dependencies:
+When enabling DARROW_FLIGHT and DARROW_FLIGHT_SQL, you must ensure the following dependencies are installed on your system:
+
+gRPC
+Boost
+Thrift
