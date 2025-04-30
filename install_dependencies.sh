@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 # Install openssl
 echo "Installing openssl..."
@@ -81,5 +81,39 @@ cd libxml2
 ./configure --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
 make && sudo make install
 cd ..
+
+# Install ninja
+echo "Installing ninja..."
+sudo apt-get install ninja-build -y
+
+# Install gRPC
+echo "Installing gRPC..."
+sudo apt-get install -y libgrpc++-dev protobuf-compiler-grpc
+
+# Install Apache Arrow
+echo "Installing Apache Arrow..."
+wget https://github.com/apache/arrow/releases/download/apache-arrow-19.0.1/apache-arrow-19.0.1.tar.gz
+tar -xzvf apache-arrow-19.0.1.tar.gz --overwrite
+cd apache-arrow-19.0.1/cpp
+rm -rf build 2>/dev/null || true
+mkdir build && cd build
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DARROW_BUILD_SHARED=ON \
+  -DARROW_COMPUTE=ON \
+  -DARROW_CSV=ON \
+  -DARROW_JSON=ON \
+  -DARROW_PARQUET=ON \
+  -DARROW_DATASET=ON \
+  -DARROW_FLIGHT=ON \
+  -DARROW_FLIGHT_SQL=ON \
+  -DARROW_WITH_GRPC=ON \
+  -DARROW_PROTOBUF_USE_SHARED=OFF \
+  -DProtobuf_ROOT=/usr/local \
+  -DgRPC_ROOT=/usr/local \
+  -GNinja
+ninja
+sudo ninja install
+cd ../../..
 
 echo "All dependencies installed successfully."
