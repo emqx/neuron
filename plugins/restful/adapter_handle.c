@@ -45,7 +45,7 @@ void handle_add_adapter(nng_aio *aio)
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 CHECK_NODE_NAME_LENGTH_ERR;
             } else if (strcmp(req->name, "monitor") == 0 ||
-                       strcmp(req->name, "datalayers") == 0) {
+                       strcmp(req->name, "Datalayers") == 0) {
                 CHECK_NODE_SINGLE_ERR;
             } else {
                 int                ret    = 0;
@@ -89,8 +89,8 @@ static inline int send_node_update_req(nng_aio *                   aio,
 
     if (strcmp(req->new_name, "monitor") == 0 ||
         strcmp(req->name, "monitor") == 0 ||
-        strcmp(req->new_name, "datalayers") == 0 ||
-        strcmp(req->name, "datalayers") == 0) {
+        strcmp(req->new_name, "Datalayers") == 0 ||
+        strcmp(req->name, "Datalayers") == 0) {
         return NEU_ERR_NODE_NOT_ALLOW_UPDATE;
     }
 

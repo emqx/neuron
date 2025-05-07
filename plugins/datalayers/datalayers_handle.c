@@ -110,6 +110,7 @@ db_write_task_t *task_queue_pop(neu_plugin_t *plugin, task_queue_t *queue)
     }
     queue->size--;
 
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSGS_TOTAL, 1, NULL);
     NEU_PLUGIN_UPDATE_CACHED_QUEUE_SIZE_METRIC(plugin, plugin->task_queue.size);
 
     return task;
@@ -340,11 +341,15 @@ int handle_trans_data(neu_plugin_t *            plugin,
 {
     int rv = 0;
 
+    pthread_mutex_lock(&plugin->plugin_mutex);
+
     if (NULL == plugin->client) {
+        pthread_mutex_unlock(&plugin->plugin_mutex);
         return NEU_ERR_DATALAYERS_IS_NULL;
     }
 
     if (plugin->common.link_state != NEU_NODE_LINK_STATE_CONNECTED) {
+        pthread_mutex_unlock(&plugin->plugin_mutex);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
@@ -353,6 +358,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
     if (NULL == route) {
         plog_error(plugin, "no route for driver:%s group:%s",
                    trans_data->driver, trans_data->group);
+        pthread_mutex_unlock(&plugin->plugin_mutex);
         return NEU_ERR_GROUP_NOT_SUBSCRIBE;
     }
 
@@ -441,6 +447,8 @@ int handle_trans_data(neu_plugin_t *            plugin,
     task->string_tags     = string_tags;
 
     task_queue_push(plugin, task);
+
+    pthread_mutex_unlock(&plugin->plugin_mutex);
 
     return rv;
 }
