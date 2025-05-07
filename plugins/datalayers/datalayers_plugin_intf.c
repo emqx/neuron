@@ -48,6 +48,9 @@ void stop_consumer_thread(pthread_t *consumer_thread)
 int datalayers_plugin_close(neu_plugin_t *plugin)
 {
     const char *name = neu_plugin_module.module_name;
+
+    pthread_mutex_lock(&plugin->plugin_mutex);
+
     plog_notice(plugin, "success to free plugin:%s", name);
 
     stop_consumer_thread(&plugin->consumer_thread);
@@ -56,12 +59,17 @@ int datalayers_plugin_close(neu_plugin_t *plugin)
 
     client_destroy(plugin->client);
     free(plugin);
+
+    pthread_mutex_unlock(&plugin->plugin_mutex);
+
     return NEU_ERR_SUCCESS;
 }
 
 int datalayers_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
+
+    pthread_mutex_init(&plugin->plugin_mutex, NULL);
 
     task_queue_init(&plugin->task_queue);
 
@@ -80,10 +88,18 @@ int datalayers_plugin_init(neu_plugin_t *plugin, bool load)
 
 int datalayers_plugin_uninit(neu_plugin_t *plugin)
 {
+    pthread_mutex_lock(&plugin->plugin_mutex);
+
+    stop_consumer_thread(&plugin->consumer_thread);
+
     tasks_free(&plugin->task_queue);
     datalayers_config_fini(&plugin->config);
 
     route_tbl_free(plugin->route_tbl);
+    plugin->route_tbl = NULL;
+
+    pthread_mutex_unlock(&plugin->plugin_mutex);
+    pthread_mutex_destroy(&plugin->plugin_mutex);
 
     plog_notice(plugin, "uninitialize plugin `%s` success",
                 neu_plugin_module.module_name);
@@ -93,6 +109,14 @@ int datalayers_plugin_uninit(neu_plugin_t *plugin)
 static int config_datalayers_client(neu_plugin_t *             plugin,
                                     const datalayers_config_t *config)
 {
+    if (!config->host || !config->port || !config->username ||
+        !config->password) {
+        plog_error(
+            plugin,
+            "Invalid datalayers config: NULL host/port/username/password");
+        return NEU_ERR_DATALAYERS_INIT_FAILURE;
+    }
+
     plugin->client = client_create(config->host, config->port, config->username,
                                    config->password);
 
@@ -111,7 +135,6 @@ int datalayers_plugin_config(neu_plugin_t *plugin, const char *setting)
     int                 rv          = 0;
     const char *        plugin_name = neu_plugin_module.module_name;
     datalayers_config_t config      = { 0 };
-
     if (plugin->client != NULL) {
         client_destroy(plugin->client);
     }
@@ -123,18 +146,18 @@ int datalayers_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
 
     rv = config_datalayers_client(plugin, &config);
-    if (0 != rv) {
-        plog_error(plugin, "datalayers client configuration failed");
-        datalayers_config_fini(&config);
-        return rv;
-    }
 
     datalayers_config_fini(&plugin->config);
 
     memmove(&plugin->config, &config, sizeof(config));
 
-    plog_notice(plugin, "config plugin `%s` success", plugin_name);
-    return NEU_ERR_SUCCESS;
+    if (rv == 0) {
+        plog_notice(plugin, "config plugin `%s` success", plugin_name);
+    } else {
+        plog_error(plugin, "datalayers client configuration failed");
+    }
+
+    return rv;
 }
 
 int datalayers_plugin_start(neu_plugin_t *plugin)
@@ -169,6 +192,8 @@ int datalayers_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQRESP_TRANS_DATA: {
         if (plugin->client == NULL) {
             plog_notice(plugin, "datalayers client is NULL, reconnect");
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                                     1, NULL);
 
             config_datalayers_client(plugin, &plugin->config);
         }
