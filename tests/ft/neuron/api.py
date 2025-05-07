@@ -79,8 +79,11 @@ def del_node(node, jwt=config.default_jwt):
     return requests.delete(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json={"name": node})
 
 
-def get_nodes(type, jwt=config.default_jwt):
-    return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type})
+def get_nodes(type, jwt=config.default_jwt, group=""):
+    if group == "":
+        return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type})
+    else:
+        return requests.get(url=config.BASE_URL + '/api/v2/node?group=' + group, headers={"Authorization": jwt}, params={"type": type})
 
 
 @gen_check
@@ -124,8 +127,13 @@ def update_group(node, group, new_name="", interval=0):
 
 
 @gen_check
-def get_group(node=""):
-    return requests.get(url=config.BASE_URL + f'/api/v2/group?node={node}', headers={"Authorization": config.default_jwt})
+def get_group(node="", group=""):
+    if group == "":
+        return requests.get(url=config.BASE_URL + f'/api/v2/group?node={node}', headers={"Authorization": config.default_jwt})
+    else:
+        return requests.get(url=config.BASE_URL + f'/api/v2/group?node={node}&group={group}', headers={"Authorization": config.default_jwt})
+
+
 
 
 @gen_check

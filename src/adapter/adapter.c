@@ -1091,12 +1091,15 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_GROUP: {
+
+        neu_req_get_group_t *cmd = (neu_req_get_group_t *) &header[1];
+
         neu_msg_exchange(header);
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             neu_resp_get_group_t resp = {
                 .groups = neu_adapter_driver_get_group(
-                    (neu_adapter_driver_t *) adapter)
+                    (neu_adapter_driver_t *) adapter, cmd->q_group)
             };
             header->type = NEU_RESP_GET_GROUP;
             reply(adapter, header, &resp);
@@ -1871,6 +1874,16 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     state.log_level = adapter->log_level;
 
     return state;
+}
+
+UT_array *neu_adapter_get_groups(neu_adapter_t *adapter, const char *filter)
+{
+    if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+        return NULL;
+    } else {
+        return neu_adapter_driver_get_group((neu_adapter_driver_t *) adapter,
+                                            filter);
+    }
 }
 
 neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
