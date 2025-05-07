@@ -610,6 +610,33 @@ class TestHttp:
         response = api.get_status()
         assert 200 == response.status_code
 
+    @description(given="running neuron", when="get node or group by filter", then="success")
+    def test_get_node_or_group_by_filter(self):
+        node_1 = "test1"
+        node_2 = "test2"
+        group_1 = "abcd1"
+        group_2 = "abdc2"
+        api.add_node_check(node_1, 'Modbus TCP')
+        api.add_node_check(node_2, 'Modbus TCP')
+        api.add_group_check(node_1, group_1, 1000)
+        api.add_group_check(node_1, group_2, 1000)
+        api.add_group_check(node_2, group_1, 1000)
+        # api.add_group_check(node_2, group_2, 1000)
+
+        response = api.get_nodes(1)
+        assert 2 == len(response.json()["nodes"])
+        response = api.get_nodes(1, group="dc")
+        assert 1 == len(response.json()["nodes"])
+        response = api.get_nodes(1, group="ab")
+        assert 2 == len(response.json()["nodes"])
+        response = api.get_group(node=node_1)
+        assert 2 == len(response.json()["groups"])
+        response = api.get_group(node=node_1, group="1")
+        assert 1 == len(response.json()["groups"])
+        response = api.get_group(node=node_2)
+        assert 1 == len(response.json()["groups"])
+
+
     @description(given="running neuron", when="test jwt error", then="failed")
     def test_jwt_err(self):
         response = api.change_password(new_password='123456', jwt='invalid')
@@ -629,3 +656,5 @@ class TestHttp:
 
         response = api.delete_virtual_license(jwt='invalid')
         assert 404 == response.status_code
+
+

@@ -210,7 +210,8 @@ static int neu_resp_node_info_sort(const void *a, const void *b)
 UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                                   const char *plugin, const char *node,
                                   bool sort_delay, bool q_state, int state,
-                                  bool q_link, int link)
+                                  bool q_link, int link,
+                                  const char *q_group_name)
 {
     UT_array *     array = NULL;
     UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
@@ -241,6 +242,19 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                         neu_adapter_get_state(el->adapter);
                     if (node_state.link != (neu_node_link_state_e) link) {
                         continue;
+                    }
+                }
+
+                if (strlen(q_group_name) > 0) {
+                    UT_array *groups =
+                        neu_adapter_get_groups(el->adapter, q_group_name);
+                    if (NULL == groups || utarray_len(groups) == 0) {
+                        if (groups != NULL) {
+                            utarray_free(groups);
+                        }
+                        continue;
+                    } else {
+                        utarray_free(groups);
                     }
                 }
 

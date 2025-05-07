@@ -116,10 +116,11 @@ int neu_manager_del_node(neu_manager_t *manager, const char *node_name)
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, int type,
                                 const char *plugin, const char *node,
                                 bool sort_delay, bool q_state, int state,
-                                bool q_link, int link)
+                                bool q_link, int link, const char *q_group_name)
 {
     return neu_node_manager_filter(manager->node_manager, type, plugin, node,
-                                   sort_delay, q_state, state, q_link, link);
+                                   sort_delay, q_state, state, q_link, link,
+                                   q_group_name);
 }
 
 int neu_manager_update_node_name(neu_manager_t *manager, const char *node,
@@ -185,7 +186,7 @@ UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
         neu_adapter_t *adapter =
             neu_node_manager_find(manager->node_manager, driver->node);
         UT_array *groups =
-            neu_adapter_driver_get_group((neu_adapter_driver_t *) adapter);
+            neu_adapter_driver_get_group((neu_adapter_driver_t *) adapter, "");
 
         utarray_foreach(groups, neu_resp_group_info_t *, g)
         {

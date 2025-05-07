@@ -1757,7 +1757,8 @@ int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
     return ret;
 }
 
-UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
+UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver,
+                                       const char *          filter)
 {
     group_t * el = NULL, *tmp = NULL;
     UT_array *groups = NULL;
@@ -1767,13 +1768,16 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
 
     HASH_ITER(hh, driver->groups, el, tmp)
     {
-        neu_resp_group_info_t info = { 0 };
 
-        info.interval  = neu_group_get_interval(el->group);
-        info.tag_count = neu_group_tag_size(el->group);
-        strncpy(info.name, el->name, sizeof(info.name));
+        if (strlen(filter) == 0 || strstr(el->name, filter) != NULL) {
+            neu_resp_group_info_t info = { 0 };
 
-        utarray_push_back(groups, &info);
+            info.interval  = neu_group_get_interval(el->group);
+            info.tag_count = neu_group_tag_size(el->group);
+            strncpy(info.name, el->name, sizeof(info.name));
+
+            utarray_push_back(groups, &info);
+        }
     }
 
     return groups;

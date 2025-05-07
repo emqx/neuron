@@ -333,6 +333,7 @@ typedef struct neu_req_get_node {
         bool q_link;
         int  link;
         bool s_delay;
+        char q_group_name[NEU_GROUP_NAME_LEN];
     } query;
 } neu_req_get_node_t;
 
@@ -377,6 +378,7 @@ typedef struct neu_req_del_group {
 
 typedef struct neu_req_get_group {
     char driver[NEU_NODE_NAME_LEN];
+    char q_group[NEU_GROUP_NAME_LEN];
 } neu_req_get_group_t;
 
 typedef struct neu_resp_group_info {
