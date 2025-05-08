@@ -25,7 +25,7 @@ PLUGIN = "eKuiper"
 DRIVER = "modbus"
 DRIVER_PORT = random_port()
 GROUP = "group"
-INTERVAL = 100
+INTERVAL = 200
 TAGS = [
     {
         "name": "tag0",
@@ -126,7 +126,7 @@ def conf_bad_port(conf_base):
 
 @pytest.fixture(scope="function")
 def mocker():
-    mock = Mocker(timeout=1000)
+    mock = Mocker(timeout=2000)
     yield mock
     mock.disconnect()
 
@@ -159,7 +159,8 @@ class Mocker:
 
     def recv(self):
         msg = self.sock.recv()
-        msg = msg[26:]
+        if msg[0:2] == b'\x0A\xCE':
+            msg = msg[26:]
         return json.loads(msg.decode())
 
     def send(self, data):

@@ -120,7 +120,8 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
         nng_msg *msg              = NULL;
         size_t   json_len         = strlen(json_str);
         size_t   trace_header_len = 0;
-        if (neu_otel_data_is_started() && trans_data->trace_ctx) {
+        if (neu_otel_data_is_started() && trans_data->trace_ctx &&
+            trans_trace) {
             trace_header_len = 26;
         }
 
