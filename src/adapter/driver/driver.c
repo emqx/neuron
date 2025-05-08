@@ -40,6 +40,7 @@
 #include "errcodes.h"
 #include "tag.h"
 
+#include "core/node_manager.h"
 #include "otel/otel_manager.h"
 
 typedef struct to_be_write_tag {
@@ -2215,19 +2216,17 @@ static int report_callback(void *usr_data)
 
     neu_otel_trace_ctx trans_trace = NULL;
     neu_otel_scope_ctx trans_scope = NULL;
-    if (trace_ctx) {
-        data->trace_ctx = trace_ctx;
-        if (neu_otel_data_is_started() && data->trace_ctx) {
-            trans_trace = neu_otel_find_trace(data->trace_ctx);
-            if (trans_trace) {
-                char new_span_id[36] = { 0 };
-                neu_otel_new_span_id(new_span_id);
-                trans_scope =
-                    neu_otel_add_span2(trans_trace, "report cb", new_span_id);
-                neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
-                                                 (int64_t)(pthread_self()));
-                neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
-            }
+    if (neu_otel_data_is_started() && trace_ctx) {
+        trans_trace = neu_otel_find_trace(trace_ctx);
+        if (trans_trace) {
+            data->trace_ctx      = trace_ctx;
+            char new_span_id[36] = { 0 };
+            neu_otel_new_span_id(new_span_id);
+            trans_scope =
+                neu_otel_add_span2(trans_trace, "report cb", new_span_id);
+            neu_otel_scope_add_span_attr_int(trans_scope, "thread id",
+                                             (int64_t)(pthread_self()));
+            neu_otel_scope_set_span_start_time(trans_scope, neu_time_ns());
         }
     }
 
@@ -2256,8 +2255,25 @@ static int report_callback(void *usr_data)
                 }
             }
 
+            if (trans_trace) {
+                neu_otel_set_internal_parent_span(trans_trace);
+            }
+
             utarray_foreach(group->apps, sub_app_t *, app)
             {
+
+                neu_adapter_t *sub_app =
+                    neu_node_manager_find(g_manager->node_manager, app->app);
+                if (sub_app != NULL) {
+                    if (sub_app->state != NEU_NODE_RUNNING_STATE_RUNNING) {
+                        neu_trans_data_free(data);
+                        continue;
+                    }
+                } else {
+                    nlog_error("sub app %s not exist", app->app);
+                    neu_trans_data_free(data);
+                    continue;
+                }
 
                 if (group->driver->adapter.cb_funs.responseto(
                         &group->driver->adapter, &header, data, app->addr) !=

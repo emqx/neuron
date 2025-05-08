@@ -30,7 +30,7 @@
 #include "subscribe.h"
 #include "utils/log.h"
 
-typedef struct neu_manager {
+struct neu_manager {
     int server_fd;
 
     neu_events_t *  events;
@@ -45,7 +45,7 @@ typedef struct neu_manager {
     int64_t timestamp_lev_manager;
 
     int log_level;
-} neu_manager_t;
+};
 
 int       neu_manager_add_plugin(neu_manager_t *manager, const char *library);
 int       neu_manager_del_plugin(neu_manager_t *manager, const char *plugin);

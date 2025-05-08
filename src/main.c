@@ -35,15 +35,15 @@
 #include "daemon.h"
 #include "version.h"
 
-static bool           exit_flag         = false;
-static neu_manager_t *g_manager         = NULL;
-zlog_category_t *     neuron            = NULL;
-bool                  disable_jwt       = false;
-bool                  sub_filter_err    = false;
-int                   default_log_level = ZLOG_LEVEL_NOTICE;
-char                  host_port[32]     = { 0 };
-char                  g_status[32]      = { 0 };
-static bool           sig_trigger       = false;
+static bool      exit_flag         = false;
+neu_manager_t *  g_manager         = NULL;
+zlog_category_t *neuron            = NULL;
+bool             disable_jwt       = false;
+bool             sub_filter_err    = false;
+int              default_log_level = ZLOG_LEVEL_NOTICE;
+char             host_port[32]     = { 0 };
+char             g_status[32]      = { 0 };
+static bool      sig_trigger       = false;
 
 int64_t global_timestamp = 0;
 

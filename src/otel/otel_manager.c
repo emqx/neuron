@@ -56,6 +56,7 @@ typedef struct {
     int64_t                                     ts;
     UT_array *                                  scopes;
     pthread_mutex_t                             mutex;
+    ProtobufCBinaryData                         internal_parent_span;
 } trace_ctx_t;
 
 typedef struct {
@@ -156,6 +157,18 @@ static int parse_tracestate(const char *tracestate, trace_kv_t *kvs,
 
     free(tracestate_copy);
     return 1;
+}
+
+void neu_otel_set_internal_parent_span(neu_otel_trace_ctx ctx)
+{
+    trace_ctx_t *trace_ctx = (trace_ctx_t *) ctx;
+    pthread_mutex_lock(&trace_ctx->mutex);
+    if (utarray_len(trace_ctx->scopes) > 0) {
+        trace_scope_t *scope =
+            *(trace_scope_t **) utarray_back(trace_ctx->scopes);
+        trace_ctx->internal_parent_span = scope->span->span_id;
+    }
+    pthread_mutex_unlock(&trace_ctx->mutex);
 }
 
 void neu_otel_free_span(Opentelemetry__Proto__Trace__V1__Span *span)
@@ -693,7 +706,11 @@ neu_otel_scope_ctx neu_otel_add_span2(neu_otel_trace_ctx ctx,
     scope->span->flags         = trace_ctx->flags;
     neu_otel_scope_set_span_name(scope, span_name);
     neu_otel_scope_set_span_id(scope, span_id);
-    if (scope->span_index != 0) {
+    if (trace_ctx->internal_parent_span.data != NULL) {
+        neu_otel_scope_set_parent_span_id2(scope,
+                                           trace_ctx->internal_parent_span.data,
+                                           trace_ctx->internal_parent_span.len);
+    } else if (scope->span_index != 0) {
         neu_otel_scope_set_parent_span_id2(
             scope,
             trace_ctx->trace_data.resource_spans[0]
@@ -1009,19 +1026,25 @@ void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
 static int otel_timer_cb(void *data)
 {
     (void) data;
-
+    int                    batch_size = 50;
+    int                    index      = 0;
     trace_ctx_table_ele_t *el = NULL, *tmp = NULL;
 
     pthread_mutex_lock(&table_mutex);
 
     HASH_ITER(hh, traces_table, el, tmp)
     {
-        if (el->ctx->final &&
-            el->ctx->span_num ==
-                el->ctx->trace_data.resource_spans[0]
-                    ->scope_spans[0]
-                    ->n_spans &&
-            el->ctx->expected_span_num <= 0) {
+        if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
+            nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
+            HASH_DEL(traces_table, el);
+            neu_otel_free_trace(el->ctx);
+            free(el);
+        } else if (el->ctx->final &&
+                   el->ctx->span_num ==
+                       el->ctx->trace_data.resource_spans[0]
+                           ->scope_spans[0]
+                           ->n_spans &&
+                   el->ctx->expected_span_num <= 0) {
             int data_size = neu_otel_trace_pack_size(el->ctx);
 
             uint8_t *data_buf = calloc(1, data_size);
@@ -1034,14 +1057,13 @@ static int otel_timer_cb(void *data)
                 HASH_DEL(traces_table, el);
                 neu_otel_free_trace(el->ctx);
                 free(el);
+                index += 1;
+                if (index > batch_size) {
+                    break;
+                }
             } else {
                 break;
             }
-        } else if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
-            nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
-            HASH_DEL(traces_table, el);
-            neu_otel_free_trace(el->ctx);
-            free(el);
         }
     }
 
