@@ -161,4 +161,8 @@ typedef enum {
 // forward declaration for neu_adapter_t
 typedef struct neu_adapter neu_adapter_t;
 
+typedef struct neu_manager neu_manager_t;
+
+extern neu_manager_t *g_manager;
+
 #endif
