@@ -43,7 +43,6 @@
 		"description_zh": "Datalayers 用户密码",
 		"attribute": "required",
 		"type": "string",
-		"default": "public",
 		"valid": {
 			"length": 255
 		}
