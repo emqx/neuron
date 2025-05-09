@@ -19,13 +19,13 @@
 
 #include "datalayers_plugin_intf.h"
 
-#define DESCRIPTION "Northbound Datalayers plugin."
-#define DESCRIPTION_ZH "北向应用 Datalayers 插件"
+#define DESCRIPTION "Northbound DataStorage plugin."
+#define DESCRIPTION_ZH "北向应用 DataStorage 插件"
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
-    .schema          = "datalayers",
-    .module_name     = "Datalayers",
+    .schema          = "datastorage",
+    .module_name     = "DataStorage",
     .module_descr    = DESCRIPTION,
     .module_descr_zh = DESCRIPTION_ZH,
     .intf_funs       = &datalayers_plugin_intf_funs,
@@ -33,5 +33,5 @@ const neu_plugin_module_t neu_plugin_module = {
     .type            = NEU_NA_TYPE_APP,
     .display         = true,
     .single          = true,
-    .single_name     = "Datalayers",
+    .single_name     = "DataStorage",
 };

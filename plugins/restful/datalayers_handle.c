@@ -42,7 +42,7 @@ void handle_datalayers_get_groups(nng_aio *aio)
     NEU_VALIDATE_JWT(aio);
 
     // required parameter
-    snprintf(cmd.app, sizeof(cmd.app), "%s", "datalayers");
+    snprintf(cmd.app, sizeof(cmd.app), "%s", "DataStorage");
 
     // optional parameter
     ret = neu_http_get_param_str(aio, "driver", cmd.driver, sizeof(cmd.driver));
@@ -112,7 +112,7 @@ void handle_datalayers_get_tags(nng_aio *aio)
     NEU_VALIDATE_JWT(aio);
 
     // required parameter
-    snprintf(cmd.app, sizeof(cmd.app), "%s", "datalayers");
+    snprintf(cmd.app, sizeof(cmd.app), "%s", "DataStorage");
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
