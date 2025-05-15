@@ -135,9 +135,9 @@ neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 {
     pthread_mutex_lock(&conn->mtx);
 
+    conn_tcp_server_stop(conn);
     conn_disconnect(conn);
     conn_free_param(conn);
-    conn_tcp_server_stop(conn);
 
     conn_init_param(conn, param);
     conn_tcp_server_listen(conn);
