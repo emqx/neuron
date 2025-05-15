@@ -25,7 +25,7 @@
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
     .schema          = "datastorage",
-    .module_name     = "DataStorage",
+    .module_name     = "Datalayers",
     .module_descr    = DESCRIPTION,
     .module_descr_zh = DESCRIPTION_ZH,
     .intf_funs       = &datalayers_plugin_intf_funs,
