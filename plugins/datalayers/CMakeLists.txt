@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
-file(COPY ${CMAKE_SOURCE_DIR}/plugins/datalayers/datastorage.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/datalayers/datalayers.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 
 add_library(${PROJECT_NAME} SHARED
   datalayers_config.c
