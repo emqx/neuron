@@ -16,29 +16,57 @@ backup_tcp_port = tcp_port + 4
 
 
 def start_socat():
-    socat_cmd = ["socat", "-d", "-d", "pty,raw,echo=0", "pty,raw,echo=0"]
-    socat_proc = subprocess.Popen(
-        socat_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    pty_regex = re.compile(r'PTY is (/dev/pts/\d+)')
 
-    fl = fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_GETFL)
-    fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
+    while True:
+        socat_cmd = ["socat", "-d", "-d", "pty,raw,echo=0", "pty,raw,echo=0"]
+        socat_proc = subprocess.Popen(
+            socat_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
 
-    pty_regex = re.compile(r'N PTY is (/dev/pts/\d+)')
-    dev1 = dev2 = None
+        print("socat started")
 
-    while not dev1 or not dev2:
-        ready = select.select([socat_proc.stderr], [], [], 5)
-        if ready[0]:
-            line = socat_proc.stderr.readline()
-            match = pty_regex.search(line.decode('utf-8'))
-            if match:
-                if not dev1:
-                    dev1 = match.group(1)
-                else:
-                    dev2 = match.group(1)
+        fl = fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_GETFL)
+        fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
-    return socat_proc, dev1, dev2
+        dev1 = dev2 = None
+        start_time = time.time()
+        timeout = 10
+
+        try:
+            while time.time() - start_time < timeout:
+                ready = select.select([socat_proc.stderr], [], [], 0.5)
+                if ready[0]:
+                    try:
+                        line = socat_proc.stderr.readline()
+                        if not line:
+                            continue
+                        line = line.decode("utf-8").strip()
+                        print("socat output:", line)
+
+                        match = pty_regex.search(line)
+                        if match:
+                            if not dev1:
+                                dev1 = match.group(1)
+                            else:
+                                dev2 = match.group(1)
+                                break
+                    except Exception as e:
+                        print("get socat output failed:", e)
+                        break
+
+        finally:
+            if not dev1 or not dev2:
+                print("get PTY failed，retry……")
+                socat_proc.terminate()
+                try:
+                    socat_proc.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    socat_proc.kill()
+                time.sleep(1)
+            else:
+                print("get PTY success")
+                return socat_proc, dev1, dev2
 
 
 @pytest.fixture(params=[('modbus-tcp', config.PLUGIN_MODBUS_TCP),
