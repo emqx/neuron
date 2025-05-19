@@ -9,7 +9,7 @@ on:
 
 jobs:
   clang_format_check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       # checkout
@@ -26,7 +26,8 @@ jobs:
           clangFormatVersion: 10
 
   cppcheck:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
 
     steps:
       - uses: actions/checkout@v4
@@ -35,12 +36,12 @@ jobs:
       
       - name: cppcheck
         run: |
-          sudo apt install cppcheck
+          sudo apt install -y cppcheck
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c  ./plugins ./src
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
 
   ut:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-v2.11
 
     steps:
@@ -77,7 +78,7 @@ jobs:
           files: ./cov_report/cov-ut.info
 
   pft:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-v2.11
     strategy:
       matrix:

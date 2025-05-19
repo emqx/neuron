@@ -816,6 +816,9 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
     {
         if (tag_value->value.type == NEU_TYPE_PTR) {
             free(tag_value->value.value.ptr.ptr);
+        } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
+                   tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
+            free(tag_value->value.value.bools.bools);
         }
     }
     free(resp->driver);
@@ -830,6 +833,9 @@ neu_resp_read_paginate_free(neu_resp_read_group_paginate_t *resp)
     {
         if (tag_value->value.type == NEU_TYPE_PTR) {
             free(tag_value->value.value.ptr.ptr);
+        } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
+                   tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
+            free(tag_value->value.value.bools.bools);
         }
     }
     free(resp->driver);
@@ -903,6 +909,10 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
                      ++i) {
                     free(tag_value->value.value.strs.strs[i]);
                 }
+                free(tag_value->value.value.strs.strs);
+            } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
+                       tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
+                free(tag_value->value.value.bools.bools);
             }
         }
         utarray_free(data->tags);
