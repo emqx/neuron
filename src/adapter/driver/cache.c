@@ -97,6 +97,9 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
                 free(elem->value.value.ptr.ptr);
                 elem->value.value.ptr.ptr = NULL;
             }
+        } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
+                   elem->value.type <= NEU_TYPE_ARRAY_BOOL) {
+            free(elem->value.value.bools.bools);
         }
         free(elem);
     }
@@ -638,8 +641,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->changed = true;
         }
 
-        elem->value.type = value.type;
-        if (elem->value.type == NEU_TYPE_PTR) {
+        if (value.type == NEU_TYPE_PTR) {
             elem->value.value.ptr.length = value.value.ptr.length;
             elem->value.value.ptr.type   = value.value.ptr.type;
             if (elem->value.value.ptr.ptr != NULL) {
@@ -648,9 +650,34 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
             memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
                    value.value.ptr.length);
+        } else if (NEU_TYPE_ARRAY_CHAR < value.type &&
+                   value.type <= NEU_TYPE_ARRAY_BOOL) {
+            if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
+                elem->value.type <= NEU_TYPE_ARRAY_BOOL) {
+                free(elem->value.value.bools.bools);
+            }
+            elem->value.value.bools.length = value.value.bools.length;
+            elem->value.value.bools.bools  = value.value.bools.bools;
+        } else if (value.type == NEU_TYPE_ERROR) {
+
+            if (elem->value.type == NEU_TYPE_PTR) {
+                if (elem->value.value.ptr.ptr != NULL) {
+                    free(elem->value.value.ptr.ptr);
+                    elem->value.value.ptr.ptr = NULL;
+                }
+            }
+
+            if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
+                elem->value.type <= NEU_TYPE_ARRAY_BOOL) {
+                free(elem->value.value.bools.bools);
+                elem->value.value.bools.bools = NULL;
+            }
+
+            elem->value.value = value.value;
         } else {
             elem->value.value = value.value;
         }
+        elem->value.type = value.type;
 
         memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
         for (int i = 0; i < n_meta; i++) {
@@ -731,57 +758,79 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             break;
         case NEU_TYPE_ARRAY_BOOL:
             value->value.value.bools.length = elem->value.value.bools.length;
+            value->value.value.bools.bools =
+                calloc(elem->value.value.bools.length, sizeof(bool));
             memcpy(value->value.value.bools.bools,
                    elem->value.value.bools.bools,
                    elem->value.value.bools.length);
             break;
         case NEU_TYPE_ARRAY_INT8:
             value->value.value.i8s.length = elem->value.value.i8s.length;
+            value->value.value.i8s.i8s =
+                calloc(elem->value.value.i8s.length, sizeof(int8_t));
             memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
                    elem->value.value.i8s.length);
             break;
         case NEU_TYPE_ARRAY_UINT8:
             value->value.value.u8s.length = elem->value.value.u8s.length;
+            value->value.value.u8s.u8s =
+                calloc(elem->value.value.u8s.length, sizeof(uint8_t));
             memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
                    elem->value.value.u8s.length);
             break;
         case NEU_TYPE_ARRAY_INT16:
             value->value.value.i16s.length = elem->value.value.i16s.length;
+            value->value.value.i16s.i16s =
+                calloc(elem->value.value.i16s.length, sizeof(int16_t));
             memcpy(value->value.value.i16s.i16s, elem->value.value.i16s.i16s,
                    elem->value.value.i16s.length * sizeof(int16_t));
             break;
         case NEU_TYPE_ARRAY_UINT16:
             value->value.value.u16s.length = elem->value.value.u16s.length;
+            value->value.value.u16s.u16s =
+                calloc(elem->value.value.u16s.length, sizeof(uint16_t));
             memcpy(value->value.value.u16s.u16s, elem->value.value.u16s.u16s,
                    elem->value.value.u16s.length * sizeof(uint16_t));
             break;
         case NEU_TYPE_ARRAY_INT32:
             value->value.value.i32s.length = elem->value.value.i32s.length;
+            value->value.value.i32s.i32s =
+                calloc(elem->value.value.i32s.length, sizeof(int32_t));
             memcpy(value->value.value.i32s.i32s, elem->value.value.i32s.i32s,
                    elem->value.value.i32s.length * sizeof(int32_t));
             break;
         case NEU_TYPE_ARRAY_UINT32:
             value->value.value.u32s.length = elem->value.value.u32s.length;
+            value->value.value.u32s.u32s =
+                calloc(elem->value.value.u32s.length, sizeof(uint32_t));
             memcpy(value->value.value.u32s.u32s, elem->value.value.u32s.u32s,
                    elem->value.value.u32s.length * sizeof(uint32_t));
             break;
         case NEU_TYPE_ARRAY_INT64:
             value->value.value.i64s.length = elem->value.value.i64s.length;
+            value->value.value.i64s.i64s =
+                calloc(elem->value.value.i64s.length, sizeof(int64_t));
             memcpy(value->value.value.i64s.i64s, elem->value.value.i64s.i64s,
                    elem->value.value.i64s.length * sizeof(int64_t));
             break;
         case NEU_TYPE_ARRAY_UINT64:
             value->value.value.u64s.length = elem->value.value.u64s.length;
+            value->value.value.u64s.u64s =
+                calloc(elem->value.value.u64s.length, sizeof(uint64_t));
             memcpy(value->value.value.u64s.u64s, elem->value.value.u64s.u64s,
                    elem->value.value.u64s.length * sizeof(uint64_t));
             break;
         case NEU_TYPE_ARRAY_FLOAT:
             value->value.value.f32s.length = elem->value.value.f32s.length;
+            value->value.value.f32s.f32s =
+                calloc(elem->value.value.f32s.length, sizeof(float));
             memcpy(value->value.value.f32s.f32s, elem->value.value.f32s.f32s,
                    elem->value.value.f32s.length * sizeof(float));
             break;
         case NEU_TYPE_ARRAY_DOUBLE:
             value->value.value.f64s.length = elem->value.value.f64s.length;
+            value->value.value.f64s.f64s =
+                calloc(elem->value.value.f64s.length, sizeof(double));
             memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
                    elem->value.value.f64s.length * sizeof(double));
             break;
@@ -872,57 +921,79 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             break;
         case NEU_TYPE_ARRAY_BOOL:
             value->value.value.bools.length = elem->value.value.bools.length;
+            value->value.value.bools.bools =
+                calloc(elem->value.value.bools.length, sizeof(bool));
             memcpy(value->value.value.bools.bools,
                    elem->value.value.bools.bools,
                    elem->value.value.bools.length);
             break;
         case NEU_TYPE_ARRAY_INT8:
             value->value.value.i8s.length = elem->value.value.i8s.length;
+            value->value.value.i8s.i8s =
+                calloc(elem->value.value.i8s.length, sizeof(int8_t));
             memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
                    elem->value.value.i8s.length);
             break;
         case NEU_TYPE_ARRAY_UINT8:
             value->value.value.u8s.length = elem->value.value.u8s.length;
+            value->value.value.u8s.u8s =
+                calloc(elem->value.value.u8s.length, sizeof(uint8_t));
             memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
                    elem->value.value.u8s.length);
             break;
         case NEU_TYPE_ARRAY_INT16:
             value->value.value.i16s.length = elem->value.value.i16s.length;
+            value->value.value.i16s.i16s =
+                calloc(elem->value.value.i16s.length, sizeof(int16_t));
             memcpy(value->value.value.i16s.i16s, elem->value.value.i16s.i16s,
                    elem->value.value.i16s.length * sizeof(int16_t));
             break;
         case NEU_TYPE_ARRAY_UINT16:
             value->value.value.u16s.length = elem->value.value.u16s.length;
+            value->value.value.u16s.u16s =
+                calloc(elem->value.value.u16s.length, sizeof(uint16_t));
             memcpy(value->value.value.u16s.u16s, elem->value.value.u16s.u16s,
                    elem->value.value.u16s.length * sizeof(uint16_t));
             break;
         case NEU_TYPE_ARRAY_INT32:
             value->value.value.i32s.length = elem->value.value.i32s.length;
+            value->value.value.i32s.i32s =
+                calloc(elem->value.value.i32s.length, sizeof(int32_t));
             memcpy(value->value.value.i32s.i32s, elem->value.value.i32s.i32s,
                    elem->value.value.i32s.length * sizeof(int32_t));
             break;
         case NEU_TYPE_ARRAY_UINT32:
             value->value.value.u32s.length = elem->value.value.u32s.length;
+            value->value.value.u32s.u32s =
+                calloc(elem->value.value.u32s.length, sizeof(uint32_t));
             memcpy(value->value.value.u32s.u32s, elem->value.value.u32s.u32s,
                    elem->value.value.u32s.length * sizeof(uint32_t));
             break;
         case NEU_TYPE_ARRAY_INT64:
             value->value.value.i64s.length = elem->value.value.i64s.length;
+            value->value.value.i64s.i64s =
+                calloc(elem->value.value.i64s.length, sizeof(int64_t));
             memcpy(value->value.value.i64s.i64s, elem->value.value.i64s.i64s,
                    elem->value.value.i64s.length * sizeof(int64_t));
             break;
         case NEU_TYPE_ARRAY_UINT64:
             value->value.value.u64s.length = elem->value.value.u64s.length;
+            value->value.value.u64s.u64s =
+                calloc(elem->value.value.u64s.length, sizeof(uint64_t));
             memcpy(value->value.value.u64s.u64s, elem->value.value.u64s.u64s,
                    elem->value.value.u64s.length * sizeof(uint64_t));
             break;
         case NEU_TYPE_ARRAY_FLOAT:
             value->value.value.f32s.length = elem->value.value.f32s.length;
+            value->value.value.f32s.f32s =
+                calloc(elem->value.value.f32s.length, sizeof(float));
             memcpy(value->value.value.f32s.f32s, elem->value.value.f32s.f32s,
                    elem->value.value.f32s.length * sizeof(float));
             break;
         case NEU_TYPE_ARRAY_DOUBLE:
             value->value.value.f64s.length = elem->value.value.f64s.length;
+            value->value.value.f64s.f64s =
+                calloc(elem->value.value.f64s.length, sizeof(double));
             memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
                    elem->value.value.f64s.length * sizeof(double));
             break;
@@ -970,6 +1041,9 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
                 free(elem->value.value.ptr.ptr);
                 elem->value.value.ptr.ptr = NULL;
             }
+        } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
+                   elem->value.type <= NEU_TYPE_ARRAY_BOOL) {
+            free(elem->value.value.bools.bools);
         }
         free(elem);
     }

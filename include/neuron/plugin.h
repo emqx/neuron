@@ -77,6 +77,7 @@ typedef int (*neu_plugin_tag_validator_t)(const neu_datatag_t *tag);
 typedef struct {
     neu_datatag_t *tag;
     neu_value_u    value;
+    neu_type_e     type;
 } neu_plugin_tag_value_t;
 
 typedef struct neu_plugin_intf_funs {

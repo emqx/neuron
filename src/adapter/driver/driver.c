@@ -360,6 +360,8 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 {
                     if (tag_value->value.type == NEU_TYPE_PTR) {
                         free(tag_value->value.value.ptr.ptr);
+                    } else {
+                        neu_free_dvalue(&tag_value->value);
                     }
                 }
                 utarray_free(data->tags);
@@ -373,6 +375,8 @@ static void update_im(neu_adapter_t *adapter, const char *group,
             {
                 if (tag_value->value.type == NEU_TYPE_PTR) {
                     free(tag_value->value.value.ptr.ptr);
+                } else {
+                    neu_free_dvalue(&tag_value->value);
                 }
             }
             utarray_free(data->tags);
@@ -834,128 +838,116 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         break;
     case NEU_TYPE_BYTES:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.bytes.bytes[i] =
-                    (uint8_t) value->value.i64s.i64s[i];
+            int64_t *i64s     = value->value.i64s.i64s;
+            uint32_t i64s_len = value->value.i64s.length > NEU_VALUE_SIZE
+                ? NEU_VALUE_SIZE
+                : value->value.i64s.length;
+            for (size_t i = 0; i < i64s_len; i++) {
+                value->value.bytes.bytes[i] = (uint8_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
+            for (int i = i64s_len; i < NEU_VALUE_SIZE; i++) {
                 value->value.bytes.bytes[i] = 0;
             }
-            value->value.bytes.length = value->value.i64s.length;
+            value->value.bytes.length = i64s_len;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_INT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.i8s.i8s[i] = (int8_t) value->value.i64s.i64s[i];
+            int64_t *i64s        = value->value.i64s.i64s;
+            value->value.i8s.i8s = calloc(value->value.i64s.length, 1);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.i8s.i8s[i] = (int8_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.i8s.i8s[i] = 0;
-            }
-            value->value.i8s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_UINT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.u8s.u8s[i] = (uint8_t) value->value.i64s.i64s[i];
+            int64_t *i64s        = value->value.i64s.i64s;
+            value->value.u8s.u8s = calloc(value->value.i64s.length, 1);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.u8s.u8s[i] = (uint8_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.u8s.u8s[i] = 0;
-            }
-            value->value.u8s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_INT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.i16s.i16s[i] = (int16_t) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.i16s.i16s = calloc(value->value.i64s.length, 2);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.i16s.i16s[i] = (int16_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.i16s.i16s[i] = 0;
-            }
-            value->value.i16s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_UINT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.u16s.u16s[i] =
-                    (uint16_t) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.u16s.u16s = calloc(value->value.i64s.length, 2);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.u16s.u16s[i] = (uint16_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.u16s.u16s[i] = 0;
-            }
-            value->value.u16s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_INT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.i32s.i32s[i] = (int32_t) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.i32s.i32s = calloc(value->value.i64s.length, 4);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.i32s.i32s[i] = (int32_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.i32s.i32s[i] = 0;
-            }
-            value->value.i32s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_UINT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.u32s.u32s[i] =
-                    (uint32_t) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.u32s.u32s = calloc(value->value.i64s.length, 4);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.u32s.u32s[i] = (uint32_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.u32s.u32s[i] = 0;
-            }
-            value->value.u32s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_UINT64:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.u64s.u64s[i] =
-                    (uint64_t) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.u64s.u64s = calloc(value->value.i64s.length, 8);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.u64s.u64s[i] = (uint64_t) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.u64s.u64s[i] = 0;
-            }
-            value->value.u64s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     case NEU_TYPE_ARRAY_FLOAT:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.f32s.f32s[i] = (float) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.f32s.f32s = calloc(value->value.i64s.length, 4);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.f32s.f32s[i] = (float) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.f32s.f32s[i] = 0;
-            }
-            value->value.f32s.length = value->value.i64s.length;
+            free(i64s);
         }
         if (value->type == NEU_TYPE_ARRAY_DOUBLE) {
-
-            for (int i = 0; i < value->value.f64s.length; i++) {
-                value->value.f32s.f32s[i] = (float) value->value.f64s.f64s[i];
+            double *f64s           = value->value.f64s.f64s;
+            value->value.f32s.f32s = calloc(value->value.f64s.length, 4);
+            for (size_t i = 0; i < value->value.f64s.length; i++) {
+                value->value.f32s.f32s[i] = (float) f64s[i];
             }
-            for (int i = value->value.f64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.f32s.f32s[i] = 0;
-            }
-            value->value.f32s.length = value->value.f64s.length;
+            free(f64s);
         }
         break;
     case NEU_TYPE_ARRAY_DOUBLE:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
-
-            for (int i = 0; i < value->value.i64s.length; i++) {
-                value->value.f64s.f64s[i] = (double) value->value.i64s.i64s[i];
+            int64_t *i64s          = value->value.i64s.i64s;
+            value->value.f64s.f64s = calloc(value->value.i64s.length, 8);
+            for (size_t i = 0; i < value->value.i64s.length; i++) {
+                value->value.f64s.f64s[i] = (double) i64s[i];
             }
-            for (int i = value->value.i64s.length; i < NEU_VALUE_SIZE; i++) {
-                value->value.f64s.f64s[i] = 0;
-            }
-            value->value.f64s.length = value->value.i64s.length;
+            free(i64s);
         }
         break;
     default:
@@ -1187,6 +1179,27 @@ int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
             } else {
                 return NEU_ERR_SUCCESS;
             }
+        case NEU_TYPE_ARRAY_UINT8:
+        case NEU_TYPE_ARRAY_INT8:
+        case NEU_TYPE_ARRAY_UINT16:
+        case NEU_TYPE_ARRAY_INT16:
+        case NEU_TYPE_ARRAY_UINT32:
+        case NEU_TYPE_ARRAY_INT32:
+        case NEU_TYPE_ARRAY_UINT64:
+        case NEU_TYPE_ARRAY_INT64:
+            if (write_type != NEU_TYPE_ARRAY_INT64) {
+                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+            } else {
+                return NEU_ERR_SUCCESS;
+            }
+        case NEU_TYPE_ARRAY_FLOAT:
+        case NEU_TYPE_ARRAY_DOUBLE:
+            if (write_type != NEU_TYPE_ARRAY_DOUBLE &&
+                write_type != NEU_TYPE_ARRAY_INT64) {
+                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+            } else {
+                return NEU_ERR_SUCCESS;
+            }
         default:
             return NEU_ERR_SUCCESS;
         }
@@ -1255,6 +1268,7 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             neu_plugin_tag_value_t tv = {
                 .tag   = neu_tag_dup(tag),
                 .value = cmd->tags[i].value.value,
+                .type  = cmd->tags[i].value.type,
             };
             utarray_push_back(tags, &tv);
         } else {
@@ -1271,6 +1285,8 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
+            neu_dvalue_t dvalue = { .type = tv->type, .value = tv->value };
+            neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
         return value_err;
@@ -1282,6 +1298,8 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
+            neu_dvalue_t dvalue = { .type = tv->type, .value = tv->value };
+            neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
         return NEU_ERR_TAG_NOT_EXIST;
@@ -2179,6 +2197,8 @@ static int report_callback(void *usr_data)
             {
                 if (tag_value->value.type == NEU_TYPE_PTR) {
                     free(tag_value->value.value.ptr.ptr);
+                } else {
+                    neu_free_dvalue(&tag_value->value);
                 }
             }
             utarray_free(data->tags);
@@ -2502,6 +2522,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout && timeout > 0) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else {
+                neu_free_dvalue(&value.value);
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
@@ -2667,6 +2689,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else {
+                neu_free_dvalue(&value.value);
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
@@ -2846,6 +2870,8 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
                 free(value.value.value.ptr.ptr);
+            } else {
+                neu_free_dvalue(&value.value);
             }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
