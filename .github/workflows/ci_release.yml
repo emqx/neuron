@@ -1,0 +1,59 @@
+name: release
+
+on: 
+  push:
+  pull_request:
+  release:
+    types:
+      - published
+
+env:
+  VERSION: 2.11.1
+  UI_VERSION: 2.6.1
+  BRANCH: v2.11
+
+jobs:
+  cross-build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        arch:
+          - [aarch64-linux-gnu, aarch64, arm64]
+          - [arm-linux-gnueabihf, armv4, armhf]
+          - [x86_64-linux-gnu, x86_64, amd64]
+    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-v2.11
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: compile
+        run: |
+          git config --global --add safe.directory $(pwd)
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch[0] }}.cmake \
+            -DCMAKE_BUILD_TYPE=Release -DDISABLE_UT=ON
+          make -j4
+
+      - name: fetch dashboard
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: "emqx/neuron-dashboard-src"
+          version: "tags/${{ env.UI_VERSION }}"
+          file: "neuron-dashboard.zip"
+          target: "neuron-dashboard.zip"
+
+      - name: unpack dashboard
+        run: |
+          unzip neuron-dashboard.zip -d ./build
+
+      - name: Create neuron release package
+        run: |
+          ./package-release.sh -p ${{ matrix.arch[2] }} -n neuron-$VERSION
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neuron-${{ matrix.arch[2] }}
+          path: |
+            neuron-*.tar.gz
