@@ -264,15 +264,17 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                 }
 
                 if (strlen(q_group_name) > 0) {
-                    UT_array *groups =
-                        neu_adapter_get_groups(el->adapter, q_group_name);
-                    if (NULL == groups || utarray_len(groups) == 0) {
-                        if (groups != NULL) {
+                    if (strstr(el->adapter->name, q_group_name) == NULL) {
+                        UT_array *groups =
+                            neu_adapter_get_groups(el->adapter, q_group_name);
+                        if (NULL == groups || utarray_len(groups) == 0) {
+                            if (groups != NULL) {
+                                utarray_free(groups);
+                            }
+                            continue;
+                        } else {
                             utarray_free(groups);
                         }
-                        continue;
-                    } else {
-                        utarray_free(groups);
                     }
                 }
 
