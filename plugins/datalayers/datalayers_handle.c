@@ -157,15 +157,22 @@ void db_write_task_consumer(neu_plugin_t *plugin)
     db_write_task_t *task = NULL;
 
     while (1) {
+        pthread_mutex_lock(&plugin->plugin_mutex);
+        if (plugin->consumer_thread_stop_flag) {
+            pthread_mutex_unlock(&plugin->plugin_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&plugin->plugin_mutex);
+
         task = task_queue_pop(plugin, &plugin->task_queue);
         if (task) {
             db_write_task_cb(task, plugin);
-
             task_free(task);
         } else {
             usleep(1000);
         }
     }
+    plog_notice(plugin, "Consumer thread exiting gracefully.\n");
 }
 
 static void tag_array_copy(void *dst, const void *src)
