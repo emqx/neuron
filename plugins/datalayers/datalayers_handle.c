@@ -48,15 +48,22 @@ static inline db_write_task_t *task_new()
 
 static inline void task_free(db_write_task_t *task)
 {
-    if (task) {
-        utarray_free(task->int_tags);
-        utarray_free(task->float_tags);
-        utarray_free(task->bool_tags);
-        utarray_free(task->string_tags);
-        free(task);
+    if (task == NULL) {
+        return;
     }
-}
 
+    if (task->freed) {
+        return;
+    }
+
+    task->freed = true;
+
+    utarray_free(task->int_tags);
+    utarray_free(task->float_tags);
+    utarray_free(task->bool_tags);
+    utarray_free(task->string_tags);
+    free(task);
+}
 void tasks_free(task_queue_t *queue)
 {
     db_write_task_t *task = queue->head;
@@ -157,15 +164,22 @@ void db_write_task_consumer(neu_plugin_t *plugin)
     db_write_task_t *task = NULL;
 
     while (1) {
+        pthread_mutex_lock(&plugin->plugin_mutex);
+        if (plugin->consumer_thread_stop_flag) {
+            pthread_mutex_unlock(&plugin->plugin_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&plugin->plugin_mutex);
+
         task = task_queue_pop(plugin, &plugin->task_queue);
         if (task) {
             db_write_task_cb(task, plugin);
-
             task_free(task);
         } else {
             usleep(1000);
         }
     }
+    plog_notice(plugin, "Consumer thread exiting gracefully.\n");
 }
 
 static void tag_array_copy(void *dst, const void *src)
@@ -369,11 +383,15 @@ int handle_trans_data(neu_plugin_t *            plugin,
     utarray_new(bool_tags, &ut_datatag_icd);
     utarray_new(string_tags, &ut_datatag_icd);
 
+    bool has_valid_tags = false;
+
     utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *, tag_meta)
     {
         if (tag_meta->value.type == NEU_TYPE_ERROR) {
             continue;
         }
+
+        has_valid_tags = true;
 
         switch (tag_meta->value.type) {
         case NEU_TYPE_BIT:
@@ -438,6 +456,16 @@ int handle_trans_data(neu_plugin_t *            plugin,
         default:
             break;
         }
+    }
+
+    if (!has_valid_tags) {
+        utarray_free(int_tags);
+        utarray_free(float_tags);
+        utarray_free(bool_tags);
+        utarray_free(string_tags);
+
+        pthread_mutex_unlock(&plugin->plugin_mutex);
+        return rv;
     }
 
     db_write_task_t *task = task_new();

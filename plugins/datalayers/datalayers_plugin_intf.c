@@ -31,6 +31,19 @@
 
 extern const neu_plugin_module_t neu_plugin_module;
 
+void create_consumer_thread(neu_plugin_t *plugin)
+{
+    pthread_mutex_lock(&plugin->plugin_mutex);
+    plugin->consumer_thread_stop_flag = false;
+    pthread_mutex_unlock(&plugin->plugin_mutex);
+
+    int status = pthread_create(&plugin->consumer_thread, NULL,
+                                (void *) db_write_task_consumer, plugin);
+    if (status != 0) {
+        plog_notice(plugin, "Failed to create consumer thread: %d\n", status);
+    }
+}
+
 neu_plugin_t *datalayers_plugin_open(void)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
@@ -39,10 +52,17 @@ neu_plugin_t *datalayers_plugin_open(void)
     return plugin;
 }
 
-void stop_consumer_thread(pthread_t *consumer_thread)
+void stop_consumer_thread(pthread_t *consumer_thread, neu_plugin_t *plugin)
 {
-    pthread_cancel(*consumer_thread);
-    pthread_join(*consumer_thread, NULL);
+    pthread_mutex_lock(&plugin->plugin_mutex);
+    plugin->consumer_thread_stop_flag = true;
+    pthread_mutex_unlock(&plugin->plugin_mutex);
+
+    int join_status = pthread_join(*consumer_thread, NULL);
+    if (join_status != 0) {
+        plog_notice(plugin, "Failed to join consumer thread: %d\n",
+                    join_status);
+    }
 }
 
 int datalayers_plugin_close(neu_plugin_t *plugin)
@@ -53,7 +73,7 @@ int datalayers_plugin_close(neu_plugin_t *plugin)
 
     plog_notice(plugin, "success to free plugin:%s", name);
 
-    stop_consumer_thread(&plugin->consumer_thread);
+    stop_consumer_thread(&plugin->consumer_thread, plugin);
 
     tasks_free(&plugin->task_queue);
 
@@ -90,7 +110,7 @@ int datalayers_plugin_uninit(neu_plugin_t *plugin)
 {
     pthread_mutex_lock(&plugin->plugin_mutex);
 
-    stop_consumer_thread(&plugin->consumer_thread);
+    stop_consumer_thread(&plugin->consumer_thread, plugin);
 
     tasks_free(&plugin->task_queue);
     datalayers_config_fini(&plugin->config);
@@ -136,7 +156,10 @@ int datalayers_plugin_config(neu_plugin_t *plugin, const char *setting)
     const char *        plugin_name = neu_plugin_module.module_name;
     datalayers_config_t config      = { 0 };
     if (plugin->client != NULL) {
+        stop_consumer_thread(&plugin->consumer_thread, plugin);
+        tasks_free(&plugin->task_queue);
         client_destroy(plugin->client);
+        plugin->client = NULL;
     }
 
     rv = plugin->parse_config(plugin, setting, &config);
@@ -153,6 +176,7 @@ int datalayers_plugin_config(neu_plugin_t *plugin, const char *setting)
 
     if (rv == 0) {
         plog_notice(plugin, "config plugin `%s` success", plugin_name);
+        create_consumer_thread(plugin);
     } else {
         plog_error(plugin, "datalayers client configuration failed");
     }
