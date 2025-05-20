@@ -49,6 +49,7 @@ typedef struct db_write_task_s {
     UT_array *              bool_tags;
     UT_array *              string_tags;
     struct db_write_task_s *next;
+    bool                    freed;
 } db_write_task_t;
 
 typedef struct {
@@ -68,6 +69,7 @@ struct neu_plugin {
     pthread_t    consumer_thread;
 
     pthread_mutex_t plugin_mutex;
+    bool            consumer_thread_stop_flag;
 
     int (*parse_config)(neu_plugin_t *plugin, const char *setting,
                         datalayers_config_t *config);
