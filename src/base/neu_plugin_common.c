@@ -72,35 +72,38 @@ int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data)
                 if (strlen(trace_id) == 32) {
                     trace = neu_otel_create_trace(trace_id, head.ctx, flags,
                                                   trace_state);
-                    scope = neu_otel_add_span(trace);
-                    neu_otel_scope_set_span_name(scope,
-                                                 nng_http_req_get_uri(nng_req));
-                    char new_span_id[36] = { 0 };
-                    neu_otel_new_span_id(new_span_id);
-                    neu_otel_scope_set_span_id(scope, new_span_id);
-                    if (strlen(span_id) == 16) {
-                        neu_otel_scope_set_parent_span_id(scope, span_id);
-                    }
-                    neu_otel_scope_set_span_flags(scope, flags);
-                    neu_otel_scope_set_span_start_time(scope, neu_time_ns());
-
-                    neu_otel_scope_add_span_attr_int(scope, "thread id",
-                                                     (int64_t) pthread_self());
-
-                    neu_otel_scope_add_span_attr_string(scope, "HTTP method",
-                                                        http_method);
-
-                    if (strcmp(http_method, "POST") == 0) {
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
-                            neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
+                    if (trace) {
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(
+                            scope, nng_http_req_get_uri(nng_req));
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        if (strlen(span_id) == 16) {
+                            neu_otel_scope_set_parent_span_id(scope, span_id);
                         }
+                        neu_otel_scope_set_span_flags(scope, flags);
+                        neu_otel_scope_set_span_start_time(scope,
+                                                           neu_time_ns());
 
-                        free(req_data);
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
+
+                        neu_otel_scope_add_span_attr_string(
+                            scope, "HTTP method", http_method);
+
+                        if (strcmp(http_method, "POST") == 0) {
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
@@ -119,26 +122,29 @@ int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data)
                 if (strlen(trace_id) == 32) {
                     trace = neu_otel_create_trace(trace_id, head.ctx, flags,
                                                   trace_state);
-                    scope = neu_otel_add_span(trace);
-                    neu_otel_scope_set_span_name(scope, "MQTT command");
-                    char new_span_id[36] = { 0 };
-                    neu_otel_new_span_id(new_span_id);
-                    neu_otel_scope_set_span_id(scope, new_span_id);
-                    if (strlen(span_id) == 16) {
-                        neu_otel_scope_set_parent_span_id(scope, span_id);
-                    }
-                    neu_otel_scope_set_span_flags(scope, flags);
-                    neu_otel_scope_set_span_start_time(scope, neu_time_ns());
+                    if (trace) {
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(scope, "MQTT command");
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        if (strlen(span_id) == 16) {
+                            neu_otel_scope_set_parent_span_id(scope, span_id);
+                        }
+                        neu_otel_scope_set_span_flags(scope, flags);
+                        neu_otel_scope_set_span_start_time(scope,
+                                                           neu_time_ns());
 
-                    neu_otel_scope_add_span_attr_int(scope, "thread id",
-                                                     (int64_t) pthread_self());
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
 
-                    neu_otel_scope_add_span_attr_string(
-                        scope, "MQTT command uuid", d_mqtt->uuid);
-
-                    if (d_mqtt->payload) {
                         neu_otel_scope_add_span_attr_string(
-                            scope, "MQTT command payload", d_mqtt->payload);
+                            scope, "MQTT command uuid", d_mqtt->uuid);
+
+                        if (d_mqtt->payload) {
+                            neu_otel_scope_add_span_attr_string(
+                                scope, "MQTT command payload", d_mqtt->payload);
+                        }
                     }
                 }
             }
@@ -157,24 +163,28 @@ int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data)
                         uint32_t flags = 0;
                         trace = neu_otel_create_trace(trace_id, head.ctx, flags,
                                                       trace_state);
-                        scope = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(scope, "ekuiper command");
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(scope,
+                                                         "ekuiper command");
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
+
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
+
+                            neu_otel_scope_add_span_attr_string(
+                                scope, "ekuiper command playload",
+                                (char *) head.ctx + 48);
                         }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
-
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
-
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "ekuiper command playload",
-                            (char *) head.ctx + 48);
                     }
                 }
             }

@@ -2125,7 +2125,7 @@ static int report_callback(void *usr_data)
     neu_otel_trace_ctx trans_trace = NULL;
     neu_otel_scope_ctx trans_scope = NULL;
     if (neu_otel_data_is_started() && trace_ctx) {
-        trans_trace = neu_otel_find_trace(trace_ctx);
+        trans_trace = neu_otel_find_trace2(trace_ctx);
         if (trans_trace) {
             data->trace_ctx      = trace_ctx;
             char new_span_id[36] = { 0 };

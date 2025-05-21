@@ -57,6 +57,7 @@ typedef struct {
     UT_array *                                  scopes;
     pthread_mutex_t                             mutex;
     ProtobufCBinaryData                         internal_parent_span;
+    bool                                        report_flag;
 } trace_ctx_t;
 
 typedef struct {
@@ -206,9 +207,8 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
     HASH_FIND(hh, traces_table, &req_ctx, sizeof(req_ctx), find);
 
     if (find) {
-        HASH_DEL(traces_table, find);
-        neu_otel_free_trace(find->ctx);
-        free(find);
+        pthread_mutex_unlock(&table_mutex);
+        return NULL;
     }
 
     pthread_mutex_unlock(&table_mutex);
@@ -493,6 +493,34 @@ neu_otel_trace_ctx neu_otel_find_trace(void *req_ctx)
             find->ctx->expected_span_num <= 0) {
             return NULL;
         } else {
+            return (void *) find->ctx;
+        }
+    } else {
+        return NULL;
+    }
+}
+
+neu_otel_trace_ctx neu_otel_find_trace2(void *req_ctx)
+{
+    trace_ctx_table_ele_t *find = NULL;
+
+    pthread_mutex_lock(&table_mutex);
+
+    HASH_FIND(hh, traces_table, &req_ctx, sizeof(req_ctx), find);
+
+    pthread_mutex_unlock(&table_mutex);
+
+    if (find) {
+        if ((find->ctx->final &&
+             find->ctx->span_num ==
+                 find->ctx->trace_data.resource_spans[0]
+                     ->scope_spans[0]
+                     ->n_spans &&
+             find->ctx->expected_span_num <= 0) ||
+            find->ctx->report_flag) {
+            return NULL;
+        } else {
+            find->ctx->report_flag = true;
             return (void *) find->ctx;
         }
     } else {
