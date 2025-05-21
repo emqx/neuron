@@ -234,36 +234,39 @@ void handle_write(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
@@ -445,36 +448,39 @@ void handle_write_tags(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
@@ -775,36 +781,39 @@ void handle_write_gtags(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }

@@ -376,21 +376,23 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                     trace                    = neu_otel_create_trace(
                         new_trace_id, (void *) (intptr_t) stack->read_seq, 0,
                         trace_state);
-                    scope = neu_otel_add_span(trace);
-                    neu_otel_scope_set_span_name(scope, "driver cmd send");
-                    char new_span_id[36] = { 0 };
-                    neu_otel_new_span_id(new_span_id);
-                    neu_otel_scope_set_span_id(scope, new_span_id);
-                    neu_otel_scope_set_span_flags(scope, 0);
-                    neu_otel_scope_set_span_start_time(scope, ts_start);
+                    if (trace) {
+                        scope = neu_otel_add_span(trace);
+                        neu_otel_scope_set_span_name(scope, "driver cmd send");
+                        char new_span_id[36] = { 0 };
+                        neu_otel_new_span_id(new_span_id);
+                        neu_otel_scope_set_span_id(scope, new_span_id);
+                        neu_otel_scope_set_span_flags(scope, 0);
+                        neu_otel_scope_set_span_start_time(scope, ts_start);
 
-                    neu_otel_scope_add_span_attr_int(scope, "thread id",
-                                                     (int64_t) pthread_self());
+                        neu_otel_scope_add_span_attr_int(
+                            scope, "thread id", (int64_t) pthread_self());
 
-                    neu_otel_scope_add_span_attr_string(
-                        scope, "node",
-                        ((neu_plugin_t *) stack->ctx)->common.name);
-                    neu_otel_scope_set_span_end_time(scope, neu_time_ns());
+                        neu_otel_scope_add_span_attr_string(
+                            scope, "node",
+                            ((neu_plugin_t *) stack->ctx)->common.name);
+                        neu_otel_scope_set_span_end_time(scope, neu_time_ns());
+                    }
                 }
             }
         }
