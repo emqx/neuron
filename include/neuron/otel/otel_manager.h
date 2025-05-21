@@ -37,6 +37,7 @@ neu_otel_trace_ctx neu_otel_create_trace(const char *trace_id, void *req_ctx,
                                          const char *tracestate);
 
 neu_otel_trace_ctx neu_otel_find_trace(void *req_ctx);
+neu_otel_trace_ctx neu_otel_find_trace2(void *req_ctx);
 
 void neu_otel_trace_set_final(neu_otel_trace_ctx ctx);
 

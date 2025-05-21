@@ -350,29 +350,34 @@ static int json_value_to_tag_value(union neu_json_value *req,
     case NEU_JSON_ARRAY_BOOL:
         value->type               = NEU_TYPE_ARRAY_BOOL;
         value->value.bools.length = req->val_array_bool.length;
-        for (int i = 0; i < req->val_array_bool.length; i++) {
-            value->value.bools.bools[i] = req->val_array_bool.bools[i];
-        }
-        break;
-    case NEU_JSON_ARRAY_DOUBLE:
-        value->type              = NEU_TYPE_ARRAY_DOUBLE;
-        value->value.f64s.length = req->val_array_double.length;
-        for (int i = 0; i < req->val_array_double.length; i++) {
-            value->value.f64s.f64s[i] = req->val_array_double.f64s[i];
-        }
+        value->value.bools.bools =
+            calloc(req->val_array_bool.length, sizeof(bool));
+        memcpy(value->value.bools.bools, req->val_array_bool.bools,
+               sizeof(bool) * req->val_array_bool.length);
         break;
     case NEU_JSON_ARRAY_INT64:
         value->type              = NEU_TYPE_ARRAY_INT64;
         value->value.i64s.length = req->val_array_int64.length;
-        for (int i = 0; i < req->val_array_int64.length; i++) {
-            value->value.i64s.i64s[i] = req->val_array_int64.i64s[i];
-        }
+        value->value.i64s.i64s =
+            calloc(req->val_array_int64.length, sizeof(int64_t));
+        memcpy(value->value.i64s.i64s, req->val_array_int64.i64s,
+               sizeof(int64_t) * req->val_array_int64.length);
+        break;
+    case NEU_JSON_ARRAY_DOUBLE:
+        value->type              = NEU_TYPE_ARRAY_DOUBLE;
+        value->value.f64s.length = req->val_array_double.length;
+        value->value.f64s.f64s =
+            calloc(req->val_array_double.length, sizeof(double));
+        memcpy(value->value.f64s.f64s, req->val_array_double.f64s,
+               sizeof(double) * req->val_array_double.length);
         break;
     case NEU_JSON_ARRAY_STR:
         value->type              = NEU_TYPE_ARRAY_STRING;
         value->value.strs.length = req->val_array_str.length;
-        for (int i = 0; i < req->val_array_str.length; i++) {
-            value->value.strs.strs[i] = req->val_array_str.p_strs[i];
+        value->value.strs.strs =
+            calloc(req->val_array_str.length, sizeof(char *));
+        for (size_t i = 0; i < req->val_array_str.length; i++) {
+            value->value.strs.strs[i] = strdup(req->val_array_str.p_strs[i]);
         }
         break;
     case NEU_JSON_OBJECT:

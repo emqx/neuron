@@ -234,57 +234,45 @@ void handle_write(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
 
             if (req->t == NEU_JSON_STR &&
                 strlen(req->value.val_str) >= NEU_VALUE_SIZE) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
-                                      result_error);
-                });
-                if (neu_otel_control_is_started() && trace_flag) {
-                    neu_otel_scope_set_status_code2(
-                        scope, NEU_OTEL_STATUS_ERROR, NEU_ERR_STRING_TOO_LONG);
-                    neu_otel_scope_set_span_end_time(scope, neu_time_ns());
-                    neu_otel_trace_set_final(trace);
-                }
-                return;
-            }
-
-            if (req->t == NEU_JSON_ARRAY_INT64 &&
-                req->value.val_array_int64.length > NEU_ARRAY_SIZE) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
                     neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
                                       result_error);
@@ -341,7 +329,9 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_ARRAY_INT64:
                 cmd.value.type              = NEU_TYPE_ARRAY_INT64;
                 cmd.value.value.i64s.length = req->value.val_array_int64.length;
-                for (int i = 0; i < req->value.val_array_int64.length; i++) {
+                cmd.value.value.i64s.i64s =
+                    calloc(req->value.val_array_int64.length, sizeof(int64_t));
+                for (size_t i = 0; i < req->value.val_array_int64.length; i++) {
                     cmd.value.value.i64s.i64s[i] =
                         req->value.val_array_int64.i64s[i];
                 }
@@ -350,7 +340,10 @@ void handle_write(nng_aio *aio)
                 cmd.value.type = NEU_TYPE_ARRAY_DOUBLE;
                 cmd.value.value.f64s.length =
                     req->value.val_array_double.length;
-                for (int i = 0; i < req->value.val_array_double.length; i++) {
+                cmd.value.value.f64s.f64s =
+                    calloc(req->value.val_array_double.length, sizeof(double));
+                for (size_t i = 0; i < req->value.val_array_double.length;
+                     i++) {
                     cmd.value.value.f64s.f64s[i] =
                         req->value.val_array_double.f64s[i];
                 }
@@ -358,7 +351,9 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_ARRAY_BOOL:
                 cmd.value.type               = NEU_TYPE_ARRAY_BOOL;
                 cmd.value.value.bools.length = req->value.val_array_bool.length;
-                for (int i = 0; i < req->value.val_array_bool.length; i++) {
+                cmd.value.value.bools.bools =
+                    calloc(req->value.val_array_bool.length, sizeof(bool));
+                for (size_t i = 0; i < req->value.val_array_bool.length; i++) {
                     cmd.value.value.bools.bools[i] =
                         req->value.val_array_bool.bools[i];
                 }
@@ -366,9 +361,11 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_ARRAY_STR:
                 cmd.value.type              = NEU_TYPE_ARRAY_STRING;
                 cmd.value.value.strs.length = req->value.val_array_str.length;
-                for (int i = 0; i < req->value.val_array_str.length; i++) {
+                cmd.value.value.strs.strs =
+                    calloc(req->value.val_array_str.length, sizeof(char *));
+                for (size_t i = 0; i < req->value.val_array_str.length; i++) {
                     cmd.value.value.strs.strs[i] =
-                        req->value.val_array_str.p_strs[i];
+                        strdup(req->value.val_array_str.p_strs[i]);
                 }
                 break;
             case NEU_JSON_OBJECT:
@@ -451,36 +448,39 @@ void handle_write_tags(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
@@ -546,40 +546,48 @@ void handle_write_tags(nng_aio *aio)
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_INT64;
                     cmd.tags[i].value.value.i64s.length =
                         req->tags[i].value.val_array_int64.length;
-                    for (int k = 0;
-                         k < req->tags[i].value.val_array_int64.length; k++) {
-                        cmd.tags[i].value.value.i64s.i64s[k] =
-                            req->tags[i].value.val_array_int64.i64s[k];
-                    }
+                    cmd.tags[i].value.value.i64s.i64s =
+                        calloc(req->tags[i].value.val_array_int64.length,
+                               sizeof(int64_t));
+                    memcpy(cmd.tags[i].value.value.i64s.i64s,
+                           req->tags[i].value.val_array_int64.i64s,
+                           sizeof(int64_t) *
+                               req->tags[i].value.val_array_int64.length);
                     break;
                 case NEU_JSON_ARRAY_DOUBLE:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_DOUBLE;
                     cmd.tags[i].value.value.f64s.length =
                         req->tags[i].value.val_array_double.length;
-                    for (int k = 0;
-                         k < req->tags[i].value.val_array_double.length; k++) {
-                        cmd.tags[i].value.value.f64s.f64s[k] =
-                            req->tags[i].value.val_array_double.f64s[k];
-                    }
+                    cmd.tags[i].value.value.f64s.f64s =
+                        calloc(req->tags[i].value.val_array_double.length,
+                               sizeof(double));
+                    memcpy(cmd.tags[i].value.value.f64s.f64s,
+                           req->tags[i].value.val_array_double.f64s,
+                           sizeof(double) *
+                               req->tags[i].value.val_array_double.length);
                     break;
                 case NEU_JSON_ARRAY_BOOL:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_BOOL;
                     cmd.tags[i].value.value.bools.length =
                         req->tags[i].value.val_array_bool.length;
-                    for (int k = 0;
-                         k < req->tags[i].value.val_array_bool.length; k++) {
-                        cmd.tags[i].value.value.bools.bools[k] =
-                            req->tags[i].value.val_array_bool.bools[k];
-                    }
+                    cmd.tags[i].value.value.bools.bools = calloc(
+                        req->tags[i].value.val_array_bool.length, sizeof(bool));
+                    memcpy(cmd.tags[i].value.value.bools.bools,
+                           req->tags[i].value.val_array_bool.bools,
+                           sizeof(bool) *
+                               req->tags[i].value.val_array_bool.length);
                     break;
                 case NEU_JSON_ARRAY_STR:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_STRING;
                     cmd.tags[i].value.value.strs.length =
                         req->tags[i].value.val_array_str.length;
-                    for (int k = 0; k < req->tags[i].value.val_array_str.length;
-                         k++) {
+                    cmd.tags[i].value.value.strs.strs =
+                        calloc(req->tags[i].value.val_array_str.length,
+                               sizeof(char *));
+                    for (size_t k = 0;
+                         k < req->tags[i].value.val_array_str.length; k++) {
                         cmd.tags[i].value.value.strs.strs[k] =
-                            req->tags[i].value.val_array_str.p_strs[k];
+                            strdup(req->tags[i].value.val_array_str.p_strs[k]);
                     }
                     break;
                 case NEU_JSON_OBJECT:
@@ -669,34 +677,66 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_INT64;
                 cmd->groups[i].tags[k].value.value.i64s.length =
                     req->groups[i].tags[k].value.val_array_int64.length;
-                for (int j = 0;
-                     j < req->groups[i].tags[k].value.val_array_int64.length;
-                     j++) {
-                    cmd->groups[i].tags[k].value.value.i64s.i64s[j] =
-                        req->groups[i].tags[k].value.val_array_int64.i64s[j];
-                }
+
+                cmd->groups[i].tags[k].value.value.i64s.i64s =
+                    calloc(sizeof(int64_t),
+                           req->groups[i].tags[k].value.val_array_int64.length);
+
+                memcpy(cmd->groups[i].tags[k].value.value.i64s.i64s,
+                       req->groups[i].tags[k].value.val_array_int64.i64s,
+                       sizeof(int64_t) *
+                           req->groups[i].tags[k].value.val_array_int64.length);
+
                 break;
             case NEU_JSON_ARRAY_DOUBLE:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_DOUBLE;
                 cmd->groups[i].tags[k].value.value.f64s.length =
                     req->groups[i].tags[k].value.val_array_double.length;
-                for (int j = 0;
-                     j < req->groups[i].tags[k].value.val_array_double.length;
-                     j++) {
-                    cmd->groups[i].tags[k].value.value.f64s.f64s[j] =
-                        req->groups[i].tags[k].value.val_array_double.f64s[j];
-                }
+
+                cmd->groups[i].tags[k].value.value.f64s.f64s = calloc(
+                    sizeof(double),
+                    req->groups[i].tags[k].value.val_array_double.length);
+                memcpy(
+                    cmd->groups[i].tags[k].value.value.f64s.f64s,
+                    req->groups[i].tags[k].value.val_array_double.f64s,
+                    sizeof(double) *
+                        req->groups[i].tags[k].value.val_array_double.length);
+
                 break;
             case NEU_JSON_ARRAY_BOOL:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_BOOL;
                 cmd->groups[i].tags[k].value.value.bools.length =
                     req->groups[i].tags[k].value.val_array_bool.length;
-                for (int j = 0;
-                     j < req->groups[i].tags[k].value.val_array_bool.length;
+
+                cmd->groups[i].tags[k].value.value.bools.bools =
+                    calloc(sizeof(bool),
+                           req->groups[i].tags[k].value.val_array_bool.length);
+                memcpy(cmd->groups[i].tags[k].value.value.bools.bools,
+                       req->groups[i].tags[k].value.val_array_bool.bools,
+                       sizeof(bool) *
+                           req->groups[i].tags[k].value.val_array_bool.length);
+
+                break;
+            case NEU_JSON_ARRAY_STR:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_STRING;
+                cmd->groups[i].tags[k].value.value.strs.length =
+                    req->groups[i].tags[k].value.val_array_str.length;
+
+                cmd->groups[i].tags[k].value.value.strs.strs =
+                    calloc(sizeof(char *),
+                           req->groups[i].tags[k].value.val_array_str.length);
+                for (size_t j = 0;
+                     j < req->groups[i].tags[k].value.val_array_str.length;
                      j++) {
-                    cmd->groups[i].tags[k].value.value.bools.bools[j] =
-                        req->groups[i].tags[k].value.val_array_bool.bools[j];
+                    cmd->groups[i].tags[k].value.value.strs.strs[j] = strdup(
+                        req->groups[i].tags[k].value.val_array_str.p_strs[j]);
                 }
+
+                break;
+            case NEU_JSON_OBJECT:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_CUSTOM;
+                cmd->groups[i].tags[k].value.value.json =
+                    req->groups[i].tags[k].value.val_object;
                 break;
             default:
                 assert(false);
@@ -741,36 +781,39 @@ void handle_write_gtags(nng_aio *aio)
                         trace_flag = true;
                         trace      = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
-                        scope      = neu_otel_add_span(trace);
-                        neu_otel_scope_set_span_name(
-                            scope, nng_http_req_get_uri(nng_req));
-                        char new_span_id[36] = { 0 };
-                        neu_otel_new_span_id(new_span_id);
-                        neu_otel_scope_set_span_id(scope, new_span_id);
-                        if (strlen(span_id) == 16) {
-                            neu_otel_scope_set_parent_span_id(scope, span_id);
-                        }
-                        neu_otel_scope_set_span_flags(scope, flags);
-                        neu_otel_scope_set_span_start_time(scope,
-                                                           neu_time_ns());
+                        if (trace) {
+                            scope = neu_otel_add_span(trace);
+                            neu_otel_scope_set_span_name(
+                                scope, nng_http_req_get_uri(nng_req));
+                            char new_span_id[36] = { 0 };
+                            neu_otel_new_span_id(new_span_id);
+                            neu_otel_scope_set_span_id(scope, new_span_id);
+                            if (strlen(span_id) == 16) {
+                                neu_otel_scope_set_parent_span_id(scope,
+                                                                  span_id);
+                            }
+                            neu_otel_scope_set_span_flags(scope, flags);
+                            neu_otel_scope_set_span_start_time(scope,
+                                                               neu_time_ns());
 
-                        neu_otel_scope_add_span_attr_int(
-                            scope, "thread id", (int64_t) pthread_self());
+                            neu_otel_scope_add_span_attr_int(
+                                scope, "thread id", (int64_t) pthread_self());
 
-                        neu_otel_scope_add_span_attr_string(
-                            scope, "HTTP method",
-                            nng_http_req_get_method(nng_req));
-
-                        char * req_data      = NULL;
-                        size_t req_data_size = 0;
-
-                        if (neu_http_get_body((aio), (void **) &req_data,
-                                              &req_data_size) == 0) {
                             neu_otel_scope_add_span_attr_string(
-                                scope, "HTTP body", req_data);
-                        }
+                                scope, "HTTP method",
+                                nng_http_req_get_method(nng_req));
 
-                        free(req_data);
+                            char * req_data      = NULL;
+                            size_t req_data_size = 0;
+
+                            if (neu_http_get_body((aio), (void **) &req_data,
+                                                  &req_data_size) == 0) {
+                                neu_otel_scope_add_span_attr_string(
+                                    scope, "HTTP body", req_data);
+                            }
+
+                            free(req_data);
+                        }
                     }
                 }
             }
@@ -826,6 +869,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
                  j++) {
                 free(api_res.tags[i].value.val_array_str.p_strs[j]);
             }
+            free(api_res.tags[i].value.val_array_str.p_strs);
         }
     }
     neu_http_ok(aio, result);
@@ -973,6 +1017,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
                  j++) {
                 free(api_res.tags[i].value.val_array_str.p_strs[j]);
             }
+            free(api_res.tags[i].value.val_array_str.p_strs);
         }
     }
     neu_http_ok(aio, result);
