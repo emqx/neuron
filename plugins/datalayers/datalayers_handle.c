@@ -48,15 +48,22 @@ static inline db_write_task_t *task_new()
 
 static inline void task_free(db_write_task_t *task)
 {
-    if (task) {
-        utarray_free(task->int_tags);
-        utarray_free(task->float_tags);
-        utarray_free(task->bool_tags);
-        utarray_free(task->string_tags);
-        free(task);
+    if (task == NULL) {
+        return;
     }
-}
 
+    if (task->freed) {
+        return;
+    }
+
+    task->freed = true;
+
+    utarray_free(task->int_tags);
+    utarray_free(task->float_tags);
+    utarray_free(task->bool_tags);
+    utarray_free(task->string_tags);
+    free(task);
+}
 void tasks_free(task_queue_t *queue)
 {
     db_write_task_t *task = queue->head;
@@ -99,7 +106,7 @@ void task_queue_push(neu_plugin_t *plugin, db_write_task_t *task)
 
 db_write_task_t *task_queue_pop(neu_plugin_t *plugin, task_queue_t *queue)
 {
-    if (queue->size == 0) {
+    if (queue == NULL || queue->head == NULL || queue->size == 0) {
         return NULL;
     }
 
@@ -118,38 +125,59 @@ db_write_task_t *task_queue_pop(neu_plugin_t *plugin, task_queue_t *queue)
 
 static void db_write_task_cb(db_write_task_t *task, neu_plugin_t *plugin)
 {
-    int ret = 0;
+    int ret;
+
     if (utarray_len(task->int_tags) > 0) {
         ret = client_insert(plugin->client, INT_TYPE,
                             utarray_eltptr(task->int_tags, 0),
                             utarray_len(task->int_tags));
+        if (ret != 0) {
+            plog_error(plugin, "Failed to insert INT_TYPE data, disconnected");
+            goto handle_error;
+        }
     }
 
     if (utarray_len(task->float_tags) > 0) {
         ret = client_insert(plugin->client, FLOAT_TYPE,
                             utarray_eltptr(task->float_tags, 0),
                             utarray_len(task->float_tags));
+        if (ret != 0) {
+            plog_error(plugin,
+                       "Failed to insert FLOAT_TYPE data, disconnected");
+            goto handle_error;
+        }
     }
 
     if (utarray_len(task->bool_tags) > 0) {
         ret = client_insert(plugin->client, BOOL_TYPE,
                             utarray_eltptr(task->bool_tags, 0),
                             utarray_len(task->bool_tags));
+        if (ret != 0) {
+            plog_error(plugin, "Failed to insert BOOL_TYPE data, disconnected");
+            goto handle_error;
+        }
     }
 
     if (utarray_len(task->string_tags) > 0) {
         ret = client_insert(plugin->client, STRING_TYPE,
                             utarray_eltptr(task->string_tags, 0),
                             utarray_len(task->string_tags));
-    }
-
-    if (ret != 0) {
-        plog_error(plugin, "insert data to datalayers failed, disconnected");
-        if (plugin->client) {
-            client_destroy(plugin->client);
-            plugin->client = NULL;
+        if (ret != 0) {
+            plog_error(plugin,
+                       "Failed to insert STRING_TYPE data, disconnected");
+            goto handle_error;
         }
     }
+
+    return;
+
+handle_error:
+    pthread_mutex_lock(&plugin->plugin_mutex);
+    if (plugin->client) {
+        client_destroy(plugin->client);
+        plugin->client = NULL;
+    }
+    pthread_mutex_unlock(&plugin->plugin_mutex);
 }
 
 void db_write_task_consumer(neu_plugin_t *plugin)
@@ -157,15 +185,22 @@ void db_write_task_consumer(neu_plugin_t *plugin)
     db_write_task_t *task = NULL;
 
     while (1) {
+        pthread_mutex_lock(&plugin->plugin_mutex);
+        if (plugin->consumer_thread_stop_flag) {
+            pthread_mutex_unlock(&plugin->plugin_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&plugin->plugin_mutex);
+
         task = task_queue_pop(plugin, &plugin->task_queue);
         if (task) {
             db_write_task_cb(task, plugin);
-
             task_free(task);
         } else {
             usleep(1000);
         }
     }
+    plog_notice(plugin, "Consumer thread exiting gracefully.\n");
 }
 
 static void tag_array_copy(void *dst, const void *src)
@@ -369,22 +404,74 @@ int handle_trans_data(neu_plugin_t *            plugin,
     utarray_new(bool_tags, &ut_datatag_icd);
     utarray_new(string_tags, &ut_datatag_icd);
 
+    bool has_valid_tags = false;
+
     utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *, tag_meta)
     {
         if (tag_meta->value.type == NEU_TYPE_ERROR) {
             continue;
         }
 
+        has_valid_tags = true;
+
         switch (tag_meta->value.type) {
-        case NEU_TYPE_BIT:
-        case NEU_TYPE_INT8:
-        case NEU_TYPE_UINT8:
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_UINT32:
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64: {
+        case NEU_TYPE_BIT: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT8: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT8: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT16: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i16 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT16: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u16 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT32: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i32 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT32: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u32 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT64: {
             datatag tag = { trans_data->driver,
                             trans_data->group,
                             tag_meta->tag,
@@ -392,7 +479,22 @@ int handle_trans_data(neu_plugin_t *            plugin,
                             INT_TYPE };
             utarray_push_back(int_tags, &tag);
         } break;
-        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_UINT64: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u64 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_FLOAT: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .float_value = tag_meta->value.value.f32 },
+                            FLOAT_TYPE };
+            utarray_push_back(float_tags, &tag);
+        } break;
         case NEU_TYPE_DOUBLE: {
             datatag tag = { trans_data->driver,
                             trans_data->group,
@@ -438,6 +540,16 @@ int handle_trans_data(neu_plugin_t *            plugin,
         default:
             break;
         }
+    }
+
+    if (!has_valid_tags) {
+        utarray_free(int_tags);
+        utarray_free(float_tags);
+        utarray_free(bool_tags);
+        utarray_free(string_tags);
+
+        pthread_mutex_unlock(&plugin->plugin_mutex);
+        return rv;
     }
 
     db_write_task_t *task = task_new();
