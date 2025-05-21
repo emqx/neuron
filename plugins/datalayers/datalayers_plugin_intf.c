@@ -189,8 +189,12 @@ int datalayers_plugin_start(neu_plugin_t *plugin)
     const char *plugin_name = neu_plugin_module.module_name;
 
     if (NULL == plugin->client) {
-        plog_error(plugin, "datalayers client_create failed");
-        return NEU_ERR_DATALAYERS_CONNECT_FAILURE;
+        plog_error(plugin, "datalayers started failed, reconnect");
+        int ret = config_datalayers_client(plugin, &plugin->config);
+        if (ret != 0) {
+            plog_error(plugin, "datalayers started failed");
+            return NEU_ERR_DATALAYERS_CONNECT_FAILURE;
+        }
     }
 
     plog_notice(plugin, "start plugin `%s` success", plugin_name);

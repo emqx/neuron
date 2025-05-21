@@ -415,15 +415,63 @@ int handle_trans_data(neu_plugin_t *            plugin,
         has_valid_tags = true;
 
         switch (tag_meta->value.type) {
-        case NEU_TYPE_BIT:
-        case NEU_TYPE_INT8:
-        case NEU_TYPE_UINT8:
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_UINT32:
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64: {
+        case NEU_TYPE_BIT: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT8: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT8: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u8 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT16: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i16 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT16: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u16 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT32: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.i32 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_UINT32: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u32 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_INT64: {
             datatag tag = { trans_data->driver,
                             trans_data->group,
                             tag_meta->tag,
@@ -431,7 +479,22 @@ int handle_trans_data(neu_plugin_t *            plugin,
                             INT_TYPE };
             utarray_push_back(int_tags, &tag);
         } break;
-        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_UINT64: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .int_value = tag_meta->value.value.u64 },
+                            INT_TYPE };
+            utarray_push_back(int_tags, &tag);
+        } break;
+        case NEU_TYPE_FLOAT: {
+            datatag tag = { trans_data->driver,
+                            trans_data->group,
+                            tag_meta->tag,
+                            { .float_value = tag_meta->value.value.f32 },
+                            FLOAT_TYPE };
+            utarray_push_back(float_tags, &tag);
+        } break;
         case NEU_TYPE_DOUBLE: {
             datatag tag = { trans_data->driver,
                             trans_data->group,
