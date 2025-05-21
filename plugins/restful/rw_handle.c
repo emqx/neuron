@@ -231,11 +231,11 @@ void handle_write(nng_aio *aio)
                     neu_otel_split_traceparent(trace_parent, trace_id, span_id,
                                                &flags);
                     if (strlen(trace_id) == 32) {
-                        trace_flag = true;
-                        trace      = neu_otel_create_trace(trace_id, header.ctx,
+                        trace = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
                         if (trace) {
-                            scope = neu_otel_add_span(trace);
+                            trace_flag = true;
+                            scope      = neu_otel_add_span(trace);
                             neu_otel_scope_set_span_name(
                                 scope, nng_http_req_get_uri(nng_req));
                             char new_span_id[36] = { 0 };
@@ -445,11 +445,11 @@ void handle_write_tags(nng_aio *aio)
                     neu_otel_split_traceparent(trace_parent, trace_id, span_id,
                                                &flags);
                     if (strlen(trace_id) == 32) {
-                        trace_flag = true;
-                        trace      = neu_otel_create_trace(trace_id, header.ctx,
+                        trace = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
                         if (trace) {
-                            scope = neu_otel_add_span(trace);
+                            trace_flag = true;
+                            scope      = neu_otel_add_span(trace);
                             neu_otel_scope_set_span_name(
                                 scope, nng_http_req_get_uri(nng_req));
                             char new_span_id[36] = { 0 };
@@ -778,11 +778,11 @@ void handle_write_gtags(nng_aio *aio)
                     neu_otel_split_traceparent(trace_parent, trace_id, span_id,
                                                &flags);
                     if (strlen(trace_id) == 32) {
-                        trace_flag = true;
-                        trace      = neu_otel_create_trace(trace_id, header.ctx,
+                        trace = neu_otel_create_trace(trace_id, header.ctx,
                                                       flags, trace_state);
                         if (trace) {
-                            scope = neu_otel_add_span(trace);
+                            trace_flag = true;
+                            scope      = neu_otel_add_span(trace);
                             neu_otel_scope_set_span_name(
                                 scope, nng_http_req_get_uri(nng_req));
                             char new_span_id[36] = { 0 };
