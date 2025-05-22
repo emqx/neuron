@@ -172,12 +172,12 @@ static void db_write_task_cb(db_write_task_t *task, neu_plugin_t *plugin)
     return;
 
 handle_error:
-    pthread_mutex_lock(&plugin->plugin_mutex);
+    pthread_rwlock_wrlock(&plugin->plugin_mutex);
     if (plugin->client) {
         client_destroy(plugin->client);
         plugin->client = NULL;
     }
-    pthread_mutex_unlock(&plugin->plugin_mutex);
+    pthread_rwlock_unlock(&plugin->plugin_mutex);
 }
 
 void db_write_task_consumer(neu_plugin_t *plugin)
@@ -185,12 +185,12 @@ void db_write_task_consumer(neu_plugin_t *plugin)
     db_write_task_t *task = NULL;
 
     while (1) {
-        pthread_mutex_lock(&plugin->plugin_mutex);
+        pthread_rwlock_rdlock(&plugin->plugin_mutex);
         if (plugin->consumer_thread_stop_flag) {
-            pthread_mutex_unlock(&plugin->plugin_mutex);
+            pthread_rwlock_unlock(&plugin->plugin_mutex);
             break;
         }
-        pthread_mutex_unlock(&plugin->plugin_mutex);
+        pthread_rwlock_unlock(&plugin->plugin_mutex);
 
         task = task_queue_pop(plugin, &plugin->task_queue);
         if (task) {
@@ -376,15 +376,15 @@ int handle_trans_data(neu_plugin_t *            plugin,
 {
     int rv = 0;
 
-    pthread_mutex_lock(&plugin->plugin_mutex);
+    pthread_rwlock_rdlock(&plugin->plugin_mutex);
 
     if (NULL == plugin->client) {
-        pthread_mutex_unlock(&plugin->plugin_mutex);
+        pthread_rwlock_unlock(&plugin->plugin_mutex);
         return NEU_ERR_DATALAYERS_IS_NULL;
     }
 
     if (plugin->common.link_state != NEU_NODE_LINK_STATE_CONNECTED) {
-        pthread_mutex_unlock(&plugin->plugin_mutex);
+        pthread_rwlock_unlock(&plugin->plugin_mutex);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
@@ -393,7 +393,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
     if (NULL == route) {
         plog_error(plugin, "no route for driver:%s group:%s",
                    trans_data->driver, trans_data->group);
-        pthread_mutex_unlock(&plugin->plugin_mutex);
+        pthread_rwlock_unlock(&plugin->plugin_mutex);
         return NEU_ERR_GROUP_NOT_SUBSCRIBE;
     }
 
@@ -548,7 +548,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
         utarray_free(bool_tags);
         utarray_free(string_tags);
 
-        pthread_mutex_unlock(&plugin->plugin_mutex);
+        pthread_rwlock_unlock(&plugin->plugin_mutex);
         return rv;
     }
 
@@ -560,7 +560,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
 
     task_queue_push(plugin, task);
 
-    pthread_mutex_unlock(&plugin->plugin_mutex);
+    pthread_rwlock_unlock(&plugin->plugin_mutex);
 
     return rv;
 }

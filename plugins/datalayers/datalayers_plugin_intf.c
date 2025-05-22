@@ -33,9 +33,9 @@ extern const neu_plugin_module_t neu_plugin_module;
 
 void create_consumer_thread(neu_plugin_t *plugin)
 {
-    pthread_mutex_lock(&plugin->plugin_mutex);
+    pthread_rwlock_wrlock(&plugin->plugin_mutex);
     plugin->consumer_thread_stop_flag = false;
-    pthread_mutex_unlock(&plugin->plugin_mutex);
+    pthread_rwlock_unlock(&plugin->plugin_mutex);
 
     int status = pthread_create(&plugin->consumer_thread, NULL,
                                 (void *) db_write_task_consumer, plugin);
@@ -54,9 +54,9 @@ neu_plugin_t *datalayers_plugin_open(void)
 
 void stop_consumer_thread(pthread_t *consumer_thread, neu_plugin_t *plugin)
 {
-    pthread_mutex_lock(&plugin->plugin_mutex);
+    pthread_rwlock_wrlock(&plugin->plugin_mutex);
     plugin->consumer_thread_stop_flag = true;
-    pthread_mutex_unlock(&plugin->plugin_mutex);
+    pthread_rwlock_unlock(&plugin->plugin_mutex);
 
     int join_status = pthread_join(*consumer_thread, NULL);
     if (join_status != 0) {
@@ -68,19 +68,9 @@ void stop_consumer_thread(pthread_t *consumer_thread, neu_plugin_t *plugin)
 int datalayers_plugin_close(neu_plugin_t *plugin)
 {
     const char *name = neu_plugin_module.module_name;
-
-    pthread_mutex_lock(&plugin->plugin_mutex);
-
     plog_notice(plugin, "success to free plugin:%s", name);
 
-    stop_consumer_thread(&plugin->consumer_thread, plugin);
-
-    tasks_free(&plugin->task_queue);
-
-    client_destroy(plugin->client);
     free(plugin);
-
-    pthread_mutex_unlock(&plugin->plugin_mutex);
 
     return NEU_ERR_SUCCESS;
 }
@@ -89,7 +79,7 @@ int datalayers_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
 
-    pthread_mutex_init(&plugin->plugin_mutex, NULL);
+    pthread_rwlock_init(&plugin->plugin_mutex, NULL);
 
     task_queue_init(&plugin->task_queue);
 
@@ -108,18 +98,20 @@ int datalayers_plugin_init(neu_plugin_t *plugin, bool load)
 
 int datalayers_plugin_uninit(neu_plugin_t *plugin)
 {
-    pthread_mutex_lock(&plugin->plugin_mutex);
+    pthread_rwlock_wrlock(&plugin->plugin_mutex);
 
     stop_consumer_thread(&plugin->consumer_thread, plugin);
-
     tasks_free(&plugin->task_queue);
     datalayers_config_fini(&plugin->config);
 
     route_tbl_free(plugin->route_tbl);
     plugin->route_tbl = NULL;
 
-    pthread_mutex_unlock(&plugin->plugin_mutex);
-    pthread_mutex_destroy(&plugin->plugin_mutex);
+    client_destroy(plugin->client);
+    plugin->client = NULL;
+
+    pthread_rwlock_unlock(&plugin->plugin_mutex);
+    pthread_rwlock_destroy(&plugin->plugin_mutex);
 
     plog_notice(plugin, "uninitialize plugin `%s` success",
                 neu_plugin_module.module_name);

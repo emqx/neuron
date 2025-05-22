@@ -88,7 +88,7 @@ arrow::Status Client::Execute(const std::string &sql)
     if (!flight_info_result.ok()) {
         return flight_info_result.status();
     }
-    auto flight_info = std::move(flight_info_result.ValueOrDie());
+    /*auto flight_info = std::move(flight_info_result.ValueOrDie());
 
     for (const flight::FlightEndpoint &endpoint : flight_info->endpoints()) {
         arrow::Result<std::unique_ptr<flight::FlightStreamReader>>
@@ -104,7 +104,7 @@ arrow::Status Client::Execute(const std::string &sql)
         if (!table_result.ok()) {
             return table_result.status();
         }
-    }
+    }*/
 
     return arrow::Status::OK();
 }

@@ -68,8 +68,8 @@ struct neu_plugin {
     task_queue_t task_queue;
     pthread_t    consumer_thread;
 
-    pthread_mutex_t plugin_mutex;
-    bool            consumer_thread_stop_flag;
+    pthread_rwlock_t plugin_mutex;
+    bool             consumer_thread_stop_flag;
 
     int (*parse_config)(neu_plugin_t *plugin, const char *setting,
                         datalayers_config_t *config);
