@@ -1,4 +1,4 @@
-name: compile
+20.04name: compile
 
 on: 
   push:
@@ -14,7 +14,7 @@ env:
 
 jobs:
   cross-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:
@@ -59,7 +59,7 @@ jobs:
             neuron-sdk-*.tar.gz
 
   build-debug-sdk:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:
