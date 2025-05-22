@@ -1,5 +1,9 @@
 #include "flight_sql_client.h"
 #include <arrow/array.h>
+#include <arrow/array/builder_base.h>
+#include <arrow/array/builder_binary.h>
+#include <arrow/array/builder_primitive.h>
+#include <arrow/builder.h>
 #include <arrow/flight/client.h>
 #include <arrow/flight/sql/client.h>
 #include <arrow/status.h>
@@ -21,6 +25,8 @@ public:
     ~Client() = default;
 
     arrow::Status Execute(const std::string &sql);
+    arrow::Status InsertPrepared(const std::string &         table_name,
+                                 const std::vector<datatag> &tags);
     arrow::Result<std::shared_ptr<arrow::Table>> Query(const std::string &sql);
 
     bool IsInitialized() const { return initialized_; }
@@ -81,30 +87,140 @@ arrow::Status Client::Execute(const std::string &sql)
     call_options.headers.push_back(
         std::make_pair("authorization", "Bearer " + bearer_token_));
 
-    // std::cout << "Executing SQL: " << sql << std::endl;
-
     arrow::Result<std::unique_ptr<flight::FlightInfo>> flight_info_result =
         client_->Execute(call_options, sql);
+
     if (!flight_info_result.ok()) {
         return flight_info_result.status();
     }
-    /*auto flight_info = std::move(flight_info_result.ValueOrDie());
+
+    auto flight_info = std::move(flight_info_result.ValueOrDie());
 
     for (const flight::FlightEndpoint &endpoint : flight_info->endpoints()) {
-        arrow::Result<std::unique_ptr<flight::FlightStreamReader>>
-            stream_result = client_->DoGet(call_options, endpoint.ticket);
-        if (!stream_result.ok()) {
-            return stream_result.status();
-        }
+        ARROW_ASSIGN_OR_RAISE(auto stream,
+                              client_->DoGet(call_options, endpoint.ticket));
+    }
 
-        auto stream = std::move(stream_result.ValueOrDie());
+    return arrow::Status::OK();
+}
 
-        arrow::Result<std::shared_ptr<arrow::Table>> table_result =
-            stream->ToTable();
-        if (!table_result.ok()) {
-            return table_result.status();
+arrow::Status Client::InsertPrepared(const std::string &         table_name,
+                                     const std::vector<datatag> &tags)
+{
+    flight::FlightCallOptions call_options;
+    call_options.headers.push_back(
+        std::make_pair("authorization", "Bearer " + bearer_token_));
+
+    std::string sql = "INSERT INTO " + table_name +
+        " (time, node_name, group_name, tag, value) VALUES (?, ?, ?, ?, ?)";
+
+    ARROW_ASSIGN_OR_RAISE(auto prepared_statement,
+                          client_->Prepare(call_options, sql));
+
+    arrow::TimestampBuilder time_builder(
+        arrow::timestamp(arrow::TimeUnit::MILLI), arrow::default_memory_pool());
+    arrow::StringBuilder node_builder, group_builder, tag_builder;
+    std::unique_ptr<arrow::ArrayBuilder> value_builder;
+
+    if (tags.empty())
+        return arrow::Status::Invalid("No tags provided");
+
+    switch (tags[0].value_type) {
+    case INT_TYPE:
+        value_builder = std::make_unique<arrow::Int64Builder>();
+        break;
+    case FLOAT_TYPE:
+        value_builder = std::make_unique<arrow::DoubleBuilder>();
+        break;
+    case BOOL_TYPE:
+        value_builder = std::make_unique<arrow::BooleanBuilder>();
+        break;
+    case STRING_TYPE:
+        value_builder = std::make_unique<arrow::StringBuilder>();
+        break;
+    default:
+        return arrow::Status::Invalid("Unknown type");
+    }
+
+    for (const auto &tag : tags) {
+        auto now = std::chrono::system_clock::now();
+        auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      now.time_since_epoch())
+                      .count();
+        ARROW_RETURN_NOT_OK(time_builder.Append(ms));
+        ARROW_RETURN_NOT_OK(node_builder.Append(tag.node_name));
+        ARROW_RETURN_NOT_OK(group_builder.Append(tag.group_name));
+        ARROW_RETURN_NOT_OK(tag_builder.Append(tag.tag));
+
+        switch (tag.value_type) {
+        case INT_TYPE:
+            ARROW_RETURN_NOT_OK(
+                static_cast<arrow::Int64Builder *>(value_builder.get())
+                    ->Append(tag.value.int_value));
+            break;
+        case FLOAT_TYPE:
+            ARROW_RETURN_NOT_OK(
+                static_cast<arrow::DoubleBuilder *>(value_builder.get())
+                    ->Append(tag.value.float_value));
+            break;
+        case BOOL_TYPE:
+            ARROW_RETURN_NOT_OK(
+                static_cast<arrow::BooleanBuilder *>(value_builder.get())
+                    ->Append(tag.value.bool_value));
+            break;
+        case STRING_TYPE:
+            ARROW_RETURN_NOT_OK(
+                static_cast<arrow::StringBuilder *>(value_builder.get())
+                    ->Append(tag.value.string_value));
+            break;
         }
-    }*/
+    }
+
+    std::shared_ptr<arrow::Array> time_array, node_array, group_array,
+        tag_array, value_array;
+    ARROW_RETURN_NOT_OK(time_builder.Finish(&time_array));
+    ARROW_RETURN_NOT_OK(node_builder.Finish(&node_array));
+    ARROW_RETURN_NOT_OK(group_builder.Finish(&group_array));
+    ARROW_RETURN_NOT_OK(tag_builder.Finish(&tag_array));
+    ARROW_RETURN_NOT_OK(value_builder->Finish(&value_array));
+
+    std::vector<std::shared_ptr<arrow::Field>> fields = {
+        arrow::field("time", arrow::timestamp(arrow::TimeUnit::MILLI)),
+        arrow::field("node_name", arrow::utf8()),
+        arrow::field("group_name", arrow::utf8()),
+        arrow::field("tag", arrow::utf8())
+    };
+
+    switch (tags[0].value_type) {
+    case INT_TYPE:
+        fields.push_back(arrow::field("value", arrow::int64()));
+        break;
+    case FLOAT_TYPE:
+        fields.push_back(arrow::field("value", arrow::float64()));
+        break;
+    case BOOL_TYPE:
+        fields.push_back(arrow::field("value", arrow::boolean()));
+        break;
+    case STRING_TYPE:
+        fields.push_back(arrow::field("value", arrow::utf8()));
+        break;
+    }
+
+    auto schema = std::make_shared<arrow::Schema>(fields);
+    auto table  = arrow::Table::Make(
+        schema,
+        { time_array, node_array, group_array, tag_array, value_array });
+
+    std::shared_ptr<arrow::RecordBatch>        record_batch;
+    std::vector<std::shared_ptr<arrow::Array>> arrays;
+    for (int i = 0; i < schema->num_fields(); ++i) {
+        arrays.push_back(table->column(i)->chunk(0));
+    }
+    record_batch = arrow::RecordBatch::Make(schema, table->num_rows(), arrays);
+
+    ARROW_RETURN_NOT_OK(prepared_statement->SetParameters(record_batch));
+    ARROW_RETURN_NOT_OK(prepared_statement->ExecuteUpdate(call_options));
+    ARROW_RETURN_NOT_OK(prepared_statement->Close(call_options));
 
     return arrow::Status::OK();
 }
@@ -188,10 +304,10 @@ extern "C" void client_destroy(Client *client)
 extern "C" int client_insert(Client *client, ValueType type, datatag *tags,
                              size_t tag_count)
 {
-    if (!client || !tags)
+    if (!client || !tags || tag_count == 0)
         return -1;
-    std::string table_name;
 
+    std::string table_name;
     switch (type) {
     case INT_TYPE:
         table_name = "neuronex.neuron_int";
@@ -209,45 +325,11 @@ extern "C" int client_insert(Client *client, ValueType type, datatag *tags,
         return -1;
     }
 
-    std::string sql = "INSERT INTO " + table_name +
-        " (time, node_name, group_name, tag, value) VALUES ";
+    std::vector<datatag> tag_vec(tags, tags + tag_count);
 
-    for (size_t i = 0; i < tag_count; ++i) {
-        if (i > 0) {
-            sql += ", ";
-        }
-        datatag &tag = tags[i];
+    auto status = client->InsertPrepared(table_name, tag_vec);
 
-        std::string value_str;
-        switch (tag.value_type) {
-        case INT_TYPE:
-            value_str = std::to_string(tag.value.int_value);
-            break;
-        case FLOAT_TYPE:
-            value_str = std::to_string(tag.value.float_value);
-            break;
-        case BOOL_TYPE:
-            value_str = tag.value.bool_value ? "true" : "false";
-            break;
-        case STRING_TYPE:
-            value_str = "'" + std::string(tag.value.string_value) + "'";
-            break;
-        default:
-            value_str = "NULL";
-            break;
-        }
-
-        sql += "(CURRENT_TIMESTAMP, '" + std::string(tag.node_name) + "', '" +
-            std::string(tag.group_name) + "', '" + std::string(tag.tag) +
-            "', " + value_str + ")";
-    }
-
-    int status = client_execute(client, sql.c_str());
-    /*if (status != 0) {
-        std::cerr << "Error executing SQL: " << status << std::endl;
-    }*/
-
-    return status;
+    return status.ok() ? 0 : -1;
 }
 
 std::string convert_timestamp_to_utc8(int64_t timestamp)
