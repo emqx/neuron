@@ -29,6 +29,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef enum {
     NEU_TYPE_INT8          = 1,
@@ -154,58 +155,58 @@ typedef struct {
 } neu_value_bytes_t;
 
 typedef struct {
-    int8_t  i8s[NEU_VALUE_SIZE];
-    uint8_t length;
+    int8_t * i8s;
+    uint32_t length;
 } neu_value_array_int8_t;
 
 typedef struct {
-    uint8_t u8s[NEU_VALUE_SIZE];
-    uint8_t length;
+    uint8_t *u8s;
+    uint32_t length;
 } neu_value_array_uint8_t;
 
 typedef struct {
-    int16_t i16s[NEU_VALUE_SIZE];
-    uint8_t length;
+    int16_t *i16s;
+    uint32_t length;
 } neu_value_array_int16_t;
 
 typedef struct {
-    uint16_t u16s[NEU_VALUE_SIZE];
-    uint8_t  length;
+    uint16_t *u16s;
+    uint32_t  length;
 } neu_value_array_uint16_t;
 
 typedef struct {
-    int32_t i32s[NEU_VALUE_SIZE];
-    uint8_t length;
+    int32_t *i32s;
+    uint32_t length;
 } neu_value_array_int32_t;
 
 typedef struct {
-    uint32_t u32s[NEU_VALUE_SIZE];
-    uint8_t  length;
+    uint32_t *u32s;
+    uint32_t  length;
 } neu_value_array_uint32_t;
 
 typedef struct {
-    int64_t i64s[NEU_VALUE_SIZE];
-    uint8_t length;
+    int64_t *i64s;
+    uint32_t length;
 } neu_value_array_int64_t;
 
 typedef struct {
-    uint64_t u64s[NEU_VALUE_SIZE];
-    uint8_t  length;
+    uint64_t *u64s;
+    uint32_t  length;
 } neu_value_array_uint64_t;
 
 typedef struct {
-    float   f32s[NEU_VALUE_SIZE];
-    uint8_t length;
+    float *  f32s;
+    uint32_t length;
 } neu_value_array_float_t;
 
 typedef struct {
-    double  f64s[NEU_VALUE_SIZE];
-    uint8_t length;
+    double * f64s;
+    uint32_t length;
 } neu_value_array_double_t;
 
 typedef struct {
-    bool    bools[NEU_VALUE_SIZE];
-    uint8_t length;
+    bool *   bools;
+    uint32_t length;
 } neu_value_array_bool_t;
 
 typedef union {
@@ -316,6 +317,18 @@ typedef struct {
     neu_value_u value;
     uint8_t     precision;
 } neu_dvalue_t;
+
+static inline void neu_free_dvalue(neu_dvalue_t *dvalue)
+{
+    if (dvalue->type > NEU_TYPE_ARRAY_CHAR &&
+        dvalue->type <= NEU_TYPE_ARRAY_BOOL) {
+        if (dvalue->value.bools.bools != NULL) {
+            free(dvalue->value.bools.bools);
+            dvalue->value.bools.bools = NULL;
+        }
+    }
+}
+
 typedef union neu_value8 {
     uint8_t value;
     struct {
