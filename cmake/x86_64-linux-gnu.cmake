@@ -1,5 +1,5 @@
 set(CMAKE_SYSTEM_NAME Linux)
-set(COMPILER_PREFIX x86_64-linux-gnu)
+set(COMPILER_PREFIX x86_64-buildroot-linux-gnu)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
 set(LIBRARY_DIR /home/neuron/v2.12/libs)
 
