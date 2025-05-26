@@ -1056,10 +1056,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             (neu_req_get_sub_driver_tags_t *) &header[1];
         neu_resp_get_sub_driver_tags_t resp = { 0 };
         UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+        bool      found  = false;
 
         utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
         utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
         {
+            if (strcmp(info->driver, cmd->driver) != 0 ||
+                strcmp(info->group, cmd->group) != 0) {
+                continue;
+            }
+
+            found = true;
+
             neu_resp_get_sub_driver_tags_info_t in = { 0 };
             neu_adapter_t *                     driver =
                 neu_node_manager_find(manager->node_manager, info->driver);
@@ -1074,8 +1082,78 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         utarray_free(groups);
 
+        if (!found) {
+            utarray_free(resp.infos);
+            neu_resp_error_t e = { .error = NEU_ERR_GROUP_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+            break;
+        }
+
         strcpy(header->receiver, header->sender);
         header->type = NEU_RESP_GET_DATALAYERS_TAGS;
+        reply(manager, header, &resp);
+
+        break;
+    }
+    case NEU_REQ_GET_DATALAYERS_TAG: {
+        neu_req_get_sub_driver_tags_t *cmd =
+            (neu_req_get_sub_driver_tags_t *) &header[1];
+        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+        bool      found  = false;
+
+        utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
+
+        utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
+        {
+            neu_resp_get_sub_driver_tags_info_t in = { 0 };
+            neu_adapter_t *                     driver =
+                neu_node_manager_find(manager->node_manager, info->driver);
+            assert(driver != NULL);
+
+            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
+                                             info->group, &in.tags);
+
+            if (in.tags) {
+                UT_array *filtered_tags = NULL;
+                utarray_new(filtered_tags, neu_tag_get_icd());
+
+                utarray_foreach(in.tags, neu_datatag_t *, tag)
+                {
+                    if (strstr(tag->name, cmd->tag) != NULL) {
+                        utarray_push_back(filtered_tags, tag);
+                    }
+                }
+
+                utarray_free(in.tags);
+
+                if (utarray_len(filtered_tags) > 0) {
+                    strcpy(in.driver, info->driver);
+                    strcpy(in.group, info->group);
+                    in.tags = filtered_tags;
+                    utarray_push_back(resp.infos, &in);
+                    found = true;
+                } else {
+                    utarray_free(filtered_tags);
+                }
+            }
+        }
+
+        utarray_free(groups);
+
+        if (!found) {
+            utarray_free(resp.infos);
+            neu_resp_error_t e = { .error = NEU_ERR_TAG_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+            break;
+        }
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DATALAYERS_TAG;
         reply(manager, header, &resp);
 
         break;
