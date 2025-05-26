@@ -26,4 +26,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 link_directories(${CMAKE_STAGING_PREFIX})
 
-file(COPY ${CMAKE_STAGING_PREFIX}/lib/libzlog.so.1.2 DESTINATION /usr/local/lib)
+file(COPY /home/neuron/v2.12/libs/x86_64-buildroot-linux-gnu/lib/libzlog.so.1.2 DESTINATION /usr/local/lib)
