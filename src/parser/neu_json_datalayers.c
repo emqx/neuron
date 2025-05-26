@@ -163,6 +163,7 @@ int neu_json_encode_datalayers_get_tags_resp(void *json_object_param,
                 json_object_set_new(tag_obj, "name", json_string(tag->name));
                 json_object_set_new(tag_obj, "type", json_integer(tag->type));
                 json_object_set_new(tag_obj, "category", json_integer(3));
+                json_object_set_new(tag_obj, "leaf", json_true());
                 json_object_set_new(tag_obj, "children", json_array());
 
                 json_array_append_new(tag_array, tag_obj);
@@ -176,6 +177,113 @@ int neu_json_encode_datalayers_get_tags_resp(void *json_object_param,
     json_t *final_obj = json_object();
     json_object_set_new(final_obj, "error", json_integer(0));
     json_object_set_new(final_obj, "children", group_array);
+
+    neu_json_elem_t elems[] = { {
+        .name         = NULL,
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = final_obj,
+    } };
+
+    int ret = neu_json_encode_field(json_object_param, elems,
+                                    NEU_JSON_ELEM_SIZE(elems));
+    json_decref(final_obj);
+    return ret;
+}
+
+int neu_json_encode_datalayers_get_tag_resp(void *json_object_param,
+                                            void *param)
+{
+    neu_resp_get_sub_driver_tags_t *resp =
+        (neu_resp_get_sub_driver_tags_t *) param;
+    json_t *node_array = json_array();
+
+    for (unsigned int i = 0; i < utarray_len(resp->infos); i++) {
+        neu_resp_get_sub_driver_tags_info_t *info =
+            (neu_resp_get_sub_driver_tags_info_t *) utarray_eltptr(resp->infos,
+                                                                   i);
+
+        char node_id[37];
+        char node_uuid_input[128];
+        snprintf(node_uuid_input, sizeof(node_uuid_input), "%s", info->driver);
+        generate_fixed_uuid(node_uuid_input, node_id);
+
+        json_t *node_obj = NULL;
+        for (size_t j = 0; j < json_array_size(node_array); j++) {
+            node_obj = json_array_get(node_array, j);
+            if (strcmp(json_string_value(json_object_get(node_obj, "id")),
+                       node_id) == 0) {
+                break;
+            }
+            node_obj = NULL;
+        }
+
+        if (!node_obj) {
+            node_obj = json_object();
+            json_object_set_new(node_obj, "id", json_string(node_id));
+            json_object_set_new(node_obj, "name", json_string(info->driver));
+            json_object_set_new(node_obj, "category", json_integer(1));
+            json_t *node_children = json_array();
+            json_object_set_new(node_obj, "children", node_children);
+            json_array_append_new(node_array, node_obj);
+        }
+
+        json_t *group_obj = NULL;
+        char    group_id[37];
+        char    group_uuid_input[256];
+        snprintf(group_uuid_input, sizeof(group_uuid_input), "%s-%s",
+                 info->driver, info->group);
+        generate_fixed_uuid(group_uuid_input, group_id);
+
+        json_t *children_array = json_object_get(node_obj, "children");
+
+        for (size_t k = 0; k < json_array_size(children_array); k++) {
+            group_obj = json_array_get(children_array, k);
+            if (strcmp(json_string_value(json_object_get(group_obj, "id")),
+                       group_id) == 0) {
+                break;
+            }
+            group_obj = NULL;
+        }
+
+        if (!group_obj) {
+            group_obj = json_object();
+            json_object_set_new(group_obj, "id", json_string(group_id));
+            json_object_set_new(group_obj, "name", json_string(info->group));
+            json_object_set_new(group_obj, "category", json_integer(2));
+            json_t *group_children = json_array();
+            json_object_set_new(group_obj, "children", group_children);
+            json_array_append_new(children_array, group_obj);
+        }
+
+        json_t *tag_array = json_object_get(group_obj, "children");
+
+        if (info->tags) {
+            for (unsigned int j = 0; j < utarray_len(info->tags); j++) {
+                neu_datatag_t *tag =
+                    (neu_datatag_t *) utarray_eltptr(info->tags, j);
+
+                char tag_id[37];
+                char tag_uuid_input[512];
+                snprintf(tag_uuid_input, sizeof(tag_uuid_input), "%s-%s-%s",
+                         info->driver, info->group, tag->name);
+                generate_fixed_uuid(tag_uuid_input, tag_id);
+
+                json_t *tag_obj = json_object();
+                json_object_set_new(tag_obj, "id", json_string(tag_id));
+                json_object_set_new(tag_obj, "name", json_string(tag->name));
+                json_object_set_new(tag_obj, "type", json_integer(tag->type));
+                json_object_set_new(tag_obj, "category", json_integer(3));
+                json_object_set_new(tag_obj, "leaf", json_true());
+                json_object_set_new(tag_obj, "children", json_array());
+
+                json_array_append_new(tag_array, tag_obj);
+            }
+        }
+    }
+
+    json_t *final_obj = json_object();
+    json_object_set_new(final_obj, "error", json_integer(0));
+    json_object_set_new(final_obj, "children", node_array);
 
     neu_json_elem_t elems[] = { {
         .name         = NULL,

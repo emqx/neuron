@@ -298,6 +298,13 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
             neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
+    case NEU_RESP_GET_DATALAYERS_TAG:
+        handle_datalayers_get_tag_resp(header->ctx,
+                                       (neu_resp_get_sub_driver_tags_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
     case NEU_RESP_GET_NODE_SETTING:
         handle_get_node_setting_resp(header->ctx,
                                      (neu_resp_get_node_setting_t *) data);

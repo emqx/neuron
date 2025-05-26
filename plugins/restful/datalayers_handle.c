@@ -41,26 +41,7 @@ void handle_datalayers_get_groups(nng_aio *aio)
 
     NEU_VALIDATE_JWT(aio);
 
-    // required parameter
     snprintf(cmd.app, sizeof(cmd.app), "%s", "DataStorage");
-
-    // optional parameter
-    ret = neu_http_get_param_str(aio, "driver", cmd.driver, sizeof(cmd.driver));
-    if (-1 == ret || (size_t) ret == sizeof(cmd.driver)) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            neu_http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
-
-    // optional parameter
-    ret = neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group));
-    if (-1 == ret || (size_t) ret == sizeof(cmd.driver)) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            neu_http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
@@ -111,7 +92,22 @@ void handle_datalayers_get_tags(nng_aio *aio)
 
     NEU_VALIDATE_JWT(aio);
 
-    // required parameter
+    ret = neu_http_get_param_str(aio, "driver", cmd.driver, sizeof(cmd.driver));
+    if (ret <= 0 || (size_t) ret == sizeof(cmd.driver)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
+    ret = neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group));
+    if (ret <= 0 || (size_t) ret == sizeof(cmd.group)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
     snprintf(cmd.app, sizeof(cmd.app), "%s", "DataStorage");
 
     ret = neu_plugin_op(plugin, header, &cmd);
@@ -128,6 +124,63 @@ void handle_datalayers_get_tags_resp(nng_aio *                       aio,
     char *result = NULL;
     int   ret    = neu_json_encode_by_fn(
         tags, neu_json_encode_datalayers_get_tags_resp, &result);
+
+    if (ret != 0 || result == NULL) {
+        neu_http_response(
+            aio, 500, "{\"error\":4200,\"reason\":\"failed to encode tags\"}");
+        return;
+    }
+
+    neu_http_ok(aio, result);
+
+    free(result);
+    if (tags) {
+        utarray_foreach(tags->infos, neu_resp_get_sub_driver_tags_info_t *,
+                        info)
+        {
+            utarray_free(info->tags);
+        }
+        utarray_free(tags->infos);
+    }
+}
+
+void handle_datalayers_get_tag(nng_aio *aio)
+{
+    int                           ret    = 0;
+    neu_plugin_t *                plugin = neu_rest_get_plugin();
+    neu_req_get_sub_driver_tags_t cmd    = { 0 };
+    neu_reqresp_head_t            header = {
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_DATALAYERS_TAG,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    NEU_VALIDATE_JWT(aio);
+
+    ret = neu_http_get_param_str(aio, "tag", cmd.tag, sizeof(cmd.tag));
+    if (ret <= 0 || (size_t) ret == sizeof(cmd.tag)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
+    snprintf(cmd.app, sizeof(cmd.app), "%s", "DataStorage");
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_datalayers_get_tag_resp(nng_aio *                       aio,
+                                    neu_resp_get_sub_driver_tags_t *tags)
+{
+    char *result = NULL;
+    int   ret    = neu_json_encode_by_fn(
+        tags, neu_json_encode_datalayers_get_tag_resp, &result);
 
     if (ret != 0 || result == NULL) {
         neu_http_response(

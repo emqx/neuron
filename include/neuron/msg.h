@@ -68,6 +68,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_GET_DATALAYERS_GROUPS,
     NEU_REQ_GET_DATALAYERS_TAGS,
     NEU_RESP_GET_DATALAYERS_TAGS,
+    NEU_REQ_GET_DATALAYERS_TAG,
+    NEU_RESP_GET_DATALAYERS_TAG,
 
     NEU_REQ_NODE_INIT,
     NEU_REQ_NODE_UNINIT,
@@ -199,6 +201,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_DATALAYERS_GROUPS] = "NEU_RESP_GET_DATALAYERS_GROUPS",
     [NEU_REQ_GET_DATALAYERS_TAGS]    = "NEU_REQ_GET_DATALAYERS_TAGS",
     [NEU_RESP_GET_DATALAYERS_TAGS]   = "NEU_RESP_GET_DATALAYERS_TAGS",
+    [NEU_REQ_GET_DATALAYERS_TAG]     = "NEU_REQ_GET_DATALAYERS_TAG",
+    [NEU_RESP_GET_DATALAYERS_TAG]    = "NEU_RESP_GET_DATALAYERS_TAG",
 
     [NEU_REQ_NODE_INIT]         = "NEU_REQ_NODE_INIT",
     [NEU_REQ_NODE_UNINIT]       = "NEU_REQ_NODE_UNINIT",
@@ -697,6 +701,9 @@ typedef struct neu_req_get_subscribe_group {
 
 typedef struct {
     char app[NEU_NODE_NAME_LEN];
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+    char tag[NEU_TAG_NAME_LEN];
 } neu_req_get_sub_driver_tags_t;
 
 typedef struct neu_resp_subscribe_info {
