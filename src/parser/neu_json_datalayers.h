@@ -47,6 +47,8 @@ int neu_json_encode_datalayers_get_groups_resp(void *json_object, void *param);
 
 int neu_json_encode_datalayers_get_tags_resp(void *json_object, void *param);
 
+int neu_json_encode_datalayers_get_tag_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

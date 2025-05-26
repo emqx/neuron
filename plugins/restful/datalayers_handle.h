@@ -32,4 +32,8 @@ void handle_datalayers_get_tags(nng_aio *aio);
 void handle_datalayers_get_tags_resp(nng_aio *                       aio,
                                      neu_resp_get_sub_driver_tags_t *tags);
 
+void handle_datalayers_get_tag(nng_aio *aio);
+void handle_datalayers_get_tag_resp(nng_aio *                       aio,
+                                    neu_resp_get_sub_driver_tags_t *tags);
+
 #endif

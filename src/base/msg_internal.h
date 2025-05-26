@@ -135,7 +135,9 @@ extern "C" {
     XX(NEU_REQ_GET_DATALAYERS_GROUPS, neu_req_get_subscribe_group_t)   \
     XX(NEU_RESP_GET_DATALAYERS_GROUPS, neu_resp_get_subscribe_group_t) \
     XX(NEU_REQ_GET_DATALAYERS_TAGS, neu_req_get_sub_driver_tags_t)     \
-    XX(NEU_RESP_GET_DATALAYERS_TAGS, neu_resp_get_sub_driver_tags_t)
+    XX(NEU_RESP_GET_DATALAYERS_TAGS, neu_resp_get_sub_driver_tags_t)   \
+    XX(NEU_REQ_GET_DATALAYERS_TAG, neu_req_get_sub_driver_tags_t)      \
+    XX(NEU_RESP_GET_DATALAYERS_TAG, neu_resp_get_sub_driver_tags_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {
