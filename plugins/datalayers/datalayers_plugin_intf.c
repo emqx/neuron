@@ -135,10 +135,10 @@ static int config_datalayers_client(neu_plugin_t *             plugin,
     if (NULL == plugin->client) {
         plog_error(plugin, "datalayers client_create failed");
         plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-        return NEU_ERR_DATALAYERS_CONNECT_FAILURE;
+    } else {
+        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
     }
 
-    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
     return NEU_ERR_SUCCESS;
 }
 
