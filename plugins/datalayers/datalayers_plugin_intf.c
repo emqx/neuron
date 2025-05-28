@@ -185,7 +185,8 @@ int datalayers_plugin_start(neu_plugin_t *plugin)
         int ret = config_datalayers_client(plugin, &plugin->config);
         if (ret != 0) {
             plog_error(plugin, "datalayers started failed");
-            return NEU_ERR_DATALAYERS_CONNECT_FAILURE;
+            plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+            return NEU_ERR_SUCCESS;
         }
     }
 
