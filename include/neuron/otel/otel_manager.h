@@ -42,6 +42,8 @@ neu_otel_trace_ctx neu_otel_find_trace2(void *req_ctx);
 void neu_otel_trace_set_final(neu_otel_trace_ctx ctx);
 
 void neu_otel_trace_set_expected_span_num(neu_otel_trace_ctx ctx, uint32_t num);
+void neu_otel_trace_reduce_expected_span_num(neu_otel_trace_ctx ctx,
+                                             uint32_t           num);
 uint8_t *neu_otel_get_trace_id(neu_otel_trace_ctx ctx);
 
 neu_otel_trace_ctx neu_otel_find_trace_by_id(const char *trace_id);
