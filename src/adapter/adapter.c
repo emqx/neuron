@@ -121,8 +121,11 @@ static void *adapter_consumer(void *arg)
         nlog_debug("adapter(%s) recv msg from: %s %p, type: %s, %u",
                    adapter->name, header->sender, header->ctx,
                    neu_reqresp_type_string(header->type), n);
-        adapter->module->intf_funs->request(
-            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        if (adapter->state == NEU_NODE_RUNNING_STATE_RUNNING) {
+            adapter->module->intf_funs->request(
+                adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        }
+
         neu_trans_data_free((neu_reqresp_trans_data_t *) &header[1]);
         neu_msg_free(msg);
     }

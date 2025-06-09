@@ -2169,20 +2169,6 @@ static int report_callback(void *usr_data)
 
             utarray_foreach(group->apps, sub_app_t *, app)
             {
-
-                neu_adapter_t *sub_app =
-                    neu_node_manager_find(g_manager->node_manager, app->app);
-                if (sub_app != NULL) {
-                    if (sub_app->state != NEU_NODE_RUNNING_STATE_RUNNING) {
-                        neu_trans_data_free(data);
-                        continue;
-                    }
-                } else {
-                    nlog_error("sub app %s not exist", app->app);
-                    neu_trans_data_free(data);
-                    continue;
-                }
-
                 if (group->driver->adapter.cb_funs.responseto(
                         &group->driver->adapter, &header, data, app->addr) !=
                     0) {
