@@ -125,8 +125,9 @@ static void *adapter_consumer(void *arg)
             adapter->module->intf_funs->request(
                 adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         } else {
-            if (neu_otel_control_is_started() && header->ctx) {
-                neu_otel_trace_ctx trace = neu_otel_find_trace(header->ctx);
+            void *ctx = ((neu_reqresp_trans_data_t *) &header[1])->trace_ctx;
+            if (neu_otel_control_is_started() && ctx) {
+                neu_otel_trace_ctx trace = neu_otel_find_trace(ctx);
                 if (trace) {
                     neu_otel_trace_reduce_expected_span_num(trace, 1);
                 }
