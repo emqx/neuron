@@ -540,6 +540,16 @@ void neu_otel_trace_set_expected_span_num(neu_otel_trace_ctx ctx, uint32_t num)
     trace_ctx->expected_span_num = num;
 }
 
+void neu_otel_trace_reduce_expected_span_num(neu_otel_trace_ctx ctx,
+                                             uint32_t           num)
+{
+    trace_ctx_t *trace_ctx = (trace_ctx_t *) ctx;
+    trace_ctx->expected_span_num -= num;
+    if (trace_ctx->expected_span_num <= 0) {
+        trace_ctx->final = true;
+    }
+}
+
 uint8_t *neu_otel_get_trace_id(neu_otel_trace_ctx ctx)
 {
     trace_ctx_t *trace_ctx = (trace_ctx_t *) ctx;
