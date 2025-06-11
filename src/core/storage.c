@@ -18,6 +18,7 @@
  **/
 #include "errcodes.h"
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "adapter/storage.h"
 #include "storage.h"
@@ -140,6 +141,8 @@ int manager_load_node(neu_manager_t *manager)
         return -1;
     }
 
+    int i = 0;
+
     utarray_foreach(node_infos, neu_persist_node_info_t *, node_info)
     {
         rv                    = neu_manager_add_node(manager, node_info->name,
@@ -149,6 +152,10 @@ int manager_load_node(neu_manager_t *manager)
         nlog_notice("load adapter %s type:%d, name:%s plugin:%s state:%d",
                     ok_or_err, node_info->type, node_info->name,
                     node_info->plugin_name, node_info->state);
+        i++;
+        if (i % 10 == 0) {
+            neu_msleep(10);
+        }
     }
 
     utarray_free(node_infos);
@@ -159,6 +166,8 @@ int manager_load_subscribe(neu_manager_t *manager)
 {
     UT_array *nodes =
         neu_node_manager_get(manager->node_manager, NEU_NA_TYPE_APP);
+
+    int i = 0;
 
     utarray_foreach(nodes, neu_resp_node_info_t *, node)
     {
@@ -185,6 +194,10 @@ int manager_load_subscribe(neu_manager_t *manager)
                                                info->driver_name,
                                                info->group_name, app_port,
                                                info->params, info->static_tags);
+                }
+                i++;
+                if (i % 10 == 0) {
+                    neu_msleep(10);
                 }
             }
 
