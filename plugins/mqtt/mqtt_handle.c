@@ -41,15 +41,28 @@ static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
 }
 
 static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
-                              size_t n_s_tags, neu_json_read_resp_t *json)
+                              size_t n_s_tags, neu_json_read_resp_t *json,
+                              bool filter_error)
 {
-    int index = 0;
+    int index   = 0;
+    int n_valid = 0;
 
-    if (0 == utarray_len(tags)) {
+    if (filter_error) {
+        utarray_foreach(tags, neu_resp_tag_value_meta_t *, tag_value)
+        {
+            if (tag_value->value.type != NEU_TYPE_ERROR) {
+                n_valid += 1;
+            }
+        }
+    } else {
+        n_valid = utarray_len(tags);
+    }
+
+    if (n_valid == 0) {
         return 0;
     }
 
-    json->n_tag = utarray_len(tags) + n_s_tags;
+    json->n_tag = n_valid + n_s_tags;
     json->tags  = (neu_json_read_resp_tag_t *) calloc(
         json->n_tag, sizeof(neu_json_read_resp_tag_t));
     if (NULL == json->tags) {
@@ -58,8 +71,15 @@ static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
 
     utarray_foreach(tags, neu_resp_tag_value_meta_t *, tag_value)
     {
-        neu_tag_value_to_json(tag_value, &json->tags[index]);
-        index += 1;
+        if (filter_error) {
+            if (tag_value->value.type != NEU_TYPE_ERROR) {
+                neu_tag_value_to_json(tag_value, &json->tags[index]);
+                index += 1;
+            }
+        } else {
+            neu_tag_value_to_json(tag_value, &json->tags[index]);
+            index += 1;
+        }
     }
 
     if (s_tags != NULL) {
@@ -75,27 +95,6 @@ static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
     return 0;
 }
 
-void filter_error_tags(neu_reqresp_trans_data_t *data)
-{
-    if (!data || !data->tags) {
-        return;
-    }
-
-    UT_array *filtered_tags;
-    utarray_new(filtered_tags, neu_resp_tag_value_meta_icd());
-
-    neu_resp_tag_value_meta_t *tag_ptr = NULL;
-    while ((tag_ptr = (neu_resp_tag_value_meta_t *) utarray_next(data->tags,
-                                                                 tag_ptr))) {
-        if (tag_ptr->value.type != NEU_TYPE_ERROR) {
-            utarray_push_back(filtered_tags, tag_ptr);
-        }
-    }
-
-    utarray_free(data->tags);
-    data->tags = filtered_tags;
-}
-
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                            mqtt_upload_format_e format, mqtt_schema_vt_t *vts,
                            size_t n_vts, mqtt_static_vt_t *s_tags,
@@ -107,29 +106,32 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
                                         .timestamp = global_timestamp };
     neu_json_read_resp_t     json     = { 0 };
 
-    if (!plugin->config.upload_err && skip != NULL) {
-        filter_error_tags(data);
-
-        if (utarray_len(data->tags) == 0) {
-            *skip = true;
-            return NULL;
-        }
-    }
-
     if (format == MQTT_UPLOAD_FORMAT_CUSTOM) {
-        if (0 != tag_values_to_json(data->tags, NULL, 0, &json)) {
+        if (0 !=
+            tag_values_to_json(data->tags, NULL, 0, &json,
+                               !plugin->config.upload_err)) {
             plog_error(plugin, "tag_values_to_json fail");
             return NULL;
         }
     } else {
-        if (0 != tag_values_to_json(data->tags, s_tags, n_s_tags, &json)) {
+        if (0 !=
+            tag_values_to_json(data->tags, s_tags, n_s_tags, &json,
+                               !plugin->config.upload_err)) {
             plog_error(plugin, "tag_values_to_json fail");
             return NULL;
         }
     }
 
-    int ret;
+    if (json.n_tag == 0) {
+        plog_warn(plugin, "driver:%s group:%s, no valid tags", data->driver,
+                  data->group);
+        if (skip != NULL) {
+            *skip = true;
+        }
+        return NULL;
+    }
 
+    int ret;
     switch (format) {
     case MQTT_UPLOAD_FORMAT_VALUES:
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
@@ -182,7 +184,7 @@ static char *generate_read_resp_json(neu_plugin_t *         plugin,
     char *               json_str = NULL;
     neu_json_read_resp_t json     = { 0 };
 
-    if (0 != tag_values_to_json(data->tags, NULL, 0, &json)) {
+    if (0 != tag_values_to_json(data->tags, NULL, 0, &json, false)) {
         plog_error(plugin, "tag_values_to_json fail");
         return NULL;
     }
