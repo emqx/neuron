@@ -56,13 +56,16 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
 }
 
 typedef struct {
-    neu_mqtt_version_e   version;                 // mqtt version
-    char *               client_id;               // client id
-    neu_mqtt_qos_e       qos;                     // message QoS
-    mqtt_upload_format_e format;                  // upload format
-    char *               write_req_topic;         // write request topic
-    char *               write_resp_topic;        // write response topic
-    char *               driver_action_req_topic; // driver action request topic
+    neu_mqtt_version_e   version;   // mqtt version
+    char *               client_id; // client id
+    neu_mqtt_qos_e       qos;       // message QoS
+    mqtt_upload_format_e format;    // upload format
+
+    bool  enable_topic;            // default true
+    char *write_req_topic;         // write request topic
+    char *write_resp_topic;        // write response topic
+    char *driver_action_req_topic; // driver action request topic
+
     char *   driver_action_resp_topic; // driver action response topic
     bool     upload_err;               // Upload tag error code flag
     bool     upload_drv_state;         // upload driver state flag

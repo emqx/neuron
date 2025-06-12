@@ -105,6 +105,16 @@
 		"default": true,
 		"valid": {}
 	},
+	"enable_topic": {
+		"name": "Enable driver topic",
+		"name_zh": "启动驱动相关主题",
+		"description": "Subscription driver related topics, including read/req, write/req and action/req.",
+		"description_zh": "是否订阅驱动相关主题，包括 read/req、write/req 和 action/req。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": true,
+		"valid": {}
+	},
 	"write-req-topic": {
 		"name": "Write Request Topic",
 		"name_zh": "写请求主题",
