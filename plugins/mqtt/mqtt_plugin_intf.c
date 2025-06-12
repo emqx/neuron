@@ -404,7 +404,9 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         }
     } else if (neu_mqtt_client_is_open(plugin->client)) {
         started = true;
-        plugin->unsubscribe(plugin, &plugin->config);
+        if (plugin->config.enable_topic) {
+            plugin->unsubscribe(plugin, &plugin->config);
+        }
         rv = neu_mqtt_client_close(plugin->client);
         if (0 != rv) {
             plog_error(plugin, "neu_mqtt_client_close fail");
@@ -440,8 +442,10 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
             rv = NEU_ERR_EINTERNAL;
             goto error;
         }
-        if (0 != (rv = plugin->subscribe(plugin, &config))) {
-            goto error;
+        if (plugin->config.enable_topic) {
+            if (0 != (rv = plugin->subscribe(plugin, &config))) {
+                goto error;
+            }
         }
     }
 
@@ -499,7 +503,9 @@ end:
 int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     if (plugin->client) {
-        plugin->unsubscribe(plugin, &plugin->config);
+        if (plugin->config.enable_topic) {
+            plugin->unsubscribe(plugin, &plugin->config);
+        }
         neu_mqtt_client_close(plugin->client);
         plog_notice(plugin, "mqtt client closed");
     }
