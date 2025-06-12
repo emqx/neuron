@@ -62,12 +62,12 @@ TAGS = [
 ]
 FORMAT_VALUES = 0
 FORMAT_TAGS = 1
-UPLOAD_TOPIC = f"/neuron/{NODE}/upload"
-WRITE_REQ_TOPIC = f"/neuron/{NODE}/write/req"
-WRITE_RESP_TOPIC = f"/neuron/{NODE}/write/resp"
-READ_REQ_TOPIC = f"/neuron/{NODE}/read/req"
-READ_RESP_TOPIC = f"/neuron/{NODE}/read/resp"
-UPLOAD_DRV_STATE_TOPIC = f"/neuron/{NODE}/state/update"
+UPLOAD_TOPIC = f"neuron/{NODE}/upload"
+WRITE_REQ_TOPIC = f"neuron/{NODE}/write/req"
+WRITE_RESP_TOPIC = f"neuron/{NODE}/write/resp"
+READ_REQ_TOPIC = f"neuron/{NODE}/read/req"
+READ_RESP_TOPIC = f"neuron/{NODE}/read/resp"
+UPLOAD_DRV_STATE_TOPIC = f"neuron/{NODE}/state/update"
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -204,7 +204,7 @@ def conf_upload_driver_state(conf_base):
     return {
         **conf_base,
         "upload_drv_state": True,
-        "upload_drv_state_topic": f"/neuron/{NODE}/state/update",
+        "upload_drv_state_topic": f"neuron/{NODE}/state/update",
         "upload_drv_state_interval": 1,
     }
 

@@ -126,7 +126,7 @@
 		"description_zh": "接收点位写入请求的 MQTT 主题。",
 		"attribute": "required",
 		"type": "string",
-		"default": "/neuron/${random_str}/write/req",
+		"default": "neuron/${random_str}/write/req",
 		"valid": {
 			"length": 255
 		}
@@ -138,7 +138,7 @@
 		"description_zh": "发送点位写入响应的 MQTT 主题。",
 		"attribute": "required",
 		"type": "string",
-		"default": "/neuron/${random_str}/write/resp",
+		"default": "neuron/${random_str}/write/resp",
 		"valid": {
 			"length": 255
 		}
@@ -149,7 +149,7 @@
 		"description": "MQTT topic prefix for driver function.",
 		"attribute": "required",
 		"type": "string",
-		"default": "/neuron/${random_str}",
+		"default": "neuron/${random_str}",
 		"valid": {
 			"length": 128
 		}
@@ -173,7 +173,7 @@
 			"field": "upload_drv_state",
 			"value": true
 		},
-		"default": "/neuron/${random_str}/state/update",
+		"default": "neuron/${random_str}/state/update",
 		"valid": {
 			"length": 255
 		}
