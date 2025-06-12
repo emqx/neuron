@@ -265,13 +265,13 @@ static int create_topic(neu_plugin_t *plugin)
         return 0;
     }
 
-    neu_asprintf(&plugin->read_req_topic, "/neuron/%s/read/req",
+    neu_asprintf(&plugin->read_req_topic, "neuron/%s/read/req",
                  plugin->common.name);
     if (NULL == plugin->read_req_topic) {
         return -1;
     }
 
-    neu_asprintf(&plugin->read_resp_topic, "/neuron/%s/read/resp",
+    neu_asprintf(&plugin->read_resp_topic, "neuron/%s/read/resp",
                  plugin->common.name);
     if (NULL == plugin->read_resp_topic) {
         free(plugin->read_req_topic);
