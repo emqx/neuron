@@ -94,13 +94,14 @@ typedef struct {
 } mqtt_driver_topic_t;
 
 typedef struct {
-    neu_mqtt_version_e   version;          // mqtt version
-    char *               client_id;        // client id
-    neu_mqtt_qos_e       qos;              // message QoS
-    mqtt_upload_format_e format;           // upload format
-    char *               write_req_topic;  // write request topic
-    char *               write_resp_topic; // write response topic
+    neu_mqtt_version_e   version;   // mqtt version
+    char *               client_id; // client id
+    neu_mqtt_qos_e       qos;       // message QoS
+    mqtt_upload_format_e format;    // upload format
 
+    bool                enable_topic;        // default true
+    char *              write_req_topic;     // write request topic
+    char *              write_resp_topic;    // write response topic
     char *              driver_topic_prefix; // driver topic prefix
     mqtt_driver_topic_t driver_topic;
 
@@ -123,7 +124,6 @@ typedef struct {
     char *   keypass;             // client key password
                                   // remove in 2.6, keep it here
                                   // for backward compatibility
-
     size_t            n_schema_vt;
     mqtt_schema_vt_t *schema_vts;
 } mqtt_config_t;

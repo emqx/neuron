@@ -291,13 +291,19 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
                                             .t    = NEU_JSON_INT };
     neu_json_elem_t host                = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t port                = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
-    neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
-    neu_json_elem_t ca       = { .name = "ca", .t = NEU_JSON_STR };
-    neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
-    neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
-    neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
+    neu_json_elem_t username     = { .name = "username", .t = NEU_JSON_STR };
+    neu_json_elem_t password     = { .name = "password", .t = NEU_JSON_STR };
+    neu_json_elem_t ssl          = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t ca           = { .name = "ca", .t = NEU_JSON_STR };
+    neu_json_elem_t cert         = { .name = "cert", .t = NEU_JSON_STR };
+    neu_json_elem_t key          = { .name = "key", .t = NEU_JSON_STR };
+    neu_json_elem_t keypass      = { .name = "keypass", .t = NEU_JSON_STR };
+    neu_json_elem_t enable_topic = {
+        .name       = "enable_topic",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = true,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
     neu_json_elem_t upload_drv_state = {
         .name       = "upload_drv_state",
         .t          = NEU_JSON_BOOL,
@@ -372,6 +378,11 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
             goto error;
         }
         free(schema.v.val_str);
+    }
+
+    ret = neu_parse_param(setting, &err_param, 1, &enable_topic);
+    if (0 != ret) {
+        enable_topic.v.val_bool = true; // default to true
     }
 
     ret = neu_parse_param(setting, &err_param, 1, &driver_topic_prefix);
@@ -456,6 +467,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->client_id           = client_id.v.val_str;
     config->qos                 = qos.v.val_int;
     config->format              = format.v.val_int;
+    config->enable_topic        = enable_topic.v.val_bool;
     config->write_req_topic     = write_req_topic.v.val_str;
     config->write_resp_topic    = write_resp_topic.v.val_str;
     config->cache               = offline_cache.v.val_bool;
