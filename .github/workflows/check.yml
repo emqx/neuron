@@ -9,11 +9,11 @@ on:
 
 jobs:
   clang_format_check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       # checkout
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 

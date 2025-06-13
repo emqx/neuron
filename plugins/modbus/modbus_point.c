@@ -221,7 +221,8 @@ modbus_read_cmd_sort_t *modbus_tag_sort(UT_array *tags, uint16_t max_byte)
     return sort_result;
 }
 
-int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option)
+int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option,
+               modbus_endianess_64 endianess_64, bool default_tag_endian_64)
 {
     int n = 0;
     switch (type) {
@@ -240,6 +241,9 @@ int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option)
     case NEU_TYPE_DOUBLE:
     case NEU_TYPE_INT64:
     case NEU_TYPE_UINT64:
+        if (default_tag_endian_64) {
+            modbus_convert_endianess_64(value, endianess_64);
+        }
         n          = sizeof(uint64_t);
         value->u64 = neu_htonll(value->u64);
         break;
@@ -273,7 +277,8 @@ int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option)
     return n;
 }
 
-modbus_write_cmd_sort_t *modbus_write_tags_sort(UT_array *tags)
+modbus_write_cmd_sort_t *
+modbus_write_tags_sort(UT_array *tags, modbus_endianess_64 endianess_64)
 {
     neu_tag_sort_result_t *result =
         neu_tag_sort(tags, tag_sort_write, tag_cmp_write);
@@ -295,14 +300,17 @@ modbus_write_cmd_sort_t *modbus_write_tags_sort(UT_array *tags)
         utarray_foreach(result->sorts[i].tags, modbus_point_write_t **, tag_s)
         {
             if ((*tag_s)->point.area == MODBUS_AREA_COIL) {
-                n_byte_tag = cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
-                                        (*tag_s)->point.option);
+                n_byte_tag =
+                    cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
+                               (*tag_s)->point.option, endianess_64, true);
                 data_bit[k / 8] += ((*tag_s)->value.i8) << k % 8;
                 n_byte += n_byte_tag;
                 k++;
             } else {
-                n_byte_tag = cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
-                                        (*tag_s)->point.option);
+                n_byte_tag =
+                    cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
+                               (*tag_s)->point.option, endianess_64,
+                               (*tag_s)->point.option.value64.is_default);
                 memcpy(sort_result->cmd[i].bytes +
                            2 *
                                ((*tag_s)->point.start_address -
@@ -512,4 +520,24 @@ static bool tag_sort_write(neu_tag_sort_t *sort, void *tag,
     }
 
     return true;
+}
+
+void modbus_convert_endianess_64(neu_value_u *       value,
+                                 modbus_endianess_64 endianess_64)
+{
+    switch (endianess_64) {
+    case MODBUS_LL:
+        break;
+    case MODBUS_BB:
+        value->u64 = neu_htonll(value->u64);
+        break;
+    case MODBUS_LB:
+        value->u64 = neu_htonlb(value->u64);
+        break;
+    case MODBUS_BL:
+        value->u64 = neu_htonbl(value->u64);
+        break;
+    default:
+        break;
+    }
 }
