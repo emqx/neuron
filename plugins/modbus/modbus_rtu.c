@@ -167,6 +167,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t retry_interval = { .name = "retry_interval",
                                        .t    = NEU_JSON_INT };
 
+    neu_json_elem_t endianess_64 = { .name = "endianess_64",
+                                     .t    = NEU_JSON_INT };
+
     ret = neu_parse_param((char *) config, &err_param, 3, &link, &timeout,
                           &interval);
     if (ret != 0) {
@@ -206,9 +209,16 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         retry_interval.v.val_int = 0;
     }
 
+    ret = neu_parse_param((char *) config, &err_param, 1, &endianess_64);
+    if (ret != 0) {
+        free(err_param);
+        endianess_64.v.val_int = MODBUS_LL;
+    }
+
     param.log              = plugin->common.log;
     plugin->max_retries    = max_retries.v.val_int;
     plugin->retry_interval = retry_interval.v.val_int;
+    plugin->endianess_64   = endianess_64.v.val_int;
 
     if (link.v.val_int == 0) {
         param.type = NEU_CONN_TTY_CLIENT;
