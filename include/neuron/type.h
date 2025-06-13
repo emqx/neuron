@@ -738,6 +738,42 @@ static inline uint64_t neu_htonll(uint64_t u)
     return ret;
 }
 
+static inline uint64_t neu_htonlb(uint64_t u)
+{
+    uint8_t *in        = (uint8_t *) &u;
+    uint64_t out       = 0;
+    uint8_t *out_bytes = (uint8_t *) &out;
+
+    out_bytes[0] = in[1];
+    out_bytes[1] = in[0];
+    out_bytes[2] = in[3];
+    out_bytes[3] = in[2];
+    out_bytes[4] = in[5];
+    out_bytes[5] = in[4];
+    out_bytes[6] = in[7];
+    out_bytes[7] = in[6];
+
+    return out;
+}
+
+static inline uint64_t neu_htonbl(uint64_t u)
+{
+    uint8_t *in        = (uint8_t *) &u;
+    uint64_t out       = 0;
+    uint8_t *out_bytes = (uint8_t *) &out;
+
+    out_bytes[0] = in[6];
+    out_bytes[1] = in[7];
+    out_bytes[2] = in[4];
+    out_bytes[3] = in[5];
+    out_bytes[4] = in[2];
+    out_bytes[5] = in[3];
+    out_bytes[6] = in[0];
+    out_bytes[7] = in[1];
+
+    return out;
+}
+
 static inline uint64_t neu_ntohll(uint64_t u)
 {
     return neu_htonll(u);
