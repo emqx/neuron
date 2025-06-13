@@ -14,7 +14,7 @@ env:
 
 jobs:
   cross-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:
@@ -52,14 +52,14 @@ jobs:
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-$VERSION
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: neuron-sdk
+          name: neuron-sdk-${{ matrix.arch[2] }}
           path: |
             neuron-sdk-*.tar.gz
 
   build-debug-sdk:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         arch:
@@ -83,7 +83,7 @@ jobs:
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-debug-$VERSION
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: neuron-sdk
           path: |
@@ -102,7 +102,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: neuron-sdk
       
