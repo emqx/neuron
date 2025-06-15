@@ -18,11 +18,11 @@
 		},
 		{
 			"type": 7,
-			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|#BB|#BL|#LL|#LB|)$"
 		},
 		{
 			"type": 8,
-			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|#BB|#BL|#LL|#LB|)$"
 		},
 		{
 			"type": 9,
@@ -30,7 +30,7 @@
 		},
 		{
 			"type": 10,
-			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|#BB|#BL|#LL|#LB|)$"
 		},
 		{
 			"type": 11,
@@ -91,6 +91,35 @@
 		"valid": {
 			"min": 0,
 			"max": 10000
+		}
+	},
+	"endianess_64": {
+		"name": "Endianess of 8-Byte Data",
+		"name_zh": "8 字节数据字节序",
+		"description": "Tag byte order, applicable to int64, uint64 and double types",
+		"description_zh": "点位字节序，适用于 int64，uint64 和 double 类型",
+		"attribute": "required",
+		"type": "map",
+		"default": 1,
+		"valid": {
+			"map": [
+				{
+					"key": "12 34 56 78",
+					"value": 1
+				},
+				{
+					"key": "21 43 65 87",
+					"value": 2
+				},
+				{
+					"key": "87 65 43 21",
+					"value": 3
+				},
+				{
+					"key": "78 56 34 12",
+					"value": 4
+				}
+			]
 		}
 	},
 	"interval": {
