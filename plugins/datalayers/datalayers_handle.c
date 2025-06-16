@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <jansson.h>
+
 #include "errcodes.h"
 #include "plugin.h"
 #include "type.h"
@@ -219,6 +221,120 @@ static void tag_array_init(void *_elt)
 static UT_icd ut_datatag_icd = { sizeof(datatag), tag_array_init,
                                  tag_array_copy, tag_array_free };
 
+void process_array_to_json_string(json_t *                   array,
+                                  neu_resp_tag_value_meta_t *tag_meta,
+                                  UT_array *                 string_tags,
+                                  neu_reqresp_trans_data_t * trans_data)
+{
+    switch (tag_meta->value.type) {
+    case NEU_TYPE_ARRAY_INT8:
+        for (size_t i = 0; i < tag_meta->value.value.i8s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.i8s.i8s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_UINT8:
+        for (size_t i = 0; i < tag_meta->value.value.u8s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.u8s.u8s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_INT16:
+        for (size_t i = 0; i < tag_meta->value.value.i16s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.i16s.i16s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_UINT16:
+        for (size_t i = 0; i < tag_meta->value.value.u16s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.u16s.u16s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_INT32:
+        for (size_t i = 0; i < tag_meta->value.value.i32s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.i32s.i32s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_UINT32:
+        for (size_t i = 0; i < tag_meta->value.value.u32s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.u32s.u32s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_INT64:
+        for (size_t i = 0; i < tag_meta->value.value.i64s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.i64s.i64s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_UINT64:
+        for (size_t i = 0; i < tag_meta->value.value.u64s.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.u64s.u64s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_FLOAT:
+        for (size_t i = 0; i < tag_meta->value.value.f32s.length; ++i) {
+            json_array_append_new(
+                array, json_real(tag_meta->value.value.f32s.f32s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_DOUBLE:
+        for (size_t i = 0; i < tag_meta->value.value.f64s.length; ++i) {
+            json_array_append_new(
+                array, json_real(tag_meta->value.value.f64s.f64s[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_STRING:
+        for (size_t i = 0; i < tag_meta->value.value.strs.length; ++i) {
+            json_array_append_new(
+                array, json_string(tag_meta->value.value.strs.strs[i]));
+        }
+        break;
+
+    case NEU_TYPE_ARRAY_BOOL:
+        for (size_t i = 0; i < tag_meta->value.value.bools.length; ++i) {
+            json_array_append_new(
+                array, json_boolean(tag_meta->value.value.bools.bools[i]));
+        }
+        break;
+
+    case NEU_TYPE_BYTES:
+        for (size_t i = 0; i < tag_meta->value.value.bytes.length; ++i) {
+            json_array_append_new(
+                array, json_integer(tag_meta->value.value.bytes.bytes[i]));
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    char *json_str = json_dumps(array, JSON_COMPACT);
+    json_decref(array);
+
+    datatag tag = { trans_data->driver,
+                    trans_data->group,
+                    tag_meta->tag,
+                    { .string_value = json_str },
+                    STRING_TYPE };
+    utarray_push_back(string_tags, &tag);
+
+    free(json_str);
+}
+
 int handle_trans_data(neu_plugin_t *            plugin,
                       neu_reqresp_trans_data_t *trans_data)
 {
@@ -297,27 +413,21 @@ int handle_trans_data(neu_plugin_t *            plugin,
                             STRING_TYPE };
             utarray_push_back(string_tags, &tag);
         } break;
-        case NEU_TYPE_BYTES: {
-            char formatted[NEU_VALUE_SIZE];
-            int  offset = 0;
-
-            offset +=
-                snprintf(formatted + offset, sizeof(formatted) - offset, "[ ");
-
-            for (int i = 0; i < tag_meta->value.value.bytes.length; ++i) {
-                offset += snprintf(
-                    formatted + offset, sizeof(formatted) - offset, "%u%s",
-                    tag_meta->value.value.bytes.bytes[i],
-                    (i == tag_meta->value.value.bytes.length - 1) ? " " : ", ");
-            }
-
-            snprintf(formatted + offset, sizeof(formatted) - offset, "]");
-            datatag tag = { trans_data->driver,
-                            trans_data->group,
-                            tag_meta->tag,
-                            { .string_value = formatted },
-                            STRING_TYPE };
-            utarray_push_back(string_tags, &tag);
+        case NEU_TYPE_BYTES:
+        case NEU_TYPE_ARRAY_BOOL:
+        case NEU_TYPE_ARRAY_INT8:
+        case NEU_TYPE_ARRAY_UINT8:
+        case NEU_TYPE_ARRAY_INT16:
+        case NEU_TYPE_ARRAY_UINT16:
+        case NEU_TYPE_ARRAY_INT32:
+        case NEU_TYPE_ARRAY_UINT32:
+        case NEU_TYPE_ARRAY_INT64:
+        case NEU_TYPE_ARRAY_UINT64:
+        case NEU_TYPE_ARRAY_FLOAT:
+        case NEU_TYPE_ARRAY_DOUBLE: {
+            json_t *array = json_array();
+            process_array_to_json_string(array, tag_meta, string_tags,
+                                         trans_data);
         } break;
         default:
             break;
