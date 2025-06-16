@@ -40,6 +40,7 @@ struct neu_plugin {
 
     modbus_protocol_e   protocol;
     modbus_endianess    endianess;
+    modbus_endianess_64 endianess_64;
     modbus_address_base address_base;
 
     uint16_t interval;

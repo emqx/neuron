@@ -174,6 +174,8 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t endianess    = { .name = "endianess", .t = NEU_JSON_INT };
     neu_json_elem_t address_base = { .name = "address_base",
                                      .t    = NEU_JSON_INT };
+    neu_json_elem_t endianess_64 = { .name = "endianess_64",
+                                     .t    = NEU_JSON_INT };
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
@@ -229,6 +231,12 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         address_base.v.val_int = base_1;
     }
 
+    ret = neu_parse_param((char *) config, &err_param, 1, &endianess_64);
+    if (ret != 0) {
+        free(err_param);
+        endianess_64.v.val_int = MODBUS_LL;
+    }
+
     param.log              = plugin->common.log;
     plugin->interval       = interval.v.val_int;
     plugin->max_retries    = max_retries.v.val_int;
@@ -238,6 +246,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->degrade_cycle  = degrade_cycle.v.val_int;
     plugin->degrade_time   = degrade_time.v.val_int;
     plugin->endianess      = endianess.v.val_int;
+    plugin->endianess_64   = endianess_64.v.val_int;
     plugin->address_base   = address_base.v.val_int;
 
     if (mode.v.val_int == 1) {
