@@ -387,7 +387,6 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
     int           rv          = 0;
     const char *  plugin_name = neu_plugin_module.module_name;
     mqtt_config_t config      = { 0 };
-    bool          started     = false;
 
     rv = plugin->parse_config(plugin, setting, &config);
     if (0 != rv) {
@@ -395,35 +394,13 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         return NEU_ERR_NODE_SETTING_INVALID;
     }
 
-    if (NULL == plugin->client) {
-        plugin->client = neu_mqtt_client_new(config.version);
-        if (NULL == plugin->client) {
-            plog_error(plugin, "neu_mqtt_client_new fail");
-            rv = NEU_ERR_EINTERNAL;
-            goto error;
+    if (plugin->client != NULL) {
+        if (neu_mqtt_client_is_open(plugin->client)) {
+            rv = neu_mqtt_client_close(plugin->client);
         }
-    } else if (neu_mqtt_client_is_open(plugin->client)) {
-        started = true;
-        if (plugin->config.enable_topic) {
-            plugin->unsubscribe(plugin, &plugin->config);
-        }
-        rv = neu_mqtt_client_close(plugin->client);
-        if (0 != rv) {
-            plog_error(plugin, "neu_mqtt_client_close fail");
-            rv = NEU_ERR_EINTERNAL;
-            goto error;
-        }
-        if (neu_mqtt_client_check_version_change(plugin->client,
-                                                 config.version)) {
-            neu_mqtt_client_free(plugin->client);
-            plugin->client = neu_mqtt_client_new(config.version);
-        }
-    } else if (neu_mqtt_client_check_version_change(plugin->client,
-                                                    config.version)) {
-        // plugin stopped and version changed
         neu_mqtt_client_free(plugin->client);
-        plugin->client = neu_mqtt_client_new(config.version);
     }
+    plugin->client = neu_mqtt_client_new(config.version);
 
     rv = config_mqtt_client(plugin, plugin->client, &config);
     if (0 != rv) {
@@ -431,21 +408,19 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         goto error;
     }
 
-    if (started) {
-        if (0 != neu_mqtt_client_open(plugin->client)) {
-            plog_error(plugin, "neu_mqtt_client_open fail");
-            rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+    if (0 != neu_mqtt_client_open(plugin->client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto error;
+    }
+    if (0 != start_hearbeat_timer(plugin, config.heartbeat_interval)) {
+        plog_error(plugin, "start hearbeat_timer failed");
+        rv = NEU_ERR_EINTERNAL;
+        goto error;
+    }
+    if (config.enable_topic) {
+        if (0 != (rv = plugin->subscribe(plugin, &config))) {
             goto error;
-        }
-        if (0 != start_hearbeat_timer(plugin, config.heartbeat_interval)) {
-            plog_error(plugin, "start hearbeat_timer failed");
-            rv = NEU_ERR_EINTERNAL;
-            goto error;
-        }
-        if (plugin->config.enable_topic) {
-            if (0 != (rv = plugin->subscribe(plugin, &config))) {
-                goto error;
-            }
         }
     }
 
@@ -487,7 +462,10 @@ int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
-    rv = plugin->subscribe(plugin, &plugin->config);
+    rv = 0;
+    if (plugin->config.enable_topic) {
+        rv = plugin->subscribe(plugin, &plugin->config);
+    }
 
 end:
     if (0 == rv) {
