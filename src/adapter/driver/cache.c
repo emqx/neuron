@@ -496,7 +496,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     value.value.bytes.length) {
                     elem->changed = true;
                 } else {
-                    if (memcpy(elem->value.value.bytes.bytes,
+                    if (memcmp(elem->value.value.bytes.bytes,
                                value.value.bytes.bytes,
                                value.value.bytes.length) != 0) {
                         elem->changed = true;
