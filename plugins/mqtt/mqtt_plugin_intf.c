@@ -342,7 +342,7 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
 
     if (plugin->client != NULL) {
         if (neu_mqtt_client_is_open(plugin->client)) {
-            rv = neu_mqtt_client_close(plugin->client);
+            neu_mqtt_client_close(plugin->client);
         }
         neu_mqtt_client_free(plugin->client);
     }
