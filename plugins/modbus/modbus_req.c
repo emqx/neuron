@@ -472,6 +472,10 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             case NEU_TYPE_DOUBLE:
             case NEU_TYPE_INT64:
             case NEU_TYPE_UINT64:
+                if ((*p_tag)->option.value64.is_default) {
+                    modbus_convert_endianess_64(&dvalue.value,
+                                                plugin->endianess_64);
+                }
                 dvalue.value.u64 = neu_ntohll(dvalue.value.u64);
                 break;
             case NEU_TYPE_BIT: {
@@ -729,6 +733,9 @@ static uint8_t convert_value(neu_plugin_t *plugin, neu_value_u *value,
     case NEU_TYPE_DOUBLE:
     case NEU_TYPE_INT64:
     case NEU_TYPE_UINT64:
+        if (tag->option.value64.is_default) {
+            modbus_convert_endianess_64(value, plugin->endianess_64);
+        }
         value->u64 = neu_htonll(value->u64);
         n_byte     = sizeof(uint64_t);
         break;
@@ -821,7 +828,8 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
 
         utarray_push_back(gtags->tags, &p);
     }
-    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags, plugin->endianess);
+    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags, plugin->endianess,
+                                             plugin->endianess_64);
     for (uint16_t i = 0; i < gtags->cmd_sort->n_cmd; i++) {
         ret = write_modbus_points(plugin, &gtags->cmd_sort->cmd[i], req);
         if (ret <= 0) {
