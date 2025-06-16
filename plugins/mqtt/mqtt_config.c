@@ -495,6 +495,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config qos             : %d", config->qos);
     plog_notice(plugin, "config format          : %s",
                 mqtt_upload_format_str(config->format));
+    plog_notice(plugin, "config enable-topic    : %d", config->enable_topic);
     plog_notice(plugin, "config write-req-topic : %s", config->write_req_topic);
     plog_notice(plugin, "config write-resp-topic: %s",
                 config->write_resp_topic);
