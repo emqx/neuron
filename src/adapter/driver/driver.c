@@ -831,9 +831,17 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_LWORD:
         switch (tag->option.value64.endian) {
         case NEU_DATATAG_ENDIAN_B64:
+        case NEU_DATATAG_ENDIAN_BB64:
             value->value.u64 = neu_ntohll(value->value.u64);
             break;
+        case NEU_DATATAG_ENDIAN_LB64:
+            value->value.u64 = neu_htonlb(value->value.u64);
+            break;
+        case NEU_DATATAG_ENDIAN_BL64:
+            value->value.u64 = neu_htonbl(value->value.u64);
+            break;
         case NEU_DATATAG_ENDIAN_L64:
+        case NEU_DATATAG_ENDIAN_LL64:
         default:
             break;
         }
@@ -2494,9 +2502,17 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_UINT64:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
+            case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
                 break;
+            case NEU_DATATAG_ENDIAN_LB64:
+                value.value.value.u64 = neu_htonlb(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_BL64:
+                value.value.value.u64 = neu_htonbl(value.value.value.u64);
+                break;
             case NEU_DATATAG_ENDIAN_L64:
+            case NEU_DATATAG_ENDIAN_LL64:
             default:
                 break;
             }
@@ -2660,9 +2676,17 @@ static void read_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_UINT64:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
+            case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
                 break;
+            case NEU_DATATAG_ENDIAN_LB64:
+                value.value.value.u64 = neu_htonlb(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_BL64:
+                value.value.value.u64 = neu_htonbl(value.value.value.u64);
+                break;
             case NEU_DATATAG_ENDIAN_L64:
+            case NEU_DATATAG_ENDIAN_LL64:
             default:
                 break;
             }
@@ -2840,9 +2864,17 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_UINT64:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
+            case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
                 break;
+            case NEU_DATATAG_ENDIAN_LB64:
+                value.value.value.u64 = neu_htonlb(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_BL64:
+                value.value.value.u64 = neu_htonbl(value.value.value.u64);
+                break;
             case NEU_DATATAG_ENDIAN_L64:
+            case NEU_DATATAG_ENDIAN_LL64:
             default:
                 break;
             }

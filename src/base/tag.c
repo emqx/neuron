@@ -262,21 +262,35 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
     case NEU_TYPE_UINT64: {
         char *op = find_last_character(datatag->address, '#');
 
-        option->value64.endian = NEU_DATATAG_ENDIAN_L64;
+        option->value64.endian     = NEU_DATATAG_ENDIAN_L64;
+        option->value64.is_default = true;
         if (op != NULL) {
-            char e = 0;
-            sscanf(op, "#%c", &e);
+            char e1 = 0;
+            char e2 = 0;
+            int  n  = sscanf(op, "#%c%c", &e1, &e2);
 
-            switch (e) {
-            case 'B':
-                option->value64.endian = NEU_DATATAG_ENDIAN_B64;
-                break;
-            case 'L':
-                option->value64.endian = NEU_DATATAG_ENDIAN_L64;
-                break;
-            default:
-                option->value64.endian = NEU_DATATAG_ENDIAN_L64;
-                break;
+            if (n == 2) {
+                if (e1 == 'B' && e2 == 'B') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_BB64;
+                    option->value64.is_default = false;
+                } else if (e1 == 'B' && e2 == 'L') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_BL64;
+                    option->value64.is_default = false;
+                } else if (e1 == 'L' && e2 == 'L') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_LL64;
+                    option->value64.is_default = false;
+                } else if (e1 == 'L' && e2 == 'B') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_LB64;
+                    option->value64.is_default = false;
+                }
+            } else if (n == 1) {
+                if (e1 == 'B') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_B64;
+                    option->value64.is_default = false;
+                } else if (e1 == 'L') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_L64;
+                    option->value64.is_default = false;
+                }
             }
         }
 
