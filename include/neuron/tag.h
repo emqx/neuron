@@ -44,6 +44,10 @@ typedef enum {
     NEU_DATATAG_ENDIAN_BL32 = 5, // #BL 2,1,4,3
     NEU_DATATAG_ENDIAN_L64  = 6, // #L  8,7,6,5,4,3,2,1
     NEU_DATATAG_ENDIAN_B64  = 7, // #B  1,2,3,4,5,6,7,8
+    NEU_DATATAG_ENDIAN_LL64 = 8,
+    NEU_DATATAG_ENDIAN_LB64 = 9,
+    NEU_DATATAG_ENDIAN_BB64 = 10,
+    NEU_DATATAG_ENDIAN_BL64 = 11,
 } neu_datatag_endian_e;
 
 typedef enum {
@@ -62,6 +66,7 @@ typedef union {
     } value32;
     struct {
         neu_datatag_endian_e endian;
+        bool                 is_default;
     } value64;
     struct {
         uint16_t                  length;
