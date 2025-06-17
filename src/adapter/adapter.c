@@ -44,6 +44,8 @@
 #include "plugin.h"
 #include "storage.h"
 
+void adapter_msg_q_exit(adapter_msg_q_t *q);
+
 static void *adapter_consumer(void *arg);
 static int   adapter_trans_data(enum neu_event_io_type type, int fd,
                                 void *usr_data);
@@ -118,6 +120,10 @@ static void *adapter_consumer(void *arg)
     while (1) {
         neu_msg_t *         msg    = NULL;
         uint32_t            n      = adapter_msg_q_pop(adapter->msg_q, &msg);
+        if (msg == NULL) {
+            // safe quit
+            break;
+        }
         neu_reqresp_head_t *header = neu_msg_get_header(msg);
 
         nlog_debug("adapter(%s) recv msg from: %s %p, type: %s, %u",
@@ -1710,6 +1716,16 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     close(adapter->control_fd);
     close(adapter->trans_data_fd);
 
+    // First set the message queue exit flag to let threads exit naturally
+    if (adapter->msg_q != NULL) {
+        adapter_msg_q_exit(adapter->msg_q);
+    }
+
+    // Wait for the consumer thread to exit
+    if (adapter->consumer_tid != 0) {
+        pthread_join(adapter->consumer_tid, NULL);
+    }
+
     adapter->module->intf_funs->close(adapter->plugin);
 
     if (NULL != adapter->metrics) {
@@ -1717,9 +1733,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
         neu_node_metrics_free(adapter->metrics);
     }
 
-    if (adapter->consumer_tid != 0) {
-        pthread_cancel(adapter->consumer_tid);
-    }
     if (adapter->msg_q != NULL) {
         adapter_msg_q_free(adapter->msg_q);
     }

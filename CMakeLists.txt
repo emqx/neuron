@@ -28,7 +28,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 if(NOT DISABLE_WERROR)
-  set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Werror")
+  set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Werror -Wno-deprecated-declarations -Wno-error=deprecated-declarations")
 endif()
 
 if(USE_GCOV)

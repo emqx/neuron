@@ -36,7 +36,10 @@ struct adapter_msg_q {
 
     pthread_mutex_t mtx;
     pthread_cond_t  cond;
+    volatile bool exit_flag;
 };
+
+void adapter_msg_q_exit(adapter_msg_q_t *q);
 
 adapter_msg_q_t *adapter_msg_q_new(const char *name, uint32_t size)
 {
@@ -53,11 +56,11 @@ adapter_msg_q_t *adapter_msg_q_new(const char *name, uint32_t size)
 
 void adapter_msg_q_free(adapter_msg_q_t *q)
 {
+    adapter_msg_q_exit(q);
     struct item *tmp = NULL, *elt = NULL;
     nlog_warn("app: %s, drop %u msg", q->name, q->current);
     pthread_mutex_destroy(&q->mtx);
     pthread_cond_destroy(&q->cond);
-
     DL_FOREACH_SAFE(q->list, elt, tmp)
     {
         DL_DELETE(q->list, elt);
@@ -68,6 +71,14 @@ void adapter_msg_q_free(adapter_msg_q_t *q)
     }
     free(q->name);
     free(q);
+}
+
+void adapter_msg_q_exit(adapter_msg_q_t *q)
+{
+    pthread_mutex_lock(&q->mtx);
+    q->exit_flag = true;
+    pthread_cond_broadcast(&q->cond);
+    pthread_mutex_unlock(&q->mtx);
 }
 
 int adapter_msg_q_push(adapter_msg_q_t *q, neu_msg_t *msg)
@@ -96,13 +107,16 @@ int adapter_msg_q_push(adapter_msg_q_t *q, neu_msg_t *msg)
 uint32_t adapter_msg_q_pop(adapter_msg_q_t *q, neu_msg_t **p_data)
 {
     uint32_t ret = 0;
-
     pthread_mutex_lock(&q->mtx);
-    while (q->current == 0) {
+    while (q->current == 0 && !q->exit_flag) {
         pthread_cond_wait(&q->cond, &q->mtx);
     }
+    if (q->exit_flag) {
+        pthread_mutex_unlock(&q->mtx);
+        *p_data = NULL;
+        return 0;
+    }
     struct item *elt = DL_LAST(q->list);
-
     if (elt != NULL) {
         DL_DELETE(q->list, elt);
         *p_data = elt->msg;
@@ -110,7 +124,6 @@ uint32_t adapter_msg_q_pop(adapter_msg_q_t *q, neu_msg_t **p_data)
         q->current -= 1;
         ret = q->current;
     }
-
     pthread_mutex_unlock(&q->mtx);
     return ret;
 }
