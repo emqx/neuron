@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 # Install openssl
 echo "Installing openssl..."
