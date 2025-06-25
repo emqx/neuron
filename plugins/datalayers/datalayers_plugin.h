@@ -68,6 +68,9 @@ struct neu_plugin {
     task_queue_t task_queue;
     pthread_t    consumer_thread;
 
+    pthread_mutex_t queue_mutex;
+    pthread_cond_t  queue_not_empty;
+
     pthread_rwlock_t plugin_mutex;
     bool             consumer_thread_stop_flag;
 
