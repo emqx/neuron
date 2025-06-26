@@ -2126,6 +2126,7 @@ static int report_callback(void *usr_data)
     data->driver = strdup(group->driver->adapter.name);
     data->group  = strdup(group->name);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
+    utarray_reserve(data->tags, utarray_len(tags));
 
     void *trace_ctx =
         neu_driver_cache_get_trace(group->driver->cache, group->name);
