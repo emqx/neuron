@@ -33,9 +33,9 @@ extern const neu_plugin_module_t neu_plugin_module;
 
 void create_consumer_thread(neu_plugin_t *plugin)
 {
-    pthread_rwlock_wrlock(&plugin->plugin_mutex);
+    pthread_mutex_lock(&plugin->queue_mutex);
     plugin->consumer_thread_stop_flag = false;
-    pthread_rwlock_unlock(&plugin->plugin_mutex);
+    pthread_mutex_unlock(&plugin->queue_mutex);
 
     int status = pthread_create(&plugin->consumer_thread, NULL,
                                 (void *) db_write_task_consumer, plugin);
@@ -54,9 +54,10 @@ neu_plugin_t *datalayers_plugin_open(void)
 
 void stop_consumer_thread(pthread_t *consumer_thread, neu_plugin_t *plugin)
 {
-    pthread_rwlock_wrlock(&plugin->plugin_mutex);
+    pthread_mutex_lock(&plugin->queue_mutex);
     plugin->consumer_thread_stop_flag = true;
-    pthread_rwlock_unlock(&plugin->plugin_mutex);
+    pthread_cond_broadcast(&plugin->queue_not_empty);
+    pthread_mutex_unlock(&plugin->queue_mutex);
 
     int join_status = pthread_join(*consumer_thread, NULL);
     if (join_status != 0) {
@@ -81,11 +82,17 @@ int datalayers_plugin_init(neu_plugin_t *plugin, bool load)
 
     pthread_rwlock_init(&plugin->plugin_mutex, NULL);
 
+    pthread_mutex_init(&plugin->queue_mutex, NULL);
+    pthread_cond_init(&plugin->queue_not_empty, NULL);
+
+    pthread_mutex_lock(&plugin->queue_mutex);
+    plugin->consumer_thread_stop_flag = false;
+    pthread_mutex_unlock(&plugin->queue_mutex);
+
     task_queue_init(&plugin->task_queue);
 
     pthread_create(&plugin->consumer_thread, NULL,
                    (void *) db_write_task_consumer, plugin);
-    pthread_detach(plugin->consumer_thread);
 
     NEU_PLUGIN_REGISTER_CACHED_QUEUE_SIZE_METRIC(plugin);
     NEU_PLUGIN_REGISTER_MAX_CACHED_QUEUE_SIZE_METRIC(plugin);
@@ -101,7 +108,11 @@ int datalayers_plugin_uninit(neu_plugin_t *plugin)
     pthread_rwlock_wrlock(&plugin->plugin_mutex);
 
     stop_consumer_thread(&plugin->consumer_thread, plugin);
+    pthread_mutex_lock(&plugin->queue_mutex);
     tasks_free(&plugin->task_queue);
+    pthread_mutex_unlock(&plugin->queue_mutex);
+    pthread_mutex_destroy(&plugin->queue_mutex);
+    pthread_cond_destroy(&plugin->queue_not_empty);
     datalayers_config_fini(&plugin->config);
 
     route_tbl_free(plugin->route_tbl);
@@ -149,7 +160,9 @@ int datalayers_plugin_config(neu_plugin_t *plugin, const char *setting)
     datalayers_config_t config      = { 0 };
     if (plugin->client != NULL) {
         stop_consumer_thread(&plugin->consumer_thread, plugin);
+        pthread_mutex_lock(&plugin->queue_mutex);
         tasks_free(&plugin->task_queue);
+        pthread_mutex_unlock(&plugin->queue_mutex);
         client_destroy(plugin->client);
         plugin->client = NULL;
         create_consumer_thread(plugin);
