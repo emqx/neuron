@@ -50,17 +50,16 @@ void neu_driver_cache_update_trace(neu_driver_cache_t *cache, const char *group,
 void *neu_driver_cache_get_trace(neu_driver_cache_t *cache, const char *group);
 
 typedef struct {
-    neu_dvalue_t   value;
-    int64_t        timestamp;
-    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+    neu_dvalue_t value;
+    int64_t      timestamp;
 } neu_driver_cache_value_t;
 
 int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
                               const char *tag, neu_driver_cache_value_t *value,
-                              neu_tag_meta_t *metas, int n_meta);
+                              neu_tag_meta_t **metas, int *n_meta);
 int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
                                       const char *group, const char *tag,
                                       neu_driver_cache_value_t *value,
-                                      neu_tag_meta_t *metas, int n_meta);
+                                      neu_tag_meta_t **metas, int *n_meta);
 
 #endif
