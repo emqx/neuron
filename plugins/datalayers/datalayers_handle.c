@@ -185,21 +185,27 @@ void db_write_task_consumer(neu_plugin_t *plugin)
     db_write_task_t *task = NULL;
 
     while (1) {
-        pthread_rwlock_rdlock(&plugin->plugin_mutex);
-        if (plugin->consumer_thread_stop_flag) {
-            pthread_rwlock_unlock(&plugin->plugin_mutex);
+        pthread_mutex_lock(&plugin->queue_mutex);
+
+        while (plugin->task_queue.size == 0 &&
+               !plugin->consumer_thread_stop_flag) {
+            pthread_cond_wait(&plugin->queue_not_empty, &plugin->queue_mutex);
+        }
+
+        if (plugin->consumer_thread_stop_flag && plugin->task_queue.size == 0) {
+            pthread_mutex_unlock(&plugin->queue_mutex);
             break;
         }
-        pthread_rwlock_unlock(&plugin->plugin_mutex);
 
         task = task_queue_pop(plugin, &plugin->task_queue);
+        pthread_mutex_unlock(&plugin->queue_mutex);
+
         if (task) {
             db_write_task_cb(task, plugin);
             task_free(task);
-        } else {
-            usleep(1000);
         }
     }
+
     plog_notice(plugin, "Consumer thread exiting gracefully.\n");
 }
 
@@ -558,9 +564,12 @@ int handle_trans_data(neu_plugin_t *            plugin,
     task->bool_tags       = bool_tags;
     task->string_tags     = string_tags;
 
-    task_queue_push(plugin, task);
-
     pthread_rwlock_unlock(&plugin->plugin_mutex);
+
+    pthread_mutex_lock(&plugin->queue_mutex);
+    task_queue_push(plugin, task);
+    pthread_cond_signal(&plugin->queue_not_empty);
+    pthread_mutex_unlock(&plugin->queue_mutex);
 
     return rv;
 }
