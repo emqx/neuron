@@ -56,6 +56,7 @@ add_custom_target(neuron-version
 find_package(nng CONFIG REQUIRED)
 find_package(LibXml2 REQUIRED)
 find_package(Threads)
+find_package(OpenSSL REQUIRED)
 
 if (CMAKE_STAGING_PREFIX)
   include_directories(${CMAKE_STAGING_PREFIX}/include)
@@ -123,7 +124,7 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_OTEL}) 
 target_include_directories(neuron-base
                            PRIVATE include/neuron src)
-target_link_libraries(neuron-base libssl.a libcrypto.a)
+target_link_libraries(neuron-base OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(neuron-base nng libzlog.so jansson jwt xml2
                       ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c)
 add_dependencies(neuron-base neuron-version)
