@@ -733,10 +733,11 @@ typedef struct neu_resp_tag_value {
 typedef neu_resp_tag_value_t neu_tag_value_t;
 
 typedef struct neu_resp_tag_value_meta {
-    char           tag[NEU_TAG_NAME_LEN];
-    neu_dvalue_t   value;
-    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
-    neu_datatag_t  datatag;
+    char            tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t    value;
+    neu_tag_meta_t *metas;
+    int             n_meta;
+    neu_datatag_t   datatag;
 } neu_resp_tag_value_meta_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_icd()
@@ -797,10 +798,11 @@ typedef struct {
 } neu_resp_read_group_t;
 
 typedef struct neu_resp_tag_value_meta_paginate {
-    char           tag[NEU_TAG_NAME_LEN];
-    neu_dvalue_t   value;
-    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
-    neu_datatag_t  datatag;
+    char            tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t    value;
+    neu_tag_meta_t *metas;
+    int             n_meta;
+    neu_datatag_t   datatag;
 } neu_resp_tag_value_meta_paginate_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_paginate_icd()
@@ -831,6 +833,13 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
                    tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
             free(tag_value->value.value.bools.bools);
         }
+
+        if (tag_value->metas != NULL) {
+            for (int i = 0; i < tag_value->n_meta; i++) {
+                neu_free_dvalue(&tag_value->metas[i].value);
+            }
+            free(tag_value->metas);
+        }
     }
     free(resp->driver);
     free(resp->group);
@@ -847,6 +856,13 @@ neu_resp_read_paginate_free(neu_resp_read_group_paginate_t *resp)
         } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
                    tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
             free(tag_value->value.value.bools.bools);
+        }
+
+        if (tag_value->metas != NULL) {
+            for (int i = 0; i < tag_value->n_meta; i++) {
+                neu_free_dvalue(&tag_value->metas[i].value);
+            }
+            free(tag_value->metas);
         }
     }
     free(resp->driver);
@@ -925,6 +941,13 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
                        tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
                 free(tag_value->value.value.bools.bools);
             }
+
+            if (tag_value->metas != NULL) {
+                for (int i = 0; i < tag_value->n_meta; i++) {
+                    neu_free_dvalue(&tag_value->metas[i].value);
+                }
+                free(tag_value->metas);
+            }
         }
         utarray_free(data->tags);
         free(data->group);
@@ -943,18 +966,21 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
     tag_json->name  = tag_value->tag;
     tag_json->error = 0;
 
-    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
-        if (strlen(tag_value->metas[k].name) > 0) {
-            tag_json->n_meta++;
-        } else {
-            break;
-        }
-    }
+    // for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+    //     if (strlen(tag_value->metas[k].name) > 0) {
+    //         tag_json->n_meta++;
+    //     } else {
+    //         break;
+    //     }
+    // }
+
+    tag_json->n_meta = tag_value->n_meta;
+
     if (tag_json->n_meta > 0) {
         tag_json->metas = (neu_json_tag_meta_t *) calloc(
             tag_json->n_meta, sizeof(neu_json_tag_meta_t));
     }
-    neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, tag_json);
+    neu_json_metas_to_json(tag_value->metas, tag_value->n_meta, tag_json);
 
     tag_json->datatag.bias = tag_value->datatag.bias;
 
@@ -1152,18 +1178,21 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
     memcpy(tag_json->datatag.meta, tag_value->datatag.meta,
            NEU_TAG_META_LENGTH);
 
-    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
-        if (strlen(tag_value->metas[k].name) > 0) {
-            tag_json->n_meta++;
-        } else {
-            break;
-        }
-    }
+    // for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+    //     if (strlen(tag_value->metas[k].name) > 0) {
+    //         tag_json->n_meta++;
+    //     } else {
+    //         break;
+    //     }
+    // }
+
+    tag_json->n_meta = tag_value->n_meta;
+
     if (tag_json->n_meta > 0) {
         tag_json->metas = (neu_json_tag_meta_t *) calloc(
             tag_json->n_meta, sizeof(neu_json_tag_meta_t));
     }
-    neu_json_metas_to_json_paginate(tag_value->metas, NEU_TAG_META_SIZE,
+    neu_json_metas_to_json_paginate(tag_value->metas, tag_value->n_meta,
                                     tag_json);
 
     switch (tag_value->value.type) {
