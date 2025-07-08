@@ -194,8 +194,24 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, int type)
     return array;
 }
 
+static int neu_resp_node_info_sort(const void *a, const void *b)
+{
+    const neu_resp_node_info_t *info_a = (const neu_resp_node_info_t *) a;
+    const neu_resp_node_info_t *info_b = (const neu_resp_node_info_t *) b;
+
+    if (info_a->delay < info_b->delay) {
+        return -1;
+    } else if (info_a->delay > info_b->delay) {
+        return 1;
+    }
+    return 0;
+}
+
 UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
-                                  const char *plugin, const char *node)
+                                  const char *plugin, const char *node,
+                                  bool sort_delay, bool q_state, int state,
+                                  bool q_link, int link,
+                                  const char *q_group_name)
 {
     UT_array *     array = NULL;
     UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
@@ -215,12 +231,55 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                     strstr(el->adapter->name, node) == NULL) {
                     continue;
                 }
+                if (q_state) {
+                    if (el->adapter->state !=
+                        (neu_node_running_state_e) state) {
+                        continue;
+                    }
+                }
+                if (q_link) {
+                    neu_node_state_t node_state =
+                        neu_adapter_get_state(el->adapter);
+                    if (node_state.link != (neu_node_link_state_e) link) {
+                        continue;
+                    }
+                }
+
+                if (strlen(q_group_name) > 0) {
+                    if (strstr(el->adapter->name, q_group_name) == NULL) {
+                        UT_array *groups =
+                            neu_adapter_get_groups(el->adapter, q_group_name);
+                        if (NULL == groups || utarray_len(groups) == 0) {
+                            if (groups != NULL) {
+                                utarray_free(groups);
+                            }
+                            continue;
+                        } else {
+                            utarray_free(groups);
+                        }
+                    }
+                }
+
                 neu_resp_node_info_t info = { 0 };
                 strcpy(info.node, el->adapter->name);
                 strcpy(info.plugin, el->adapter->module->module_name);
+                if (sort_delay) {
+                    neu_metric_entry_t *e = NULL;
+                    if (NULL != el->adapter->metrics) {
+                        HASH_FIND_STR(el->adapter->metrics->entries,
+                                      NEU_METRIC_LAST_RTT_MS, e);
+                    }
+                    info.delay = NULL != e ? e->value : 0;
+                } else {
+                    info.delay = 0;
+                }
                 utarray_push_back(array, &info);
             }
         }
+    }
+
+    if (sort_delay) {
+        utarray_sort(array, neu_resp_node_info_sort);
     }
 
     return array;

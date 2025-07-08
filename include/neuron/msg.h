@@ -326,11 +326,21 @@ typedef struct neu_req_get_node {
     neu_node_type_e type;
     char            plugin[NEU_PLUGIN_NAME_LEN];
     char            node[NEU_NODE_NAME_LEN];
+
+    struct {
+        bool q_state;
+        int  state;
+        bool q_link;
+        int  link;
+        bool s_delay;
+        char q_group_name[NEU_GROUP_NAME_LEN];
+    } query;
 } neu_req_get_node_t;
 
 typedef struct neu_resp_node_info {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
+    int64_t delay;
+    char    node[NEU_NODE_NAME_LEN];
+    char    plugin[NEU_PLUGIN_NAME_LEN];
 } neu_resp_node_info_t;
 
 typedef struct neu_resp_get_node {
@@ -368,6 +378,7 @@ typedef struct neu_req_del_group {
 
 typedef struct neu_req_get_group {
     char driver[NEU_NODE_NAME_LEN];
+    char q_group[NEU_GROUP_NAME_LEN];
 } neu_req_get_group_t;
 
 typedef struct neu_resp_group_info {

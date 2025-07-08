@@ -160,11 +160,12 @@ void handle_del_group_config(nng_aio *aio)
 
 void handle_get_group_config(nng_aio *aio)
 {
-    neu_plugin_t *      plugin                       = neu_rest_get_plugin();
-    char                node_name[NEU_NODE_NAME_LEN] = { 0 };
-    int                 ret                          = 0;
-    neu_req_get_group_t cmd                          = { 0 };
-    neu_reqresp_head_t  header                       = {
+    neu_plugin_t *      plugin                         = neu_rest_get_plugin();
+    char                node_name[NEU_NODE_NAME_LEN]   = { 0 };
+    char                group_name[NEU_GROUP_NAME_LEN] = { 0 };
+    int                 ret                            = 0;
+    neu_req_get_group_t cmd                            = { 0 };
+    neu_reqresp_head_t  header                         = {
         .ctx             = aio,
         .type            = NEU_REQ_GET_GROUP,
         .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
@@ -176,6 +177,11 @@ void handle_get_group_config(nng_aio *aio)
     strcpy(cmd.driver, node_name);
     if (strlen(cmd.driver) == 0) {
         header.type = NEU_REQ_GET_DRIVER_GROUP;
+    }
+
+    if (neu_http_get_param_str(aio, "group", group_name, sizeof(group_name)) >
+        0) {
+        strcpy(cmd.q_group, group_name);
     }
 
     ret = neu_plugin_op(plugin, header, &cmd);

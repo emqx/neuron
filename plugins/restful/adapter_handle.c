@@ -145,6 +145,7 @@ void handle_get_adapter(nng_aio *aio)
     int  ret                              = 0;
     char plugin_name[NEU_PLUGIN_NAME_LEN] = { 0 };
     char node_name[NEU_NODE_NAME_LEN]     = { 0 };
+    char group_name[NEU_GROUP_NAME_LEN]   = { 0 };
 
     neu_plugin_t *     plugin    = neu_rest_get_plugin();
     neu_node_type_e    node_type = { 0 };
@@ -171,6 +172,33 @@ void handle_get_adapter(nng_aio *aio)
 
     if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {
         strcpy(cmd.node, node_name);
+    }
+
+    if (neu_http_get_param_str(aio, "group", group_name, sizeof(group_name)) >
+        0) {
+        strcpy(cmd.query.q_group_name, group_name);
+    }
+
+    uintmax_t query_state = 0;
+    if (neu_http_get_param_uintmax(aio, "state", &query_state) == 0) {
+        if (query_state == 1 || query_state == 2 || query_state == 3 ||
+            query_state == 4) {
+            cmd.query.q_state = true;
+            cmd.query.state   = (int) query_state;
+        }
+    }
+
+    uintmax_t query_link = 0;
+    if (neu_http_get_param_uintmax(aio, "link", &query_link) == 0) {
+        if (query_link == 0 || query_link == 1) {
+            cmd.query.q_link = true;
+            cmd.query.link   = (int) query_link;
+        }
+    }
+
+    uintmax_t sort_delay = 0;
+    if (neu_http_get_param_uintmax(aio, "delay", &sort_delay) == 0) {
+        cmd.query.s_delay = true;
     }
 
     cmd.type = node_type;
