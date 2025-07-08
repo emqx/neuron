@@ -45,7 +45,8 @@ struct elem {
     neu_dvalue_t value;
     neu_dvalue_t value_old;
 
-    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+    neu_tag_meta_t *metas;
+    int             n_meta;
 
     tkey_t         key;
     UT_hash_handle hh;
@@ -113,6 +114,13 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
         } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
                    elem->value.type < NEU_TYPE_ARRAY_STRING) {
             free(elem->value.value.bools.bools);
+        }
+
+        if (elem->metas != NULL) {
+            for (int i = 0; i < elem->n_meta; i++) {
+                neu_free_dvalue(&elem->metas[i].value);
+            }
+            free(elem->metas);
         }
 
         free(elem);
@@ -764,9 +772,16 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
         }
         elem->value.type = value.type;
 
-        memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
-        for (int i = 0; i < n_meta; i++) {
-            memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
+        if (metas != NULL) {
+            if (elem->metas != NULL) {
+                free(elem->metas);
+            }
+            elem->metas = calloc(n_meta, sizeof(neu_tag_meta_t));
+            for (int i = 0; i < n_meta; i++) {
+                memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
+            }
+
+            elem->n_meta = n_meta;
         }
     }
 
@@ -784,7 +799,7 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
 
 int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
                               const char *tag, neu_driver_cache_value_t *value,
-                              neu_tag_meta_t *metas, int n_meta)
+                              neu_tag_meta_t **metas, int *n_meta)
 {
     struct elem *elem = NULL;
     int          ret  = -1;
@@ -798,8 +813,14 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
         value->value.type      = elem->value.type;
         value->value.precision = elem->value.precision;
 
-        assert(n_meta <= NEU_TAG_META_SIZE);
-        memcpy(metas, elem->metas, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
+        // assert(n_meta <= NEU_TAG_META_SIZE);
+        if (elem->metas) {
+            *metas = calloc(elem->n_meta, sizeof(neu_tag_meta_t));
+            memcpy(*metas, elem->metas, sizeof(neu_tag_meta_t) * elem->n_meta);
+        } else {
+            *metas = NULL;
+        }
+        *n_meta = elem->n_meta;
 
         switch (elem->value.type) {
         case NEU_TYPE_INT8:
@@ -939,13 +960,6 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
         case NEU_TYPE_CUSTOM:
             value->value.value.json = json_deep_copy(elem->value.value.json);
             break;
-        }
-
-        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (strlen(elem->metas[i].name) > 0) {
-                memcpy(&value->metas[i], &elem->metas[i],
-                       sizeof(neu_tag_meta_t));
-            }
         }
 
         ret = 0;
@@ -959,7 +973,7 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
 int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
                                       const char *group, const char *tag,
                                       neu_driver_cache_value_t *value,
-                                      neu_tag_meta_t *metas, int n_meta)
+                                      neu_tag_meta_t **metas, int *n_meta)
 {
     struct elem *elem = NULL;
     int          ret  = -1;
@@ -973,8 +987,14 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
         value->value.type      = elem->value.type;
         value->value.precision = elem->value.precision;
 
-        assert(n_meta <= NEU_TAG_META_SIZE);
-        memcpy(metas, elem->metas, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
+        // assert(n_meta <= NEU_TAG_META_SIZE);
+        if (elem->metas) {
+            *metas = calloc(elem->n_meta, sizeof(neu_tag_meta_t));
+            memcpy(*metas, elem->metas, sizeof(neu_tag_meta_t) * elem->n_meta);
+        } else {
+            *metas = NULL;
+        }
+        *n_meta = elem->n_meta;
 
         switch (elem->value.type) {
         case NEU_TYPE_INT8:
@@ -1114,13 +1134,6 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
         case NEU_TYPE_CUSTOM:
             value->value.value.json = json_deep_copy(elem->value.value.json);
             break;
-        }
-
-        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (strlen(elem->metas[i].name) > 0) {
-                memcpy(&value->metas[i], &elem->metas[i],
-                       sizeof(neu_tag_meta_t));
-            }
         }
 
         if (elem->value.type != NEU_TYPE_ERROR) {
@@ -1164,6 +1177,12 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
         } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
                    elem->value.type < NEU_TYPE_ARRAY_STRING) {
             free(elem->value.value.bools.bools);
+        }
+        if (elem->metas != NULL) {
+            for (int i = 0; i < elem->n_meta; i++) {
+                neu_free_dvalue(&elem->metas[i].value);
+            }
+            free(elem->metas);
         }
         free(elem);
     }

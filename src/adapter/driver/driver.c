@@ -2338,6 +2338,13 @@ static int report_callback(void *usr_data)
                 } else {
                     neu_free_dvalue(&tag_value->value);
                 }
+
+                if (tag_value->metas != NULL) {
+                    for (int i = 0; i < tag_value->n_meta; i++) {
+                        neu_free_dvalue(&tag_value->metas[i].value);
+                    }
+                    free(tag_value->metas);
+                }
             }
             utarray_free(data->tags);
             free(data->group);
@@ -2542,15 +2549,15 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
 
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             if (neu_driver_cache_meta_get_changed(cache, group, tag->name,
-                                                  &value, tag_value.metas,
-                                                  NEU_TAG_META_SIZE) != 0) {
+                                                  &value, &tag_value.metas,
+                                                  &tag_value.n_meta) != 0) {
                 nlog_debug("tag: %s not changed", tag->name);
                 continue;
             }
         } else {
             if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
-                                          tag_value.metas,
-                                          NEU_TAG_META_SIZE) != 0) {
+                                          &tag_value.metas,
+                                          &tag_value.n_meta) != 0) {
                 strcpy(tag_value.tag, tag->name);
                 tag_value.value.type      = NEU_TYPE_ERROR;
                 tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
@@ -2737,8 +2744,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
         tag_value.datatag.bias = tag->bias;
 
         if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
-                                      tag_value.metas,
-                                      NEU_TAG_META_SIZE) != 0) {
+                                      &tag_value.metas,
+                                      &tag_value.n_meta) != 0) {
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
 
@@ -2925,8 +2932,8 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         }
 
         if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
-                                      tag_value.metas,
-                                      NEU_TAG_META_SIZE) != 0) {
+                                      &tag_value.metas,
+                                      &tag_value.n_meta) != 0) {
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
 

@@ -1186,7 +1186,7 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                 break;
             }
 
-            for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+            for (int i = 0; i < tag_value->n_meta; i++) {
                 if (strlen(tag_value->metas[i].name) > 0) {
                     if (strncmp(tag_value->metas[i].name, "q", 1) == 0) {
                         tag->has_q = true;
@@ -1416,7 +1416,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
                     break;
                 }
 
-                for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+                for (int i = 0; i < tag_value->n_meta; i++) {
                     if (strlen(tag_value->metas[i].name) > 0) {
                         if (strncmp(tag_value->metas[i].name, "q", 1) == 0) {
                             tag->has_q = true;
