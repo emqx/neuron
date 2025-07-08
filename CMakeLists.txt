@@ -56,6 +56,7 @@ add_custom_target(neuron-version
 find_package(nng CONFIG REQUIRED)
 find_package(LibXml2 REQUIRED)
 find_package(Threads)
+set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 
 if (CMAKE_STAGING_PREFIX)
