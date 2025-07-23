@@ -43,11 +43,23 @@
 
 #include "normal_handle.h"
 
+/**
+ * 处理ping请求，用于检查服务是否在线
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回空JSON对象响应
+ */
 void handle_ping(nng_aio *aio)
 {
     neu_http_ok(aio, "{}");
 }
 
+/**
+ * 处理用户登录请求，验证用户名和密码，成功则返回JWT令牌
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应，包含JWT令牌或错误信息
+ */
 void handle_login(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST(
@@ -99,6 +111,12 @@ void handle_login(nng_aio *aio)
         })
 }
 
+/**
+ * 处理修改密码请求，验证用户旧密码后更新为新密码
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应，表示操作成功或失败
+ */
 void handle_password(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -133,6 +151,13 @@ void handle_password(nng_aio *aio)
         })
 }
 
+/**
+ * 从文件中读取字符串内容
+ *
+ * @param length 输出参数，返回读取的字符串长度
+ * @param path 要读取的文件路径
+ * @return 读取的字符串内容，失败则返回NULL
+ */
 static char *file_string_read(size_t *length, const char *const path)
 {
     FILE *fp = fopen(path, "rb");
@@ -278,6 +303,12 @@ static struct {
     },
 };
 
+/**
+ * 将插件名称转换为对应的schema名称
+ *
+ * @param name 插件名称
+ * @return 对应的schema名称，如果找不到对应关系则返回原名称
+ */
 static inline const char *plugin_name_to_schema_name(const char *name)
 {
     for (size_t i = 0; i <
@@ -291,6 +322,12 @@ static inline const char *plugin_name_to_schema_name(const char *name)
     return name;
 }
 
+/**
+ * 处理获取插件schema请求，返回指定插件的schema JSON配置
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应，包含schema内容或错误信息
+ */
 void handle_get_plugin_schema(nng_aio *aio)
 {
     size_t      len                        = 0;

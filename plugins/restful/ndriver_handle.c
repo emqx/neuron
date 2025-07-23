@@ -31,6 +31,14 @@
 
 #include "parser/neu_json_ndriver.h"
 
+/**
+ * 发送北向驱动映射请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param req 北向驱动映射请求数据
+ * @param type 请求类型，如添加映射或删除映射
+ * @return 0表示成功，其他值表示错误码
+ */
 static int send_ndriver_map_req(nng_aio *aio, neu_json_ndriver_map_t *req,
                                 neu_reqresp_type_e type)
 {
@@ -61,6 +69,11 @@ static int send_ndriver_map_req(nng_aio *aio, neu_json_ndriver_map_t *req,
     return 0;
 }
 
+/**
+ * 处理添加北向驱动映射的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_add_ndriver_map(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -73,6 +86,11 @@ void handle_add_ndriver_map(nng_aio *aio)
         })
 }
 
+/**
+ * 处理删除北向驱动映射的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_del_ndriver_map(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -85,6 +103,11 @@ void handle_del_ndriver_map(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取北向驱动映射列表的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_ndriver_maps(nng_aio *aio)
 {
     int           ret    = 0;
@@ -115,6 +138,12 @@ void handle_get_ndriver_maps(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取北向驱动映射响应，并将结果格式化为JSON返回给客户端
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param groups 北向驱动映射组信息
+ */
 void handle_get_ndriver_maps_resp(nng_aio *                    aio,
                                   neu_resp_get_ndriver_maps_t *groups)
 {
@@ -147,6 +176,13 @@ void handle_get_ndriver_maps_resp(nng_aio *                    aio,
     utarray_free(groups->groups);
 }
 
+/**
+ * 发送更新北向驱动标签参数的请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param req 更新标签参数请求数据
+ * @return 0表示成功，其他值表示错误码
+ */
 static inline int
 send_update_ndriver_tag_param_req(nng_aio *                                aio,
                                   neu_json_update_ndriver_tag_param_req_t *req)
@@ -185,6 +221,11 @@ send_update_ndriver_tag_param_req(nng_aio *                                aio,
     return ret;
 }
 
+/**
+ * 处理更新北向驱动标签参数的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_put_ndriver_tag_param(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -198,6 +239,13 @@ void handle_put_ndriver_tag_param(nng_aio *aio)
         })
 }
 
+/**
+ * 发送更新北向驱动标签信息的请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param req 更新标签信息请求数据
+ * @return 0表示成功，其他值表示错误码
+ */
 static inline int
 send_update_ndriver_tag_info_req(nng_aio *                               aio,
                                  neu_json_update_ndriver_tag_info_req_t *req)
@@ -236,6 +284,11 @@ send_update_ndriver_tag_info_req(nng_aio *                               aio,
     return ret;
 }
 
+/**
+ * 处理更新北向驱动标签信息的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_put_ndriver_tag_info(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -249,6 +302,11 @@ void handle_put_ndriver_tag_info(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取北向驱动标签列表的HTTP请求
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_ndriver_tags(nng_aio *aio)
 {
     int           ret    = 0;
@@ -293,6 +351,12 @@ end:
     }
 }
 
+/**
+ * 处理获取北向驱动标签响应，并将结果格式化为JSON返回给客户端
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param tags 北向驱动标签信息
+ */
 void handle_get_ndriver_tags_resp(nng_aio *                    aio,
                                   neu_resp_get_ndriver_tags_t *tags)
 {

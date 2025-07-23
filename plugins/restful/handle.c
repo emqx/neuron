@@ -504,12 +504,30 @@ static struct neu_http_handler rest_handlers[] = {
     },
 };
 
+/**
+ * @brief 获取 REST API 处理器列表
+ *
+ * 该函数提供所有 REST API 的处理器列表和数量
+ *
+ * @param handlers 指向处理器数组指针的指针，用于返回处理器列表
+ * @param size 指向整数的指针，用于返回处理器数量
+ * @return 无返回值
+ */
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)
 {
     *handlers = rest_handlers;
     *size     = sizeof(rest_handlers) / sizeof(struct neu_http_handler);
 }
 
+/**
+ * @brief 获取 CORS 处理器列表
+ *
+ * 该函数提供用于处理 CORS 预检请求的处理器列表和数量
+ *
+ * @param handlers 指向处理器数组指针的指针，用于返回 CORS 处理器列表
+ * @param size 指向整数的指针，用于返回处理器数量
+ * @return 无返回值
+ */
 void neu_rest_api_cors_handler(const struct neu_http_handler **handlers,
                                uint32_t *                      size)
 {
@@ -523,6 +541,14 @@ void neu_rest_api_cors_handler(const struct neu_http_handler **handlers,
     }
 }
 
+/**
+ * @brief 初始化 REST 处理上下文
+ *
+ * 该函数创建并初始化 REST 处理上下文，存储插件指针
+ *
+ * @param plugin 插件对象指针
+ * @return 返回初始化的上下文指针
+ */
 neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin)
 {
     rest_ctx         = calloc(1, sizeof(neu_rest_handle_ctx_t));
@@ -531,11 +557,26 @@ neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin)
     return rest_ctx;
 }
 
+/**
+ * @brief 释放 REST 处理上下文
+ *
+ * 该函数释放 REST 处理上下文占用的内存资源
+ *
+ * @param ctx 要释放的上下文指针
+ * @return 无返回值
+ */
 void neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx)
 {
     free(ctx);
 }
 
+/**
+ * @brief 获取 REST 插件对象
+ *
+ * 该函数返回初始化时存储的插件对象指针
+ *
+ * @return 返回插件对象指针
+ */
 void *neu_rest_get_plugin()
 {
     return rest_ctx->plugin;

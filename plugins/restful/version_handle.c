@@ -26,6 +26,14 @@
 #include "handle.h"
 #include "utils/http.h"
 
+/**
+ * @brief 处理获取版本信息的HTTP请求
+ *
+ * 获取当前Neuron的版本信息并以JSON格式返回，包括版本号、Git修订号和构建日期
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ * @return 无返回值，通过aio对象发送响应
+ */
 void handle_get_version(nng_aio *aio)
 {
     char *result = NULL;
