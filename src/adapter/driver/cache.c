@@ -772,7 +772,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
         }
         elem->value.type = value.type;
 
-        if (metas != NULL) {
+        if (metas != NULL && n_meta != 0) {
             if (elem->metas != NULL) {
                 free(elem->metas);
             }
