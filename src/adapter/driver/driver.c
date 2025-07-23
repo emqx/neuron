@@ -486,6 +486,13 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 } else {
                     neu_free_dvalue(&tag_value->value);
                 }
+
+                if (tag_value->metas != NULL) {
+                    for (int i = 0; i < tag_value->n_meta; i++) {
+                        neu_free_dvalue(&tag_value->metas[i].value);
+                    }
+                    free(tag_value->metas);
+                }
             }
             utarray_free(data->tags);
             free(data->group);
