@@ -25,6 +25,14 @@
 #include "json_rw.h"
 #include "plugin_ekuiper.h"
 
+/**
+ * @brief 编码读响应头部到JSON对象
+ * @param json_object JSON对象指针
+ * @param param 包含头部信息的结构体指针(json_read_resp_header_t)
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数将读响应头部信息(节点名、组名、时间戳)编码到JSON对象中。
+ */
 int json_encode_read_resp_header(void *json_object, void *param)
 {
     int                      ret    = 0;
@@ -51,6 +59,14 @@ int json_encode_read_resp_header(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 编码读响应标签数据到JSON对象
+ * @param json_object JSON对象指针
+ * @param param 包含响应信息的结构体指针(json_read_resp_t)
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数将标签值、错误和元数据编码到JSON对象中，分为values、errors和metas三个部分。
+ */
 int json_encode_read_resp_tags(void *json_object, void *param)
 {
     int                       ret           = 0;
@@ -150,6 +166,14 @@ int json_encode_read_resp_tags(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 编码完整读响应到JSON对象
+ * @param json_object JSON对象指针
+ * @param param 包含响应信息的结构体指针(json_read_resp_t)
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数编码完整的读响应，包括头部和标签数据。
+ */
 int json_encode_read_resp(void *json_object, void *param)
 {
     int                       ret        = 0;
@@ -174,6 +198,15 @@ int json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 解码JSON写请求
+ * @param buf JSON字符串缓冲区
+ * @param len 缓冲区长度
+ * @param result 解码结果存储指针的指针
+ * @return 成功返回0，失败返回-1
+ *
+ * 此函数解析JSON格式的写请求，提取节点名、组名、标签名和值信息。
+ */
 int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
 {
     int               ret      = 0;
@@ -226,6 +259,13 @@ int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
     return ret;
 }
 
+/**
+ * @brief 释放JSON写请求对象
+ * @param req 写请求结构体指针
+ * @return 无返回值
+ *
+ * 此函数释放写请求结构体及其内部分配的内存。
+ */
 void json_decode_write_req_free(json_write_req_t *req)
 {
     if (NULL == req) {

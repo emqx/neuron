@@ -32,6 +32,12 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
+/**
+ * @brief 打开eKuiper插件
+ * @return 返回新创建的插件对象指针
+ *
+ * 此函数分配并初始化eKuiper插件对象。
+ */
 static neu_plugin_t *ekuiper_plugin_open(void)
 {
     neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
@@ -43,6 +49,13 @@ static neu_plugin_t *ekuiper_plugin_open(void)
     return plugin;
 }
 
+/**
+ * @brief 关闭eKuiper插件
+ * @param plugin 插件对象指针
+ * @return 成功返回0
+ *
+ * 此函数释放插件对象占用的资源。
+ */
 static int ekuiper_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
@@ -53,6 +66,15 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
+/**
+ * @brief NNG管道添加回调函数
+ * @param p NNG管道对象
+ * @param ev NNG管道事件
+ * @param arg 回调参数，指向neu_plugin_t对象
+ * @return 无返回值
+ *
+ * 当NNG建立新连接时，更新插件连接状态为已连接。
+ */
 static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
@@ -63,6 +85,15 @@ static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     nng_mtx_unlock(plugin->mtx);
 }
 
+/**
+ * @brief NNG管道移除回调函数
+ * @param p NNG管道对象
+ * @param ev NNG管道事件
+ * @param arg 回调参数，指向neu_plugin_t对象
+ * @return 无返回值
+ *
+ * 当NNG连接断开时，更新插件连接状态为已断开。
+ */
 static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
@@ -73,6 +104,14 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     nng_mtx_unlock(plugin->mtx);
 }
 
+/**
+ * @brief 初始化eKuiper插件
+ * @param plugin 插件对象指针
+ * @param load 是否为加载操作
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数初始化插件所需的资源，包括互斥锁和异步I/O对象。
+ */
 static int ekuiper_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
@@ -100,6 +139,13 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin, bool load)
     return rv;
 }
 
+/**
+ * @brief 反初始化eKuiper插件
+ * @param plugin 插件对象指针
+ * @return 成功返回0
+ *
+ * 此函数释放插件初始化时分配的资源。
+ */
 static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
@@ -114,6 +160,14 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
+/**
+ * @brief 启动NNG通信
+ * @param plugin 插件对象指针
+ * @param url NNG监听URL
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数创建NNG套接字并开始监听指定URL，用于与eKuiper通信。
+ */
 static inline int start(neu_plugin_t *plugin, const char *url)
 {
     int rv = 0;
@@ -155,6 +209,13 @@ static inline int start(neu_plugin_t *plugin, const char *url)
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * @brief 启动eKuiper插件
+ * @param plugin 插件对象指针
+ * @return 成功返回NEU_ERR_SUCCESS，失败返回错误码
+ *
+ * 此函数启动插件并开始监听eKuiper连接。
+ */
 static int ekuiper_plugin_start(neu_plugin_t *plugin)
 {
     int   rv  = 0;
@@ -171,11 +232,25 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * @brief 停止NNG通信
+ * @param plugin 插件对象指针
+ * @return 无返回值
+ *
+ * 此函数关闭NNG套接字，停止与eKuiper的通信。
+ */
 static inline void stop(neu_plugin_t *plugin)
 {
     nng_close(plugin->sock);
 }
 
+/**
+ * @brief 停止eKuiper插件
+ * @param plugin 插件对象指针
+ * @return 成功返回NEU_ERR_SUCCESS
+ *
+ * 此函数停止插件运行。
+ */
 static int ekuiper_plugin_stop(neu_plugin_t *plugin)
 {
     stop(plugin);
@@ -184,6 +259,16 @@ static int ekuiper_plugin_stop(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * @brief 解析配置参数
+ * @param plugin 插件对象指针
+ * @param setting 配置字符串
+ * @param host_p 主机地址指针的指针
+ * @param port_p 端口号指针
+ * @return 成功返回0，失败返回-1
+ *
+ * 此函数解析JSON格式的配置字符串，提取主机地址和端口号。
+ */
 static int parse_config(neu_plugin_t *plugin, const char *setting,
                         char **host_p, uint16_t *port_p)
 {
@@ -227,6 +312,15 @@ error:
     return -1;
 }
 
+/**
+ * @brief 配置eKuiper插件
+ * @param plugin 插件对象指针
+ * @param setting 配置字符串
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数应用新的配置参数，更新插件的主机地址和端口号设置。
+ * 如果插件已启动，会先停止再重启以应用新配置。
+ */
 static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
     int      rv   = 0;
@@ -281,6 +375,16 @@ error:
     return rv;
 }
 
+/**
+ * @brief 处理插件请求
+ * @param plugin 插件对象指针
+ * @param header 请求头指针
+ * @param data 请求数据指针
+ * @return 成功返回0
+ *
+ * 此函数处理从Neuron核心发送到插件的各种请求，
+ * 包括数据传输、节点删除、组更新等操作。
+ */
 static int ekuiper_plugin_request(neu_plugin_t *      plugin,
                                   neu_reqresp_head_t *header, void *data)
 {
