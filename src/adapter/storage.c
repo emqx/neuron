@@ -23,16 +23,35 @@
 #include "driver/driver_internal.h"
 #include "storage.h"
 
+/**
+ * 保存节点运行状态到持久化存储
+ *
+ * @param node  节点名称
+ * @param state 节点运行状态
+ */
 void adapter_storage_state(const char *node, neu_node_running_state_e state)
 {
     neu_persister_update_node_state(node, state);
 }
 
+/**
+ * 保存节点配置到持久化存储
+ *
+ * @param node    节点名称
+ * @param setting 节点配置内容（JSON字符串）
+ */
 void adapter_storage_setting(const char *node, const char *setting)
 {
     neu_persister_store_node_setting(node, setting);
 }
 
+/**
+ * 添加数据组信息到持久化存储
+ *
+ * @param node     节点名称
+ * @param group    数据组名称
+ * @param interval 数据组采集间隔
+ */
 void adapter_storage_add_group(const char *node, const char *group,
                                uint32_t interval)
 {
@@ -44,6 +63,14 @@ void adapter_storage_add_group(const char *node, const char *group,
     neu_persister_store_group(node, &info);
 }
 
+/**
+ * 更新数据组信息到持久化存储
+ *
+ * @param node     节点名称
+ * @param group    原数据组名称
+ * @param new_name 新数据组名称
+ * @param interval 数据组采集间隔
+ */
 void adapter_storage_update_group(const char *node, const char *group,
                                   const char *new_name, uint32_t interval)
 {
@@ -59,11 +86,24 @@ void adapter_storage_update_group(const char *node, const char *group,
     }
 }
 
+/**
+ * 从持久化存储中删除数据组
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ */
 void adapter_storage_del_group(const char *node, const char *group)
 {
     neu_persister_delete_group(node, group);
 }
 
+/**
+ * 添加单个数据标签到持久化存储
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ * @param tag   数据标签
+ */
 void adapter_storage_add_tag(const char *node, const char *group,
                              const neu_datatag_t *tag)
 {
@@ -74,6 +114,14 @@ void adapter_storage_add_tag(const char *node, const char *group,
     }
 }
 
+/**
+ * 批量添加数据标签到持久化存储
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ * @param tags  数据标签数组
+ * @param n     数据标签数量
+ */
 void adapter_storage_add_tags(const char *node, const char *group,
                               const neu_datatag_t *tags, size_t n)
 {
@@ -92,6 +140,13 @@ void adapter_storage_add_tags(const char *node, const char *group,
     }
 }
 
+/**
+ * 更新数据标签到持久化存储
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ * @param tag   数据标签
+ */
 void adapter_storage_update_tag(const char *node, const char *group,
                                 const neu_datatag_t *tag)
 {
@@ -102,6 +157,13 @@ void adapter_storage_update_tag(const char *node, const char *group,
     }
 }
 
+/**
+ * 更新数据标签值到持久化存储
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ * @param tag   数据标签
+ */
 void adapter_storage_update_tag_value(const char *node, const char *group,
                                       const neu_datatag_t *tag)
 {
@@ -112,6 +174,13 @@ void adapter_storage_update_tag_value(const char *node, const char *group,
     }
 }
 
+/**
+ * 从持久化存储中删除数据标签
+ *
+ * @param node  节点名称
+ * @param group 数据组名称
+ * @param name  数据标签名称
+ */
 void adapter_storage_del_tag(const char *node, const char *group,
                              const char *name)
 {
@@ -121,6 +190,13 @@ void adapter_storage_del_tag(const char *node, const char *group,
     }
 }
 
+/**
+ * 从持久化存储加载节点配置
+ *
+ * @param node    节点名称
+ * @param setting 输出参数，用于接收节点配置
+ * @return 成功返回0，失败返回-1
+ */
 int adapter_load_setting(const char *node, char **setting)
 {
     int rv = neu_persister_load_node_setting(node, (const char **) setting);
@@ -132,6 +208,12 @@ int adapter_load_setting(const char *node, char **setting)
     return 0;
 }
 
+/**
+ * 从持久化存储加载数据组和标签
+ *
+ * @param driver 驱动适配器
+ * @return 成功返回0，失败返回错误码
+ */
 int adapter_load_group_and_tag(neu_adapter_driver_t *driver)
 {
     UT_array *     group_infos = NULL;

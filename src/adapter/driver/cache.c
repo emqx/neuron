@@ -52,9 +52,13 @@ struct neu_driver_cache {
     struct elem *table;
 };
 
-// static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-// const char *tag, int64_t timestamp, int error);
-
+/**
+ * 将组名和标签名转换为缓存中的键
+ *
+ * @param group 组名
+ * @param tag 标签名
+ * @return 生成的键结构体
+ */
 inline static tkey_t to_key(const char *group, const char *tag)
 {
     tkey_t key = { 0 };
@@ -65,6 +69,11 @@ inline static tkey_t to_key(const char *group, const char *tag)
     return key;
 }
 
+/**
+ * 创建新的驱动缓存实例
+ *
+ * @return 新创建的驱动缓存实例
+ */
 neu_driver_cache_t *neu_driver_cache_new()
 {
     neu_driver_cache_t *cache = calloc(1, sizeof(neu_driver_cache_t));
@@ -74,6 +83,11 @@ neu_driver_cache_t *neu_driver_cache_new()
     return cache;
 }
 
+/**
+ * 销毁驱动缓存实例，释放所有资源
+ *
+ * @param cache 驱动缓存实例
+ */
 void neu_driver_cache_destroy(neu_driver_cache_t *cache)
 {
     struct elem *elem = NULL;
@@ -98,12 +112,14 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     free(cache);
 }
 
-// void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
-// const char *tag, int64_t timestamp, int32_t error)
-//{
-// update_tag_error(cache, group, tag, timestamp, error);
-//}
-
+/**
+ * 添加标签到缓存
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 标签初始值
+ */
 void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
                           const char *tag, neu_dvalue_t value)
 {
@@ -129,6 +145,18 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     pthread_mutex_unlock(&cache->mtx);
 }
 
+/**
+ * 更新缓存中的标签值并控制变更标志
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param timestamp 时间戳
+ * @param value 新值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ * @param change 是否强制标记为已变更
+ */
 void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                                     const char *group, const char *tag,
                                     int64_t timestamp, neu_dvalue_t value,
@@ -243,6 +271,17 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
     pthread_mutex_unlock(&cache->mtx);
 }
 
+/**
+ * 更新缓存中的标签值
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param timestamp 时间戳
+ * @param value 新值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ */
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp,
                              neu_dvalue_t value, neu_tag_meta_t *metas,
@@ -252,6 +291,17 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                                    n_meta, false);
 }
 
+/**
+ * 获取缓存中的标签值和元数据
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 输出参数，存放获取的值
+ * @param metas 输出参数，存放获取的元数据
+ * @param n_meta 元数据缓冲区大小
+ * @return 0表示成功，-1表示标签不存在
+ */
 int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
                               const char *tag, neu_driver_cache_value_t *value,
                               neu_tag_meta_t *metas, int n_meta)
@@ -333,6 +383,17 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
     return ret;
 }
 
+/**
+ * 获取缓存中已变更的标签值和元数据
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 输出参数，存放获取的值
+ * @param metas 输出参数，存放获取的元数据
+ * @param n_meta 元数据缓冲区大小
+ * @return 0表示成功且有变更，-1表示标签不存在或无变更
+ */
 int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
                                       const char *group, const char *tag,
                                       neu_driver_cache_value_t *value,
@@ -418,6 +479,15 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
     return ret;
 }
 
+/**
+ * 获取缓存中的标签值
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 输出参数，存放获取的值
+ * @return 0表示成功，-1表示标签不存在
+ */
 int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
                          const char *tag, neu_driver_cache_value_t *value)
 {
@@ -495,6 +565,15 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
     return ret;
 }
 
+/**
+ * 获取缓存中已变更的标签值
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 输出参数，存放获取的值
+ * @return 0表示成功且有变更，-1表示标签不存在或无变更
+ */
 int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
                                  const char *              tag,
                                  neu_driver_cache_value_t *value)
@@ -575,6 +654,13 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
     return ret;
 }
 
+/**
+ * 从缓存中删除标签
+ *
+ * @param cache 驱动缓存实例
+ * @param group 组名
+ * @param tag 标签名
+ */
 void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
                           const char *tag)
 {
