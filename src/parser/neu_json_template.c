@@ -26,6 +26,13 @@
 
 #include "neu_json_template.h"
 
+/**
+ * 将模板组编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向模板组的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template_group(void *json_obj, void *param)
 {
     int                        ret = 0;
@@ -66,6 +73,13 @@ int neu_json_encode_template_group(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 从JSON对象解码模板组数据
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param grp 指向模板组结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_group(void *                     json_obj,
                                    neu_json_template_group_t *grp)
 {
@@ -109,12 +123,24 @@ error:
     return -1;
 }
 
+/**
+ * 释放模板组结构中分配的内存资源
+ *
+ * @param grp 指向要释放资源的模板组结构的指针
+ */
 void neu_json_decode_template_group_fini(neu_json_template_group_t *grp)
 {
     free(grp->name);
     neu_json_decode_tag_array_fini(&grp->tags);
 }
 
+/**
+ * 将模板组数组编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向模板组数组的指针，作为要编码的数据
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_template_group_array(void *json_obj, void *param)
 {
     neu_json_template_group_array_t *array = param;
@@ -136,6 +162,13 @@ int neu_json_encode_template_group_array(void *json_obj, void *param)
     return 0;
 }
 
+/**
+ * 从JSON对象解码模板组数组数据
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param arr 指向模板组数组结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_group_array_json(
     void *json_obj, neu_json_template_group_array_t *arr)
 {
@@ -179,6 +212,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 释放模板组数组结构中分配的内存资源
+ *
+ * @param arr 指向要释放资源的模板组数组结构的指针
+ */
 void neu_json_decode_template_group_array_fini(
     neu_json_template_group_array_t *arr)
 {
@@ -188,6 +226,13 @@ void neu_json_decode_template_group_array_fini(
     free(arr->groups);
 }
 
+/**
+ * 将模板编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向模板的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template(void *json_obj, void *param)
 {
     int                  ret  = 0;
@@ -228,6 +273,13 @@ int neu_json_encode_template(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码模板数据
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的模板结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template(char *buf, neu_json_template_t **result)
 {
     neu_json_template_t *tmpl = calloc(1, sizeof(neu_json_add_tags_req_t));
@@ -252,6 +304,13 @@ int neu_json_decode_template(char *buf, neu_json_template_t **result)
     return ret;
 }
 
+/**
+ * 从JSON对象解码模板数据
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param tmpl 指向模板结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_json(void *json_obj, neu_json_template_t *tmpl)
 {
     int                             ret  = 0;
@@ -297,6 +356,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放模板结构中分配的内存资源
+ *
+ * @param tmpl 指向要释放资源的模板结构的指针
+ */
 void neu_json_decode_template_fini(neu_json_template_t *tmpl)
 {
     free(tmpl->name);
@@ -304,6 +368,11 @@ void neu_json_decode_template_fini(neu_json_template_t *tmpl)
     neu_json_decode_template_group_array_fini(&tmpl->groups);
 }
 
+/**
+ * 释放模板结构及其自身的内存
+ *
+ * @param tmpl 指向要释放的模板结构的指针
+ */
 void neu_json_decode_template_free(neu_json_template_t *tmpl)
 {
     if (tmpl) {
@@ -312,6 +381,13 @@ void neu_json_decode_template_free(neu_json_template_t *tmpl)
     }
 }
 
+/**
+ * 将模板信息数组编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向模板信息数组的指针，作为要编码的数据
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_template_info_array(void *json_obj, void *param)
 {
     int                             ret = 0;
@@ -353,6 +429,13 @@ int neu_json_encode_template_info_array(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 将获取模板响应编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向要编码的数据
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_get_templates_resp(void *json_obj, void *param)
 {
     void *info_array = neu_json_array();
@@ -378,6 +461,13 @@ int neu_json_encode_get_templates_resp(void *json_obj, void *param)
                                  NEU_JSON_ELEM_SIZE(req_elems));
 }
 
+/**
+ * 将添加模板组请求编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向添加模板组请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template_add_group_req(void *json_obj, void *param)
 {
     int                                ret = 0;
@@ -404,6 +494,13 @@ int neu_json_encode_template_add_group_req(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码添加模板组请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的添加模板组请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_add_group_req(
     char *buf, neu_json_template_add_group_req_t **result)
 {
@@ -454,6 +551,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 释放添加模板组请求结构的内存
+ *
+ * @param req 指向要释放的添加模板组请求结构的指针
+ */
 void neu_json_decode_template_add_group_req_free(
     neu_json_template_add_group_req_t *req)
 {
@@ -464,6 +566,13 @@ void neu_json_decode_template_add_group_req_free(
     }
 }
 
+/**
+ * 从JSON字符串解码更新模板组请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的更新模板组请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_update_group_req(
     char *buf, neu_json_template_update_group_req_t **result)
 {
@@ -527,6 +636,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放更新模板组请求结构的内存
+ *
+ * @param req 指向要释放的更新模板组请求结构的指针
+ */
 void neu_json_decode_template_update_group_req_free(
     neu_json_template_update_group_req_t *req)
 {
@@ -537,6 +651,13 @@ void neu_json_decode_template_update_group_req_free(
     free(req);
 }
 
+/**
+ * 将删除模板组请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向删除模板组请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template_del_group_req(void *json_object, void *param)
 {
     int                                ret = 0;
@@ -558,6 +679,13 @@ int neu_json_encode_template_del_group_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码删除模板组请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的删除模板组请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_del_group_req(
     char *buf, neu_json_template_del_group_req_t **result)
 {
@@ -602,6 +730,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 释放删除模板组请求结构的内存
+ *
+ * @param req 指向要释放的删除模板组请求结构的指针
+ */
 void neu_json_decode_template_del_group_req_free(
     neu_json_template_del_group_req_t *req)
 {
@@ -612,6 +745,13 @@ void neu_json_decode_template_del_group_req_free(
     }
 }
 
+/**
+ * 将修改模板标签请求编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向修改模板标签请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template_mod_tags_req(void *json_obj, void *param)
 {
     int                               ret = 0;
@@ -654,6 +794,13 @@ int neu_json_encode_template_mod_tags_req(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码修改模板标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的修改模板标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_mod_tags_req(
     char *buf, neu_json_template_mod_tags_req_t **result)
 {
@@ -718,6 +865,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放修改模板标签请求结构的内存
+ *
+ * @param req 指向要释放的修改模板标签请求结构的指针
+ */
 void neu_json_decode_template_mod_tags_req_free(
     neu_json_template_mod_tags_req_t *req)
 {
@@ -736,6 +888,13 @@ void neu_json_decode_template_mod_tags_req_free(
     free(req);
 }
 
+/**
+ * 将删除模板标签请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向删除模板标签请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_template_del_tags_req(void *json_object, void *param)
 {
     int                               ret = 0;
@@ -778,6 +937,13 @@ int neu_json_encode_template_del_tags_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码删除模板标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的删除模板标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_del_tags_req(
     char *buf, neu_json_template_del_tags_req_t **result)
 {
@@ -838,6 +1004,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放删除模板标签请求结构的内存
+ *
+ * @param req 指向要释放的删除模板标签请求结构的指针
+ */
 void neu_json_decode_template_del_tags_req_free(
     neu_json_template_del_tags_req_t *req)
 {
@@ -856,6 +1027,13 @@ void neu_json_decode_template_del_tags_req_free(
     free(req);
 }
 
+/**
+ * 从JSON对象解码模板实例请求
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param req 指向模板实例请求结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回非0值
+ */
 int decode_template_inst_req_json(void *                        json_obj,
                                   neu_json_template_inst_req_t *req)
 {
@@ -884,6 +1062,13 @@ int decode_template_inst_req_json(void *                        json_obj,
     return ret;
 }
 
+/**
+ * 从JSON字符串解码模板实例请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的模板实例请求结构
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_decode_template_inst_req(char *                         buf,
                                       neu_json_template_inst_req_t **result)
 {
@@ -913,6 +1098,11 @@ int neu_json_decode_template_inst_req(char *                         buf,
     return ret;
 }
 
+/**
+ * 释放模板实例请求结构的内存
+ *
+ * @param req 指向要释放的模板实例请求结构的指针
+ */
 void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req)
 {
     if (req) {
@@ -922,6 +1112,13 @@ void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req)
     }
 }
 
+/**
+ * 从JSON字符串解码模板实例数组请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的模板实例数组请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_template_insts_req(char *                          buf,
                                        neu_json_template_insts_req_t **result)
 {
@@ -975,6 +1172,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放模板实例数组请求结构的内存
+ *
+ * @param req 指向要释放的模板实例数组请求结构的指针
+ */
 void neu_json_decode_template_insts_req_free(neu_json_template_insts_req_t *req)
 {
     if (req) {

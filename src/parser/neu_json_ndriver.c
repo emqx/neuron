@@ -26,6 +26,13 @@
 
 #include "neu_json_ndriver.h"
 
+/**
+ * @brief 将ndriver映射对象编码为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的ndriver映射结构体指针(neu_json_ndriver_map_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_ndriver_map(void *json_object, void *param)
 {
     int                     ret = 0;
@@ -55,8 +62,20 @@ int neu_json_encode_ndriver_map(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 释放ndriver映射对象资源的前向声明
+ *
+ * @param req 要释放的ndriver映射结构体指针
+ */
 void neu_json_decode_ndriver_map_free(neu_json_ndriver_map_t *req);
 
+/**
+ * @brief 从JSON字符串解码ndriver映射对象
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_ndriver_map(char *buf, neu_json_ndriver_map_t **result)
 {
     int                     ret      = 0;
@@ -107,6 +126,11 @@ error:
     return -1;
 }
 
+/**
+ * @brief 释放ndriver映射对象资源
+ *
+ * @param req 要释放的ndriver映射结构体指针
+ */
 void neu_json_decode_ndriver_map_free(neu_json_ndriver_map_t *req)
 {
     if (req) {
@@ -117,6 +141,13 @@ void neu_json_decode_ndriver_map_free(neu_json_ndriver_map_t *req)
     }
 }
 
+/**
+ * @brief 将ndriver组数组编码为JSON数组
+ *
+ * @param json_arr 输出的JSON数组对象
+ * @param param 要编码的组数组结构体指针(neu_json_ndriver_map_group_array_t类型)
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_encode_ndriver_group_array(void *json_arr, void *param)
 {
     neu_json_ndriver_map_group_array_t *resp =
@@ -140,6 +171,13 @@ int neu_json_encode_ndriver_group_array(void *json_arr, void *param)
     return 0;
 }
 
+/**
+ * @brief 编码获取ndriver映射响应
+ *
+ * @param json_obj 输出的JSON对象
+ * @param param 要编码的组数组结构体指针(neu_json_ndriver_map_group_array_t类型)
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_encode_get_ndriver_maps_resp(void *json_obj, void *param)
 {
     int ret = 0;
@@ -165,6 +203,13 @@ int neu_json_encode_get_ndriver_maps_resp(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * @brief 将单个ndriver标签编码为JSON对象
+ *
+ * @param json_obj 输出的JSON对象
+ * @param param 要编码的标签结构体指针(neu_json_ndriver_tag_t类型)
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_encode_ndriver_tag(void *json_obj, void *param)
 {
     int                     ret = 0;
@@ -205,6 +250,13 @@ int neu_json_encode_ndriver_tag(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * @brief 将ndriver标签数组编码为JSON数组
+ *
+ * @param json_obj 输出的JSON数组对象
+ * @param param 要编码的标签数组结构体指针(neu_json_ndriver_tag_array_t类型)
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_encode_ndriver_tag_array(void *json_obj, void *param)
 {
     neu_json_ndriver_tag_array_t *array = param;
@@ -226,6 +278,13 @@ int neu_json_encode_ndriver_tag_array(void *json_obj, void *param)
     return 0;
 }
 
+/**
+ * @brief 编码获取ndriver标签响应
+ *
+ * @param json_obj 输出的JSON对象
+ * @param param 要编码的标签数组结构体指针(neu_json_ndriver_tag_array_t类型)
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param)
 {
     int ret = 0;
@@ -251,12 +310,24 @@ int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * @brief 释放ndriver标签参数资源
+ *
+ * @param tag_param 要释放的标签参数结构体指针
+ */
 void neu_json_ndriver_tag_param_fini(neu_json_ndriver_tag_param_t *tag_param)
 {
     free(tag_param->name);
     free(tag_param->params);
 }
 
+/**
+ * @brief 从JSON对象解码ndriver标签参数
+ *
+ * @param json_obj 包含JSON数据的对象
+ * @param tag_param_p 解码结果存储位置
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_ndriver_tag_param_json(
     void *json_obj, neu_json_ndriver_tag_param_t *tag_param_p)
 {
@@ -291,6 +362,11 @@ int neu_json_decode_ndriver_tag_param_json(
     return 0;
 }
 
+/**
+ * @brief 释放ndriver标签参数数组资源
+ *
+ * @param arr 要释放的标签参数数组结构体指针
+ */
 void neu_json_ndriver_tag_param_array_fini(
     neu_json_ndriver_tag_param_array_t *arr)
 {
@@ -299,6 +375,13 @@ void neu_json_ndriver_tag_param_array_fini(
     }
 }
 
+/**
+ * @brief 从JSON对象解码ndriver标签参数数组
+ *
+ * @param json_obj 包含JSON数据的数组对象
+ * @param arr 解码结果存储位置
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_ndriver_tag_param_array_json(
     void *json_obj, neu_json_ndriver_tag_param_array_t *arr)
 {
@@ -342,6 +425,13 @@ error:
     return -1;
 }
 
+/**
+ * @brief 从JSON字符串解码更新ndriver标签参数请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_ndriver_tag_param_req(
     char *buf, neu_json_update_ndriver_tag_param_req_t **result)
 {
@@ -405,6 +495,11 @@ error:
     return -1;
 }
 
+/**
+ * @brief 释放更新ndriver标签参数请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_update_ndriver_tag_param_req_free(
     neu_json_update_ndriver_tag_param_req_t *req)
 {
@@ -418,12 +513,24 @@ void neu_json_decode_update_ndriver_tag_param_req_free(
     }
 }
 
+/**
+ * @brief 释放ndriver标签信息资源
+ *
+ * @param tag_info 要释放的标签信息结构体指针
+ */
 void neu_json_ndriver_tag_info_fini(neu_json_ndriver_tag_info_t *tag_info)
 {
     free(tag_info->name);
     free(tag_info->address);
 }
 
+/**
+ * @brief 从JSON对象解码ndriver标签信息
+ *
+ * @param json_obj 包含JSON数据的对象
+ * @param tag_info_p 解码结果存储位置
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_ndriver_tag_info_json(
     void *json_obj, neu_json_ndriver_tag_info_t *tag_info_p)
 {
@@ -463,6 +570,11 @@ error:
     return -1;
 }
 
+/**
+ * @brief 释放ndriver标签信息数组资源
+ *
+ * @param arr 要释放的标签信息数组结构体指针
+ */
 void neu_json_ndriver_tag_info_array_fini(
     neu_json_ndriver_tag_info_array_t *arr)
 {
@@ -471,6 +583,13 @@ void neu_json_ndriver_tag_info_array_fini(
     }
 }
 
+/**
+ * @brief 从JSON对象解码ndriver标签信息数组
+ *
+ * @param json_obj 包含JSON数据的数组对象
+ * @param arr 解码结果存储位置
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_ndriver_tag_info_array_json(
     void *json_obj, neu_json_ndriver_tag_info_array_t *arr)
 {
@@ -514,6 +633,13 @@ error:
     return -1;
 }
 
+/**
+ * @brief 从JSON字符串解码更新ndriver标签信息请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_ndriver_tag_info_req(
     char *buf, neu_json_update_ndriver_tag_info_req_t **result)
 {
@@ -577,6 +703,11 @@ error:
     return -1;
 }
 
+/**
+ * @brief 释放更新ndriver标签信息请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_update_ndriver_tag_info_req_free(
     neu_json_update_ndriver_tag_info_req_t *req)
 {

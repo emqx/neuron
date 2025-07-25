@@ -34,6 +34,13 @@
 
 #include "json/neu_json_rw.h"
 
+/**
+ * 将读取标签响应编码成JSON对象（使用标签数组格式）
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向读取响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_read_resp(void *json_object, void *param)
 {
     int                   ret  = 0;
@@ -81,6 +88,13 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 将读取标签响应编码成JSON对象（使用分组格式）
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向读取响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_read_resp1(void *json_object, void *param)
 {
     int                   ret  = 0;
@@ -152,6 +166,13 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码写入标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的写入标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
 {
     void *json_obj = neu_json_decode_new(buf);
@@ -164,6 +185,13 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
     return ret;
 }
 
+/**
+ * 从JSON对象解码写入标签请求
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param req 指向写入标签请求结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
 {
     int ret = 0;
@@ -207,6 +235,13 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 从JSON对象解码写入标签请求并分配内存
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param result 二级指针，用于返回解码后的写入标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_req_json(void *                 json_obj,
                                    neu_json_write_req_t **result)
 {
@@ -225,6 +260,11 @@ int neu_json_decode_write_req_json(void *                 json_obj,
     return ret;
 }
 
+/**
+ * 释放写入标签请求结构的内存
+ *
+ * @param req 指向要释放的写入标签请求结构的指针
+ */
 void neu_json_decode_write_req_free(neu_json_write_req_t *req)
 {
     free(req->group);
@@ -240,6 +280,13 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     free(req);
 }
 
+/**
+ * 从JSON字符串解码写入多个标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的写入多个标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_tags_req(char *                      buf,
                                    neu_json_write_tags_req_t **result)
 {
@@ -253,6 +300,13 @@ int neu_json_decode_write_tags_req(char *                      buf,
     return ret;
 }
 
+/**
+ * 从JSON对象解码写入多个标签请求
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param req 指向写入多个标签请求结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 static int decode_write_tags_req_json(void *                     json_obj,
                                       neu_json_write_tags_req_t *req)
 {
@@ -323,6 +377,13 @@ static int decode_write_tags_req_json(void *                     json_obj,
     return 0;
 }
 
+/**
+ * 从JSON对象解码写入多个标签请求并分配内存
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param result 二级指针，用于返回解码后的写入多个标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_tags_req_json(void *                      json_obj,
                                         neu_json_write_tags_req_t **result)
 {
@@ -342,6 +403,11 @@ int neu_json_decode_write_tags_req_json(void *                      json_obj,
     return ret;
 }
 
+/**
+ * 释放写入多个标签请求结构的内存
+ *
+ * @param req 指向要释放的写入多个标签请求结构的指针
+ */
 void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
 {
     free(req->group);
@@ -361,6 +427,13 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
     free(req);
 }
 
+/**
+ * 从JSON字符串解码写入请求（支持单个标签或多个标签）
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的写入请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write(char *buf, neu_json_write_t **result)
 {
     neu_json_write_t *req = calloc(1, sizeof(*req));
@@ -393,6 +466,11 @@ int neu_json_decode_write(char *buf, neu_json_write_t **result)
     return ret;
 }
 
+/**
+ * 释放写入请求结构的内存（支持单个标签或多个标签）
+ *
+ * @param req 指向要释放的写入请求结构的指针
+ */
 void neu_json_decode_write_free(neu_json_write_t *req)
 {
     if (req) {
@@ -405,6 +483,13 @@ void neu_json_decode_write_free(neu_json_write_t *req)
     }
 }
 
+/**
+ * 从JSON字符串解码读取标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的读取标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
 {
     int                  ret      = 0;
@@ -455,6 +540,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放读取标签请求结构的内存
+ *
+ * @param req 指向要释放的读取标签请求结构的指针
+ */
 void neu_json_decode_read_req_free(neu_json_read_req_t *req)
 {
     free(req->group);
@@ -463,6 +553,13 @@ void neu_json_decode_read_req_free(neu_json_read_req_t *req)
     free(req);
 }
 
+/**
+ * 将周期性读取响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向周期性读取响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_read_periodic_resp(void *json_object, void *param)
 {
     int                       ret  = 0;
@@ -489,6 +586,13 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 将标签元数据转换为JSON格式
+ *
+ * @param metas 标签元数据数组
+ * @param n_meta 元数据数量
+ * @param json_tag 用于存储JSON格式元数据的标签结构
+ */
 void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
                             neu_json_read_resp_tag_t *json_tag)
 {
@@ -561,6 +665,13 @@ void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
     }
 }
 
+/**
+ * 从JSON字符串解码写入多组标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的写入多组标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_gtags_req(char *                       buf,
                                     neu_json_write_gtags_req_t **result)
 {
@@ -576,6 +687,13 @@ int neu_json_decode_write_gtags_req(char *                       buf,
 
 #include "utils/log.h"
 
+/**
+ * 从JSON对象解码写入多组标签请求
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param req 指向写入多组标签请求结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 static int decode_write_gtags_req_json(void *                      json_obj,
                                        neu_json_write_gtags_req_t *req)
 {
@@ -660,6 +778,13 @@ static int decode_write_gtags_req_json(void *                      json_obj,
     return 0;
 }
 
+/**
+ * 从JSON对象解码写入多组标签请求并分配内存
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param result 二级指针，用于返回解码后的写入多组标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_write_gtags_req_json(void *                       json_obj,
                                          neu_json_write_gtags_req_t **result)
 {
@@ -679,6 +804,11 @@ int neu_json_decode_write_gtags_req_json(void *                       json_obj,
     return ret;
 }
 
+/**
+ * 释放写入多组标签请求结构的内存
+ *
+ * @param req 指向要释放的写入多组标签请求结构的指针
+ */
 void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
 {
     free(req->node);

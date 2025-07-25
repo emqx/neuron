@@ -31,6 +31,13 @@
 
 #include "neu_json_node.h"
 
+/**
+ * 将添加节点请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向添加节点请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_add_node_req(void *json_object, void *param)
 {
     int                      ret = 0;
@@ -53,6 +60,13 @@ int neu_json_encode_add_node_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码添加节点请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的添加节点请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
 {
     int                      ret      = 0;
@@ -95,6 +109,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放添加节点请求结构的内存
+ *
+ * @param req 指向要释放的添加节点请求结构的指针
+ */
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
 {
 
@@ -104,6 +123,13 @@ void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
     free(req);
 }
 
+/**
+ * 将删除节点请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向删除节点请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_del_node_req(void *json_object, void *param)
 {
     int                      ret = 0;
@@ -121,6 +147,13 @@ int neu_json_encode_del_node_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码删除节点请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的删除节点请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
 {
     int                      ret      = 0;
@@ -158,12 +191,24 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放删除节点请求结构的内存
+ *
+ * @param req 指向要释放的删除节点请求结构的指针
+ */
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req)
 {
     free(req->name);
     free(req);
 }
 
+/**
+ * 将获取节点状态响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取节点状态响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_node_state_resp(void *json_object, void *param)
 {
     int                             ret = 0;
@@ -201,6 +246,13 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 将获取多个节点状态响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取多个节点状态响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
 {
     int                              ret = 0;
@@ -256,6 +308,13 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 将获取节点列表响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取节点列表响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_nodes_resp(void *json_object, void *param)
 {
     int                        ret  = 0;
@@ -299,6 +358,13 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码获取节点列表响应
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的获取节点列表响应结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_get_nodes_resp(char *                      buf,
                                    neu_json_get_nodes_resp_t **result)
 {
@@ -312,6 +378,13 @@ int neu_json_decode_get_nodes_resp(char *                      buf,
     return ret;
 }
 
+/**
+ * 从JSON对象解码获取节点列表响应
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param result 二级指针，用于返回解码后的获取节点列表响应结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_get_nodes_resp_json(void *                      json_obj,
                                         neu_json_get_nodes_resp_t **result)
 {
@@ -375,6 +448,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放获取节点列表响应结构的内存
+ *
+ * @param resp 指向要释放的获取节点列表响应结构的指针
+ */
 void neu_json_decode_get_nodes_resp_free(neu_json_get_nodes_resp_t *resp)
 {
     if (resp) {
@@ -387,6 +465,13 @@ void neu_json_decode_get_nodes_resp_free(neu_json_get_nodes_resp_t *resp)
     }
 }
 
+/**
+ * 将更新节点请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向更新节点请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_update_node_req(void *json_object, void *param)
 {
     int                         ret = 0;
@@ -409,6 +494,13 @@ int neu_json_encode_update_node_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码更新节点请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的更新节点请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_node_req(char *                       buf,
                                     neu_json_update_node_req_t **result)
 {
@@ -452,6 +544,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放更新节点请求结构的内存
+ *
+ * @param req 指向要释放的更新节点请求结构的指针
+ */
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
 {
     if (req) {
@@ -461,6 +558,13 @@ void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
     }
 }
 
+/**
+ * 将节点控制请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向节点控制请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_node_ctl_req(void *json_object, void *param)
 {
     int                      ret = 0;
@@ -483,6 +587,13 @@ int neu_json_encode_node_ctl_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码节点控制请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的节点控制请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
 {
     int                      ret      = 0;
@@ -525,12 +636,24 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放节点控制请求结构的内存
+ *
+ * @param req 指向要释放的节点控制请求结构的指针
+ */
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
 {
     free(req->node);
     free(req);
 }
 
+/**
+ * 将节点设置请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向节点设置请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_node_setting_req(void *json_object, void *param)
 {
     int                          ret = 0;
@@ -552,6 +675,13 @@ int neu_json_encode_node_setting_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码节点设置请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的节点设置请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_node_setting_req(char *                        buf,
                                      neu_json_node_setting_req_t **result)
 {
@@ -598,6 +728,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放节点设置请求结构的内存
+ *
+ * @param req 指向要释放的节点设置请求结构的指针
+ */
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)
 {
     free(req->node);
@@ -605,6 +740,13 @@ void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)
     free(req);
 }
 
+/**
+ * 将获取节点设置响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取节点设置响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_node_setting_resp(void *json_object, void *param)
 {
     int                               ret  = 0;

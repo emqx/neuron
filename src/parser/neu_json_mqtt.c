@@ -30,6 +30,13 @@
 
 #include "json/neu_json_mqtt.h"
 
+/**
+ * @brief 从JSON字符串解码MQTT请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result)
 {
     int              ret = 0;
@@ -57,6 +64,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * @brief 释放MQTT请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req)
 {
     if (NULL == req) {
@@ -70,6 +82,13 @@ void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req)
     free(req);
 }
 
+/**
+ * @brief 编码MQTT响应为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的响应结构体指针(neu_json_mqtt_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_mqtt_resp(void *json_object, void *param)
 {
     int              ret  = 0;
@@ -87,6 +106,13 @@ int neu_json_encode_mqtt_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 编码状态头部响应为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的状态头部结构体指针(neu_json_states_head_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_state_header_resp(void *json_object, void *param)
 {
     int                     ret  = 0;
@@ -108,6 +134,13 @@ int neu_json_encode_state_header_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * @brief 编码状态响应为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的状态结构体指针(neu_json_states_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_states_resp(void *json_object, void *param)
 {
     int                ret  = 0;

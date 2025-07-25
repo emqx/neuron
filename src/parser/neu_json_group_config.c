@@ -32,6 +32,13 @@
 
 #include "neu_json_group_config.h"
 
+/**
+ * 编码添加组配置请求到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_add_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_add_group_config_req(void *json_object, void *param)
 {
     int                              ret = 0;
@@ -58,6 +65,13 @@ int neu_json_encode_add_group_config_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 解码JSON到添加组配置请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_add_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_add_group_config_req(
     char *buf, neu_json_add_group_config_req_t **result)
 {
@@ -107,6 +121,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放添加组配置请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_add_group_config_req_t结构体指针
+ */
 void neu_json_decode_add_group_config_req_free(
     neu_json_add_group_config_req_t *req)
 {
@@ -116,6 +135,13 @@ void neu_json_decode_add_group_config_req_free(
     free(req);
 }
 
+/**
+ * 编码删除组配置请求到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_del_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_del_group_config_req(void *json_object, void *param)
 {
     int                              ret = 0;
@@ -137,6 +163,13 @@ int neu_json_encode_del_group_config_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 解码JSON到删除组配置请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_del_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_del_group_config_req(
     char *buf, neu_json_del_group_config_req_t **result)
 {
@@ -181,6 +214,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放删除组配置请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_del_group_config_req_t结构体指针
+ */
 void neu_json_decode_del_group_config_req_free(
     neu_json_del_group_config_req_t *req)
 {
@@ -190,6 +228,13 @@ void neu_json_decode_del_group_config_req_free(
     free(req);
 }
 
+/**
+ * 编码获取组配置响应到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_get_group_config_resp_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_get_group_config_resp(void *json_object, void *param)
 {
     int                               ret = 0;
@@ -234,6 +279,13 @@ int neu_json_encode_get_group_config_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 编码获取驱动组响应到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_get_driver_group_resp_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
 {
     int                               ret = 0;
@@ -281,6 +333,14 @@ int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 解码JSON到获取驱动组响应结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result
+ * 输出参数，指向解码后的neu_json_get_driver_group_resp_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_get_driver_group_resp(
     char *buf, neu_json_get_driver_group_resp_t **result)
 {
@@ -294,6 +354,14 @@ int neu_json_decode_get_driver_group_resp(
     return ret;
 }
 
+/**
+ * 从JSON对象解码到获取驱动组响应结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param result
+ * 输出参数，指向解码后的neu_json_get_driver_group_resp_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_get_driver_group_resp_json(
     void *json_obj, neu_json_get_driver_group_resp_t **result)
 {
@@ -364,6 +432,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放获取驱动组响应结构体及其内部分配的内存
+ *
+ * @param resp 需要释放的neu_json_get_driver_group_resp_t结构体指针
+ */
 void neu_json_decode_get_driver_group_resp_free(
     neu_json_get_driver_group_resp_t *resp)
 {
@@ -377,6 +450,13 @@ void neu_json_decode_get_driver_group_resp_free(
     }
 }
 
+/**
+ * 编码获取订阅响应到JSON
+ *
+ * @param object JSON对象指针
+ * @param param 要编码的neu_json_get_subscribe_resp_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_get_subscribe_resp(void *object, void *param)
 {
     int                            ret = 0;
@@ -415,11 +495,25 @@ int neu_json_encode_get_subscribe_resp(void *object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON对象中提取params字段
+ *
+ * @param root JSON对象指针
+ * @param result 输出参数，指向提取的params字符串
+ * @return 成功返回0，失败返回非0
+ */
 static inline int dump_params(void *root, char **const result)
 {
     return neu_json_dump_key(root, "params", result, false);
 }
 
+/**
+ * 解码JSON到订阅请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_subscribe_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
 {
     int                       ret      = 0;
@@ -472,6 +566,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放订阅请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_subscribe_req_t结构体指针
+ */
 void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req)
 {
     free(req->app);
@@ -482,6 +581,13 @@ void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req)
     free(req);
 }
 
+/**
+ * 解码JSON到取消订阅请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_unsubscribe_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_unsubscribe_req(char *                       buf,
                                     neu_json_unsubscribe_req_t **result)
 {
@@ -531,6 +637,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放取消订阅请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_unsubscribe_req_t结构体指针
+ */
 void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req)
 {
 
@@ -541,6 +652,13 @@ void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req)
     free(req);
 }
 
+/**
+ * 编码更新组配置请求到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_update_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_update_group_config_req(void *json_object, void *param)
 {
     int                                 ret = 0;
@@ -579,6 +697,14 @@ int neu_json_encode_update_group_config_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 解码JSON到更新组配置请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result
+ * 输出参数，指向解码后的neu_json_update_group_config_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_group_config_req(
     char *buf, neu_json_update_group_config_req_t **result)
 {
@@ -642,6 +768,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放更新组配置请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_update_group_config_req_t结构体指针
+ */
 void neu_json_decode_update_group_config_req_free(
     neu_json_update_group_config_req_t *req)
 {
@@ -652,6 +783,13 @@ void neu_json_decode_update_group_config_req_free(
     free(req);
 }
 
+/**
+ * 从JSON对象解码到订阅组信息结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param info 输出参数，指向解码后的neu_json_subscribe_groups_info_t结构体
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_subscribe_groups_info_json(
     void *json_obj, neu_json_subscribe_groups_info_t *info)
 {
@@ -686,6 +824,11 @@ int neu_json_decode_subscribe_groups_info_json(
     return 0;
 }
 
+/**
+ * 释放订阅组信息结构体内部分配的内存
+ *
+ * @param req 需要释放内部资源的neu_json_subscribe_groups_info_t结构体指针
+ */
 void neu_json_decode_subscribe_groups_info_fini(
     neu_json_subscribe_groups_info_t *req)
 {
@@ -694,6 +837,13 @@ void neu_json_decode_subscribe_groups_info_fini(
     free(req->params);
 }
 
+/**
+ * 解码JSON到订阅组请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_subscribe_groups_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_subscribe_groups_req(
     char *buf, neu_json_subscribe_groups_req_t **result)
 {
@@ -765,6 +915,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放订阅组请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_subscribe_groups_req_t结构体指针
+ */
 void neu_json_decode_subscribe_groups_req_free(
     neu_json_subscribe_groups_req_t *req)
 {
