@@ -57,6 +57,14 @@ pthread_rwlock_t   global_rwlock     = PTHREAD_RWLOCK_INITIALIZER;
 static int         global_node_count = 0;
 static int         global_tag_count  = 0;
 
+/**
+ * 检查字符串是否以指定后缀结尾
+ *
+ * @param str     要检查的字符串
+ * @param suffix  后缀字符串
+ *
+ * @return 如果字符串以指定后缀结尾，返回true，否则返回false
+ */
 static inline bool ends_with(const char *str, const char *suffix)
 {
     size_t m = strlen(str);
@@ -65,15 +73,14 @@ static inline bool ends_with(const char *str, const char *suffix)
 }
 
 /**
- * Concatenate a path string to another.
+ * 连接路径字符串
  *
- * @param dst   destination path string buffer
- * @param len   destination path string len, not greater than size
- * @param size  destination path buffer size
- * @param src   path string
+ * @param dst   目标路径字符串缓冲区
+ * @param len   目标路径字符串长度，不大于缓冲区大小
+ * @param size  目标路径缓冲区大小
+ * @param src   源路径字符串
  *
- * @return length of the result path string excluding the terminating NULL
- *         byte, `size` indicates overflow.
+ * @return 结果路径字符串的长度（不包括终止NULL字节），如果溢出则返回size
  */
 static int path_cat(char *dst, size_t len, size_t size, const char *src)
 {
@@ -98,6 +105,14 @@ static int path_cat(char *dst, size_t len, size_t size, const char *src)
     return i;
 }
 
+/**
+ * 将字符串写入文件
+ *
+ * @param fn  文件名
+ * @param s   要写入的字符串
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int write_file_string(const char *fn, const char *s)
 {
     char *tmp = NULL;
@@ -137,7 +152,14 @@ static int write_file_string(const char *fn, const char *s)
     return 0;
 }
 
-// read all file contents as string
+/**
+ * 读取文件内容为字符串
+ *
+ * @param fn   文件名
+ * @param out  输出参数，保存读取到的字符串
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int read_file_string(const char *fn, char **out)
 {
     int rv = 0;
@@ -188,6 +210,15 @@ error_open:
     return rv;
 }
 
+/**
+ * 执行SQL语句
+ *
+ * @param db   数据库连接
+ * @param sql  SQL语句格式字符串
+ * @param ...  格式化参数
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 static inline int execute_sql(sqlite3 *db, const char *sql, ...)
 {
     int rv = 0;
@@ -216,6 +247,15 @@ static inline int execute_sql(sqlite3 *db, const char *sql, ...)
     return rv;
 }
 
+/**
+ * 获取数据库架构版本
+ *
+ * @param db        数据库连接
+ * @param version_p 输出参数，保存版本字符串
+ * @param dirty_p   输出参数，表示数据库是否为脏状态
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
 {
     sqlite3_stmt *stmt  = NULL;
@@ -245,11 +285,28 @@ static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
     return 0;
 }
 
+/**
+ * 比较两个架构版本字符串
+ *
+ * @param a 第一个版本字符串指针
+ * @param b 第二个版本字符串指针
+ *
+ * @return 比较结果
+ */
 int schema_version_cmp(const void *a, const void *b)
 {
     return strcmp(*(char **) a, *(char **) b);
 }
 
+/**
+ * 从文件名中提取架构信息
+ *
+ * @param file          文件名
+ * @param version_p     输出参数，保存版本字符串
+ * @param description_p 输出参数，保存描述字符串
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 static int extract_schema_info(const char *file, char **version_p,
                                char **description_p)
 {
@@ -293,6 +350,14 @@ static int extract_schema_info(const char *file, char **version_p,
     return 0;
 }
 
+/**
+ * 检查架构版本是否应该应用
+ *
+ * @param db      数据库连接
+ * @param version 版本字符串
+ *
+ * @return 1表示应该应用，0表示不应该应用，-1表示出错
+ */
 static int should_apply(sqlite3 *db, const char *version)
 {
     int           rv   = 0;
@@ -324,6 +389,15 @@ end:
     return rv;
 }
 
+/**
+ * 应用架构文件到数据库
+ *
+ * @param db    数据库连接
+ * @param dir   目录路径
+ * @param file  文件名
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
 {
     int   rv          = 0;
@@ -401,6 +475,13 @@ end:
     return rv;
 }
 
+/**
+ * 收集目录中的架构文件
+ *
+ * @param dir 目录路径
+ *
+ * @return 架构文件列表数组，失败返回NULL
+ */
 static UT_array *collect_schemas(const char *dir)
 {
     DIR *          dirp  = NULL;
@@ -425,6 +506,14 @@ static UT_array *collect_schemas(const char *dir)
     return files;
 }
 
+/**
+ * 应用架构文件到数据库
+ *
+ * @param db   数据库连接
+ * @param dir  架构文件目录
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 static int apply_schemas(sqlite3 *db, const char *dir)
 {
     int rv = 0;
@@ -478,6 +567,11 @@ static int apply_schemas(sqlite3 *db, const char *dir)
     return rv;
 }
 
+/**
+ * 加载节点计数
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static inline int node_count_load()
 {
     int           rv    = 0;
@@ -497,6 +591,11 @@ static inline int node_count_load()
     return rv;
 }
 
+/**
+ * 加载标签计数
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static inline int tag_count_load()
 {
     int           rv    = 0;
@@ -516,6 +615,13 @@ static inline int tag_count_load()
     return rv;
 }
 
+/**
+ * 创建持久化存储
+ *
+ * @param schema_dir 架构文件目录
+ *
+ * @return 成功返回0，失败返回-1
+ */
 int neu_persister_create(const char *schema_dir)
 {
     int rv = sqlite3_open(db_file, &global_db);
@@ -557,11 +663,21 @@ int neu_persister_create(const char *schema_dir)
     return 0;
 }
 
+/**
+ * 获取数据库连接
+ *
+ * @return 数据库连接对象
+ */
 sqlite3 *neu_persister_get_db()
 {
     return global_db;
 }
 
+/**
+ * 增加节点计数
+ *
+ * @param n 增加的数量
+ */
 static inline void node_count_add(int n)
 {
     pthread_rwlock_wrlock(&global_rwlock);
@@ -569,6 +685,11 @@ static inline void node_count_add(int n)
     pthread_rwlock_unlock(&global_rwlock);
 }
 
+/**
+ * 获取节点计数
+ *
+ * @return 节点数量
+ */
 int neu_persister_node_count()
 {
     pthread_rwlock_rdlock(&global_rwlock);
@@ -577,6 +698,11 @@ int neu_persister_node_count()
     return cnt;
 }
 
+/**
+ * 增加标签计数
+ *
+ * @param n 增加的数量
+ */
 static inline void tag_count_add(int n)
 {
     pthread_rwlock_wrlock(&global_rwlock);
@@ -584,6 +710,11 @@ static inline void tag_count_add(int n)
     pthread_rwlock_unlock(&global_rwlock);
 }
 
+/**
+ * 获取标签计数
+ *
+ * @return 标签数量
+ */
 int neu_persister_tag_count()
 {
     pthread_rwlock_rdlock(&global_rwlock);
@@ -592,11 +723,21 @@ int neu_persister_tag_count()
     return cnt;
 }
 
+/**
+ * 销毁持久化存储
+ */
 void neu_persister_destroy()
 {
     sqlite3_close(global_db);
 }
 
+/**
+ * 存储节点信息
+ *
+ * @param info 节点信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_node(neu_persist_node_info_t *info)
 {
     int rv = 0;
@@ -617,6 +758,13 @@ static UT_icd node_info_icd = {
     (dtor_f *) neu_persist_node_info_fini,
 };
 
+/**
+ * 加载所有节点信息
+ *
+ * @param node_infos 输出参数，保存节点信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_nodes(UT_array **node_infos)
 {
     int           rv    = 0;
@@ -664,6 +812,13 @@ int neu_persister_load_nodes(UT_array **node_infos)
     return rv;
 }
 
+/**
+ * 删除节点
+ *
+ * @param node_name 节点名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_node(const char *node_name)
 {
     // rely on foreign key constraints to remove settings, groups, tags and
@@ -677,18 +832,41 @@ int neu_persister_delete_node(const char *node_name)
     return rv;
 }
 
+/**
+ * 更新节点名称
+ *
+ * @param node_name 原节点名称
+ * @param new_name  新节点名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_node(const char *node_name, const char *new_name)
 {
     return execute_sql(global_db, "UPDATE nodes SET name=%Q WHERE name=%Q;",
                        new_name, node_name);
 }
 
+/**
+ * 更新节点状态
+ *
+ * @param node_name 节点名称
+ * @param state     新状态
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_node_state(const char *node_name, int state)
 {
     return execute_sql(global_db, "UPDATE nodes SET state=%i WHERE name=%Q;",
                        state, node_name);
 }
 
+/**
+ * 存储插件信息
+ *
+ * @param plugin_infos 插件信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_plugins(UT_array *plugin_infos)
 {
     int                    index       = 0;
@@ -723,6 +901,14 @@ int neu_persister_store_plugins(UT_array *plugin_infos)
     return rv;
 }
 
+/**
+ * 从文件加载插件信息
+ *
+ * @param fname       文件名
+ * @param plugin_infos 输出参数，保存插件信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 static int load_plugins_file(const char *fname, UT_array *plugin_infos)
 {
     char *json_str = NULL;
@@ -749,11 +935,26 @@ static int load_plugins_file(const char *fname, UT_array *plugin_infos)
     return 0;
 }
 
+/**
+ * 字符串比较函数
+ *
+ * @param a 第一个字符串指针
+ * @param b 第二个字符串指针
+ *
+ * @return 比较结果
+ */
 static int ut_str_cmp(const void *a, const void *b)
 {
     return strcmp(*(char **) a, *(char **) b);
 }
 
+/**
+ * 加载插件信息
+ *
+ * @param plugin_infos 输出参数，保存插件信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_plugins(UT_array **plugin_infos)
 {
     UT_array *default_plugins = NULL;
@@ -791,6 +992,15 @@ int neu_persister_load_plugins(UT_array **plugin_infos)
     return 0;
 }
 
+/**
+ * 存储标签
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tag         标签信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_tag(const char *driver_name, const char *group_name,
                             const neu_datatag_t *tag)
 {
@@ -811,6 +1021,16 @@ int neu_persister_store_tag(const char *driver_name, const char *group_name,
     return rv;
 }
 
+/**
+ * 批量添加标签
+ *
+ * @param query SQL查询语句
+ * @param stmt  预处理语句对象
+ * @param tags  标签数组
+ * @param n     标签数量
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int put_tags(const char *query, sqlite3_stmt *stmt,
                     const neu_datatag_t *tags, size_t n)
 {
@@ -882,6 +1102,16 @@ static int put_tags(const char *query, sqlite3_stmt *stmt,
     return 0;
 }
 
+/**
+ * 批量存储标签
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tags        标签数组
+ * @param n           标签数量
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_tags(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tags, size_t n)
 {
@@ -933,6 +1163,14 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 收集标签信息
+ *
+ * @param stmt 预处理语句对象
+ * @param tags 输出参数，保存标签数组
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
 {
     int step = sqlite3_step(stmt);
@@ -962,6 +1200,15 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
     return 0;
 }
 
+/**
+ * 加载标签
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tags        输出参数，保存标签数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_tags(const char *driver_name, const char *group_name,
                             UT_array **tags)
 {
@@ -1004,6 +1251,15 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 更新标签
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tag         标签信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_tag(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag)
 {
@@ -1020,6 +1276,15 @@ int neu_persister_update_tag(const char *driver_name, const char *group_name,
     return rv;
 }
 
+/**
+ * 更新标签值
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tag         标签信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_tag_value(const char *         driver_name,
                                    const char *         group_name,
                                    const neu_datatag_t *tag)
@@ -1033,6 +1298,15 @@ int neu_persister_update_tag_value(const char *         driver_name,
     return rv;
 }
 
+/**
+ * 删除标签
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param tag_name    标签名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_tag(const char *driver_name, const char *group_name,
                              const char *tag_name)
 {
@@ -1046,6 +1320,16 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
     return rv;
 }
 
+/**
+ * 存储订阅关系
+ *
+ * @param app_name    应用名称
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param params      订阅参数
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
                                      const char *group_name, const char *params)
@@ -1057,6 +1341,16 @@ int neu_persister_store_subscription(const char *app_name,
         app_name, driver_name, group_name, params);
 }
 
+/**
+ * 更新订阅参数
+ *
+ * @param app_name    应用名称
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ * @param params      新订阅参数
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_subscription(const char *app_name,
                                       const char *driver_name,
                                       const char *group_name,
@@ -1075,6 +1369,14 @@ static UT_icd subscription_info_icd = {
     (dtor_f *) neu_persist_subscription_info_fini,
 };
 
+/**
+ * 加载应用的所有订阅关系
+ *
+ * @param app_name          应用名称
+ * @param subscription_infos 输出参数，保存订阅信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_subscriptions(const char *app_name,
                                      UT_array ** subscription_infos)
 {
@@ -1140,6 +1442,15 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 删除订阅关系
+ *
+ * @param app_name    应用名称
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_subscription(const char *app_name,
                                       const char *driver_name,
                                       const char *group_name)
@@ -1150,6 +1461,14 @@ int neu_persister_delete_subscription(const char *app_name,
                        app_name, driver_name, group_name);
 }
 
+/**
+ * 存储组信息
+ *
+ * @param driver_name 驱动名称
+ * @param group_info  组信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_group(const char *              driver_name,
                               neu_persist_group_info_t *group_info)
 {
@@ -1159,6 +1478,15 @@ int neu_persister_store_group(const char *              driver_name,
         driver_name, group_info->name, (unsigned) group_info->interval);
 }
 
+/**
+ * 更新组信息
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  原组名称
+ * @param group_info  新组信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_group(const char *driver_name, const char *group_name,
                                neu_persist_group_info_t *group_info)
 {
@@ -1194,6 +1522,14 @@ static UT_icd group_info_icd = {
     (dtor_f *) neu_persist_group_info_fini,
 };
 
+/**
+ * 收集组信息
+ *
+ * @param stmt        预处理语句对象
+ * @param group_infos 输出参数，保存组信息数组
+ *
+ * @return 成功返回0，失败返回-1
+ */
 static int collect_group_info(sqlite3_stmt *stmt, UT_array **group_infos)
 {
     int step = sqlite3_step(stmt);
@@ -1218,6 +1554,14 @@ static int collect_group_info(sqlite3_stmt *stmt, UT_array **group_infos)
     return 0;
 }
 
+/**
+ * 加载驱动的所有组信息
+ *
+ * @param driver_name 驱动名称
+ * @param group_infos 输出参数，保存组信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_groups(const char *driver_name, UT_array **group_infos)
 {
     sqlite3_stmt *stmt = NULL;
@@ -1250,6 +1594,14 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 删除组
+ *
+ * @param driver_name 驱动名称
+ * @param group_name  组名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_group(const char *driver_name, const char *group_name)
 {
     // rely on foreign key constraints to delete tags and subscriptions
@@ -1262,6 +1614,14 @@ int neu_persister_delete_group(const char *driver_name, const char *group_name)
     return rv;
 }
 
+/**
+ * 存储节点设置
+ *
+ * @param node_name 节点名称
+ * @param setting   设置内容
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_node_setting(const char *node_name, const char *setting)
 {
     return execute_sql(
@@ -1270,6 +1630,14 @@ int neu_persister_store_node_setting(const char *node_name, const char *setting)
         node_name, setting);
 }
 
+/**
+ * 加载节点设置
+ *
+ * @param node_name 节点名称
+ * @param setting   输出参数，保存设置内容
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_node_setting(const char *       node_name,
                                     const char **const setting)
 {
@@ -1311,12 +1679,26 @@ end:
     return rv;
 }
 
+/**
+ * 删除节点设置
+ *
+ * @param node_name 节点名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_node_setting(const char *node_name)
 {
     return execute_sql(global_db, "DELETE FROM settings WHERE node_name=%Q",
                        node_name);
 }
 
+/**
+ * 存储用户信息
+ *
+ * @param user 用户信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_user(const neu_persist_user_info_t *user)
 {
     return execute_sql(global_db,
@@ -1324,12 +1706,27 @@ int neu_persister_store_user(const neu_persist_user_info_t *user)
                        user->name, user->hash);
 }
 
+/**
+ * 更新用户信息
+ *
+ * @param user 用户信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_user(const neu_persist_user_info_t *user)
 {
     return execute_sql(global_db, "UPDATE users SET password=%Q WHERE name=%Q",
                        user->hash, user->name);
 }
 
+/**
+ * 加载用户信息
+ *
+ * @param user_name 用户名
+ * @param user_p    输出参数，保存用户信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_user(const char *              user_name,
                             neu_persist_user_info_t **user_p)
 {
@@ -1385,11 +1782,26 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 删除用户
+ *
+ * @param user_name 用户名
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_user(const char *user_name)
 {
     return execute_sql(global_db, "DELETE FROM users WHERE name=%Q", user_name);
 }
 
+/**
+ * 存储模板信息
+ *
+ * @param name   模板名称
+ * @param plugin 插件名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_template(const char *name, const char *plugin)
 {
     return execute_sql(global_db,
@@ -1398,6 +1810,11 @@ int neu_persister_store_template(const char *name, const char *plugin)
                        name, plugin);
 }
 
+/**
+ * 释放模板信息
+ *
+ * @param info 模板信息
+ */
 static inline void
 neu_persist_template_info_fini(neu_persist_template_info_t *info)
 {
@@ -1412,6 +1829,13 @@ static UT_icd template_info_icd = {
     (dtor_f *) neu_persist_template_info_fini,
 };
 
+/**
+ * 加载所有模板信息
+ *
+ * @param infos 输出参数，保存模板信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_templates(UT_array **infos)
 {
     int           rv    = 0;
@@ -1455,18 +1879,38 @@ int neu_persister_load_templates(UT_array **infos)
     return rv;
 }
 
+/**
+ * 删除模板
+ *
+ * @param name 模板名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_template(const char *name)
 {
     // rely on foreign key constraints to remove groups and tags
     return execute_sql(global_db, "DELETE FROM templates WHERE name=%Q;", name);
 }
 
+/**
+ * 清除所有模板
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_clear_templates()
 {
     // rely on foreign key constraints to remove groups and tags
     return execute_sql(global_db, "DELETE FROM templates");
 }
 
+/**
+ * 存储模板组信息
+ *
+ * @param tmpl_name  模板名称
+ * @param group_info 组信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_template_group(const char *              tmpl_name,
                                        neu_persist_group_info_t *group_info)
 {
@@ -1477,6 +1921,15 @@ int neu_persister_store_template_group(const char *              tmpl_name,
                        (unsigned) group_info->interval);
 }
 
+/**
+ * 更新模板组信息
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 原组名称
+ * @param group_info 新组信息
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_template_group(const char *              tmpl_name,
                                         const char *              group_name,
                                         neu_persist_group_info_t *group_info)
@@ -1506,6 +1959,14 @@ int neu_persister_update_template_group(const char *              tmpl_name,
     return ret;
 }
 
+/**
+ * 加载模板的所有组信息
+ *
+ * @param tmpl_name   模板名称
+ * @param group_infos 输出参数，保存组信息数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_template_groups(const char *tmpl_name,
                                        UT_array ** group_infos)
 {
@@ -1540,6 +2001,14 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 删除模板组
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 组名称
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_template_group(const char *tmpl_name,
                                         const char *group_name)
 {
@@ -1549,6 +2018,16 @@ int neu_persister_delete_template_group(const char *tmpl_name,
         tmpl_name, group_name);
 }
 
+/**
+ * 存储模板标签
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 组名称
+ * @param tags       标签数组
+ * @param n          标签数量
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_store_template_tags(const char *         tmpl_name,
                                       const char *         group_name,
                                       const neu_datatag_t *tags, size_t n)
@@ -1602,6 +2081,15 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 加载模板标签
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 组名称
+ * @param tags       输出参数，保存标签数组
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_load_template_tags(const char *tmpl_name,
                                      const char *group_name, UT_array **tags)
 {
@@ -1644,6 +2132,16 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 更新模板标签
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 组名称
+ * @param tags       标签数组
+ * @param n          标签数量
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_update_template_tags(const char *         tmpl_name,
                                        const char *         group_name,
                                        const neu_datatag_t *tags, size_t n)
@@ -1695,6 +2193,16 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
+/**
+ * 删除模板标签
+ *
+ * @param tmpl_name  模板名称
+ * @param group_name 组名称
+ * @param tags       标签名称数组
+ * @param n_tag      标签数量
+ *
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_persister_delete_template_tags(const char *       tmpl_name,
                                        const char *       group_name,
                                        const char *const *tags, size_t n_tag)

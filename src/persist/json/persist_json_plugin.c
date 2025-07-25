@@ -29,6 +29,14 @@
 
 #include "persist/json/persist_json_plugin.h"
 
+/**
+ * 解码JSON字符串为插件请求结构体
+ *
+ * @param buf    JSON字符串
+ * @param result 输出参数，解码后的插件请求结构体
+ *
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
 {
     int                    ret      = 0;
@@ -82,6 +90,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放插件请求结构体
+ *
+ * @param req 插件请求结构体
+ */
 void neu_json_decode_plugin_req_free(neu_json_plugin_req_t *req)
 {
 
@@ -96,6 +109,14 @@ void neu_json_decode_plugin_req_free(neu_json_plugin_req_t *req)
     free(req);
 }
 
+/**
+ * 编码插件响应结构体为JSON对象
+ *
+ * @param json_object JSON对象
+ * @param param       插件响应结构体
+ *
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_plugin_resp(void *json_object, void *param)
 {
     int                     ret  = 0;
