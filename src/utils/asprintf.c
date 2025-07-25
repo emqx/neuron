@@ -30,6 +30,14 @@
 
 #include "utils/asprintf.h"
 
+/**
+ * @brief 格式化字符串并将结果存储在动态分配的内存中
+ *
+ * @param strp 指向字符串指针的指针，用于存储格式化结果
+ * @param fmt 格式化字符串
+ * @param ... 可变参数列表
+ * @return int 成功时返回写入的字符数，失败时返回-1
+ */
 int neu_asprintf(char **strp, const char *fmt, ...)
 {
     va_list ap;
@@ -39,6 +47,14 @@ int neu_asprintf(char **strp, const char *fmt, ...)
     return rv;
 }
 
+/**
+ * @brief 使用va_list参数格式化字符串并将结果存储在动态分配的内存中
+ *
+ * @param strp 指向字符串指针的指针，用于存储格式化结果
+ * @param fmt 格式化字符串
+ * @param ap 可变参数列表
+ * @return int 成功时返回写入的字符数，失败时返回-1
+ */
 int neu_vasprintf(char **strp, const char *fmt, va_list ap)
 {
 #if defined(_GNU_SOURCE) || defined(BSD) || defined(__APPLE__)

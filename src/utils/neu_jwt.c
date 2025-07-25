@@ -43,6 +43,12 @@ static struct public_key_store key_store;
 static char                    neuron_private_key[2048] = { 0 };
 static char                    neuron_public_key[2048]  = { 0 };
 
+/**
+ * 在密钥存储中查找指定名称的密钥
+ *
+ * @param name 要查找的密钥名称
+ * @return 找到的密钥索引，未找到返回-1
+ */
 static int find_key(const char *name)
 {
     for (int i = 0; i < key_store.size; i++) {
@@ -54,6 +60,12 @@ static int find_key(const char *name)
     return -1;
 }
 
+/**
+ * 添加密钥到密钥存储
+ *
+ * @param name 密钥名称
+ * @param value 密钥内容
+ */
 static void add_key(char *name, char *value)
 {
     key_store.size += 1;
@@ -65,6 +77,13 @@ static void add_key(char *name, char *value)
             sizeof(key_store.key[key_store.size - 1].key) - 1);
 }
 
+/**
+ * 从指定目录加载密钥文件内容
+ *
+ * @param dir 目录路径
+ * @param name 文件名
+ * @return 文件内容，如果加载失败返回NULL
+ */
 static char *load_key(const char *dir, char *name)
 {
     FILE *      f             = NULL;
@@ -93,6 +112,11 @@ static char *load_key(const char *dir, char *name)
     return content;
 }
 
+/**
+ * 加载Neuron系统的公钥和私钥
+ *
+ * @param dir_path 密钥文件目录路径
+ */
 static void load_neuron_key(const char *dir_path)
 {
     char *content = load_key(dir_path, "neuron.key");
@@ -106,6 +130,11 @@ static void load_neuron_key(const char *dir_path)
     strncpy(neuron_public_key, content, sizeof(neuron_public_key) - 1);
 }
 
+/**
+ * 扫描并加载目录中的所有公钥文件
+ *
+ * @param dir_path 公钥文件目录路径
+ */
 static void scanf_key(const char *dir_path)
 {
     DIR *          dir = NULL;
@@ -138,6 +167,12 @@ static void scanf_key(const char *dir_path)
     closedir(dir);
 }
 
+/**
+ * 初始化JWT模块，加载密钥
+ *
+ * @param dir_path 密钥文件目录路径
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_jwt_init(const char *dir_path)
 {
     load_neuron_key(dir_path);
@@ -145,6 +180,12 @@ int neu_jwt_init(const char *dir_path)
     return 0;
 }
 
+/**
+ * 创建新的JWT令牌
+ *
+ * @param token 输出参数，存储生成的JWT令牌
+ * @return 成功返回0，失败返回-1
+ */
 int neu_jwt_new(char **token)
 {
     struct timeval tv      = { 0 };
@@ -214,6 +255,12 @@ err_out:
     return -1;
 }
 
+/**
+ * 解码JWT令牌
+ *
+ * @param token 要解码的JWT令牌
+ * @return 解码后的JWT结构，解码失败返回NULL
+ */
 static void *neu_jwt_decode(char *token)
 {
     jwt_t *     jwt      = NULL;
@@ -273,6 +320,12 @@ static void *neu_jwt_decode(char *token)
     return jwt;
 }
 
+/**
+ * 验证JWT令牌的有效性
+ *
+ * @param b_token 带Bearer前缀的JWT令牌
+ * @return 成功返回NEU_ERR_SUCCESS，失败返回相应错误码
+ */
 int neu_jwt_validate(char *b_token)
 {
     jwt_valid_t *jwt_valid = NULL;
@@ -333,6 +386,9 @@ int neu_jwt_validate(char *b_token)
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * 销毁JWT模块资源
+ */
 void neu_jwt_destroy()
 {
     // memset(token_local, 0, sizeof(token_local));

@@ -25,6 +25,13 @@
 #include "utils/utarray.h"
 #include "utils/utextend.h"
 
+/**
+ * 收集指定节点的所有日志文件
+ *
+ * @param dir 日志文件所在目录
+ * @param node 节点名称
+ * @return 包含所有匹配日志文件名的数组，失败返回NULL
+ */
 static UT_array *collect_logs(const char *dir, const char *node)
 {
     DIR *          dirp                        = NULL;
@@ -51,6 +58,11 @@ static UT_array *collect_logs(const char *dir, const char *node)
     return files;
 }
 
+/**
+ * 删除指定节点的所有日志文件
+ *
+ * @param node 节点名称
+ */
 void remove_logs(const char *node)
 {
     UT_array *files = collect_logs("./logs", node);

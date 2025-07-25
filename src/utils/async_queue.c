@@ -44,6 +44,15 @@ struct neu_async_queue {
     element_list *list;
 };
 
+/**
+ * @brief 创建一个新的异步队列
+ *
+ * @param key_fn 生成元素键值的回调函数
+ * @param expire_fn 检查元素是否过期的回调函数
+ * @param free_fn 释放元素的回调函数
+ * @param max_size 队列的最大容量
+ * @return neu_async_queue_t* 返回创建的异步队列对象
+ */
 neu_async_queue_t *neu_async_queue_new(neu_async_queue_key    key_fn,
                                        neu_async_queue_expire expire_fn,
                                        neu_async_queue_free   free_fn,
@@ -62,6 +71,11 @@ neu_async_queue_t *neu_async_queue_new(neu_async_queue_key    key_fn,
     return q;
 }
 
+/**
+ * @brief 销毁异步队列并释放所有资源
+ *
+ * @param q 要销毁的异步队列
+ */
 void neu_async_queue_destroy(neu_async_queue_t *q)
 {
     element *elt = NULL, *tmp = NULL;
@@ -79,6 +93,12 @@ void neu_async_queue_destroy(neu_async_queue_t *q)
     free(q);
 }
 
+/**
+ * @brief 向异步队列中添加元素
+ *
+ * @param q 目标异步队列
+ * @param elem 要添加的元素
+ */
 void neu_async_queue_push(neu_async_queue_t *q, void *elem)
 {
     element *elt   = NULL;
@@ -103,6 +123,14 @@ void neu_async_queue_push(neu_async_queue_t *q, void *elem)
     pthread_mutex_unlock(&q->mtx);
 }
 
+/**
+ * @brief 从异步队列中取出指定键值的元素
+ *
+ * @param q 目标异步队列
+ * @param key 要查找的元素键值
+ * @param elem 用于存储取出元素的指针
+ * @return int 成功取出返回0，失败返回-1
+ */
 int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
 {
     element *elt = NULL, *tmp = NULL;
@@ -130,6 +158,13 @@ int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
     return ret;
 }
 
+/**
+ * @brief 根据过滤条件移除队列中的元素
+ *
+ * @param q 目标异步队列
+ * @param filter 过滤函数，返回true的元素将被移除
+ * @param filter_elem 传递给过滤函数的参数
+ */
 void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
                             void *filter_elem)
 {
@@ -147,6 +182,11 @@ void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
     pthread_mutex_unlock(&q->mtx);
 }
 
+/**
+ * @brief 清空异步队列中的所有元素
+ *
+ * @param q 要清空的异步队列
+ */
 void neu_async_queue_clean(neu_async_queue_t *q)
 {
     element *el = NULL, *tmp = NULL;
