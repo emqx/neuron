@@ -107,6 +107,13 @@ void           neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other);
 void           neu_tag_fini(neu_datatag_t *tag);
 void           neu_tag_free(neu_datatag_t *tag);
 
+/**
+ * @brief 检查数据标签是否具有指定的属性。
+ *
+ * @param[in] tag 数据标签
+ * @param[in] attribute 要检查的属性
+ * @return 如果标签具有指定的属性，则返回 true，否则返回 false。
+ */
 inline static bool neu_tag_attribute_test(const neu_datatag_t *tag,
                                           neu_attribute_e      attribute)
 {

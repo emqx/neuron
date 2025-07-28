@@ -204,31 +204,92 @@ typedef struct {
     neu_metric_entry_t *registered_metrics;
 } neu_metrics_t;
 
+/**
+ * 初始化指标系统
+ */
 void neu_metrics_init();
+
+/**
+ * 添加节点指标
+ *
+ * @param adapter 适配器指针
+ */
 void neu_metrics_add_node(const neu_adapter_t *adapter);
+
+/**
+ * 删除节点指标
+ *
+ * @param adapter 适配器指针
+ */
 void neu_metrics_del_node(const neu_adapter_t *adapter);
-int  neu_metrics_register_entry(const char *name, const char *help,
-                                neu_metric_type_e type);
+
+/**
+ * 注册指标项
+ *
+ * @param name 指标名称
+ * @param help 帮助信息
+ * @param type 指标类型
+ * @return 成功返回0，失败返回负值
+ */
+int neu_metrics_register_entry(const char *name, const char *help,
+                               neu_metric_type_e type);
+
+/**
+ * 注销指标项
+ *
+ * @param name 指标名称
+ */
 void neu_metrics_unregister_entry(const char *name);
 
 typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
+
+/**
+ * 访问指标数据
+ *
+ * @param cb 回调函数
+ * @param data 用户数据
+ */
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
 
+/**
+ * 判断指标类型是否为计数器
+ *
+ * @param type 指标类型
+ * @return 是计数器返回true，否则返回false
+ */
 static inline bool neu_metric_type_is_counter(neu_metric_type_e type)
 {
     return NEU_METRIC_TYPE_COUNTER == (type & NEU_METRIC_TYPE_MASK);
 }
 
+/**
+ * 判断指标类型是否为滚动计数器
+ *
+ * @param type 指标类型
+ * @return 是滚动计数器返回true，否则返回false
+ */
 static inline bool neu_metric_type_is_rolling_counter(neu_metric_type_e type)
 {
     return NEU_METRIC_TYPE_ROLLING_COUNTER == (type & NEU_METRIC_TYPE_MASK);
 }
 
+/**
+ * 判断指标类型是否不重置
+ *
+ * @param type 指标类型
+ * @return 不重置返回true，否则返回false
+ */
 static inline bool neu_metric_type_no_reset(neu_metric_type_e type)
 {
     return NEU_METRIC_TYPE_FLAG_NO_RESET & type;
 }
 
+/**
+ * 获取指标类型的字符串表示
+ *
+ * @param type 指标类型
+ * @return 返回类型的字符串表示
+ */
 static inline const char *neu_metric_type_str(neu_metric_type_e type)
 {
     if (neu_metric_type_is_counter(type)) {
@@ -238,10 +299,25 @@ static inline const char *neu_metric_type_str(neu_metric_type_e type)
     }
 }
 
+/**
+ * 添加指标项
+ *
+ * @param entries 指标项哈希表指针
+ * @param name 指标名称
+ * @param help 帮助信息
+ * @param type 指标类型
+ * @param init 初始值
+ * @return 成功返回0，失败返回负值
+ */
 int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
                            const char *help, neu_metric_type_e type,
                            uint64_t init);
 
+/**
+ * 释放指标项资源
+ *
+ * @param entry 指标项指针
+ */
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
     if (neu_metric_type_is_rolling_counter(entry->type)) {
@@ -250,6 +326,11 @@ static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
     free(entry);
 }
 
+/**
+ * 释放组指标资源
+ *
+ * @param group_metrics 组指标指针
+ */
 static inline void neu_group_metrics_free(neu_group_metrics_t *group_metrics)
 {
     if (NULL == group_metrics) {
@@ -267,6 +348,14 @@ static inline void neu_group_metrics_free(neu_group_metrics_t *group_metrics)
     free(group_metrics);
 }
 
+/**
+ * 创建新的节点指标
+ *
+ * @param adapter 适配器指针
+ * @param type 节点类型
+ * @param name 节点名称
+ * @return 返回新创建的节点指标指针，失败返回NULL
+ */
 static inline neu_node_metrics_t *
 neu_node_metrics_new(neu_adapter_t *adapter, neu_node_type_e type, char *name)
 {
@@ -282,6 +371,11 @@ neu_node_metrics_new(neu_adapter_t *adapter, neu_node_type_e type, char *name)
     return node_metrics;
 }
 
+/**
+ * 释放节点指标资源
+ *
+ * @param node_metrics 节点指标指针
+ */
 static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
 {
     if (NULL == node_metrics) {
@@ -308,6 +402,17 @@ static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
     free(node_metrics);
 }
 
+/**
+ * 添加节点指标项
+ *
+ * @param node_metrics 节点指标指针
+ * @param group_name 组名称，为NULL表示添加到节点级别
+ * @param name 指标名称
+ * @param help 帮助信息
+ * @param type 指标类型
+ * @param init 初始值
+ * @return 成功返回0，失败返回负值
+ */
 static inline int neu_node_metrics_add(neu_node_metrics_t *node_metrics,
                                        const char *group_name, const char *name,
                                        const char *help, neu_metric_type_e type,
@@ -351,6 +456,15 @@ static inline int neu_node_metrics_add(neu_node_metrics_t *node_metrics,
     return rv;
 }
 
+/**
+ * 更新节点指标值
+ *
+ * @param node_metrics 节点指标指针
+ * @param group 组名称，为NULL表示更新节点级别指标
+ * @param metric_name 指标名称
+ * @param n 更新值
+ * @return 成功返回0，失败返回负值
+ */
 static inline int neu_node_metrics_update(neu_node_metrics_t *node_metrics,
                                           const char *        group,
                                           const char *metric_name, uint64_t n)
@@ -386,6 +500,11 @@ static inline int neu_node_metrics_update(neu_node_metrics_t *node_metrics,
     return 0;
 }
 
+/**
+ * 重置节点指标值
+ *
+ * @param node_metrics 节点指标指针
+ */
 static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
 {
     neu_metric_entry_t *entry = NULL;
@@ -417,6 +536,14 @@ static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
     pthread_mutex_unlock(&node_metrics->lock);
 }
 
+/**
+ * 更新节点组指标名称
+ *
+ * @param node_metrics 节点指标指针
+ * @param group_name 原组名称
+ * @param new_group_name 新组名称
+ * @return 成功返回0，失败返回负值
+ */
 static inline int
 neu_node_metrics_update_group(neu_node_metrics_t *node_metrics,
                               const char *        group_name,
@@ -442,6 +569,12 @@ neu_node_metrics_update_group(neu_node_metrics_t *node_metrics,
     return rv;
 }
 
+/**
+ * 删除节点组指标
+ *
+ * @param node_metrics 节点指标指针
+ * @param group_name 组名称
+ */
 static inline void neu_node_metrics_del_group(neu_node_metrics_t *node_metrics,
                                               const char *        group_name)
 {

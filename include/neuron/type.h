@@ -52,6 +52,12 @@ typedef enum {
     NEU_TYPE_PTR    = 19,
 } neu_type_e;
 
+/**
+ * 将数据类型枚举转换为字符串表示
+ *
+ * @param type 数据类型枚举值
+ * @return 返回对应的字符串表示
+ */
 inline static const char *neu_type_string(neu_type_e type)
 {
     switch (type) {
@@ -128,6 +134,13 @@ typedef union {
     neu_value_ptr_t   ptr;
 } neu_value_u;
 
+/**
+ * 根据数据类型和值生成字符串描述
+ *
+ * @param type 数据类型枚举值
+ * @param value 数据值
+ * @return 返回描述该值的字符串
+ */
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)
 {
     static __thread char str[32] = { 0 };
@@ -256,6 +269,12 @@ typedef union neu_value64 {
     double   vdouble;
 } neu_value64_u;
 
+/**
+ * 设置24位整数值
+ *
+ * @param v24 指向24位值的指针
+ * @param v 要设置的32位值(只使用低24位)
+ */
 static inline void neu_value24_set(union neu_value24 *v24, uint32_t v)
 {
     assert((v & 0xff000000) == 0);
@@ -265,6 +284,12 @@ static inline void neu_value24_set(union neu_value24 *v24, uint32_t v)
     v24->value[2] = (v >> 16) & 0xff;
 }
 
+/**
+ * 获取24位整数值
+ *
+ * @param v24 24位值
+ * @return 返回转换为32位的值
+ */
 static inline uint32_t neu_value24_get(union neu_value24 v24)
 {
     uint32_t ret = 0;
@@ -276,6 +301,13 @@ static inline uint32_t neu_value24_get(union neu_value24 v24)
     return ret;
 }
 
+/**
+ * 获取8位值中的指定位
+ *
+ * @param value 8位值
+ * @param index 位索引(0-7)
+ * @return 返回指定位的值(0或1)
+ */
 static inline uint8_t neu_value8_get_bit(neu_value8_u value, uint8_t index)
 {
     uint8_t ret = 0;
@@ -313,6 +345,13 @@ static inline uint8_t neu_value8_get_bit(neu_value8_u value, uint8_t index)
     return ret;
 }
 
+/**
+ * 设置8位值中的指定位
+ *
+ * @param value 指向8位值的指针
+ * @param index 位索引(0-7)
+ * @param v 要设置的位值(0或1)
+ */
 static inline void neu_value8_set_bit(neu_value8_u *value, uint8_t index,
                                       uint8_t v)
 {
@@ -347,6 +386,13 @@ static inline void neu_value8_set_bit(neu_value8_u *value, uint8_t index,
     }
 }
 
+/**
+ * 获取16位值中的指定位
+ *
+ * @param value 16位值
+ * @param index 位索引(0-15)
+ * @return 返回指定位的值(0或1)
+ */
 static inline uint8_t neu_value16_get_bit(neu_value16_u value, uint8_t index)
 {
     uint8_t ret = 0;
@@ -408,6 +454,13 @@ static inline uint8_t neu_value16_get_bit(neu_value16_u value, uint8_t index)
     return ret;
 }
 
+/**
+ * 设置16位值中的指定位
+ *
+ * @param value 指向16位值的指针
+ * @param index 位索引(0-15)
+ * @param v 要设置的位值(0或1)
+ */
 static inline void neu_value16_set_bit(neu_value16_u *value, uint8_t index,
                                        uint8_t v)
 {
@@ -466,6 +519,11 @@ static inline void neu_value16_set_bit(neu_value16_u *value, uint8_t index,
     }
 }
 
+/**
+ * 将24位值从网络字节序转换为主机字节序
+ *
+ * @param value 指向24位值的指针
+ */
 static inline void neu_ntohs24_p(uint8_t *value)
 {
     uint8_t t = 0;
@@ -475,11 +533,22 @@ static inline void neu_ntohs24_p(uint8_t *value)
     value[2] = t;
 }
 
+/**
+ * 将24位值从主机字节序转换为网络字节序
+ *
+ * @param value 指向24位值的指针
+ */
 static inline void neu_htons24_p(uint8_t *value)
 {
     neu_ntohs24_p(value);
 }
 
+/**
+ * 将64位值从主机字节序转换为网络字节序
+ *
+ * @param u 64位值
+ * @return 返回网络字节序的64位值
+ */
 static inline uint64_t neu_htonll(uint64_t u)
 {
     uint8_t *bytes     = (uint8_t *) &u;
@@ -498,6 +567,12 @@ static inline uint64_t neu_htonll(uint64_t u)
     return ret;
 }
 
+/**
+ * 将64位值从主机字节序转换为特定字节序(低字节在前，高字节在后)
+ *
+ * @param u 64位值
+ * @return 返回转换后的64位值
+ */
 static inline uint64_t neu_htonlb(uint64_t u)
 {
     uint8_t *in        = (uint8_t *) &u;
@@ -516,6 +591,12 @@ static inline uint64_t neu_htonlb(uint64_t u)
     return out;
 }
 
+/**
+ * 将64位值从主机字节序转换为特定字节序(低字节在后，高字节在前)
+ *
+ * @param u 64位值
+ * @return 返回转换后的64位值
+ */
 static inline uint64_t neu_htonbl(uint64_t u)
 {
     uint8_t *in        = (uint8_t *) &u;
@@ -534,41 +615,83 @@ static inline uint64_t neu_htonbl(uint64_t u)
     return out;
 }
 
+/**
+ * 将64位值从网络字节序转换为主机字节序
+ *
+ * @param u 64位值
+ * @return 返回主机字节序的64位值
+ */
 static inline uint64_t neu_ntohll(uint64_t u)
 {
     return neu_htonll(u);
 }
 
+/**
+ * 将指向64位值的指针从网络字节序转换为主机字节序
+ *
+ * @param pu 指向64位值的指针
+ */
 static inline void neu_ntonll_p(uint64_t *pu)
 {
     *pu = neu_htonll(*pu);
 }
 
+/**
+ * 将指向64位值的指针从主机字节序转换为网络字节序
+ *
+ * @param pu 指向64位值的指针
+ */
 static inline void neu_htonll_p(uint64_t *pu)
 {
     neu_ntonll_p(pu);
 }
 
+/**
+ * 将指向32位值的指针从网络字节序转换为主机字节序
+ *
+ * @param pu 指向32位值的指针
+ */
 static inline void neu_ntohl_p(uint32_t *pu)
 {
     *pu = ntohl(*pu);
 }
 
+/**
+ * 将指向32位值的指针从主机字节序转换为网络字节序
+ *
+ * @param pu 指向32位值的指针
+ */
 static inline void neu_htonl_p(uint32_t *pu)
 {
     neu_ntohl_p(pu);
 }
 
+/**
+ * 将指向16位值的指针从网络字节序转换为主机字节序
+ *
+ * @param pu 指向16位值的指针
+ */
 static inline void neu_ntohs_p(uint16_t *pu)
 {
     *pu = ntohs(*pu);
 }
 
+/**
+ * 将指向16位值的指针从主机字节序转换为网络字节序
+ *
+ * @param pu 指向16位值的指针
+ */
 static inline void neu_htons_p(uint16_t *pu)
 {
     neu_ntohs_p(pu);
 }
 
+/**
+ * 从字节数组获取无符号16位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的16位无符号整数
+ */
 static inline uint16_t neu_get_u16(uint8_t *bytes)
 {
     uint16_t ret = 0;
@@ -582,6 +705,12 @@ static inline uint16_t neu_get_u16(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取有符号16位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的16位有符号整数
+ */
 static inline int16_t neu_get_i16(uint8_t *bytes)
 {
     int16_t  ret = 0;
@@ -595,6 +724,12 @@ static inline int16_t neu_get_i16(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取无符号32位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的32位无符号整数
+ */
 static inline uint32_t neu_get_u32(uint8_t *bytes)
 {
     uint32_t ret = 0;
@@ -610,6 +745,12 @@ static inline uint32_t neu_get_u32(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取有符号32位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的32位有符号整数
+ */
 static inline int32_t neu_get_i32(uint8_t *bytes)
 {
     int32_t  ret = 0;
@@ -625,6 +766,12 @@ static inline int32_t neu_get_i32(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取32位浮点数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的32位浮点数
+ */
 static inline float neu_get_f32(uint8_t *bytes)
 {
     float    ret = 0;
@@ -640,6 +787,12 @@ static inline float neu_get_f32(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取无符号64位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的64位无符号整数
+ */
 static inline uint64_t neu_get_u64(uint8_t *bytes)
 {
     uint64_t ret = 0;
@@ -659,6 +812,12 @@ static inline uint64_t neu_get_u64(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取有符号64位整数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的64位有符号整数
+ */
 static inline int64_t neu_get_i64(uint8_t *bytes)
 {
     int64_t  ret = 0;
@@ -678,6 +837,12 @@ static inline int64_t neu_get_i64(uint8_t *bytes)
     return ret;
 }
 
+/**
+ * 从字节数组获取64位浮点数
+ *
+ * @param bytes 字节数组
+ * @return 返回组合后的64位浮点数
+ */
 static inline double neu_get_f64(uint8_t *bytes)
 {
     double   ret = 0;
