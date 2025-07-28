@@ -82,7 +82,7 @@ typedef struct {
 
 /**
  * 获取节点列表
- * 
+ *
  * @param ctx 上下文结构指针
  * @param type 节点类型
  * @return 成功返回0，失败返回错误码
@@ -91,7 +91,7 @@ static int get_nodes(context_t *ctx, neu_node_type_e type);
 
 /**
  * 处理获取节点列表的响应
- * 
+ *
  * @param ctx 上下文结构指针
  * @param nodes 节点列表响应结构
  * @return 成功返回0，失败返回错误码
@@ -100,7 +100,7 @@ static int get_nodes_resp(context_t *ctx, neu_resp_get_node_t *nodes);
 
 /**
  * 获取所有驱动的组配置
- * 
+ *
  * @param ctx 上下文结构指针
  * @param unused 未使用的参数
  * @return 成功返回0，失败返回错误码
@@ -109,7 +109,7 @@ static int get_groups(context_t *ctx, int unused);
 
 /**
  * 处理获取组配置的响应
- * 
+ *
  * @param ctx 上下文结构指针
  * @param groups 组配置响应结构
  * @return 成功返回0，失败返回错误码
@@ -118,7 +118,7 @@ static int get_groups_resp(context_t *ctx, neu_resp_get_driver_group_t *groups);
 
 /**
  * 获取驱动组内的标签列表
- * 
+ *
  * @param ctx 上下文结构指针
  * @param info 驱动组信息结构
  * @return 成功返回0，失败返回错误码
@@ -127,7 +127,7 @@ static int get_tags(context_t *ctx, neu_resp_driver_group_info_t *info);
 
 /**
  * 处理获取标签列表的响应
- * 
+ *
  * @param ctx 上下文结构指针
  * @param tags 标签列表响应结构
  * @return 成功返回0，失败返回错误码
@@ -136,7 +136,7 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags);
 
 /**
  * 获取应用的订阅组列表
- * 
+ *
  * @param ctx 上下文结构指针
  * @param info 节点信息结构
  * @return 成功返回0，失败返回错误码
@@ -145,7 +145,7 @@ static int get_subscriptions(context_t *ctx, neu_resp_node_info_t *info);
 
 /**
  * 处理获取订阅组列表的响应
- * 
+ *
  * @param ctx 上下文结构指针
  * @param groups 订阅组列表响应结构
  * @return 成功返回0，失败返回错误码
@@ -155,7 +155,7 @@ static int get_subscriptions_resp(context_t *                     ctx,
 
 /**
  * 获取节点配置
- * 
+ *
  * @param ctx 上下文结构指针
  * @param info 节点信息结构
  * @return 成功返回0，失败返回错误码
@@ -164,7 +164,7 @@ static int get_setting(context_t *ctx, neu_resp_node_info_t *info);
 
 /**
  * 处理获取节点配置的响应
- * 
+ *
  * @param ctx 上下文结构指针
  * @param setting 节点配置响应结构
  * @return 成功返回0，失败返回错误码
@@ -174,7 +174,7 @@ static int get_setting_resp(context_t *                  ctx,
 
 /**
  * 删除节点
- * 
+ *
  * @param ctx 上下文结构指针
  * @param info 节点信息结构
  * @return 成功返回0，失败返回错误码
@@ -183,7 +183,7 @@ static int del_node(context_t *ctx, neu_resp_node_info_t *info);
 
 /**
  * 添加节点
- * 
+ *
  * @param ctx 上下文结构指针
  * @param req 添加节点请求结构
  * @return 成功返回0，失败返回错误码
@@ -192,7 +192,7 @@ static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
 
 /**
  * 添加组
- * 
+ *
  * @param ctx 上下文结构指针
  * @param data 添加组请求数据
  * @return 成功返回0，失败返回错误码
@@ -202,7 +202,7 @@ static int add_group(context_t *                             ctx,
 
 /**
  * 添加标签
- * 
+ *
  * @param ctx 上下文结构指针
  * @param data 添加标签请求数据
  * @return 成功返回0，失败返回错误码
@@ -211,7 +211,7 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data);
 
 /**
  * 添加订阅
- * 
+ *
  * @param ctx 上下文结构指针
  * @param data 添加订阅请求数据
  * @return 成功返回0，失败返回错误码
@@ -220,7 +220,7 @@ static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data);
 
 /**
  * 添加节点配置
- * 
+ *
  * @param ctx 上下文结构指针
  * @param data 添加节点配置请求数据
  * @return 成功返回0，失败返回错误码
@@ -229,7 +229,7 @@ static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data);
 
 /**
  * 判断节点是否为静态节点
- * 
+ *
  * @param name 节点名称
  * @param plugin 插件名称
  * @return 是静态节点返回true，否则返回false
@@ -244,7 +244,7 @@ static inline bool is_static_node(const char *name, const char *plugin)
 
 /**
  * 创建上下文结构
- * 
+ *
  * @param aio NNG异步I/O对象
  * @param get 是否为获取操作
  * @return 创建的上下文结构指针，失败返回NULL
@@ -270,7 +270,7 @@ static context_t *context_new(nng_aio *aio, bool get)
 
 /**
  * 释放上下文结构及其资源
- * 
+ *
  * @param ctx 上下文结构指针
  */
 static void context_free(context_t *ctx)
@@ -312,7 +312,7 @@ static void context_free(context_t *ctx)
 
 /**
  * 处理GET请求的状态机推进
- * 
+ *
  * @param ctx 上下文结构指针
  * @param type 请求响应类型
  * @param data 响应数据
@@ -418,7 +418,7 @@ static void get_context_next(context_t *ctx, neu_reqresp_type_e type,
 
 /**
  * 处理PUT请求的状态机推进
- * 
+ *
  * @param ctx 上下文结构指针
  * @param type 请求响应类型
  * @param data 响应数据
@@ -616,7 +616,7 @@ static void put_context_next(context_t *ctx, neu_reqresp_type_e type,
 
 /**
  * 根据请求类型选择合适的状态机推进函数
- * 
+ *
  * @param ctx 上下文结构指针
  * @param type 请求响应类型
  * @param data 响应数据
@@ -1144,7 +1144,7 @@ static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data)
 
 /**
  * 处理获取全局配置的HTTP GET请求
- * 
+ *
  * @param aio NNG异步I/O对象
  */
 void handle_get_global_config(nng_aio *aio)
@@ -1165,7 +1165,7 @@ void handle_get_global_config(nng_aio *aio)
 
 /**
  * 处理更新全局配置的HTTP PUT请求
- * 
+ *
  * @param aio NNG异步I/O对象
  */
 void handle_put_global_config(nng_aio *aio)
@@ -1188,7 +1188,7 @@ void handle_put_global_config(nng_aio *aio)
 
 /**
  * 处理全局配置请求的响应
- * 
+ *
  * @param aio NNG异步I/O对象
  * @param type 请求响应类型
  * @param data 响应数据
