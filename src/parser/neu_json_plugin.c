@@ -29,6 +29,13 @@
 
 #include "neu_json_plugin.h"
 
+/**
+ * 从JSON字符串解码添加插件请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的添加插件请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_add_plugin_req(char *                      buf,
                                    neu_json_add_plugin_req_t **result)
 {
@@ -68,14 +75,24 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放添加插件请求结构的内存
+ *
+ * @param req 指向要释放的添加插件请求结构的指针
+ */
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
 {
-
     free(req->library);
-
     free(req);
 }
 
+/**
+ * 从JSON字符串解码删除插件请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的删除插件请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_del_plugin_req(char *                      buf,
                                    neu_json_del_plugin_req_t **result)
 {
@@ -115,12 +132,24 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放删除插件请求结构的内存
+ *
+ * @param req 指向要释放的删除插件请求结构的指针
+ */
 void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req)
 {
     free(req->plugin);
     free(req);
 }
 
+/**
+ * 将获取插件响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取插件响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_plugin_resp(void *json_object, void *param)
 {
     int                         ret  = 0;

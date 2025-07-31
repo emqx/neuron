@@ -32,6 +32,14 @@
 #include "utils/http.h"
 #include "utils/log.h"
 
+/**
+ * 发送HTTP响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @param status HTTP状态码
+ * @return 成功返回0
+ */
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
     nng_http_res *res = NULL;
@@ -60,6 +68,15 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
+/**
+ * URL解码
+ *
+ * @param s 需要解码的URL字符串
+ * @param len 输入字符串长度
+ * @param buf 输出缓冲区
+ * @param size 输出缓冲区大小
+ * @return 解码后字符串长度，失败返回-1
+ */
 ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size)
 {
     size_t       i = 0, j = 0;
@@ -81,6 +98,13 @@ ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size)
     return j;
 }
 
+/**
+ * 获取HTTP请求头
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 请求头名称
+ * @return 请求头的值
+ */
 const char *neu_http_get_header(nng_aio *aio, char *name)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
@@ -88,6 +112,14 @@ const char *neu_http_get_header(nng_aio *aio, char *name)
     return nng_http_req_get_header(req, name);
 }
 
+/**
+ * 获取HTTP请求体
+ *
+ * @param aio NNG异步I/O对象
+ * @param data 输出参数，存储请求体数据
+ * @param data_size 输出参数，存储请求体大小
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_get_body(nng_aio *aio, void **data, size_t *data_size)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
@@ -103,20 +135,14 @@ int neu_http_get_body(nng_aio *aio, void **data, size_t *data_size)
     }
 }
 
-// Find query parameter value of the given name.
-//
-// On failure, returns NULL.
-// On success, returns an alias pointer to the value following name in the url,
-// if `len_p` is not NULL, then stores the length of the value in `*len_p`.
-//
-// Example
-// -------
-// 1. get_param("/?key=val", "key", &len) will return a pointer to "val"
-//    and store 3 in len.
-// 2. get_param("/?key&foo", "key", &len) will return a pointer to "&foo"
-//    and store 0 in len.
-// 3. get_param("/?foo=bar", "key", &len) will return NULL and will not
-//    touch len.
+/**
+ * 从URL中获取参数值
+ *
+ * @param url URL字符串
+ * @param name 参数名
+ * @param len_p 输出参数，存储参数值长度
+ * @return 参数值的指针，如果不存在返回NULL
+ */
 static char *get_param(const char *url, const char *name, size_t *len_p)
 {
     const char *query = strchr(url, '?');
@@ -172,6 +198,14 @@ static char *get_param(const char *url, const char *name, size_t *len_p)
     return p;
 }
 
+/**
+ * 获取HTTP请求参数
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param len 输出参数，存储参数值长度
+ * @return 参数值的指针，如果不存在返回NULL
+ */
 const char *neu_http_get_param(nng_aio *aio, const char *name, size_t *len)
 {
     nng_http_req *nng_req = nng_aio_get_input(aio, 0);
@@ -182,6 +216,15 @@ const char *neu_http_get_param(nng_aio *aio, const char *name, size_t *len)
     return val;
 }
 
+/**
+ * 获取HTTP请求参数并URL解码为字符串
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param buf 输出缓冲区
+ * @param size 输出缓冲区大小
+ * @return 解码后字符串长度，如果参数不存在返回-2，解码失败返回-1
+ */
 ssize_t neu_http_get_param_str(nng_aio *aio, const char *name, char *buf,
                                size_t size)
 {
@@ -193,6 +236,14 @@ ssize_t neu_http_get_param_str(nng_aio *aio, const char *name, char *buf,
     return neu_url_decode(s, len, buf, size);
 }
 
+/**
+ * 获取HTTP请求参数并转换为无符号最大整数
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param param 输出参数，存储转换后的整数
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
 {
     size_t      len    = 0;
@@ -219,6 +270,14 @@ int neu_http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
     return 0;
 }
 
+/**
+ * 获取HTTP请求参数并转换为uint64_t
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param param 输出参数，存储转换后的整数
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
 {
     uintmax_t val;
@@ -236,6 +295,14 @@ int neu_http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
     return 0;
 }
 
+/**
+ * 获取HTTP请求参数并转换为uint32_t
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param param 输出参数，存储转换后的整数
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
 {
     uintmax_t val;
@@ -253,6 +320,14 @@ int neu_http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
     return 0;
 }
 
+/**
+ * 获取HTTP请求参数并转换为节点类型
+ *
+ * @param aio NNG异步I/O对象
+ * @param name 参数名
+ * @param param 输出参数，存储转换后的节点类型
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_get_param_node_type(nng_aio *aio, const char *name,
                                  neu_node_type_e *param)
 {
@@ -272,6 +347,14 @@ int neu_http_get_param_node_type(nng_aio *aio, const char *name,
     return 0;
 }
 
+/**
+ * 发送HTTP响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param code 错误码
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
 {
     enum nng_http_status status = NNG_HTTP_STATUS_OK;
@@ -396,6 +479,15 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     return response(aio, content, status);
 }
 
+/**
+ * 发送文件作为HTTP响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param data 文件数据
+ * @param len 文件长度
+ * @param disposition Content-Disposition头的值
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_response_file(nng_aio *aio, void *data, size_t len,
                            const char *disposition)
 {
@@ -433,41 +525,97 @@ int neu_http_response_file(nng_aio *aio, void *data, size_t len,
     return 0;
 }
 
+/**
+ * 发送HTTP 200 OK响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_ok(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_OK);
 }
 
+/**
+ * 发送HTTP 201 Created响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_created(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_CREATED);
 }
 
+/**
+ * 发送HTTP 206 Partial Content响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_partial(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_PARTIAL_CONTENT);
 }
 
+/**
+ * 发送HTTP 400 Bad Request响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_bad_request(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_BAD_REQUEST);
 }
 
+/**
+ * 发送HTTP 401 Unauthorized响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_unauthorized(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_UNAUTHORIZED);
 }
 
+/**
+ * 发送HTTP 404 Not Found响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_not_found(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_NOT_FOUND);
 }
 
+/**
+ * 发送HTTP 409 Conflict响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_conflict(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_CONFLICT);
 }
 
+/**
+ * 发送HTTP 500 Internal Server Error响应
+ *
+ * @param aio NNG异步I/O对象
+ * @param content 响应内容
+ * @return 成功返回0
+ */
 int neu_http_internal_error(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);

@@ -42,6 +42,15 @@
 #include "log_handle.h"
 #include "utils/utarray.h"
 
+/**
+ * @brief 处理日志文件的下载请求
+ *
+ * 此函数处理日志文件打包和下载请求，将所有日志打包成 tar.gz 并通过 HTTP
+ * 响应返回
+ *
+ * @param aio NNG 异步 I/O 对象，用于处理 HTTP 请求和响应
+ * @return 无返回值
+ */
 void handle_logs_files(nng_aio *aio)
 {
     void * data = NULL;
@@ -106,6 +115,14 @@ void handle_logs_files(nng_aio *aio)
     nlog_notice("download neuron_debug.tar.gz, ret: %d", rv);
 }
 
+/**
+ * @brief 处理日志级别的修改请求
+ *
+ * 该函数用于修改系统或指定节点的日志级别
+ *
+ * @param aio NNG 异步 I/O 对象，用于处理 HTTP 请求和响应
+ * @return 无返回值
+ */
 void handle_log_level(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -158,6 +175,16 @@ void handle_log_level(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 读取文件内容到内存中
+ *
+ * 该函数将指定文件的内容读取到动态分配的内存中
+ *
+ * @param file_name 要读取的文件路径
+ * @param datap 指向指针的指针，用于存储读取内容的内存地址
+ * @param lenp 指向大小变量的指针，用于存储读取内容的长度
+ * @return 成功返回 0，失败返回错误码
+ */
 int read_file(const char *file_name, void **datap, size_t *lenp)
 {
     int         rv = 0;

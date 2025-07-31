@@ -43,14 +43,14 @@ typedef struct {
     uint32_t counts[]; // bins of counters
 } neu_rolling_counter_t;
 
-/** Create rolling counter.
+/** 创建滚动计数器。
  *
- * @param   span   time span in milliseconds
+ * @param   span   时间跨度（毫秒）
  */
 static inline neu_rolling_counter_t *neu_rolling_counter_new(unsigned span)
 {
     unsigned n = span <= 6000 ? 4 : span <= 32000 ? 8 : span <= 64000 ? 16 : 32;
-    assert(span / n < (1 << 22)); // should not overflow ti
+    assert(span / n < (1 << 22)); // 不应溢出
 
     neu_rolling_counter_t *counter = (neu_rolling_counter_t *) calloc(
         1, sizeof(*counter) + sizeof(counter->counts[0]) * n);
@@ -61,7 +61,7 @@ static inline neu_rolling_counter_t *neu_rolling_counter_new(unsigned span)
     return counter;
 }
 
-/** Destructs the rolling counter.
+/** 销毁滚动计数器。
  */
 static inline void neu_rolling_counter_free(neu_rolling_counter_t *counter)
 {
@@ -70,10 +70,10 @@ static inline void neu_rolling_counter_free(neu_rolling_counter_t *counter)
     }
 }
 
-/** Increment the rolling counter and return the value;
+/** 增加滚动计数器并返回值；
  *
- * @param   ts    time stamp in milliseconds, should be monotonic
- * @param   dt    delta value to increment by
+ * @param   ts    时间戳（毫秒），应该是单调递增的
+ * @param   dt    增加的增量值
  */
 static inline uint64_t neu_rolling_counter_inc(neu_rolling_counter_t *counter,
                                                uint64_t ts, unsigned dt)
@@ -90,7 +90,7 @@ static inline uint64_t neu_rolling_counter_inc(neu_rolling_counter_t *counter,
     return counter->val;
 }
 
-/** Reset the counter.
+/** 重置计数器。
  */
 static inline void neu_rolling_counter_reset(neu_rolling_counter_t *counter)
 {
@@ -99,9 +99,9 @@ static inline void neu_rolling_counter_reset(neu_rolling_counter_t *counter)
     memset(counter->counts, 0, counter->n * sizeof(counter->counts[0]));
 }
 
-/** Return the counter value.
+/** 返回计数器值。
  *
- * NOTE: may return stale value if the counter is not updated frequent enough.
+ * 注意：如果计数器更新不够频繁，可能会返回过期的值。
  */
 static inline uint64_t neu_rolling_counter_value(neu_rolling_counter_t *counter)
 {

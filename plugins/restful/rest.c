@@ -49,6 +49,13 @@ struct neu_plugin {
     neu_rest_handle_ctx_t *handle_ctx;
 };
 
+/**
+ * @brief 初始化HTTP服务器
+ *
+ * 此函数创建并初始化NNG HTTP服务器，绑定到指定的URL地址和端口。
+ *
+ * @return 成功返回服务器指针，失败返回NULL
+ */
 static nng_http_server *server_init()
 {
     nng_url *        url;
@@ -72,6 +79,14 @@ static nng_http_server *server_init()
     return server;
 }
 
+/**
+ * @brief 打开仪表板插件
+ *
+ * 此函数创建并初始化仪表板插件实例，设置HTTP处理器和CORS处理器，
+ * 启动HTTP服务器。
+ *
+ * @return 成功返回插件实例指针，失败返回NULL
+ */
 static neu_plugin_t *dashb_plugin_open(void)
 {
     int                            rv;
@@ -116,6 +131,14 @@ server_init_fail:
     return NULL;
 }
 
+/**
+ * @brief 关闭仪表板插件
+ *
+ * 此函数停止并释放HTTP服务器，清理插件资源。
+ *
+ * @param plugin 插件实例指针
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
@@ -128,6 +151,15 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
+/**
+ * @brief 初始化仪表板插件
+ *
+ * 此函数执行插件的初始化操作，包括JWT系统初始化。
+ *
+ * @param plugin 插件实例指针
+ * @param load 是否为加载时调用
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
@@ -141,6 +173,14 @@ static int dashb_plugin_init(neu_plugin_t *plugin, bool load)
     return rv;
 }
 
+/**
+ * @brief 卸载仪表板插件
+ *
+ * 此函数执行插件的卸载操作，清理插件资源。
+ *
+ * @param plugin 插件实例指针
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
@@ -151,6 +191,15 @@ static int dashb_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
+/**
+ * @brief 配置仪表板插件
+ *
+ * 此函数应用新的插件配置。
+ *
+ * @param plugin 插件实例指针
+ * @param configs 配置字符串
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
@@ -162,6 +211,16 @@ static int dashb_plugin_config(neu_plugin_t *plugin, const char *configs)
     return rv;
 }
 
+/**
+ * @brief 处理插件请求
+ *
+ * 此函数处理各种插件请求类型，并调用相应的处理函数生成HTTP响应。
+ *
+ * @param plugin 插件实例指针
+ * @param header 请求头信息
+ * @param data 请求数据
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_request(neu_plugin_t *      plugin,
                                 neu_reqresp_head_t *header, void *data)
 {
@@ -249,12 +308,28 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     return 0;
 }
 
+/**
+ * @brief 启动仪表板插件
+ *
+ * 此函数启动插件的运行状态。
+ *
+ * @param plugin 插件实例指针
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_start(neu_plugin_t *plugin)
 {
     (void) plugin;
     return 0;
 }
 
+/**
+ * @brief 停止仪表板插件
+ *
+ * 此函数停止插件的运行状态。
+ *
+ * @param plugin 插件实例指针
+ * @return 成功返回0，失败返回错误码
+ */
 static int dashb_plugin_stop(neu_plugin_t *plugin)
 {
     (void) plugin;

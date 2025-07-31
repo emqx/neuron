@@ -26,6 +26,14 @@
 #include "json_rw.h"
 #include "read_write.h"
 
+/**
+ * @brief 将数据发送到eKuiper
+ * @param plugin 插件对象指针
+ * @param trans_data 传输数据指针
+ * @return 无返回值
+ *
+ * 此函数将传输数据编码为JSON格式并通过NNG发送到eKuiper服务器
+ */
 void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
     int rv = 0;
@@ -71,6 +79,14 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     }
 }
 
+/**
+ * @brief 接收数据的回调函数
+ * @param arg 回调参数，指向neu_plugin_t对象
+ * @return 无返回值
+ *
+ * 此函数是异步接收eKuiper发送数据的回调函数。
+ * 接收到数据后，解析JSON格式的写请求并执行写操作。
+ */
 void recv_data_callback(void *arg)
 {
     int               rv       = 0;
@@ -117,6 +133,15 @@ recv_data_callback_end:
     nng_recv_aio(plugin->sock, plugin->recv_aio);
 }
 
+/**
+ * @brief 执行数据写入操作
+ * @param plugin 插件对象指针
+ * @param write_req 写请求结构体指针
+ * @return 成功返回0，失败返回错误码
+ *
+ * 此函数根据写请求中的信息构造写标签命令，并调用插件操作函数执行写入。
+ * 写入成功后，将所有权转移给Neuron系统。
+ */
 int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
 {
     int                 ret    = 0;

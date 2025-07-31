@@ -29,6 +29,13 @@
 
 #include "json/neu_json_error.h"
 
+/**
+ * 编码错误响应到JSON
+ *
+ * @param json_object JSON对象指针
+ * @param param 要编码的neu_json_error_resp_t结构体指针
+ * @return 成功返回0，失败返回非0
+ */
 int neu_json_encode_error_resp(void *json_object, void *param)
 {
     int                    ret  = 0;

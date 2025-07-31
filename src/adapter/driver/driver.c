@@ -80,35 +80,161 @@ struct neu_adapter_driver {
     struct group *groups;
 };
 
-static int  report_callback(void *usr_data);
+/**
+ * 数据上报回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
+static int report_callback(void *usr_data);
+
+/**
+ * 向指定应用发送组数据
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组结构体
+ * @param dst 目标地址
+ */
 static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
                           struct sockaddr_in dst);
 
-static int  read_callback(void *usr_data);
-static int  write_callback(void *usr_data);
+/**
+ * 读取回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
+static int read_callback(void *usr_data);
+
+/**
+ * 写入回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
+static int write_callback(void *usr_data);
+
+/**
+ * 读取组中的标签数据
+ *
+ * @param timestamp 当前时间戳
+ * @param timeout 超时时间
+ * @param cache_type 缓存类型
+ * @param cache 缓存实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param tag_values 输出参数，存放标签值的数组
+ */
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, UT_array *tag_values);
+
+/**
+ * 读取并上报组中的标签数据
+ *
+ * @param timestamp 当前时间戳
+ * @param timeout 超时时间
+ * @param cache_type 缓存类型
+ * @param cache 缓存实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param tag_values 输出参数，存放标签值的数组
+ */
 static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values);
+
+/**
+ * 更新标签值（不含元数据）
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 更新的值
+ */
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
+
+/**
+ * 立即更新标签值并通知订阅者
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 更新的值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ */
 static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta);
+
+/**
+ * 更新标签值并添加元数据信息
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名，为NULL时表示整组
+ * @param value 更新的值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ */
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
+
+/**
+ * 处理写标签请求的响应函数
+ *
+ * @param adapter 适配器实例
+ * @param r 请求指针
+ * @param error 错误码
+ */
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
-static group_t *   find_group(neu_adapter_driver_t *driver, const char *name);
-static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
+
+/**
+ * 查找组
+ *
+ * @param driver 驱动适配器实例
+ * @param name 组名
+ * @return 找到的组指针，未找到返回NULL
+ */
+static group_t *find_group(neu_adapter_driver_t *driver, const char *name);
+
+/**
+ * 存储待写入的标签
+ *
+ * @param group 组结构体
+ * @param tag 待写入的标签
+ */
+static void store_write_tag(group_t *group, to_be_write_tag_t *tag);
+
+/**
+ * 启动组定时器
+ *
+ * @param driver 驱动适配器实例
+ * @param grp 组结构体
+ */
 static inline void start_group_timer(neu_adapter_driver_t *driver,
                                      group_t *             grp);
+
+/**
+ * 停止组定时器
+ *
+ * @param driver 驱动适配器实例
+ * @param grp 组结构体
+ */
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
 
+/**
+ * 处理写标签请求的响应函数
+ *
+ * @param adapter 适配器实例
+ * @param r 请求指针
+ * @param error 错误码
+ */
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
@@ -129,6 +255,16 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     adapter->cb_funs.response(adapter, req, &nerror);
 }
 
+/**
+ * 更新标签值并添加元数据信息
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名，为NULL时表示整组
+ * @param value 更新的值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ */
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta)
@@ -179,6 +315,16 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
         global_timestamp, n_meta);
 }
 
+/**
+ * 立即更新标签值并通知订阅者
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 更新的值
+ * @param metas 元数据数组
+ * @param n_meta 元数据数量
+ */
 static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta)
@@ -273,12 +419,25 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     free(data);
 }
 
+/**
+ * 更新标签值（不含元数据）
+ *
+ * @param adapter 适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @param value 更新的值
+ */
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value)
 {
     update_with_meta(adapter, group, tag, value, NULL, 0);
 }
 
+/**
+ * 创建驱动适配器实例
+ *
+ * @return 创建的驱动适配器实例
+ */
 neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
@@ -293,24 +452,47 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     return driver;
 }
 
+/**
+ * 销毁驱动适配器实例
+ *
+ * @param driver 驱动适配器实例
+ */
 void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
 {
     neu_event_close(driver->driver_events);
     neu_driver_cache_destroy(driver->cache);
 }
 
+/**
+ * 启动驱动适配器
+ *
+ * @param driver 驱动适配器实例
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_start(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
+/**
+ * 停止驱动适配器
+ *
+ * @param driver 驱动适配器实例
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_stop(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
+/**
+ * 初始化驱动适配器
+ *
+ * @param driver 驱动适配器实例
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_init(neu_adapter_driver_t *driver)
 {
     (void) driver;
@@ -318,6 +500,12 @@ int neu_adapter_driver_init(neu_adapter_driver_t *driver)
     return 0;
 }
 
+/**
+ * 取消初始化驱动适配器，释放所有组和标签资源
+ *
+ * @param driver 驱动适配器实例
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
@@ -350,6 +538,12 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     return 0;
 }
 
+/**
+ * 启动组定时器
+ *
+ * @param driver 驱动适配器实例
+ * @param grp 组结构体
+ */
 static inline void start_group_timer(neu_adapter_driver_t *driver, group_t *grp)
 {
     uint32_t interval = neu_group_get_interval(grp->group);
@@ -382,6 +576,11 @@ static inline void start_group_timer(neu_adapter_driver_t *driver, group_t *grp)
     grp->write        = neu_event_add_timer(driver->driver_events, param);
 }
 
+/**
+ * 启动所有组的定时器
+ *
+ * @param driver 驱动适配器实例
+ */
 void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
@@ -398,6 +597,12 @@ void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver)
         &driver->adapter, NEU_METRIC_TAGS_TOTAL, driver->tag_cnt, NULL);
 }
 
+/**
+ * 停止组定时器
+ *
+ * @param driver 驱动适配器实例
+ * @param grp 组结构体
+ */
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp)
 {
     if (grp->report) {
@@ -414,6 +619,11 @@ static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp)
     }
 }
 
+/**
+ * 停止所有组的定时器
+ *
+ * @param driver 驱动适配器实例
+ */
 void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
@@ -421,6 +631,12 @@ void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
     HASH_ITER(hh, driver->groups, el, tmp) { stop_group_timer(driver, el); }
 }
 
+/**
+ * 读取组中所有标签的值
+ *
+ * @param driver 驱动适配器实例
+ * @param req 读取组请求
+ */
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
@@ -494,6 +710,13 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     driver->adapter.cb_funs.response(&driver->adapter, req, &resp);
 }
 
+/**
+ * 修正数据值的格式和字节序
+ *
+ * @param tag 标签结构体
+ * @param value_type 值类型
+ * @param value 需要修正的值指针
+ */
 static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
                       neu_dvalue_t *value)
 {
@@ -595,6 +818,14 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     }
 }
 
+/**
+ * 计算小数点转换
+ *
+ * @param tag_type 标签类型
+ * @param value_type 值类型
+ * @param value 值指针
+ * @param decimal 小数因子
+ */
 static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
                         neu_value_u *value, double decimal)
 {
@@ -673,6 +904,12 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
     }
 }
 
+/**
+ * 批量写入多个标签的值
+ *
+ * @param driver 驱动适配器实例
+ * @param req 写入标签请求
+ */
 void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
@@ -747,6 +984,12 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     store_write_tag(g, &wtag);
 }
 
+/**
+ * 批量写入多个组的多个标签值
+ *
+ * @param driver 驱动适配器实例
+ * @param req 写入组标签请求
+ */
 void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                                     neu_reqresp_head_t *  req)
 {
@@ -843,6 +1086,12 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     store_write_tag(first_g, &wtag);
 }
 
+/**
+ * 写入单个标签的值
+ *
+ * @param driver 驱动适配器实例
+ * @param req 写入标签请求
+ */
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
@@ -911,6 +1160,14 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     neu_adapter_register_group_metric((adapter), group, name, name##_HELP, \
                                       name##_TYPE, (init))
 
+/**
+ * 添加新的组
+ *
+ * @param driver 驱动适配器实例
+ * @param name 组名
+ * @param interval 更新间隔时间(毫秒)
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval)
 {
@@ -960,6 +1217,15 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
     return ret;
 }
 
+/**
+ * 更新组的名称和间隔时间
+ *
+ * @param driver 驱动适配器实例
+ * @param name 原组名
+ * @param new_name 新组名，为NULL则不修改
+ * @param interval 新间隔时间，值小于NEU_GROUP_INTERVAL_LIMIT则不修改
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
                                     const char *name, const char *new_name,
                                     uint32_t interval)
@@ -1030,6 +1296,13 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
     return ret;
 }
 
+/**
+ * 删除组
+ *
+ * @param driver 驱动适配器实例
+ * @param name 组名
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 {
     group_t *find = NULL;
@@ -1094,6 +1367,13 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     return ret;
 }
 
+/**
+ * 查找组
+ *
+ * @param driver 驱动适配器实例
+ * @param name 组名
+ * @return 找到的组指针，未找到返回NULL
+ */
 static group_t *find_group(neu_adapter_driver_t *driver, const char *name)
 {
     group_t *find = NULL;
@@ -1102,6 +1382,14 @@ static group_t *find_group(neu_adapter_driver_t *driver, const char *name)
 
     return find;
 }
+
+/**
+ * 判断组是否存在
+ *
+ * @param driver 驱动适配器实例
+ * @param name 组名
+ * @return NEU_ERR_SUCCESS表示组存在，NEU_ERR_GROUP_NOT_EXIST表示组不存在
+ */
 int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
                                    const char *          name)
 {
@@ -1116,6 +1404,12 @@ int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
     return ret;
 }
 
+/**
+ * 获取所有组的信息
+ *
+ * @param driver 驱动适配器实例
+ * @return 包含所有组信息的数组
+ */
 UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
 {
     group_t * el = NULL, *tmp = NULL;
@@ -1138,6 +1432,15 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
     return groups;
 }
 
+/**
+ * 尝试添加标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param n_tag 标签数量
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_try_add_tag(neu_adapter_driver_t *driver,
                                    const char *group, neu_datatag_t *tags,
                                    int n_tag)
@@ -1150,6 +1453,15 @@ int neu_adapter_driver_try_add_tag(neu_adapter_driver_t *driver,
     return ret;
 }
 
+/**
+ * 加载标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param n_tag 标签数量
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_load_tag(neu_adapter_driver_t *driver, const char *group,
                                 neu_datatag_t *tags, int n_tag)
 {
@@ -1161,6 +1473,13 @@ int neu_adapter_driver_load_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+/**
+ * 尝试删除标签
+ *
+ * @param driver 驱动适配器实例
+ * @param n_tag 标签数量
+ * @return 0表示成功，其他值表示失败
+ */
 int neu_adapter_driver_try_del_tag(neu_adapter_driver_t *driver, int n_tag)
 {
     int ret = 0;
@@ -1171,6 +1490,14 @@ int neu_adapter_driver_try_del_tag(neu_adapter_driver_t *driver, int n_tag)
     return ret;
 }
 
+/**
+ * 验证标签参数是否有效
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tag 待验证的标签
+ * @return NEU_ERR_SUCCESS表示有效，其他值表示无效
+ */
 int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
                                     const char *group, neu_datatag_t *tag)
 {
@@ -1210,6 +1537,14 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * 添加标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tag 标签
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
                                neu_datatag_t *tag)
 {
@@ -1241,6 +1576,14 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+/**
+ * 删除标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
                                const char *tag)
 {
@@ -1267,6 +1610,14 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+/**
+ * 更新标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tag 标签
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
                                   const char *group, neu_datatag_t *tag)
 {
@@ -1308,6 +1659,14 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
     return ret;
 }
 
+/**
+ * 获取组中所有标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tags 输出参数，存放标签数组的指针
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
                                UT_array **tags)
 {
@@ -1324,6 +1683,15 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+/**
+ * 查询标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param name 标签名，为空时返回所有标签
+ * @param tags 输出参数，存放标签数组的指针
+ * @return NEU_ERR_SUCCESS表示成功，其他值表示失败
+ */
 int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
                                  const char *group, const char *name,
                                  UT_array **tags)
@@ -1345,6 +1713,13 @@ int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
     return ret;
 }
 
+/**
+ * 获取带值的标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tags 输出参数，存放标签数组的指针
+ */
 void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
                                       const char *group, UT_array **tags)
 {
@@ -1370,6 +1745,13 @@ void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
     }
 }
 
+/**
+ * 获取可读标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @return 可读标签数组
+ */
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
                                           const char *          group)
 {
@@ -1384,6 +1766,14 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
     return tags;
 }
 
+/**
+ * 获取指定标签
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组名
+ * @param tag 标签名
+ * @return 指定标签的数组，如未找到返回NULL
+ */
 UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
                                       const char *group, const char *tag)
 {
@@ -1403,6 +1793,13 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
     return tags;
 }
 
+/**
+ * 向指定应用发送组数据
+ *
+ * @param driver 驱动适配器实例
+ * @param group 组结构体
+ * @param dst 目标地址
+ */
 static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
                           struct sockaddr_in dst)
 {
@@ -1451,6 +1848,12 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
     free(data);
 }
 
+/**
+ * 数据上报回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
 static int report_callback(void *usr_data)
 {
     group_t *                group = (group_t *) usr_data;
@@ -1520,6 +1923,15 @@ static int report_callback(void *usr_data)
     return 0;
 }
 
+/**
+ * 组变更处理函数
+ *
+ * @param arg 组指针
+ * @param timestamp 时间戳
+ * @param static_tags 静态标签数组
+ * @param other_tags 其他标签数组
+ * @param interval 组间隔时间
+ */
 static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
                          UT_array *other_tags, uint32_t interval)
 {
@@ -1590,6 +2002,12 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
                 timestamp);
 }
 
+/**
+ * 写入回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
 static int write_callback(void *usr_data)
 {
     group_t *                group = (group_t *) usr_data;
@@ -1622,6 +2040,12 @@ static int write_callback(void *usr_data)
     return 0;
 }
 
+/**
+ * 读取回调函数
+ *
+ * @param usr_data 用户数据，包含组信息
+ * @return 0表示成功
+ */
 static int read_callback(void *usr_data)
 {
     group_t *                group = (group_t *) usr_data;
@@ -1652,6 +2076,17 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
+/**
+ * 读取并上报组中的标签数据
+ *
+ * @param timestamp 当前时间戳
+ * @param timeout 超时时间
+ * @param cache_type 缓存类型
+ * @param cache 缓存实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param tag_values 输出参数，存放标签值的数组
+ */
 static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
@@ -1822,6 +2257,17 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
     }
 }
 
+/**
+ * 读取组中的标签数据
+ *
+ * @param timestamp 当前时间戳
+ * @param timeout 超时时间
+ * @param cache_type 缓存类型
+ * @param cache 缓存实例
+ * @param group 组名
+ * @param tags 标签数组
+ * @param tag_values 输出参数，存放标签值的数组
+ */
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
@@ -1981,6 +2427,12 @@ static void read_group(int64_t timestamp, int64_t timeout,
     }
 }
 
+/**
+ * 存储待写入的标签
+ *
+ * @param group 组结构体
+ * @param tag 待写入的标签
+ */
 static void store_write_tag(group_t *group, to_be_write_tag_t *tag)
 {
     pthread_mutex_lock(&group->wt_mtx);
@@ -1988,6 +2440,12 @@ static void store_write_tag(group_t *group, to_be_write_tag_t *tag)
     pthread_mutex_unlock(&group->wt_mtx);
 }
 
+/**
+ * 处理订阅请求
+ *
+ * @param driver 驱动适配器实例
+ * @param req 订阅请求
+ */
 void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
                                   neu_req_subscribe_t * req)
 {
@@ -2023,6 +2481,12 @@ void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
     report_to_app(driver, find, sub_app.addr);
 }
 
+/**
+ * 处理取消订阅请求
+ *
+ * @param driver 驱动适配器实例
+ * @param req 取消订阅请求
+ */
 void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
                                     neu_req_unsubscribe_t *req)
 {

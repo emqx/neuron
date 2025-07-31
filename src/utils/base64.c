@@ -25,6 +25,13 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
+/**
+ * @brief 将二进制数据编码为Base64字符串
+ *
+ * @param input 需要编码的二进制数据
+ * @param length 二进制数据的长度
+ * @return char* 返回Base64编码后的字符串，使用后需要调用者释放
+ */
 char *neu_encode64(const unsigned char *input, int length)
 {
     const int      pl     = 4 * ((length + 2) / 3);
@@ -36,6 +43,12 @@ char *neu_encode64(const unsigned char *input, int length)
     return (char *) output;
 }
 
+/**
+ * @brief 计算Base64解码后的数据长度
+ *
+ * @param b64input Base64编码的字符串
+ * @return size_t 解码后的数据长度
+ */
 size_t calcDecodeLength(const char *b64input)
 { // Calculates the length of a decoded string
     size_t len = strlen(b64input), padding = 0;
@@ -53,6 +66,14 @@ size_t calcDecodeLength(const char *b64input)
     return (len * 3) / 4 - padding;
 }
 
+/**
+ * @brief 解码Base64字符串到二进制数据
+ *
+ * @param b64message Base64编码的字符串
+ * @param buffer 用于存储解码后数据的缓冲区指针的地址
+ * @param length 解码后数据长度的指针
+ * @return int 成功返回0
+ */
 int Base64Decode(const char *b64message, unsigned char **buffer, int *length)
 { // Decodes a base64 encoded string
     BIO *bio, *b64;
@@ -75,6 +96,13 @@ int Base64Decode(const char *b64message, unsigned char **buffer, int *length)
     return (0); // success
 }
 
+/**
+ * @brief 将Base64字符串解码为二进制数据
+ *
+ * @param length 用于存储解码后数据长度的指针
+ * @param input Base64编码的字符串
+ * @return unsigned char* 解码后的二进制数据，使用后需要调用者释放
+ */
 unsigned char *neu_decode64(int *length, const char *input)
 {
     unsigned char *output;

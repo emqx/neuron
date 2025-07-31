@@ -90,6 +90,14 @@
     "south_disconnected_nodes_total %zu\n"
 // clang-format on
 
+/**
+ * 发送HTTP响应
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ * @param content 响应内容
+ * @param status HTTP状态码
+ * @return 0表示成功
+ */
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
     nng_http_res *res = NULL;
@@ -120,6 +128,14 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
+/**
+ * 解析指标类别字符串为枚举值
+ *
+ * @param s 指标类别字符串
+ * @param len 字符串长度
+ * @param cat 输出参数，解析得到的指标类别枚举值
+ * @return true表示解析成功，false表示解析失败
+ */
 static inline bool parse_metrics_catgory(const char *s, size_t len,
                                          neu_metrics_category_e *cat)
 {
@@ -144,6 +160,12 @@ static inline bool parse_metrics_catgory(const char *s, size_t len,
     return false;
 }
 
+/**
+ * 生成全局指标的Prometheus格式文本
+ *
+ * @param metrics 全局指标数据
+ * @param stream 输出流
+ */
 static inline void gen_global_metrics(const neu_metrics_t *metrics,
                                       FILE *               stream)
 {
@@ -158,6 +180,12 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
             metrics->south_disconnected_nodes);
 }
 
+/**
+ * 生成单个节点指标的Prometheus格式文本
+ *
+ * @param node_metrics 节点指标数据
+ * @param stream 输出流
+ */
 static inline void gen_single_node_metrics(neu_node_metrics_t *node_metrics,
                                            FILE *              stream)
 {
@@ -202,6 +230,13 @@ static inline void gen_single_node_metrics(neu_node_metrics_t *node_metrics,
     pthread_mutex_unlock(&node_metrics->lock);
 }
 
+/**
+ * 检查节点指标中是否包含指定名称的条目
+ *
+ * @param node_metrics 节点指标数据
+ * @param name 条目名称
+ * @return true表示存在，false表示不存在
+ */
 static inline bool has_entry(neu_node_metrics_t *node_metrics, const char *name)
 {
     neu_metric_entry_t * e = NULL;
@@ -221,6 +256,13 @@ static inline bool has_entry(neu_node_metrics_t *node_metrics, const char *name)
     return false;
 }
 
+/**
+ * 生成所有节点指标的Prometheus格式文本
+ *
+ * @param metrics 指标数据
+ * @param type_filter 节点类型过滤器
+ * @param stream 输出流
+ */
 static void gen_all_node_metrics(neu_metrics_t *metrics, int type_filter,
                                  FILE *stream)
 {
@@ -307,6 +349,12 @@ struct context {
     const char *node;
 };
 
+/**
+ * 生成节点指标的Prometheus格式文本
+ *
+ * @param metrics 指标数据
+ * @param ctx 上下文，包含过滤器、状态、输出流和节点名称
+ */
 static void gen_node_metrics(neu_metrics_t *metrics, struct context *ctx)
 {
     if (ctx->node[0]) {
@@ -322,6 +370,11 @@ static void gen_node_metrics(neu_metrics_t *metrics, struct context *ctx)
     }
 }
 
+/**
+ * 处理获取指标的HTTP请求，并以Prometheus格式返回指标数据
+ *
+ * @param aio 异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_metric(nng_aio *aio)
 {
     int    status = NNG_HTTP_STATUS_OK;

@@ -23,11 +23,15 @@ static const unsigned char cov_2char[64] = {
 
 static const char ascii_dollar[] = { 0x24, 0x00 };
 
-/*
- * SHA based password algorithm, describe by Ulrich Drepper here:
- * https://www.akkadia.org/drepper/SHA-crypt.txt
- * (note that it's in the public domain)
- * See: https://github.com/openssl/openssl/blob/master/apps/passwd.c
+/**
+ * @brief 使用SHA算法对密码进行加密
+ *
+ * 基于Ulrich Drepper描述的SHA密码算法实现，该算法用于密码存储
+ *
+ * @param passwd 需要加密的密码明文
+ * @param magic 加密算法标识，目前支持'5'(SHA256)和'6'(SHA512)
+ * @param salt 加密盐值，用于增强安全性
+ * @return char* 返回加密后的密码字符串，失败时返回NULL
  */
 static char *shacrypt(const char *passwd, const char *magic, const char *salt)
 {
@@ -313,6 +317,15 @@ err:
     return NULL;
 }
 
+/**
+ * @brief 对密码进行哈希处理
+ *
+ * 使用SHA算法对密码进行哈希处理，如果未提供盐值则生成随机盐值
+ *
+ * @param passwd 需要哈希的密码明文
+ * @param salt 可选的盐值，如果为NULL则生成新的随机盐值
+ * @return char* 返回哈希后的密码字符串，失败时返回NULL
+ */
 // NOTE: if provided, require salt length of 16
 static char *hash_password(const char *passwd, const char *salt)
 {
@@ -343,6 +356,15 @@ end:
     return hash;
 }
 
+/**
+ * @brief 创建新用户
+ *
+ * 创建一个新用户并对密码进行哈希处理
+ *
+ * @param name 用户名
+ * @param password 用户密码明文
+ * @return neu_user_t* 返回创建的用户对象，失败时返回NULL
+ */
 neu_user_t *neu_user_new(const char *name, const char *password)
 {
     neu_user_t *user = malloc(sizeof(*user));
@@ -363,6 +385,13 @@ neu_user_t *neu_user_new(const char *name, const char *password)
     return user;
 }
 
+/**
+ * @brief 释放用户对象
+ *
+ * 释放用户对象及其关联的内存资源
+ *
+ * @param user 需要释放的用户对象
+ */
 void neu_user_free(neu_user_t *user)
 {
     if (NULL != user) {
@@ -372,6 +401,15 @@ void neu_user_free(neu_user_t *user)
     }
 }
 
+/**
+ * @brief 检查用户密码是否正确
+ *
+ * 验证提供的密码是否与用户存储的哈希值匹配
+ *
+ * @param user 用户对象
+ * @param password 需要验证的密码明文
+ * @return bool 密码正确返回true，错误返回false
+ */
 bool neu_user_check_password(neu_user_t *user, const char *password)
 {
     char *salt = user->hash + 3;
@@ -383,6 +421,14 @@ bool neu_user_check_password(neu_user_t *user, const char *password)
     return pass;
 }
 
+/**
+ * @brief 从持久化存储加载用户信息
+ *
+ * 根据用户名从持久化存储中加载用户信息
+ *
+ * @param name 要加载的用户名
+ * @return neu_user_t* 返回加载的用户对象，失败时返回NULL
+ */
 neu_user_t *neu_load_user(const char *name)
 {
     neu_user_t *user = malloc(sizeof(*user));
@@ -403,6 +449,14 @@ neu_user_t *neu_load_user(const char *name)
     return user;
 }
 
+/**
+ * @brief 保存用户信息到持久化存储
+ *
+ * 将用户信息保存到持久化存储中
+ *
+ * @param user 要保存的用户对象
+ * @return int 成功返回0，失败返回错误码
+ */
 int neu_save_user(neu_user_t *user)
 {
     neu_persist_user_info_t info = {
@@ -413,6 +467,15 @@ int neu_save_user(neu_user_t *user)
     return neu_persister_update_user(&info);
 }
 
+/**
+ * @brief 更新用户密码
+ *
+ * 使用新密码更新用户的密码哈希
+ *
+ * @param user 用户对象
+ * @param new_password 新密码明文
+ * @return int 成功返回0，失败返回错误码
+ */
 int neu_user_update_password(neu_user_t *user, const char *new_password)
 {
     char *salt = user->hash + 3;

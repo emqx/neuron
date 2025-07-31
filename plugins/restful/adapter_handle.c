@@ -5,7 +5,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
+ * version 3 of the License, or (at your) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -31,6 +31,11 @@
 
 #include "adapter_handle.h"
 
+/**
+ * 处理添加适配器的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -62,6 +67,13 @@ void handle_add_adapter(nng_aio *aio)
         })
 }
 
+/**
+ * 发送节点更新请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param req 更新节点的请求数据
+ * @return 错误码，0表示成功，其他表示错误
+ */
 static inline int send_node_update_req(nng_aio *                   aio,
                                        neu_json_update_node_req_t *req)
 {
@@ -95,6 +107,11 @@ static inline int send_node_update_req(nng_aio *                   aio,
     return 0;
 }
 
+/**
+ * 处理更新适配器的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_update_adapter(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -107,6 +124,11 @@ void handle_update_adapter(nng_aio *aio)
         })
 }
 
+/**
+ * 处理删除适配器的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -129,6 +151,11 @@ void handle_del_adapter(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取适配器的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_get_adapter(nng_aio *aio)
 {
     int  ret                              = 0;
@@ -170,6 +197,12 @@ void handle_get_adapter(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取适配器的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param nodes 节点信息的数组
+ */
 void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
 {
     neu_json_get_nodes_resp_t nodes_res = { 0 };
@@ -196,6 +229,11 @@ void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
     utarray_free(nodes->nodes);
 }
 
+/**
+ * 处理设置节点配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -220,6 +258,11 @@ void handle_set_node_setting(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取节点配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_get_node_setting(nng_aio *aio)
 {
     neu_plugin_t *             plugin = neu_rest_get_plugin();
@@ -250,6 +293,12 @@ void handle_get_node_setting(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取节点配置的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param setting 节点配置信息
+ */
 void handle_get_node_setting_resp(nng_aio *                    aio,
                                   neu_resp_get_node_setting_t *setting)
 {
@@ -273,6 +322,11 @@ void handle_get_node_setting_resp(nng_aio *                    aio,
     free(json_str);
 }
 
+/**
+ * 处理节点控制的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_node_ctl(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -297,6 +351,11 @@ void handle_node_ctl(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取节点状态的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_get_node_state(nng_aio *aio)
 {
     neu_plugin_t *           plugin = neu_rest_get_plugin();
@@ -325,6 +384,12 @@ void handle_get_node_state(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取单个节点状态的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param state 节点状态信息
+ */
 void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
 {
     neu_json_get_node_state_resp_t res    = { 0 };
@@ -342,6 +407,12 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
     free(result);
 }
 
+/**
+ * 处理获取多个节点状态的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param states 多个节点状态信息
+ */
 void handle_get_nodes_state_resp(nng_aio *                   aio,
                                  neu_resp_get_nodes_state_t *states)
 {

@@ -30,6 +30,15 @@
 
 #include "handle.h"
 
+/**
+ * @brief 根据JSON数据设置标签属性
+ *
+ * 将JSON解析得到的标签信息应用到neu_datatag_t结构体
+ *
+ * @param tag 目标标签结构体
+ * @param json_tag 源JSON标签数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static int set_tag_by_json(neu_datatag_t *tag, neu_json_tag_t *json_tag)
 {
     if (strlen(json_tag->name) >= NEU_TAG_NAME_LEN) {
@@ -66,6 +75,15 @@ static int set_tag_by_json(neu_datatag_t *tag, neu_json_tag_t *json_tag)
     return 0;
 }
 
+/**
+ * @brief 将JSON模板数据转移到命令结构体
+ *
+ * 解析JSON模板数据并将其移动到命令结构体中
+ *
+ * @param cmd 目标命令结构体
+ * @param req 源JSON模板数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static int move_template_json(neu_req_add_template_t *cmd,
                               neu_json_template_t *   req)
 {
@@ -136,6 +154,13 @@ error:
     return ret;
 }
 
+/**
+ * @brief 处理添加模板的HTTP请求
+ *
+ * 解析请求并添加一个新的模板
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_add_template(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -164,6 +189,13 @@ void handle_add_template(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理删除模板的HTTP请求
+ *
+ * 解析请求并删除指定名称的模板
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_del_template(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -193,6 +225,13 @@ void handle_del_template(nng_aio *aio)
     }
 }
 
+/**
+ * @brief 处理获取模板的HTTP请求
+ *
+ * 解析请求并获取指定名称的模板或所有模板
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_template(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -226,6 +265,14 @@ void handle_get_template(nng_aio *aio)
     }
 }
 
+/**
+ * @brief 处理获取单个模板的响应
+ *
+ * 将获取的模板数据格式化为JSON并发送HTTP响应
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param resp 获取的模板响应数据
+ */
 void handle_get_template_resp(nng_aio *aio, neu_resp_get_template_t *resp)
 {
     int                        rv     = 0;
@@ -306,6 +353,14 @@ end:
     return;
 }
 
+/**
+ * @brief 处理获取多个模板的响应
+ *
+ * 将获取的多个模板数据格式化为JSON并发送HTTP响应
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param resp 获取的多个模板响应数据
+ */
 void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
 
 {
@@ -337,6 +392,15 @@ void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
     return;
 }
 
+/**
+ * @brief 发送添加模板组请求
+ *
+ * 解析并验证添加模板组请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 添加模板组请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static inline int
 send_template_add_group_req(nng_aio *                          aio,
                             neu_json_template_add_group_req_t *req)
@@ -368,6 +432,13 @@ send_template_add_group_req(nng_aio *                          aio,
     return 0;
 }
 
+/**
+ * @brief 处理添加模板组的HTTP请求
+ *
+ * 解析请求并添加一个新的模板组
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_add_template_group(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -381,6 +452,15 @@ void handle_add_template_group(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 发送更新模板组请求
+ *
+ * 解析并验证更新模板组请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 更新模板组请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static inline int
 send_template_update_group_req(nng_aio *                             aio,
                                neu_json_template_update_group_req_t *req)
@@ -435,6 +515,13 @@ send_template_update_group_req(nng_aio *                             aio,
     return 0;
 }
 
+/**
+ * @brief 处理更新模板组的HTTP请求
+ *
+ * 解析请求并更新指定的模板组
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_update_template_group(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -448,6 +535,15 @@ void handle_update_template_group(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 发送删除模板组请求
+ *
+ * 解析并验证删除模板组请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 删除模板组请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static inline int
 send_template_del_group_req(nng_aio *                          aio,
                             neu_json_template_del_group_req_t *req)
@@ -478,6 +574,13 @@ send_template_del_group_req(nng_aio *                          aio,
     return 0;
 }
 
+/**
+ * @brief 处理删除模板组的HTTP请求
+ *
+ * 解析请求并删除指定的模板组
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_del_template_group(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -491,6 +594,16 @@ void handle_del_template_group(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 发送模板修改标签请求
+ *
+ * 解析并验证模板修改标签请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param type 请求类型，如添加或更新标签
+ * @param req 模板修改标签请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
                                       neu_json_template_mod_tags_req_t *req)
 {
@@ -535,6 +648,15 @@ static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
     return ret;
 }
 
+/**
+ * @brief 发送删除模板标签请求
+ *
+ * 解析并验证删除模板标签请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 删除模板标签请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static int send_template_del_tags_req(nng_aio *                         aio,
                                       neu_json_template_del_tags_req_t *req)
 {
@@ -581,6 +703,13 @@ static int send_template_del_tags_req(nng_aio *                         aio,
     return ret;
 }
 
+/**
+ * @brief 处理添加模板标签的HTTP请求
+ *
+ * 解析请求并添加模板标签
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_add_template_tags(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -595,6 +724,13 @@ void handle_add_template_tags(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理更新模板标签的HTTP请求
+ *
+ * 解析请求并更新模板标签
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_update_template_tags(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -609,6 +745,13 @@ void handle_update_template_tags(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理删除模板标签的HTTP请求
+ *
+ * 解析请求并删除模板标签
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_del_template_tags(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -622,6 +765,13 @@ void handle_del_template_tags(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理获取模板标签的HTTP请求
+ *
+ * 解析请求并获取模板标签信息
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_template_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -669,6 +819,15 @@ end:
     }
 }
 
+/**
+ * @brief 发送模板实例化请求
+ *
+ * 解析并验证模板实例化请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 模板实例化请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static inline int send_template_inst_req(nng_aio *                     aio,
                                          neu_json_template_inst_req_t *req)
 {
@@ -698,6 +857,13 @@ static inline int send_template_inst_req(nng_aio *                     aio,
     return 0;
 }
 
+/**
+ * @brief 处理实例化模板的HTTP请求
+ *
+ * 解析请求并实例化指定模板
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_instantiate_template(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -710,6 +876,15 @@ void handle_instantiate_template(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 发送批量模板实例化请求
+ *
+ * 解析并验证批量模板实例化请求参数，然后发送请求
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP响应
+ * @param req 批量模板实例化请求数据
+ * @return int 成功返回0，失败返回错误码
+ */
 static inline int send_template_insts_req(nng_aio *                      aio,
                                           neu_json_template_insts_req_t *req)
 {
@@ -744,6 +919,13 @@ static inline int send_template_insts_req(nng_aio *                      aio,
     return 0;
 }
 
+/**
+ * @brief 处理批量实例化模板的HTTP请求
+ *
+ * 解析请求并批量实例化指定模板
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_instantiate_templates(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -757,6 +939,13 @@ void handle_instantiate_templates(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理获取模板组信息的HTTP请求
+ *
+ * 解析请求并获取指定模板的组信息
+ *
+ * @param aio NNG异步I/O对象，用于处理HTTP请求和响应
+ */
 void handle_get_template_group(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();

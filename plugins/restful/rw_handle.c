@@ -28,6 +28,14 @@
 
 #include "rw_handle.h"
 
+/**
+ * @brief 处理读取请求的HTTP处理函数
+ *
+ * 此函数处理来自客户端的读取请求，验证JWT令牌，解析读取命令，
+ * 并将命令发送给插件进行处理。
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_read(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -56,6 +64,14 @@ void handle_read(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理写入请求的HTTP处理函数
+ *
+ * 此函数处理来自客户端的标签写入请求，验证JWT令牌，解析写入命令，
+ * 检查值的大小是否合法，并将命令发送给插件进行处理。
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_write(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -135,6 +151,14 @@ void handle_write(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理多标签写入请求的HTTP处理函数
+ *
+ * 此函数处理来自客户端的多标签写入请求，验证JWT令牌，解析写入命令，
+ * 检查字符串值的大小是否合法，并将命令发送给插件进行处理。
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_write_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -214,6 +238,14 @@ void handle_write_tags(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 将JSON请求转换为内部命令结构
+ *
+ * 此函数将解析后的JSON请求转换为内部命令结构，处理内存分配和值类型转换。
+ *
+ * @param req 解析后的JSON请求结构
+ * @param cmd 输出的内部命令结构
+ */
 static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
 {
     cmd->driver  = req->node;
@@ -267,6 +299,14 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
     }
 }
 
+/**
+ * @brief 处理多组标签写入请求的HTTP处理函数
+ *
+ * 此函数处理来自客户端的多组标签写入请求，验证JWT令牌，解析写入命令，
+ * 并将命令发送给插件进行处理。
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_write_gtags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -294,6 +334,15 @@ void handle_write_gtags(nng_aio *aio)
         })
 }
 
+/**
+ * @brief 处理读取响应的函数
+ *
+ * 此函数处理读取操作的响应，将内部响应结构转换为JSON格式，
+ * 并发送HTTP响应给客户端。
+ *
+ * @param aio NNG异步I/O对象，用于发送HTTP响应
+ * @param resp 内部读取响应结构，包含读取到的标签值
+ */
 void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 {
     neu_json_read_resp_t api_res = { 0 };

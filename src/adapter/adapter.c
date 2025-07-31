@@ -38,25 +38,114 @@
 #include "plugin.h"
 #include "storage.h"
 
+/**
+ * 适配器消费者线程函数，从消息队列中获取消息并处理
+ *
+ * @param arg 适配器指针(neu_adapter_t *)
+ * @return 线程返回值(void *)
+ */
 static void *adapter_consumer(void *arg);
-static int   adapter_trans_data(enum neu_event_io_type type, int fd,
-                                void *usr_data);
-static int   adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int   adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
-                             void *data);
+
+/**
+ * 适配器传输数据回调函数，处理来自数据传输套接字的消息
+ *
+ * @param type 事件IO类型
+ * @param fd 文件描述符
+ * @param usr_data 用户数据(适配器指针)
+ * @return 执行结果(int)，0表示成功
+ */
+static int adapter_trans_data(enum neu_event_io_type type, int fd,
+                              void *usr_data);
+
+/**
+ * 适配器主循环回调函数，处理来自控制套接字的消息
+ *
+ * @param type 事件IO类型
+ * @param fd 文件描述符
+ * @param usr_data 用户数据(适配器指针)
+ * @return 执行结果(int)，0表示成功
+ */
+static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
+
+/**
+ * 适配器命令处理函数，向指定目标发送命令消息
+ *
+ * @param adapter 适配器指针
+ * @param header 请求/响应头
+ * @param data 消息数据
+ * @return 执行结果(int)，0表示成功
+ */
+static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+                           void *data);
+
+/**
+ * 适配器响应处理函数，向请求发送者发送响应消息
+ *
+ * @param adapter 适配器指针
+ * @param header 请求/响应头指针
+ * @param data 响应数据
+ * @return 执行结果(int)，0表示成功
+ */
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
+
+/**
+ * 适配器定向响应函数，向指定地址发送响应消息
+ *
+ * @param adapter 适配器指针
+ * @param header 请求/响应头指针
+ * @param data 响应数据
+ * @param dst 目标地址
+ * @return 执行结果(int)，0表示成功
+ */
 static int adapter_responseto(neu_adapter_t *     adapter,
                               neu_reqresp_head_t *header, void *data,
                               struct sockaddr_in dst);
+
+/**
+ * 注册适配器指标函数
+ *
+ * @param adapter 适配器指针
+ * @param name 指标名称
+ * @param help 指标帮助信息
+ * @param type 指标类型
+ * @param init 初始值
+ * @return 执行结果(int)，0表示成功
+ */
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    const char *help, neu_metric_type_e type,
                                    uint64_t init);
+
+/**
+ * 更新适配器指标函数
+ *
+ * @param adapter 适配器指针
+ * @param metric_name 指标名称
+ * @param n 指标新值
+ * @param group 组名(可选)
+ * @return 执行结果(int)，0表示成功
+ */
 static int adapter_update_metric(neu_adapter_t *adapter,
                                  const char *metric_name, uint64_t n,
                                  const char *group);
+
+/**
+ * 发送响应消息的内联函数
+ *
+ * @param adapter 适配器指针
+ * @param header 请求/响应头指针
+ * @param data 响应数据
+ */
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
+
+/**
+ * 向监控模块发送通知的内联函数
+ *
+ * @param adapter 适配器指针
+ * @param event 事件类型
+ * @param data 事件数据
+ */
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data);
 
@@ -95,11 +184,21 @@ static __thread int create_adapter_error = 0;
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
 
+/**
+ * 获取适配器创建过程中的错误码
+ *
+ * @return 错误码
+ */
 int neu_adapter_error()
 {
     return create_adapter_error;
 }
 
+/**
+ * 设置适配器创建过程中的错误码
+ *
+ * @param error 错误码
+ */
 void neu_adapter_set_error(int error)
 {
     create_adapter_error = error;
@@ -125,6 +224,12 @@ static void *adapter_consumer(void *arg)
     return NULL;
 }
 
+/**
+ * 获取节点对应的日志类别
+ *
+ * @param node 节点名称
+ * @return 日志类别指针
+ */
 static inline zlog_category_t *get_log_category(const char *node)
 {
     char name[NEU_NODE_NAME_LEN] = { 0 };
@@ -135,6 +240,13 @@ static inline zlog_category_t *get_log_category(const char *node)
     return zlog_get_category(name);
 }
 
+/**
+ * 创建适配器
+ *
+ * @param info 适配器信息
+ * @param load 是否加载现有配置
+ * @return 适配器指针，失败时返回NULL
+ */
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
 {
     int                  rv      = 0;
@@ -284,11 +396,24 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     }
 }
 
+/**
+ * 获取适配器传输数据端口
+ *
+ * @param adapter 适配器指针
+ * @return 端口号
+ */
 uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter)
 {
     return adapter->trans_data_port;
 }
 
+/**
+ * 重命名适配器
+ *
+ * @param adapter 适配器指针
+ * @param new_name 新名称
+ * @return 执行结果，0表示成功，非0表示错误码
+ */
 int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
 {
     char *name     = strdup(new_name);
@@ -335,6 +460,12 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
     return 0;
 }
 
+/**
+ * 初始化适配器并通知管理器
+ *
+ * @param adapter 适配器指针
+ * @param state 初始运行状态
+ */
 void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
 {
     neu_req_node_init_t init = { 0 };
@@ -358,11 +489,23 @@ void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
     }
 }
 
+/**
+ * 获取适配器类型
+ *
+ * @param adapter 适配器指针
+ * @return 适配器类型
+ */
 neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
 {
     return adapter->module->type;
 }
 
+/**
+ * 获取适配器标签缓存类型
+ *
+ * @param adapter 适配器指针
+ * @return 标签缓存类型
+ */
 neu_tag_cache_type_e neu_adapter_get_tag_cache_type(neu_adapter_t *adapter)
 {
     return adapter->module->cache_type;
@@ -1199,6 +1342,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     return 0;
 }
 
+/**
+ * 销毁适配器
+ *
+ * @param adapter 适配器指针
+ */
 void neu_adapter_destroy(neu_adapter_t *adapter)
 {
     nlog_notice("adapter %s destroy", adapter->name);
@@ -1237,6 +1385,12 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     free(adapter);
 }
 
+/**
+ * 反初始化适配器
+ *
+ * @param adapter 适配器指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
@@ -1254,6 +1408,12 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     return 0;
 }
 
+/**
+ * 启动适配器
+ *
+ * @param adapter 适配器指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_start(neu_adapter_t *adapter)
 {
     const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
@@ -1288,6 +1448,12 @@ int neu_adapter_start(neu_adapter_t *adapter)
     return error;
 }
 
+/**
+ * 启动单个适配器
+ *
+ * @param adapter 适配器指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_start_single(neu_adapter_t *adapter)
 {
     const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
@@ -1296,6 +1462,12 @@ int neu_adapter_start_single(neu_adapter_t *adapter)
     return intf_funs->start(adapter->plugin);
 }
 
+/**
+ * 停止适配器
+ *
+ * @param adapter 适配器指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_stop(neu_adapter_t *adapter)
 {
     const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
@@ -1331,6 +1503,13 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     return error;
 }
 
+/**
+ * 设置适配器配置
+ *
+ * @param adapter 适配器指针
+ * @param setting 配置字符串
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_set_setting(neu_adapter_t *adapter, const char *setting)
 {
     int rv = -1;
@@ -1356,6 +1535,13 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, const char *setting)
     return rv;
 }
 
+/**
+ * 获取适配器配置
+ *
+ * @param adapter 适配器指针
+ * @param config 配置字符串指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 {
     if (adapter->setting != NULL) {
@@ -1366,6 +1552,12 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
     return NEU_ERR_NODE_SETTING_NOT_FOUND;
 }
 
+/**
+ * 获取适配器状态
+ *
+ * @param adapter 适配器指针
+ * @return 节点状态
+ */
 neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
 {
     neu_node_state_t     state  = { 0 };
@@ -1378,6 +1570,13 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     return state;
 }
 
+/**
+ * 验证适配器标签
+ *
+ * @param adapter 适配器指针
+ * @param tag 数据标签指针
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
 {
     const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
@@ -1388,17 +1587,41 @@ int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
     return error;
 }
 
+/**
+ * 添加定时器
+ *
+ * @param adapter 适配器指针
+ * @param param 定时器参数
+ * @return 定时器指针
+ */
 neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
                                          neu_event_timer_param_t param)
 {
     return neu_event_add_timer(adapter->events, param);
 }
 
+/**
+ * 删除定时器
+ *
+ * @param adapter 适配器指针
+ * @param timer 定时器指针
+ */
 void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer)
 {
     neu_event_del_timer(adapter->events, timer);
 }
 
+/**
+ * 注册组指标
+ *
+ * @param adapter 适配器指针
+ * @param group_name 组名
+ * @param name 指标名称
+ * @param help 指标帮助信息
+ * @param type 指标类型
+ * @param init 初始值
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_register_group_metric(neu_adapter_t *adapter,
                                       const char *group_name, const char *name,
                                       const char *help, neu_metric_type_e type,
@@ -1412,6 +1635,15 @@ int neu_adapter_register_group_metric(neu_adapter_t *adapter,
                                 init);
 }
 
+/**
+ * 更新组指标
+ *
+ * @param adapter 适配器指针
+ * @param group_name 组名
+ * @param metric_name 指标名称
+ * @param n 指标新值
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_update_group_metric(neu_adapter_t *adapter,
                                     const char *   group_name,
                                     const char *metric_name, uint64_t n)
@@ -1424,6 +1656,14 @@ int neu_adapter_update_group_metric(neu_adapter_t *adapter,
                                    n);
 }
 
+/**
+ * 更新组名
+ *
+ * @param adapter 适配器指针
+ * @param group_name 旧组名
+ * @param new_group_name 新组名
+ * @return 执行结果(int)，0表示成功
+ */
 int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
                                          const char *   group_name,
                                          const char *   new_group_name)
@@ -1436,6 +1676,12 @@ int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
                                          new_group_name);
 }
 
+/**
+ * 删除组指标
+ *
+ * @param adapter 适配器指针
+ * @param group_name 组名
+ */
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
                                    const char *   group_name)
 {
@@ -1444,6 +1690,13 @@ void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
     }
 }
 
+/**
+ * 发送响应消息的内联函数
+ *
+ * @param adapter 适配器指针
+ * @param header 请求/响应头指针
+ * @param data 响应数据
+ */
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data)
 {
@@ -1456,6 +1709,13 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     }
 }
 
+/**
+ * 向监控模块发送通知的内联函数
+ *
+ * @param adapter 适配器指针
+ * @param event 事件类型
+ * @param data 事件数据
+ */
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data)
 {

@@ -395,6 +395,11 @@ typedef struct {
     neu_datatag_t *tags;
 } neu_req_add_tag_t, neu_req_update_tag_t;
 
+/**
+ * 初始化添加标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_add_tag_fini(neu_req_add_tag_t *req)
 {
     for (uint16_t i = 0; i < req->n_tag; i++) {
@@ -403,6 +408,13 @@ static inline void neu_req_add_tag_fini(neu_req_add_tag_t *req)
     free(req->tags);
 }
 
+/**
+ * 复制添加标签请求结构
+ *
+ * @param dst 目标请求结构指针
+ * @param src 源请求结构指针
+ * @return 成功返回0，失败返回-1
+ */
 static inline int neu_req_add_tag_copy(neu_req_add_tag_t *dst,
                                        neu_req_add_tag_t *src)
 {
@@ -431,6 +443,11 @@ typedef struct neu_req_del_tag {
     char **  tags;
 } neu_req_del_tag_t;
 
+/**
+ * 初始化删除标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_del_tag_fini(neu_req_del_tag_t *req)
 {
     for (uint16_t i = 0; i < req->n_tag; i++) {
@@ -439,6 +456,13 @@ static inline void neu_req_del_tag_fini(neu_req_del_tag_t *req)
     free(req->tags);
 }
 
+/**
+ * 复制删除标签请求结构
+ *
+ * @param dst 目标请求结构指针
+ * @param src 源请求结构指针
+ * @return 成功返回0，失败返回-1
+ */
 static inline int neu_req_del_tag_copy(neu_req_del_tag_t *dst,
                                        neu_req_del_tag_t *src)
 {
@@ -498,6 +522,11 @@ typedef struct {
     neu_req_subscribe_group_info_t *groups;
 } neu_req_subscribe_groups_t;
 
+/**
+ * 初始化订阅组请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void
 neu_req_subscribe_groups_fini(neu_req_subscribe_groups_t *req)
 {
@@ -521,6 +550,11 @@ typedef struct neu_resp_subscribe_info {
     char *params;
 } neu_resp_subscribe_info_t;
 
+/**
+ * 初始化订阅信息结构
+ *
+ * @param info 订阅信息结构指针
+ */
 static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)
 {
     free(info->params);
@@ -531,6 +565,12 @@ typedef struct {
     char      group[NEU_GROUP_NAME_LEN];
     UT_array *tags;
 } neu_resp_get_sub_driver_tags_info_t;
+
+/**
+ * 获取订阅驱动标签信息ICD(内部元数据描述符)
+ *
+ * @return 返回ICD指针
+ */
 inline static UT_icd *neu_resp_get_sub_driver_tags_info_icd()
 {
     static UT_icd icd = { sizeof(neu_resp_get_sub_driver_tags_info_t), NULL,
@@ -551,11 +591,23 @@ typedef struct neu_req_node_setting {
     char *setting;
 } neu_req_node_setting_t;
 
+/**
+ * 初始化节点设置请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_node_setting_fini(neu_req_node_setting_t *req)
 {
     free(req->setting);
 }
 
+/**
+ * 复制节点设置请求结构
+ *
+ * @param dst 目标请求结构指针
+ * @param src 源请求结构指针
+ * @return 成功返回0，失败返回-1
+ */
 static inline int neu_req_node_setting_copy(neu_req_node_setting_t *dst,
                                             neu_req_node_setting_t *src)
 {
@@ -613,6 +665,11 @@ typedef struct {
     uint16_t         rtt; // round trip time in milliseconds
 } neu_nodes_state_t;
 
+/**
+ * 获取节点状态ICD(内部元数据描述符)
+ *
+ * @return 返回ICD结构
+ */
 inline static UT_icd neu_nodes_state_t_icd()
 {
     UT_icd icd = { sizeof(neu_nodes_state_t), NULL, NULL, NULL };
@@ -631,6 +688,11 @@ typedef struct {
     neu_datatag_t *tags;
 } neu_reqresp_template_group_t;
 
+/**
+ * 初始化模板组结构
+ *
+ * @param grp 模板组结构指针
+ */
 static inline void
 neu_reqresp_template_group_fini(neu_reqresp_template_group_t *grp)
 {
@@ -647,6 +709,11 @@ typedef struct {
     neu_reqresp_template_group_t *groups;
 } neu_reqresp_template_t;
 
+/**
+ * 初始化模板结构
+ *
+ * @param tmpl 模板结构指针
+ */
 static inline void neu_reqresp_template_fini(neu_reqresp_template_t *tmpl)
 {
     for (uint16_t i = 0; i < tmpl->n_group; ++i) {
@@ -678,6 +745,11 @@ typedef struct {
     neu_resp_template_info_t *templates;
 } neu_resp_get_templates_t;
 
+/**
+ * 初始化获取模板响应结构
+ *
+ * @param resp 响应结构指针
+ */
 static inline void neu_resp_get_templates_fini(neu_resp_get_templates_t *resp)
 {
     free(resp->templates);
@@ -712,6 +784,11 @@ typedef struct {
     neu_datatag_t *tags;
 } neu_req_add_template_tag_t, neu_req_update_template_tag_t;
 
+/**
+ * 初始化添加模板标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void
 neu_req_add_template_tag_fini(neu_req_add_template_tag_t *req)
 {
@@ -730,6 +807,11 @@ typedef struct {
     char **  tags;
 } neu_req_del_template_tag_t;
 
+/**
+ * 初始化删除模板标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void
 neu_req_del_template_tag_fini(neu_req_del_template_tag_t *req)
 {
@@ -760,6 +842,11 @@ typedef struct {
     neu_req_inst_templates_info_t *insts;
 } neu_req_inst_templates_t;
 
+/**
+ * 初始化安装模板请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
 {
     for (uint16_t i = 0; i < req->n_inst; ++i) {
@@ -775,6 +862,11 @@ typedef struct neu_req_read_group {
     bool  sync;
 } neu_req_read_group_t;
 
+/**
+ * 初始化读取组请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
 {
     free(req->driver);
@@ -788,6 +880,11 @@ typedef struct neu_req_write_tag {
     neu_dvalue_t value;
 } neu_req_write_tag_t;
 
+/**
+ * 初始化写入标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_write_tag_fini(neu_req_write_tag_t *req)
 {
     free(req->driver);
@@ -806,6 +903,11 @@ typedef struct neu_resp_tag_value_meta {
     neu_tag_meta_t metas[NEU_TAG_META_SIZE];
 } neu_resp_tag_value_meta_t;
 
+/**
+ * 获取标签值元数据ICD(内部元数据描述符)
+ *
+ * @return 返回ICD指针
+ */
 static inline UT_icd *neu_resp_tag_value_meta_icd()
 {
     static UT_icd icd = { sizeof(neu_resp_tag_value_meta_t), NULL, NULL, NULL };
@@ -820,6 +922,11 @@ typedef struct neu_req_write_tags {
     neu_resp_tag_value_t *tags;
 } neu_req_write_tags_t;
 
+/**
+ * 初始化写入多个标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
 {
     free(req->driver);
@@ -834,6 +941,11 @@ typedef struct {
     neu_resp_tag_value_t *tags;
 } neu_req_gtag_group_t;
 
+/**
+ * 初始化组标签组请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_gtag_group_fini(neu_req_gtag_group_t *req)
 {
     free(req->group);
@@ -847,6 +959,11 @@ typedef struct {
     neu_req_gtag_group_t *groups;
 } neu_req_write_gtags_t;
 
+/**
+ * 初始化写入组标签请求结构
+ *
+ * @param req 请求结构指针
+ */
 static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
 {
     free(req->driver);
@@ -863,6 +980,11 @@ typedef struct {
     UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;
 
+/**
+ * 释放读取组响应资源
+ *
+ * @param resp 响应结构指针
+ */
 static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
 {
     utarray_foreach(resp->tags, neu_resp_tag_value_meta_t *, tag_value)
@@ -889,6 +1011,11 @@ typedef struct {
     UT_array *                    tags; // neu_resp_tag_value_meta_t
 } neu_reqresp_trans_data_t;
 
+/**
+ * 释放传输数据资源
+ *
+ * @param data 传输数据结构指针
+ */
 static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
 {
     pthread_mutex_lock(&data->ctx->mtx);
@@ -914,6 +1041,12 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
     }
 }
 
+/**
+ * 将标签值转换为JSON格式
+ *
+ * @param tag_value 标签值结构指针
+ * @param tag_json JSON标签结构指针
+ */
 static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
                                          neu_json_read_resp_tag_t * tag_json)
 {
@@ -1038,6 +1171,11 @@ typedef struct {
     char *params;
 } neu_req_ndriver_tag_param_t;
 
+/**
+ * 初始化设备驱动标签参数结构
+ *
+ * @param p 参数结构指针
+ */
 static inline void
 neu_req_ndriver_tag_param_fini(neu_req_ndriver_tag_param_t *p)
 {
@@ -1053,6 +1191,11 @@ typedef struct {
     neu_req_ndriver_tag_param_t *tags;
 } neu_req_update_ndriver_tag_param_t;
 
+/**
+ * 初始化更新设备驱动标签参数请求结构
+ *
+ * @param p 请求结构指针
+ */
 static inline void
 neu_req_update_ndriver_tag_param_fini(neu_req_update_ndriver_tag_param_t *p)
 {
@@ -1067,6 +1210,11 @@ typedef struct {
     char *address;
 } neu_req_ndriver_tag_info_t;
 
+/**
+ * 初始化设备驱动标签信息结构
+ *
+ * @param p 信息结构指针
+ */
 static inline void neu_req_ndriver_tag_info_fini(neu_req_ndriver_tag_info_t *p)
 {
     free(p->name);
@@ -1081,6 +1229,11 @@ typedef struct {
     neu_req_ndriver_tag_info_t *tags;
 } neu_req_update_ndriver_tag_info_t;
 
+/**
+ * 初始化更新设备驱动标签信息请求结构
+ *
+ * @param p 请求结构指针
+ */
 static inline void
 neu_req_update_ndriver_tag_info_fini(neu_req_update_ndriver_tag_info_t *p)
 {
@@ -1106,9 +1259,27 @@ typedef struct neu_req_update_log_level {
     bool core;
 } neu_req_update_log_level_t;
 
-void                neu_msg_gen(neu_reqresp_head_t *header, void *data);
+/**
+ * 生成一个消息
+ *
+ * @param header 消息头指针
+ * @param data 消息数据指针
+ */
+void neu_msg_gen(neu_reqresp_head_t *header, void *data);
+
+/**
+ * 复制一个消息
+ *
+ * @param header 要复制的消息头指针
+ * @return 返回复制后的消息头指针
+ */
 neu_reqresp_head_t *neu_msg_dup(neu_reqresp_head_t *header);
 
+/**
+ * 交换消息的发送者和接收者
+ *
+ * @param header 消息头指针
+ */
 inline static void neu_msg_exchange(neu_reqresp_head_t *header)
 {
     char tmp[NEU_NODE_NAME_LEN] = { 0 };

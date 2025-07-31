@@ -30,6 +30,13 @@
 #include "neu_json_log.h"
 #include "utils/log.h"
 
+/**
+ * @brief 从JSON字符串解码更新日志级别请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_log_level_req(
     char *buf, neu_json_update_log_level_req_t **result)
 {
@@ -88,6 +95,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * @brief 释放更新日志级别请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_update_log_level_req_free(
     neu_json_update_log_level_req_t *req)
 {
@@ -102,6 +114,13 @@ void neu_json_decode_update_log_level_req_free(
     }
 }
 
+/**
+ * @brief 编码获取日志响应为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的响应结构体指针(neu_json_get_log_resp_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_get_log_resp(void *json_object, void *param)
 {
     int                      ret  = 0;

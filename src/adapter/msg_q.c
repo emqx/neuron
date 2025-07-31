@@ -38,6 +38,13 @@ struct adapter_msg_q {
     pthread_cond_t  cond;
 };
 
+/**
+ * 创建新的适配器消息队列
+ *
+ * @param name 队列名称
+ * @param size 队列最大容量
+ * @return 返回新创建的消息队列指针
+ */
 adapter_msg_q_t *adapter_msg_q_new(const char *name, uint32_t size)
 {
     struct adapter_msg_q *q = calloc(1, sizeof(struct adapter_msg_q));
@@ -51,6 +58,11 @@ adapter_msg_q_t *adapter_msg_q_new(const char *name, uint32_t size)
     return q;
 }
 
+/**
+ * 释放适配器消息队列资源
+ *
+ * @param q 消息队列指针
+ */
 void adapter_msg_q_free(adapter_msg_q_t *q)
 {
     struct item *tmp = NULL, *elt = NULL;
@@ -70,6 +82,13 @@ void adapter_msg_q_free(adapter_msg_q_t *q)
     free(q);
 }
 
+/**
+ * 向消息队列推送消息
+ *
+ * @param q   消息队列指针
+ * @param msg 要推送的消息
+ * @return 成功返回0，队列已满返回-1
+ */
 int adapter_msg_q_push(adapter_msg_q_t *q, neu_msg_t *msg)
 {
     int ret = -1;
@@ -93,6 +112,13 @@ int adapter_msg_q_push(adapter_msg_q_t *q, neu_msg_t *msg)
     return ret;
 }
 
+/**
+ * 从消息队列弹出消息
+ *
+ * @param q      消息队列指针
+ * @param p_data 输出参数，用于接收弹出的消息
+ * @return 弹出消息后队列中剩余的消息数量
+ */
 uint32_t adapter_msg_q_pop(adapter_msg_q_t *q, neu_msg_t **p_data)
 {
     uint32_t ret = 0;

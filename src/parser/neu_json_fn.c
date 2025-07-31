@@ -30,6 +30,14 @@
 #include "json/neu_json_param.h"
 #include "json/neu_json_rw.h"
 
+/**
+ * 使用指定的编码函数将数据编码为JSON字符串
+ *
+ * @param param 要编码的数据
+ * @param fn 编码函数指针
+ * @param result 输出参数，指向编码后的JSON字符串
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result)
 {
     void *object = neu_json_encode_new();
@@ -46,6 +54,16 @@ int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result)
     return ret;
 }
 
+/**
+ * 使用指定的编码函数和MQTT编码函数将数据编码为JSON字符串
+ *
+ * @param param 要编码的数据
+ * @param fn 编码函数指针
+ * @param mqtt_param MQTT相关参数
+ * @param mqtt_fn MQTT编码函数指针
+ * @param result 输出参数，指向编码后的JSON字符串
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
                               void *mqtt_param, neu_json_encode_fn mqtt_fn,
                               char **result)
@@ -71,6 +89,16 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
     return ret;
 }
 
+/**
+ * 从JSON字符串中解析参数
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param err_param 错误时输出的参数名称
+ * @param n 参数个数
+ * @param ele 第一个neu_json_elem_t参数
+ * @param ... 更多neu_json_elem_t参数
+ * @return 成功返回0，失败返回-1
+ */
 int neu_parse_param(const char *buf, char **err_param, int n,
                     neu_json_elem_t *ele, ...)
 {

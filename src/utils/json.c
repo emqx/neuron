@@ -25,6 +25,12 @@
 #include "utils/log.h"
 #include "json/json.h"
 
+/**
+ * 将元素值编码为JSON对象
+ *
+ * @param ele 要编码的元素
+ * @return 编码后的JSON对象，失败返回NULL
+ */
 static json_t *encode_object_value(neu_json_elem_t *ele)
 {
     json_t *ob = NULL;
@@ -55,6 +61,13 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
     return ob;
 }
 
+/**
+ * 将元素编码到JSON对象中
+ *
+ * @param object 目标JSON对象
+ * @param ele 要编码的元素
+ * @return 更新后的JSON对象
+ */
 static json_t *encode_object(json_t *object, neu_json_elem_t ele)
 {
     json_t *ob = object;
@@ -101,6 +114,13 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     return ob;
 }
 
+/**
+ * 从JSON对象解码元素
+ *
+ * @param root JSON对象
+ * @param ele 要填充的元素
+ * @return 成功返回0，失败返回-1
+ */
 static int decode_object(json_t *root, neu_json_elem_t *ele)
 {
     json_t *ob = NULL;
@@ -194,11 +214,24 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     return 0;
 }
 
+/**
+ * 创建新的JSON数组
+ *
+ * @return 新创建的JSON数组
+ */
 void *neu_json_array()
 {
     return json_array();
 }
 
+/**
+ * 解码JSON字符串到元素数组
+ *
+ * @param buf JSON字符串
+ * @param size 元素数组大小
+ * @param ele 用于存储解码结果的元素数组
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
 {
     json_error_t error;
@@ -223,6 +256,14 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
     return 0;
 }
 
+/**
+ * 从JSON对象解码到元素数组
+ *
+ * @param json JSON对象
+ * @param size 元素数组大小
+ * @param ele 用于存储解码结果的元素数组
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele)
 {
     if (json == NULL) {
@@ -239,6 +280,16 @@ int neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele)
     return 0;
 }
 
+/**
+ * 解码JSON字符串中的数组元素
+ *
+ * @param buf JSON字符串
+ * @param name 数组名称
+ * @param index 数组索引
+ * @param size 元素数组大小
+ * @param ele 用于存储解码结果的元素数组
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_array(char *buf, char *name, int index, int size,
                           neu_json_elem_t *ele)
 {
@@ -278,6 +329,15 @@ int neu_json_decode_array(char *buf, char *name, int index, int size,
     return 0;
 }
 
+/**
+ * 解码JSON数组中的元素
+ *
+ * @param json JSON数组
+ * @param index 数组索引
+ * @param size 元素数组大小
+ * @param ele 用于存储解码结果的元素数组
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_array_elem(void *json, int index, int size,
                                neu_json_elem_t *ele)
 {
@@ -297,6 +357,16 @@ int neu_json_decode_array_elem(void *json, int index, int size,
     return 0;
 }
 
+/**
+ * 从JSON对象解码数组元素
+ *
+ * @param json JSON对象
+ * @param name 数组名称
+ * @param index 数组索引
+ * @param size 元素数组大小
+ * @param ele 用于存储解码结果的元素数组
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_array_by_json(void *json, char *name, int index, int size,
                                   neu_json_elem_t *ele)
 {
@@ -322,6 +392,13 @@ int neu_json_decode_array_by_json(void *json, char *name, int index, int size,
     return 0;
 }
 
+/**
+ * 获取JSON对象中数组的大小
+ *
+ * @param json JSON对象
+ * @param child 数组名称
+ * @return 成功返回数组大小，失败返回-1
+ */
 int neu_json_decode_array_size_by_json(void *json, char *child)
 {
     json_t *ob;
@@ -337,6 +414,13 @@ int neu_json_decode_array_size_by_json(void *json, char *child)
     return ret;
 }
 
+/**
+ * 获取JSON字符串中数组的大小
+ *
+ * @param buf JSON字符串
+ * @param child 数组名称
+ * @return 成功返回数组大小，失败返回-1
+ */
 int neu_json_decode_array_size(char *buf, char *child)
 {
     json_error_t error;
@@ -363,6 +447,14 @@ int neu_json_decode_array_size(char *buf, char *child)
     return ret;
 }
 
+/**
+ * 将元素值编码为JSON数组
+ *
+ * @param array 现有数组或NULL创建新数组
+ * @param t 元素数组
+ * @param n 元素数量
+ * @return 更新后的JSON数组
+ */
 void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n)
 {
 
@@ -377,6 +469,14 @@ void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n)
     return array;
 }
 
+/**
+ * 将元素编码为JSON数组
+ *
+ * @param array 现有数组或NULL创建新数组
+ * @param t 元素数组
+ * @param n 元素数量
+ * @return 更新后的JSON数组
+ */
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n)
 {
     if (array == NULL) {
@@ -392,16 +492,34 @@ void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n)
     return array;
 }
 
+/**
+ * 创建新的JSON对象
+ *
+ * @return 新创建的JSON对象
+ */
 void *neu_json_encode_new()
 {
     return json_object();
 }
 
+/**
+ * 释放JSON对象
+ *
+ * @param json_object 要释放的JSON对象
+ */
 void neu_json_encode_free(void *json_object)
 {
     json_decref(json_object);
 }
 
+/**
+ * 编码元素到JSON对象
+ *
+ * @param json_object 目标JSON对象
+ * @param elem 元素数组
+ * @param n 元素数量
+ * @return 成功返回0
+ */
 int neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n)
 {
     for (int i = 0; i < n; i++) {
@@ -411,6 +529,13 @@ int neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n)
     return 0;
 }
 
+/**
+ * 将JSON对象编码为字符串
+ *
+ * @param json_object JSON对象
+ * @param str 输出参数，存储编码后的字符串
+ * @return 成功返回0
+ */
 int neu_json_encode(void *json_object, char **str)
 {
     *str = json_dumps(json_object, JSON_REAL_PRECISION(16));
@@ -418,6 +543,12 @@ int neu_json_encode(void *json_object, char **str)
     return 0;
 }
 
+/**
+ * 从字符串解析新的JSON对象
+ *
+ * @param buf JSON字符串
+ * @return 成功返回JSON对象，失败返回NULL
+ */
 void *neu_json_decode_new(const char *buf)
 {
     json_error_t error;
@@ -434,6 +565,13 @@ void *neu_json_decode_new(const char *buf)
     return root;
 }
 
+/**
+ * 从二进制数据解析新的JSON对象
+ *
+ * @param buf 二进制数据
+ * @param len 数据长度
+ * @return 成功返回JSON对象，失败返回NULL
+ */
 void *neu_json_decode_newb(char *buf, size_t len)
 {
     json_error_t error;
@@ -450,16 +588,37 @@ void *neu_json_decode_newb(char *buf, size_t len)
     return root;
 }
 
+/**
+ * 释放JSON对象
+ *
+ * @param ob 要释放的JSON对象
+ */
 void neu_json_decode_free(void *ob)
 {
     json_decref(ob);
 }
 
+/**
+ * 从JSON对象解码单个元素值
+ *
+ * @param object JSON对象
+ * @param ele 要填充的元素
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_value(void *object, neu_json_elem_t *ele)
 {
     return decode_object(object, ele);
 }
 
+/**
+ * 从JSON对象中提取指定键的值并转为JSON字符串
+ *
+ * @param object JSON对象
+ * @param key 键名
+ * @param result 输出参数，存储提取结果的JSON字符串
+ * @param must_exist 键是否必须存在
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_dump_key(void *object, const char *key, char **const result,
                       bool must_exist)
 {
@@ -487,6 +646,15 @@ int neu_json_dump_key(void *object, const char *key, char **const result,
     return rv;
 }
 
+/**
+ * 从JSON字符串加载指定键的值到JSON对象
+ *
+ * @param object 目标JSON对象
+ * @param key 键名
+ * @param input 输入JSON字符串
+ * @param must_exist 键是否必须存在
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_load_key(void *object, const char *key, const char *input,
                       bool must_exist)
 {

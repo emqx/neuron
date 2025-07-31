@@ -28,6 +28,11 @@ extern "C" {
 #include <sys/time.h>
 #include <time.h>
 
+/**
+ * @brief 获取当前系统时间的毫秒时间戳
+ *
+ * @return int64_t 返回自Unix纪元（1970-01-01 00:00:00 UTC）以来的毫秒数
+ */
 static inline int64_t neu_time_ms()
 {
     struct timeval tv = { 0 };
@@ -35,6 +40,11 @@ static inline int64_t neu_time_ms()
     return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
+/**
+ * @brief 使当前线程休眠指定的毫秒数
+ *
+ * @param msec 休眠时间，单位为毫秒
+ */
 static inline void neu_msleep(unsigned msec)
 {
     struct timespec tv = {

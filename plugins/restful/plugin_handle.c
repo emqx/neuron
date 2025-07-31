@@ -28,6 +28,12 @@
 
 #include "plugin_handle.h"
 
+/**
+ * 处理添加插件的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应
+ */
 void handle_add_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -50,6 +56,12 @@ void handle_add_plugin(nng_aio *aio)
         })
 }
 
+/**
+ * 处理删除插件的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应
+ */
 void handle_del_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -77,6 +89,12 @@ void handle_del_plugin(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取插件列表的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @return 无返回值，通过aio对象返回HTTP响应
+ */
 void handle_get_plugin(nng_aio *aio)
 {
     neu_plugin_t *     plugin = neu_rest_get_plugin();
@@ -96,6 +114,13 @@ void handle_get_plugin(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取插件列表的响应，将插件信息转换为JSON格式并发送HTTP响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param plugins 插件列表信息结构体指针
+ * @return 无返回值，通过aio对象返回HTTP响应
+ */
 void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
 {
     neu_json_get_plugin_resp_t plugin_res = { 0 };

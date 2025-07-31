@@ -30,6 +30,11 @@
 
 #include "datatag_handle.h"
 
+/**
+ * 处理添加标签的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_add_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -82,6 +87,12 @@ void handle_add_tags(nng_aio *aio)
         })
 }
 
+/**
+ * 处理添加标签的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param resp 添加标签的响应数据
+ */
 void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
 {
     neu_json_add_tag_res_t res    = { 0 };
@@ -96,6 +107,11 @@ void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     free(result);
 }
 
+/**
+ * 处理删除标签的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_del_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -126,6 +142,11 @@ void handle_del_tags(nng_aio *aio)
         })
 }
 
+/**
+ * 处理更新标签的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_update_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -170,11 +191,22 @@ void handle_update_tags(nng_aio *aio)
         })
 }
 
+/**
+ * 处理更新标签的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param resp 更新标签的响应数据
+ */
 void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp)
 {
     handle_add_tags_resp(aio, resp);
 }
 
+/**
+ * 处理获取标签的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_get_tags(nng_aio *aio)
 {
     neu_plugin_t *     plugin                     = neu_rest_get_plugin();
@@ -218,6 +250,12 @@ void handle_get_tags(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取标签的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param tags 标签信息的数组
+ */
 void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
 {
     neu_json_get_tags_resp_t tags_res = { 0 };

@@ -27,6 +27,10 @@
 
 struct http_proxy_ctx;
 
+/**
+ * @brief 处理代理请求的回调函数
+ * @param aio NNG异步I/O对象
+ */
 static void handle_proxy(nng_aio *aio);
 
 typedef struct {
@@ -48,6 +52,10 @@ struct http_proxy_ctx {
     struct http_proxy_ctx *next;
 };
 
+/**
+ * @brief 释放HTTP代理上下文
+ * @param ctx 要释放的HTTP代理上下文
+ */
 static void http_proxy_ctx_free(struct http_proxy_ctx *ctx)
 {
     if (NULL == ctx) {
@@ -56,6 +64,13 @@ static void http_proxy_ctx_free(struct http_proxy_ctx *ctx)
     nng_aio_free(ctx->aio);
 }
 
+/**
+ * @brief 分配并初始化HTTP代理
+ * @param proxy 输出参数，指向分配的HTTP代理
+ * @param src_url 源URL
+ * @param dst_url 目标URL
+ * @return 成功返回0，失败返回负数
+ */
 static int http_proxy_alloc(http_proxy_t **proxy, const char *src_url,
                             const char *dst_url)
 {
@@ -113,6 +128,10 @@ err_mutex_init:
     return ret;
 }
 
+/**
+ * @brief 释放HTTP代理资源
+ * @param proxy 要释放的HTTP代理
+ */
 static void http_proxy_free(http_proxy_t *proxy)
 {
     if (NULL == proxy) {
@@ -138,6 +157,12 @@ static void http_proxy_free(http_proxy_t *proxy)
     free(proxy);
 }
 
+/**
+ * @brief 设置HTTP请求的URI，替换源URI为目标URI
+ * @param proxy HTTP代理
+ * @param req HTTP请求
+ * @return 成功返回0，失败返回-1
+ */
 static inline int http_proxy_set_uri(http_proxy_t *proxy, nng_http_req *req)
 {
     const char *uri     = nng_http_req_get_uri(req);
@@ -170,6 +195,10 @@ static inline int http_proxy_set_uri(http_proxy_t *proxy, nng_http_req *req)
     return 0;
 }
 
+/**
+ * @brief HTTP代理回调函数，处理从目标服务器返回的响应
+ * @param arg 回调参数，HTTP代理上下文
+ */
 static void http_proxy_cb(void *arg)
 {
     int                    rv  = 0;
@@ -204,6 +233,11 @@ static void http_proxy_cb(void *arg)
     pthread_mutex_unlock(&ctx->proxy->mtx);
 }
 
+/**
+ * @brief 获取HTTP代理上下文，优先从空闲列表获取，无可用时创建新的
+ * @param proxy HTTP代理
+ * @return 成功返回HTTP代理上下文指针，失败返回NULL
+ */
 static struct http_proxy_ctx *http_proxy_get_ctx(http_proxy_t *proxy)
 {
     pthread_mutex_lock(&proxy->mtx);
@@ -231,6 +265,12 @@ static struct http_proxy_ctx *http_proxy_get_ctx(http_proxy_t *proxy)
     return ctx;
 }
 
+/**
+ * @brief 创建HTTP代理处理器
+ * @param http_handler HTTP处理器配置
+ * @param handler 输出参数，指向创建的HTTP处理器
+ * @return 成功返回0，失败返回错误码
+ */
 int neu_http_proxy_handler(const struct neu_http_handler *http_handler,
                            nng_http_handler **            handler)
 {
@@ -285,6 +325,10 @@ error:
     return ret;
 }
 
+/**
+ * @brief 处理HTTP代理请求
+ * @param aio NNG异步I/O对象
+ */
 static void handle_proxy(nng_aio *aio)
 {
     nng_http_res *    res     = NULL;

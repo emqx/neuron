@@ -29,6 +29,11 @@
 
 #include "group_config_handle.h"
 
+/**
+ * 处理添加组配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_add_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -61,6 +66,13 @@ void handle_add_group_config(nng_aio *aio)
         })
 }
 
+/**
+ * 发送更新组配置请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param req 更新组配置的请求数据
+ * @return 错误码，0表示成功，其他表示错误
+ */
 static inline int send_update_group(nng_aio *                           aio,
                                     neu_json_update_group_config_req_t *req)
 {
@@ -114,6 +126,11 @@ static inline int send_update_group(nng_aio *                           aio,
     return 0;
 }
 
+/**
+ * 处理更新组配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_update_group(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -127,6 +144,11 @@ void handle_update_group(nng_aio *aio)
         })
 }
 
+/**
+ * 处理删除组配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_del_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -151,6 +173,11 @@ void handle_del_group_config(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取组配置的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_get_group_config(nng_aio *aio)
 {
     neu_plugin_t *      plugin                       = neu_rest_get_plugin();
@@ -178,6 +205,12 @@ void handle_get_group_config(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取组配置的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param groups 组配置信息的数组
+ */
 void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups)
 {
     neu_json_get_group_config_resp_t gconfig_res = { 0 };
@@ -206,6 +239,12 @@ void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups)
     utarray_free(groups->groups);
 }
 
+/**
+ * 处理获取驱动组配置的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param groups 驱动组配置信息的数组
+ */
 void handle_get_driver_group_resp(nng_aio *                    aio,
                                   neu_resp_get_driver_group_t *groups)
 {
@@ -235,6 +274,14 @@ void handle_get_driver_group_resp(nng_aio *                    aio,
     utarray_free(groups->groups);
 }
 
+/**
+ * 发送订阅请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param type 请求类型
+ * @param req 订阅请求数据
+ * @return 错误码，0表示成功，其他表示错误
+ */
 static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
                                  neu_json_subscribe_req_t *req)
 {
@@ -259,6 +306,11 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     return 0;
 }
 
+/**
+ * 处理组订阅的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_grp_subscribe(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -271,6 +323,11 @@ void handle_grp_subscribe(nng_aio *aio)
         })
 }
 
+/**
+ * 处理更新组订阅的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_grp_update_subscribe(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -283,6 +340,11 @@ void handle_grp_update_subscribe(nng_aio *aio)
         })
 }
 
+/**
+ * 处理取消组订阅的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_grp_unsubscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -306,6 +368,13 @@ void handle_grp_unsubscribe(nng_aio *aio)
         })
 }
 
+/**
+ * 发送批量订阅组的请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param req 批量订阅组的请求数据
+ * @return 错误码，0表示成功，其他表示错误
+ */
 static inline int send_subscribe_groups(nng_aio *                        aio,
                                         neu_json_subscribe_groups_req_t *req)
 {
@@ -334,6 +403,11 @@ static inline int send_subscribe_groups(nng_aio *                        aio,
     return 0;
 }
 
+/**
+ * 处理批量订阅组的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_grp_subscribes(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
@@ -347,6 +421,11 @@ void handle_grp_subscribes(nng_aio *aio)
         })
 }
 
+/**
+ * 处理获取组订阅信息的HTTP请求
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ */
 void handle_grp_get_subscribe(nng_aio *aio)
 {
     int                           ret    = 0;
@@ -376,6 +455,12 @@ void handle_grp_get_subscribe(nng_aio *aio)
     }
 }
 
+/**
+ * 处理获取组订阅信息的响应
+ *
+ * @param aio NNG异步I/O对象，包含HTTP请求和响应信息
+ * @param groups 订阅组信息的数组
+ */
 void handle_grp_get_subscribe_resp(nng_aio *                       aio,
                                    neu_resp_get_subscribe_group_t *groups)
 {

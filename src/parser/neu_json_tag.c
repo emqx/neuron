@@ -33,6 +33,13 @@
 #include "tag.h"
 #include "type.h"
 
+/**
+ * 将单个标签编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向标签的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_tag(void *json_obj, void *param)
 {
     int             ret = 0;
@@ -87,6 +94,13 @@ int neu_json_encode_tag(void *json_obj, void *param)
     return ret;
 }
 
+/**
+ * 从JSON对象解码单个标签数据
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param tag_p 指向标签结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p)
 {
     if (NULL == tag_p) {
@@ -164,6 +178,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 释放标签结构中分配的内存资源
+ *
+ * @param tag 指向要释放资源的标签结构的指针
+ */
 void neu_json_decode_tag_fini(neu_json_tag_t *tag)
 {
     free(tag->name);
@@ -174,6 +193,12 @@ void neu_json_decode_tag_fini(neu_json_tag_t *tag)
     }
 }
 
+/**
+ * 检查标签类型与值类型是否匹配
+ *
+ * @param tag 指向要检查的标签结构的指针
+ * @return 类型匹配返回true，不匹配返回false
+ */
 int neu_json_tag_check_type(neu_json_tag_t *tag)
 {
     if (NEU_ATTRIBUTE_STATIC & tag->attribute) {
@@ -210,6 +235,13 @@ int neu_json_tag_check_type(neu_json_tag_t *tag)
     return true;
 }
 
+/**
+ * 将标签数组编码成JSON对象
+ *
+ * @param json_obj JSON对象指针，用于存储编码结果
+ * @param param 指向标签数组的指针，作为要编码的数据
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_encode_tag_array(void *json_obj, void *param)
 {
     neu_json_tag_array_t *array = param;
@@ -231,6 +263,13 @@ int neu_json_encode_tag_array(void *json_obj, void *param)
     return 0;
 }
 
+/**
+ * 从JSON对象解码标签数组数据
+ *
+ * @param json_obj JSON对象指针，包含要解码的数据
+ * @param arr 指向标签数组结构的指针，用于存储解码结果
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_tag_array_json(void *json_obj, neu_json_tag_array_t *arr)
 {
     int             len  = 0;
@@ -273,6 +312,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 释放标签数组结构中分配的内存资源
+ *
+ * @param arr 指向要释放资源的标签数组结构的指针
+ */
 void neu_json_decode_tag_array_fini(neu_json_tag_array_t *arr)
 {
     for (int i = 0; i < arr->len; ++i) {
@@ -281,6 +325,13 @@ void neu_json_decode_tag_array_fini(neu_json_tag_array_t *arr)
     free(arr->tags);
 }
 
+/**
+ * 将添加标签请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向添加标签请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_add_tags_req(void *json_object, void *param)
 {
     int                      ret = 0;
@@ -323,6 +374,13 @@ int neu_json_encode_add_tags_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码添加标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的添加标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 {
     int                      ret      = 0;
@@ -386,6 +444,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放添加标签请求结构的内存
+ *
+ * @param req 指向要释放的添加标签请求结构的指针
+ */
 void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req)
 {
     if (NULL == req) {
@@ -403,6 +466,13 @@ void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req)
     free(req);
 }
 
+/**
+ * 将标签操作响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向标签操作响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_au_tags_resp(void *json_object, void *param)
 {
     int                     ret          = 0;
@@ -427,6 +497,13 @@ int neu_json_encode_au_tags_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 将删除标签请求编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向删除标签请求的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_del_tags_req(void *json_object, void *param)
 {
     int                      ret = 0;
@@ -469,6 +546,13 @@ int neu_json_encode_del_tags_req(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码删除标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的删除标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result)
 {
     int                      ret      = 0;
@@ -538,6 +622,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放删除标签请求结构的内存
+ *
+ * @param req 指向要释放的删除标签请求结构的指针
+ */
 void neu_json_decode_del_tags_req_free(neu_json_del_tags_req_t *req)
 {
     free(req->node);
@@ -551,6 +640,13 @@ void neu_json_decode_del_tags_req_free(neu_json_del_tags_req_t *req)
     free(req);
 }
 
+/**
+ * 将获取标签响应编码成JSON对象
+ *
+ * @param json_object JSON对象指针，用于存储编码结果
+ * @param param 指向获取标签响应的指针，作为要编码的数据
+ * @return 成功返回0，失败返回非0值
+ */
 int neu_json_encode_get_tags_resp(void *json_object, void *param)
 {
     int                       ret  = 0;
@@ -582,6 +678,13 @@ int neu_json_encode_get_tags_resp(void *json_object, void *param)
     return ret;
 }
 
+/**
+ * 从JSON字符串解码更新标签请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 二级指针，用于返回解码后的更新标签请求结构
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_update_tags_req(char *                       buf,
                                     neu_json_update_tags_req_t **result)
 {
@@ -647,6 +750,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放更新标签请求结构的内存
+ *
+ * @param req 指向要释放的更新标签请求结构的指针
+ */
 void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req)
 {
     if (NULL == req) {

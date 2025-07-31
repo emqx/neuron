@@ -27,6 +27,12 @@
 #include "utils/http_handler.h"
 #include "utils/log.h"
 
+/**
+ * @brief 向HTTP服务器添加处理器
+ * @param server HTTP服务器实例
+ * @param http_handler HTTP处理器配置
+ * @return 成功返回0，失败返回-1
+ */
 int neu_http_add_handler(nng_http_server *              server,
                          const struct neu_http_handler *http_handler)
 {
@@ -89,6 +95,10 @@ int neu_http_add_handler(nng_http_server *              server,
     return ret;
 }
 
+/**
+ * @brief 处理CORS（跨域资源共享）请求
+ * @param aio NNG异步I/O对象
+ */
 void neu_http_handle_cors(nng_aio *aio)
 {
     nng_http_res *res = NULL;

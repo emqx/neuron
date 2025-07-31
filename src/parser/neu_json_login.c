@@ -29,6 +29,13 @@
 
 #include "neu_json_login.h"
 
+/**
+ * @brief 从JSON字符串解码登录请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_login_req(char *buf, neu_json_login_req_t **result)
 {
     int ret = 0;
@@ -58,6 +65,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * @brief 释放登录请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_login_req_free(neu_json_login_req_t *req)
 {
 
@@ -67,6 +79,13 @@ void neu_json_decode_login_req_free(neu_json_login_req_t *req)
     free(req);
 }
 
+/**
+ * @brief 从JSON字符串解码密码修改请求
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 解码结果存储位置，由函数分配内存
+ * @return int 成功返回0，失败返回-1
+ */
 int neu_json_decode_password_req(char *buf, neu_json_password_req_t **result)
 {
     int ret = 0;
@@ -103,6 +122,11 @@ decode_fail:
     return -1;
 }
 
+/**
+ * @brief 释放密码修改请求资源
+ *
+ * @param req 要释放的请求结构体指针
+ */
 void neu_json_decode_password_req_free(neu_json_password_req_t *req)
 {
     if (req) {
@@ -114,6 +138,13 @@ void neu_json_decode_password_req_free(neu_json_password_req_t *req)
     }
 }
 
+/**
+ * @brief 编码登录响应为JSON
+ *
+ * @param json_object 输出的JSON对象
+ * @param param 要编码的响应结构体指针(neu_json_login_resp_t类型)
+ * @return int 成功返回0，失败返回非0
+ */
 int neu_json_encode_login_resp(void *json_object, void *param)
 {
     int                    ret  = 0;

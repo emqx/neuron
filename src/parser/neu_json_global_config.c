@@ -30,6 +30,11 @@
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_tag.h"
 
+/**
+ * 释放添加标签请求结构体内部分配的内存
+ *
+ * @param req 需要释放内部资源的neu_json_add_tags_req_t结构体指针
+ */
 static void fini_add_tags_req(neu_json_add_tags_req_t *req)
 {
     neu_json_tag_array_t arr = {
@@ -42,6 +47,13 @@ static void fini_add_tags_req(neu_json_add_tags_req_t *req)
     free(req->group);
 }
 
+/**
+ * 从JSON对象解码到添加标签请求结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param req 输出参数，已分配内存的neu_json_add_tags_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 static int decode_add_tags_req(void *json_obj, neu_json_add_tags_req_t *req)
 {
     int ret = 0;
@@ -85,6 +97,14 @@ decode_fail:
     return -1;
 }
 
+/**
+ * 从JSON对象解码到全局配置请求标签结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param result
+ * 输出参数，指向解码后的neu_json_global_config_req_tags_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_global_config_req_tags(
     void *json_obj, neu_json_global_config_req_tags_t **result)
 {
@@ -130,6 +150,11 @@ decode_exit:
     return ret;
 }
 
+/**
+ * 释放全局配置请求标签结构体及其内部分配的内存
+ *
+ * @param req_tags 需要释放的neu_json_global_config_req_tags_t结构体指针
+ */
 void neu_json_decode_global_config_req_tags_free(
     neu_json_global_config_req_tags_t *req_tags)
 {
@@ -145,6 +170,13 @@ void neu_json_decode_global_config_req_tags_free(
     free(req_tags);
 }
 
+/**
+ * 解码JSON对象到订阅请求结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param req 输出参数，已分配内存的neu_json_subscribe_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 static int decode_subscribe_req(json_t *json_obj, neu_json_subscribe_req_t *req)
 {
     neu_json_elem_t req_elems[] = {
@@ -179,6 +211,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放订阅请求结构体内部分配的内存
+ *
+ * @param req 需要释放内部资源的neu_json_subscribe_req_t结构体指针
+ */
 static inline void fini_subscribe_req(neu_json_subscribe_req_t *req)
 {
     free(req->app);
@@ -187,6 +224,14 @@ static inline void fini_subscribe_req(neu_json_subscribe_req_t *req)
     free(req->params);
 }
 
+/**
+ * 从JSON对象解码到全局配置请求订阅结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param result
+ * 输出参数，指向解码后的neu_json_global_config_req_subscriptions_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_global_config_req_subscriptions(
     void *json_obj, neu_json_global_config_req_subscriptions_t **result)
 {
@@ -263,6 +308,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放全局配置请求订阅结构体及其内部分配的内存
+ *
+ * @param req_sub 需要释放的neu_json_global_config_req_subscriptions_t结构体指针
+ */
 void neu_json_decode_global_config_req_subscriptions_free(
     neu_json_global_config_req_subscriptions_t *req_sub)
 {
@@ -278,12 +328,25 @@ void neu_json_decode_global_config_req_subscriptions_free(
     free(req_sub);
 }
 
+/**
+ * 释放节点设置请求结构体内部分配的内存
+ *
+ * @param req 需要释放内部资源的neu_json_node_setting_req_t结构体指针
+ */
 static inline void fini_node_setting(neu_json_node_setting_req_t *req)
 {
     free(req->node);
     free(req->setting);
 }
 
+/**
+ * 从JSON对象解码到全局配置请求设置结构体
+ *
+ * @param json_obj JSON对象指针
+ * @param result
+ * 输出参数，指向解码后的neu_json_global_config_req_settings_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_global_config_req_settings(
     void *json_obj, neu_json_global_config_req_settings_t **result)
 {
@@ -343,6 +406,11 @@ error:
     return -1;
 }
 
+/**
+ * 释放全局配置请求设置结构体及其内部分配的内存
+ *
+ * @param req_settings 需要释放的neu_json_global_config_req_settings_t结构体指针
+ */
 void neu_json_decode_global_config_req_settings_free(
     neu_json_global_config_req_settings_t *req_settings)
 {
@@ -355,6 +423,13 @@ void neu_json_decode_global_config_req_settings_free(
     }
 }
 
+/**
+ * 解码JSON到全局配置请求结构体
+ *
+ * @param buf 包含JSON数据的字符串
+ * @param result 输出参数，指向解码后的neu_json_global_config_req_t结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_json_decode_global_config_req(char *                         buf,
                                       neu_json_global_config_req_t **result)
 {
@@ -391,6 +466,11 @@ int neu_json_decode_global_config_req(char *                         buf,
     return ret;
 }
 
+/**
+ * 释放全局配置请求结构体及其内部分配的内存
+ *
+ * @param req 需要释放的neu_json_global_config_req_t结构体指针
+ */
 void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req)
 {
     if (req) {
