@@ -534,6 +534,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
                     ele->t = NEU_JSON_ARRAY_BOOL;
                     break;
                 }
+                if (json_is_object(value)) {
+                    ele->t = NEU_JSON_OBJECT;
+                    break;
+                }
             }
         } else if (json_is_object(ob)) {
             ele->t = NEU_JSON_OBJECT;
