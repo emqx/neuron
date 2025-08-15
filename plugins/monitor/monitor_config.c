@@ -17,6 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+/**
+ * monitor_config.c - 监控插件配置处理
+ *
+ * 该文件实现了监控插件的配置解析和管理功能，包括：
+ * 1. 解析JSON格式的插件配置
+ * 2. 处理MQTT连接参数和TLS/SSL配置
+ * 3. 验证配置参数的有效性
+ * 4. 提供配置的初始化和清理功能
+ */
+
 #include "json/json.h"
 #include "json/neu_json_param.h"
 
@@ -27,37 +37,57 @@
 #include "monitor.h"
 #include "monitor_config.h"
 
-#define MB 1000000
+#define MB 1000000 // 1MB大小定义
 
+/**
+ * 解码Base64参数
+ *
+ * @param plugin 插件实例
+ * @param el JSON参数元素，包含Base64编码的字符串
+ * @return 成功返回0，失败返回-1
+ */
 static inline int decode_b64_param(neu_plugin_t *plugin, neu_json_elem_t *el)
 {
     int   len = 0;
     char *s   = (char *) neu_decode64(&len, el->v.val_str);
 
+    // 检查解码是否成功
     if (NULL == s) {
         plog_error(plugin, "setting %s invalid base64", el->name);
         return -1;
     }
 
+    // 检查解码后的内容是否为空
     if (0 == len) {
         plog_error(plugin, "setting empty %s", el->name);
         free(s);
         return -1;
     }
 
+    // 释放原始字符串，使用解码后的字符串
     free(el->v.val_str);
     el->v.val_str = s;
     return 0;
 }
 
+/**
+ * 解析并解码Base64参数
+ *
+ * @param plugin 插件实例
+ * @param setting JSON配置字符串
+ * @param el 要填充的JSON参数元素
+ * @return 成功返回0，失败返回-1
+ */
 static inline int parse_b64_param(neu_plugin_t *plugin, const char *setting,
                                   neu_json_elem_t *el)
 {
+    // 从配置中解析参数
     if (0 != neu_parse_param(setting, NULL, 1, el)) {
         plog_error(plugin, "setting no %s", el->name);
         return -1;
     }
 
+    // 解码Base64参数
     if (0 != decode_b64_param(plugin, el)) {
         free(el->v.val_str);
         el->v.val_str = NULL;
@@ -67,35 +97,49 @@ static inline int parse_b64_param(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
+/**
+ * 解析SSL/TLS参数
+ *
+ * @param plugin 插件实例
+ * @param setting JSON配置字符串
+ * @param ssl SSL启用标志参数
+ * @param ca CA证书参数
+ * @param cert 客户端证书参数
+ * @param key 客户端私钥参数
+ * @param keypass 私钥密码参数
+ * @return 成功返回0，失败返回-1
+ */
 static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
                                    neu_json_elem_t *ssl, neu_json_elem_t *ca,
                                    neu_json_elem_t *cert, neu_json_elem_t *key,
                                    neu_json_elem_t *keypass)
 {
-    // ssl, optional
+    // 解析ssl参数（可选）
     int ret = neu_parse_param(setting, NULL, 1, ssl);
     if (0 != ret) {
         plog_notice(plugin, "setting no ssl");
         return 0;
     }
 
+    // 如果SSL被禁用，直接返回
     if (false == ssl->v.val_bool) {
         plog_notice(plugin, "setting ssl disabled");
         return 0;
     }
 
-    // ca, optional
+    // 解析ca证书参数（可选）
     ret = neu_parse_param(setting, NULL, 1, ca);
     if (0 != ret) {
         plog_notice(plugin, "setting no ca");
         return 0;
     }
 
+    // 解码CA证书（Base64格式）
     if (0 != decode_b64_param(plugin, ca)) {
         return -1;
     }
 
-    // cert, optional
+    // 解析客户端证书参数（可选）
     ret = neu_parse_param(setting, NULL, 1, cert);
     if (0 != ret) {
         plog_notice(plugin, "setting no cert");
@@ -218,7 +262,7 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
                          monitor_config_t *config)
 {
     int         ret         = 0;
-    char *      err_param   = NULL;
+    char       *err_param   = NULL;
     const char *placeholder = "********";
 
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
@@ -227,7 +271,7 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t heartbeat_interval = { .name = "heartbeat-interval",
                                            .t    = NEU_JSON_INT };
     neu_json_elem_t heartbeat_topic    = { .name = "heartbeat-topic",
-                                        .t    = NEU_JSON_STR };
+                                           .t    = NEU_JSON_STR };
     neu_json_elem_t host               = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t port               = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };

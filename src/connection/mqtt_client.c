@@ -58,31 +58,39 @@
         }                                                                  \
     } while (0)
 
+/**
+ * @brief MQTT订阅信息结构体
+ *
+ * 存储每个MQTT主题订阅的相关信息
+ */
 typedef struct {
-    size_t                         ref;
-    bool                           ack;
-    neu_mqtt_qos_e                 qos;
-    char *                         topic;
-    neu_mqtt_client_subscribe_cb_t cb;
-    void *                         data;
-    UT_hash_handle                 hh;
+    size_t                         ref;   /**< 引用计数 */
+    bool                           ack;   /**< 是否已收到订阅确认 */
+    neu_mqtt_qos_e                 qos;   /**< 服务质量等级 */
+    char                          *topic; /**< 订阅的主题 */
+    neu_mqtt_client_subscribe_cb_t cb;    /**< 消息到达回调函数 */
+    void                          *data;  /**< 用户自定义数据 */
+    UT_hash_handle                 hh;    /**< uthash哈希处理结构 */
 } subscription_t;
 
+/**
+ * @brief MQTT客户端任务类型枚举
+ */
 typedef enum {
-    TASK_PUB,
-    TASK_SUB,
-    TASK_UNSUB,
-    TASK_RECV,
+    TASK_PUB,   /**< 发布任务 */
+    TASK_SUB,   /**< 订阅任务 */
+    TASK_UNSUB, /**< 取消订阅任务 */
+    TASK_RECV,  /**< 接收任务 */
 } task_kind_e;
 
 #define TASK_UNION_FIELDS                     \
     struct {                                  \
         neu_mqtt_client_publish_cb_t cb;      \
         neu_mqtt_qos_e               qos;     \
-        char *                       topic;   \
-        uint8_t *                    payload; \
+        char                        *topic;   \
+        uint8_t                     *payload; \
         uint32_t                     len;     \
-        void *                       data;    \
+        void                        *data;    \
     } pub;                                    \
     subscription_t *sub;                      \
     struct {                                  \
@@ -93,78 +101,234 @@ typedef union {
     TASK_UNION_FIELDS;
 } task_union;
 
+/**
+ * @brief MQTT客户端任务结构体
+ *
+ * 表示MQTT客户端需要执行的一个操作(发布、订阅、接收等)
+ */
 typedef struct task_s {
-    task_kind_e kind;
-    nng_aio *   aio;
+    task_kind_e kind; /**< 任务类型 */
+    nng_aio    *aio;  /**< NNG异步I/O对象 */
     union {
-        TASK_UNION_FIELDS;
+        TASK_UNION_FIELDS; /**< 根据任务类型不同包含的数据 */
     };
-    struct task_s *prev;
-    struct task_s *next;
+    struct task_s *prev; /**< 双向链表前一个节点 */
+    struct task_s *next; /**< 双向链表后一个节点 */
 } task_t;
 
+/**
+ * @brief MQTT客户端结构体
+ *
+ * Neuron MQTT客户端的主要数据结构，管理连接和操作
+ */
 struct neu_mqtt_client_s {
-    nng_socket                      sock;
-    nng_mtx *                       mtx;
-    neu_events_t *                  events;
-    neu_event_timer_t *             timer;
-    neu_mqtt_version_e              version;
-    char *                          host;
-    uint16_t                        port;
-    char *                          url;
-    nng_tls_config *                tls_cfg;
-    nng_msg *                       conn_msg;
-    nng_duration                    retry;
-    bool                            open;
-    bool                            connected;
-    neu_mqtt_client_connection_cb_t connect_cb;
-    void *                          connect_cb_data;
-    neu_mqtt_client_connection_cb_t disconnect_cb;
-    void *                          disconnect_cb_data;
-    nng_mqtt_sqlite_option *        sqlite_cfg;
-    bool                            receiving;
-    nng_aio *                       recv_aio;
-    subscription_t *                subscriptions;
-    size_t                          suback_count;
-    size_t                          task_count;
-    size_t                          task_limit;
-    task_t *                        task_free_list;
-    zlog_category_t *               log;
+    nng_socket                      sock;       /**< NNG MQTT套接字 */
+    nng_mtx                        *mtx;        /**< 互斥锁，保护客户端状态 */
+    neu_events_t                   *events;     /**< 事件系统引用 */
+    neu_event_timer_t              *timer;      /**< 重连定时器 */
+    neu_mqtt_version_e              version;    /**< MQTT协议版本 */
+    char                           *host;       /**< MQTT服务器主机名/IP */
+    uint16_t                        port;       /**< MQTT服务器端口 */
+    char                           *url;        /**< 连接URL */
+    nng_tls_config                 *tls_cfg;    /**< TLS配置(如果使用) */
+    nng_msg                        *conn_msg;   /**< 连接消息 */
+    nng_duration                    retry;      /**< 重试间隔(毫秒) */
+    bool                            open;       /**< 是否已打开 */
+    bool                            connected;  /**< 是否已连接 */
+    neu_mqtt_client_connection_cb_t connect_cb; /**< 连接成功回调 */
+    void                           *connect_cb_data;    /**< 连接回调用户数据 */
+    neu_mqtt_client_connection_cb_t disconnect_cb;      /**< 连接断开回调 */
+    void                           *disconnect_cb_data; /**< 断开回调用户数据 */
+    nng_mqtt_sqlite_option         *sqlite_cfg;         /**< SQLite持久化配置 */
+    bool                            receiving;          /**< 是否正在接收消息 */
+    nng_aio                        *recv_aio;           /**< 接收异步I/O对象 */
+    subscription_t                 *subscriptions;      /**< 主题订阅哈希表 */
+    size_t                          suback_count;       /**< 订阅确认计数 */
+    size_t                          task_count;         /**< 当前任务数量 */
+    size_t                          task_limit;         /**< 任务数量限制 */
+    task_t                         *task_free_list;     /**< 空闲任务链表 */
+    zlog_category_t                *log;                /**< 日志类别 */
 };
 
+/**
+ * @brief 创建新的任务对象
+ * @param client MQTT客户端对象指针
+ * @return 成功返回任务对象指针，失败返回NULL
+ */
 static inline task_t *task_new(neu_mqtt_client_t *client);
-static inline void    task_free(task_t *task);
-static inline void    tasks_free(task_t *tasks);
-static void           task_cb(void *arg);
-static void           task_handle_pub(task_t *task, neu_mqtt_client_t *client);
-static void           task_handle_sub(task_t *task, neu_mqtt_client_t *client);
+
+/**
+ * @brief 释放任务对象资源
+ * @param task 要释放的任务对象指针
+ */
+static inline void task_free(task_t *task);
+
+/**
+ * @brief 释放任务链表中所有任务
+ * @param tasks 任务链表头指针
+ */
+static inline void tasks_free(task_t *tasks);
+
+/**
+ * @brief NNG异步I/O回调函数
+ * @param arg 用户参数(任务对象指针)
+ */
+static void task_cb(void *arg);
+
+/**
+ * @brief 处理发布任务
+ * @param task 任务对象指针
+ * @param client MQTT客户端对象指针
+ */
+static void task_handle_pub(task_t *task, neu_mqtt_client_t *client);
+
+/**
+ * @brief 处理订阅任务
+ * @param task 任务对象指针
+ * @param client MQTT客户端对象指针
+ */
+static void task_handle_sub(task_t *task, neu_mqtt_client_t *client);
+
+/**
+ * @brief 处理取消订阅任务
+ * @param task 任务对象指针
+ * @param client MQTT客户端对象指针
+ */
 static void task_handle_unsub(task_t *task, neu_mqtt_client_t *client);
+
+/**
+ * @brief 处理接收任务
+ * @param task 任务对象指针
+ * @param client MQTT客户端对象指针
+ */
 static void task_handle_recv(task_t *task, neu_mqtt_client_t *client);
 
-static subscription_t *       subscription_new(neu_mqtt_client_t *client,
-                                               neu_mqtt_qos_e qos, const char *topic,
-                                               neu_mqtt_client_subscribe_cb_t cb,
-                                               void *                         data);
-static inline void            subscription_free(subscription_t *subscription);
-static inline subscription_t *subscription_ref(subscription_t *subscription);
-static inline void            subscriptions_free(subscription_t *subscriptions);
+/**
+ * @brief 创建新的订阅对象
+ * @param client MQTT客户端对象指针
+ * @param qos 服务质量等级
+ * @param topic 订阅的主题
+ * @param cb 接收消息回调函数
+ * @param data 用户自定义数据
+ * @return 成功返回订阅对象指针，失败返回NULL
+ */
+static subscription_t *subscription_new(neu_mqtt_client_t *client,
+                                        neu_mqtt_qos_e qos, const char *topic,
+                                        neu_mqtt_client_subscribe_cb_t cb,
+                                        void                          *data);
 
+/**
+ * @brief 释放订阅对象资源
+ * @param subscription 要释放的订阅对象指针
+ */
+static inline void subscription_free(subscription_t *subscription);
+
+/**
+ * @brief 增加订阅对象引用计数
+ * @param subscription 订阅对象指针
+ * @return 返回订阅对象指针
+ */
+static inline subscription_t *subscription_ref(subscription_t *subscription);
+
+/**
+ * @brief 释放订阅哈希表中所有订阅对象
+ * @param subscriptions 订阅哈希表头指针
+ */
+static inline void subscriptions_free(subscription_t *subscriptions);
+
+/**
+ * @brief MQTT消息接收回调函数
+ * @param arg 用户参数(MQTT客户端对象指针)
+ */
 static void recv_cb(void *arg);
-static int  resub_cb(void *data);
+
+/**
+ * @brief 重新订阅回调函数
+ * @param data 用户数据(MQTT客户端对象指针)
+ * @return 成功返回0，失败返回错误码
+ */
+static int resub_cb(void *data);
+
+/**
+ * @brief 连接断开回调函数
+ * @param p NNG管道对象
+ * @param ev NNG管道事件
+ * @param arg 用户参数(MQTT客户端对象指针)
+ */
 static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
+
+/**
+ * @brief 连接建立回调函数
+ * @param p NNG管道对象
+ * @param ev NNG管道事件
+ * @param arg 用户参数(MQTT客户端对象指针)
+ */
 static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
 
+/**
+ * @brief 从客户端分配一个任务对象
+ * @param client MQTT客户端对象指针
+ * @return 成功返回任务对象指针，失败返回NULL
+ */
 static inline task_t *client_alloc_task(neu_mqtt_client_t *client);
-static inline void    client_free_task(neu_mqtt_client_t *client, task_t *task);
-static inline size_t  client_task_free_list_len(neu_mqtt_client_t *client);
-static inline void    client_add_subscription(neu_mqtt_client_t *client,
-                                              subscription_t *   sub);
-static int            client_send_sub_msg(neu_mqtt_client_t *client,
-                                          subscription_t *   subscription);
-static inline void    client_start_recv(neu_mqtt_client_t *client);
-static inline int     client_start_timer(neu_mqtt_client_t *client);
-static inline int     client_make_url(neu_mqtt_client_t *client);
 
+/**
+ * @brief 释放任务对象回客户端的空闲列表
+ * @param client MQTT客户端对象指针
+ * @param task 要释放的任务对象指针
+ */
+static inline void client_free_task(neu_mqtt_client_t *client, task_t *task);
+
+/**
+ * @brief 获取客户端空闲任务列表长度
+ * @param client MQTT客户端对象指针
+ * @return 空闲任务列表长度
+ */
+static inline size_t client_task_free_list_len(neu_mqtt_client_t *client);
+
+/**
+ * @brief 向客户端添加订阅
+ * @param client MQTT客户端对象指针
+ * @param sub 订阅对象指针
+ */
+static inline void client_add_subscription(neu_mqtt_client_t *client,
+                                           subscription_t    *sub);
+
+/**
+ * @brief 发送订阅消息
+ * @param client MQTT客户端对象指针
+ * @param subscription 订阅对象指针
+ * @return 成功返回0，失败返回错误码
+ */
+static int client_send_sub_msg(neu_mqtt_client_t *client,
+                               subscription_t    *subscription);
+
+/**
+ * @brief 启动客户端接收
+ * @param client MQTT客户端对象指针
+ */
+static inline void client_start_recv(neu_mqtt_client_t *client);
+
+/**
+ * @brief 启动重连定时器
+ * @param client MQTT客户端对象指针
+ * @return 成功返回0，失败返回错误码
+ */
+static inline int client_start_timer(neu_mqtt_client_t *client);
+
+/**
+ * @brief 构建连接URL
+ * @param client MQTT客户端对象指针
+ * @return 成功返回0，失败返回错误码
+ */
+static inline int client_make_url(neu_mqtt_client_t *client);
+
+/**
+ * @brief 将Neuron MQTT版本枚举转换为NNG MQTT版本值
+ *
+ * @param v Neuron MQTT版本枚举
+ * @return NNG MQTT版本值
+ */
 static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
 {
     switch (v) {
@@ -179,14 +343,24 @@ static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
     }
 }
 
+/**
+ * @brief 创建新的任务对象
+ *
+ * 分配内存并初始化任务对象的异步I/O
+ *
+ * @param client MQTT客户端对象指针
+ * @return 成功返回任务对象指针，失败返回NULL
+ */
 static inline task_t *task_new(neu_mqtt_client_t *client)
 {
+    /* 分配任务对象内存并初始化为0 */
     task_t *task = calloc(1, sizeof(*task));
     if (NULL == task) {
         log(error, "calloc task fail");
         return NULL;
     }
 
+    /* 创建NNG异步I/O对象 */
     int rv = 0;
     if ((rv = nng_aio_alloc(&task->aio, task_cb, task)) != 0) {
         log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
@@ -194,11 +368,19 @@ static inline task_t *task_new(neu_mqtt_client_t *client)
         return NULL;
     }
 
+    /* 设置客户端对象作为异步I/O的输入参数 */
     nng_aio_set_input(task->aio, 0, client);
 
     return task;
 }
 
+/**
+ * @brief 释放任务对象资源
+ *
+ * 释放异步I/O对象和任务对象本身的内存
+ *
+ * @param task 要释放的任务对象指针
+ */
 static inline void task_free(task_t *task)
 {
     // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
@@ -207,9 +389,17 @@ static inline void task_free(task_t *task)
     free(task);
 }
 
+/**
+ * @brief 释放任务链表中所有任务
+ *
+ * 遍历链表并释放每个任务对象
+ *
+ * @param tasks 任务链表头指针
+ */
 static inline void tasks_free(task_t *tasks)
 {
     task_t *task = NULL, *tmp = NULL;
+    /* 安全遍历链表，删除并释放每个节点 */
     DL_FOREACH_SAFE(tasks, task, tmp)
     {
         DL_DELETE(tasks, task);
@@ -217,10 +407,17 @@ static inline void tasks_free(task_t *tasks)
     }
 }
 
+/**
+ * @brief NNG异步I/O回调函数
+ *
+ * 当异步操作完成时被调用，根据任务类型执行相应的处理
+ *
+ * @param arg 用户参数(任务对象指针)
+ */
 static void task_cb(void *arg)
 {
-    task_t *           task   = arg;
-    nng_aio *          aio    = task->aio;
+    task_t            *task   = arg;
+    nng_aio           *aio    = task->aio;
     neu_mqtt_client_t *client = nng_aio_get_input(aio, 0);
 
     if (TASK_PUB == task->kind) {
@@ -355,7 +552,7 @@ static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
 static subscription_t *subscription_new(neu_mqtt_client_t *client,
                                         neu_mqtt_qos_e qos, const char *topic,
                                         neu_mqtt_client_subscribe_cb_t cb,
-                                        void *                         data)
+                                        void                          *data)
 {
     (void) client;
     subscription_t *subscription = NULL;
@@ -408,7 +605,7 @@ static inline void subscriptions_free(subscription_t *subscriptions)
 static int resub_cb(void *data)
 {
     neu_mqtt_client_t *client = data;
-    subscription_t *   sub    = NULL;
+    subscription_t    *sub    = NULL;
 
     nng_mtx_lock(client->mtx);
     if (client->connected &&
@@ -430,9 +627,9 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *             client = arg;
+    neu_mqtt_client_t              *client = arg;
     neu_mqtt_client_connection_cb_t cb     = NULL;
-    void *                          data   = NULL;
+    void                           *data   = NULL;
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_CONNECT_REASON, &reason);
@@ -457,10 +654,10 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *             client = arg;
-    subscription_t *                sub    = NULL;
+    neu_mqtt_client_t              *client = arg;
+    subscription_t                 *sub    = NULL;
     neu_mqtt_client_connection_cb_t cb     = NULL;
-    void *                          data   = NULL;
+    void                           *data   = NULL;
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_DISCONNECT_REASON, &reason);
@@ -470,7 +667,10 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     client->connected = false;
     cb                = client->disconnect_cb;
     data              = client->disconnect_cb_data;
-    HASH_LOOP(hh, client->subscriptions, sub) { sub->ack = false; }
+    HASH_LOOP(hh, client->subscriptions, sub)
+    {
+        sub->ack = false;
+    }
     client->suback_count = 0;
     nng_mtx_unlock(client->mtx);
 
@@ -482,9 +682,9 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 static void recv_cb(void *arg)
 {
     int                rv           = 0;
-    subscription_t *   subscription = arg;
+    subscription_t    *subscription = arg;
     neu_mqtt_client_t *client       = arg;
-    nng_aio *          aio          = client->recv_aio;
+    nng_aio           *aio          = client->recv_aio;
 
     if (0 != (rv = nng_aio_result(aio))) {
         log(error, "mqtt client recv error: %s", nng_strerror(rv));
@@ -513,7 +713,7 @@ static void recv_cb(void *arg)
     }
 
     uint32_t    payload_len;
-    uint8_t *   payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
+    uint8_t    *payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
     uint32_t    topic_len;
     const char *topic = nng_mqtt_msg_get_publish_topic(msg, &topic_len);
     uint8_t     qos   = nng_mqtt_msg_get_publish_qos(msg);
@@ -605,7 +805,7 @@ static inline size_t client_task_free_list_len(neu_mqtt_client_t *client)
 }
 
 static inline void client_add_subscription(neu_mqtt_client_t *client,
-                                           subscription_t *   sub)
+                                           subscription_t    *sub)
 {
     subscription_t *old = NULL;
 
@@ -618,7 +818,7 @@ static inline void client_add_subscription(neu_mqtt_client_t *client,
 }
 
 static inline void client_del_subscription(neu_mqtt_client_t *client,
-                                           subscription_t *   sub)
+                                           subscription_t    *sub)
 {
     HASH_DEL(client->subscriptions, sub);
     if (sub->ack) {
@@ -628,7 +828,7 @@ static inline void client_del_subscription(neu_mqtt_client_t *client,
 }
 
 static int client_send_sub_msg(neu_mqtt_client_t *client,
-                               subscription_t *   subscription)
+                               subscription_t    *subscription)
 {
     int      rv      = 0;
     nng_msg *sub_msg = NULL;
@@ -665,7 +865,7 @@ static int client_send_sub_msg(neu_mqtt_client_t *client,
 }
 
 static int client_send_unsub_msg(neu_mqtt_client_t *client,
-                                 subscription_t *   subscription)
+                                 subscription_t    *subscription)
 {
     int      rv      = 0;
     nng_msg *sub_msg = NULL;
@@ -706,7 +906,7 @@ static inline void client_start_recv(neu_mqtt_client_t *client)
 
 static inline int client_start_timer(neu_mqtt_client_t *client)
 {
-    neu_events_t *     events = NULL;
+    neu_events_t      *events = NULL;
     neu_event_timer_t *timer  = NULL;
 
     if (client->events) {
@@ -739,7 +939,7 @@ static inline int client_start_timer(neu_mqtt_client_t *client)
 
 static inline int client_make_url(neu_mqtt_client_t *client)
 {
-    char *      url = NULL;
+    char       *url = NULL;
     const char *fmt = NULL;
 
     if (client->tls_cfg) {
@@ -799,7 +999,7 @@ static inline nng_mqtt_sqlite_option *
 alloc_sqlite_config(neu_mqtt_client_t *client)
 {
     int                     rv;
-    char *                  db  = NULL;
+    char                   *db  = NULL;
     nng_mqtt_sqlite_option *cfg = NULL;
     const mqtt_buf          client_id =
         nng_mqtt_msg_get_connect_client_id(client->conn_msg);
@@ -832,18 +1032,27 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     return cfg;
 }
 
+/**
+ * @brief 创建新的MQTT客户端对象
+ *
+ * @param version MQTT协议版本
+ * @return 成功返回MQTT客户端对象指针，失败返回NULL
+ */
 neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
 {
+    /* 分配客户端对象内存并初始化为0 */
     neu_mqtt_client_t *client = calloc(1, sizeof(*client));
     if (NULL == client) {
         return NULL;
     }
 
+    /* 创建互斥锁 */
     if (0 != nng_mtx_alloc(&client->mtx)) {
         free(client);
         return NULL;
     }
 
+    /* 创建连接消息 */
     client->conn_msg = alloc_conn_msg(client, version);
     if (NULL == client->conn_msg) {
         nng_mtx_free(client->mtx);
@@ -851,6 +1060,7 @@ neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
         return NULL;
     }
 
+    /* 设置客户端参数默认值 */
     client->version    = version;
     client->retry      = NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT;
     client->task_limit = 1024;
@@ -858,14 +1068,24 @@ neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
     return client;
 }
 
+/**
+ * @brief 从服务器地址和端口创建MQTT客户端
+ *
+ * @param host 服务器主机名或IP地址
+ * @param port 服务器端口
+ * @param version MQTT协议版本
+ * @return 成功返回MQTT客户端对象指针，失败返回NULL
+ */
 neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
                                              neu_mqtt_version_e version)
 {
+    /* 创建新的MQTT客户端 */
     neu_mqtt_client_t *client = neu_mqtt_client_new(version);
     if (NULL == client) {
         return NULL;
     }
 
+    /* 设置服务器地址 */
     if (0 != neu_mqtt_client_set_addr(client, host, port)) {
         neu_mqtt_client_free(client);
         return NULL;
@@ -874,30 +1094,53 @@ neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
     return client;
 }
 
+/**
+ * @brief 释放MQTT客户端对象资源
+ *
+ * 释放所有分配的资源，包括TLS配置、SQLite配置、订阅、任务等
+ *
+ * @param client MQTT客户端对象指针
+ */
 void neu_mqtt_client_free(neu_mqtt_client_t *client)
 {
     if (client) {
+        /* 释放TLS配置 */
         if (client->tls_cfg) {
             nng_tls_config_free(client->tls_cfg);
         }
+        /* 释放SQLite持久化配置 */
         if (client->sqlite_cfg) {
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
         }
+        /* 释放接收异步I/O */
         nng_aio_free(client->recv_aio);
+        /* 释放所有订阅 */
         subscriptions_free(client->subscriptions);
+        /* 释放任务空闲列表 */
         tasks_free(client->task_free_list);
+        /* 释放连接消息 */
         nng_msg_free(client->conn_msg);
+        /* 释放URL和主机名 */
         free(client->url);
         free(client->host);
+        /* 释放互斥锁 */
         nng_mtx_free(client->mtx);
+        /* 释放客户端对象本身 */
         free(client);
     }
 }
 
+/**
+ * @brief 检查MQTT客户端是否已打开
+ *
+ * @param client MQTT客户端对象指针
+ * @return 如果客户端已打开返回true，否则返回false
+ */
 bool neu_mqtt_client_is_open(neu_mqtt_client_t *client)
 {
     bool open = false;
 
+    /* 线程安全地访问客户端状态 */
     nng_mtx_lock(client->mtx);
     open = client->open;
     nng_mtx_unlock(client->mtx);
@@ -986,9 +1229,9 @@ int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
     return 0;
 }
 
-int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
+int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t              *client,
                                    neu_mqtt_client_connection_cb_t cb,
-                                   void *                          data)
+                                   void                           *data)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1000,9 +1243,9 @@ int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
     return 0;
 }
 
-int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
+int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t              *client,
                                       neu_mqtt_client_connection_cb_t cb,
-                                      void *                          data)
+                                      void                           *data)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1160,7 +1403,7 @@ int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
 }
 
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
-                                      zlog_category_t *  cat)
+                                      zlog_category_t   *cat)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1266,7 +1509,7 @@ error:
 int neu_mqtt_client_close(neu_mqtt_client_t *client)
 {
     int                rv     = 0;
-    neu_events_t *     events = NULL;
+    neu_events_t      *events = NULL;
     neu_event_timer_t *timer  = NULL;
 
     nng_mtx_lock(client->mtx);
@@ -1307,14 +1550,27 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     return 0;
 }
 
+/**
+ * @brief 发布MQTT消息
+ *
+ * @param client MQTT客户端对象指针
+ * @param qos 服务质量等级
+ * @param topic 发布的主题
+ * @param payload 消息负载数据
+ * @param len 负载数据长度
+ * @param data 用户自定义数据，会传递给回调函数
+ * @param cb 发布完成回调函数
+ * @return 成功返回0，失败返回-1
+ */
 int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                             char *topic, uint8_t *payload, uint32_t len,
                             void *data, neu_mqtt_client_publish_cb_t cb)
 {
     int      rv      = 0;
     nng_msg *pub_msg = NULL;
-    task_t * task    = NULL;
+    task_t  *task    = NULL;
 
+    /* 分配MQTT消息 */
     if (0 != (rv = nng_mqtt_msg_alloc(&pub_msg, 0))) {
         log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
         return -1;

@@ -16,6 +16,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+
+/**
+ * @file manager.c
+ * @brief Neuron系统管理器实现
+ *
+ * 本文件实现了Neuron系统的核心管理器，负责节点、插件、订阅和模板的管理。
+ * 管理器提供了一个UDP服务器，用于节点间通信，并处理来自各个节点的请求。
+ */
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,11 +58,30 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
 
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data);
-inline static void forward_msg(neu_manager_t *     manager,
+/**
+ * @brief 转发消息
+ *
+ * 将消息转发给指定的节点
+ *
+ * @param manager 管理器实例指针
+ * @param header 消息头
+ * @param node 目标节点名称
+ */
+inline static void forward_msg(neu_manager_t      *manager,
                                neu_reqresp_head_t *header, const char *node);
-inline static void forward_msg_copy(neu_manager_t *     manager,
+
+/**
+ * @brief 复制并转发消息
+ *
+ * 复制消息并转发给指定的节点
+ *
+ * @param manager 管理器实例指针
+ * @param header 消息头
+ * @param node 目标节点名称
+ */
+inline static void forward_msg_copy(neu_manager_t      *manager,
                                     neu_reqresp_head_t *header,
-                                    const char *        node);
+                                    const char         *node);
 
 // inline static nng_msg *trans_data_dup(nng_msg *msg);
 // inline static void     trans_data_free(nng_msg *msg);
@@ -62,26 +89,79 @@ inline static void forward_msg_copy(neu_manager_t *     manager,
 // inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
 // nng_pipe pipe, msg_dup dup);
 
-inline static void notify_monitors(neu_manager_t *    manager,
+/**
+ * @brief 通知所有监控节点
+ *
+ * 将事件通知发送给所有监控节点
+ *
+ * @param manager 管理器实例指针
+ * @param event 事件类型
+ * @param data 事件数据
+ */
+inline static void notify_monitors(neu_manager_t     *manager,
                                    neu_reqresp_type_e event, void *data);
+
+/**
+ * @brief 启动静态适配器
+ *
+ * 启动预定义的静态适配器
+ *
+ * @param manager 管理器实例指针
+ * @param name 适配器名称
+ */
 static void start_static_adapter(neu_manager_t *manager, const char *name);
-static int  update_timestamp(void *usr_data);
+
+/**
+ * @brief 更新时间戳
+ *
+ * 定时更新系统时间戳
+ *
+ * @param usr_data 用户数据，指向管理器实例
+ * @return 返回处理结果
+ */
+static int update_timestamp(void *usr_data);
+
+/**
+ * @brief 启动单例适配器
+ *
+ * 启动只允许单个实例的适配器
+ *
+ * @param manager 管理器实例指针
+ * @param name 适配器名称
+ * @param plugin_name 插件名称
+ * @param display 是否在界面上显示
+ */
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display);
 
+/**
+ * @brief 获取可用端口号
+ *
+ * 生成一个递增的端口号，从10000开始
+ *
+ * @return 返回一个可用的端口号
+ */
 uint16_t neu_manager_get_port()
 {
     static uint16_t port = 10000;
     return port++;
 }
 
+/**
+ * @brief 创建管理器实例
+ *
+ * 创建并初始化Neuron系统管理器，包括事件循环、插件管理器、节点管理器、
+ * 订阅管理器和模板管理器等组件，并启动必要的服务。
+ *
+ * @return 返回创建的管理器实例指针
+ */
 neu_manager_t *neu_manager_create()
 {
     int                  rv      = 0;
-    neu_manager_t *      manager = calloc(1, sizeof(neu_manager_t));
+    neu_manager_t       *manager = calloc(1, sizeof(neu_manager_t));
     neu_event_io_param_t param   = {
-        .usr_data = (void *) manager,
-        .cb       = manager_loop,
+          .usr_data = (void *) manager,
+          .cb       = manager_loop,
     };
 
     neu_event_timer_param_t timestamp_timer_param = {
@@ -152,6 +232,14 @@ neu_manager_t *neu_manager_create()
     return manager;
 }
 
+/**
+ * @brief 销毁管理器实例
+ *
+ * 清理和释放管理器实例占用的所有资源，包括停止所有节点、
+ * 释放各个管理器组件和关闭通信套接字。
+ *
+ * @param manager 管理器实例指针
+ */
 void neu_manager_destroy(neu_manager_t *manager)
 {
     neu_req_node_init_t uninit = { 0 };
@@ -193,12 +281,22 @@ void neu_manager_destroy(neu_manager_t *manager)
     nlog_notice("manager exit");
 }
 
+/**
+ * @brief 管理器主循环回调函数
+ *
+ * 处理UDP通信的事件循环回调函数，接收来自各个节点的消息并进行处理。
+ *
+ * @param type 事件类型
+ * @param fd 套接字文件描述符
+ * @param usr_data 用户数据，指向管理器实例
+ * @return 返回处理结果
+ */
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 {
     int                 rv       = 0;
-    neu_manager_t *     manager  = (neu_manager_t *) usr_data;
+    neu_manager_t      *manager  = (neu_manager_t *) usr_data;
     struct sockaddr_in  src_addr = { 0 };
-    neu_msg_t *         msg      = NULL;
+    neu_msg_t          *msg      = NULL;
     neu_reqresp_head_t *header   = NULL;
 
     if (type == NEU_EVENT_IO_CLOSED || type == NEU_EVENT_IO_HUP) {
@@ -274,7 +372,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_PLUGIN: {
-        UT_array *            plugins = neu_manager_get_plugins(manager);
+        UT_array             *plugins = neu_manager_get_plugins(manager);
         neu_resp_get_plugin_t resp    = { .plugins = plugins };
 
         header->type = NEU_RESP_GET_PLUGIN;
@@ -577,7 +675,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_NODE: {
         neu_req_del_node_t *cmd   = (neu_req_del_node_t *) &header[1];
         neu_resp_error_t    error = { 0 };
-        neu_adapter_t *     adapter =
+        neu_adapter_t      *adapter =
             neu_node_manager_find(manager->node_manager, cmd->node);
         bool single =
             neu_node_manager_is_single(manager->node_manager, cmd->node);
@@ -662,7 +760,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_GET_NODE: {
         neu_req_get_node_t *cmd = (neu_req_get_node_t *) &header[1];
-        UT_array *          nodes =
+        UT_array           *nodes =
             neu_manager_get_nodes(manager, cmd->type, cmd->plugin, cmd->node);
         neu_resp_get_node_t resp = { .nodes = nodes };
 
@@ -787,7 +885,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
         {
             neu_resp_get_sub_driver_tags_info_t in = { 0 };
-            neu_adapter_t *                     driver =
+            neu_adapter_t                      *driver =
                 neu_node_manager_find(manager->node_manager, info->driver);
             assert(driver != NULL);
 
@@ -1193,7 +1291,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     return 0;
 }
 
-inline static void forward_msg(neu_manager_t *     manager,
+inline static void forward_msg(neu_manager_t      *manager,
                                neu_reqresp_head_t *header, const char *node)
 {
     struct sockaddr_in addr =
@@ -1214,24 +1312,24 @@ inline static void forward_msg(neu_manager_t *     manager,
     }
 }
 
-inline static void forward_msg_copy(neu_manager_t *     manager,
+inline static void forward_msg_copy(neu_manager_t      *manager,
                                     neu_reqresp_head_t *header,
-                                    const char *        node)
+                                    const char         *node)
 {
     neu_msg_t *msg = neu_msg_copy((neu_msg_t *) header);
     forward_msg(manager, neu_msg_get_header(msg), node);
 }
 
 struct notify_monitor_ctx {
-    neu_manager_t *    manager;
+    neu_manager_t     *manager;
     neu_reqresp_type_e event;
-    void *             data;
+    void              *data;
 };
 
 static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
 {
     struct notify_monitor_ctx *ctx     = arg;
-    void *                     data    = NULL;
+    void                      *data    = NULL;
     neu_req_node_setting_t     setting = { 0 };
     neu_req_add_tag_t          mod_tag = { 0 };
     neu_req_del_tag_t          del_tag = { 0 };
@@ -1293,7 +1391,7 @@ static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
     return 0;
 }
 
-inline static void notify_monitors(neu_manager_t *    manager,
+inline static void notify_monitors(neu_manager_t     *manager,
                                    neu_reqresp_type_e event, void *data)
 {
     struct notify_monitor_ctx ctx = {
@@ -1315,12 +1413,20 @@ inline static void notify_monitors(neu_manager_t *    manager,
     }
 }
 
+/**
+ * @brief 启动静态适配器
+ *
+ * 加载并初始化静态适配器（内置插件）
+ *
+ * @param manager 管理器实例指针
+ * @param name 适配器名称
+ */
 static void start_static_adapter(neu_manager_t *manager, const char *name)
 {
-    neu_adapter_t *       adapter      = NULL;
+    neu_adapter_t        *adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
-        .name = name,
+           .name = name,
     };
 
     neu_plugin_manager_load_static(manager->plugin_manager, name, &instance);
@@ -1333,13 +1439,23 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     neu_adapter_start(adapter);
 }
 
+/**
+ * @brief 启动单例适配器
+ *
+ * 加载并初始化单例适配器，每个插件只允许有一个实例
+ *
+ * @param manager 管理器实例指针
+ * @param name 适配器名称
+ * @param plugin_name 插件名称
+ * @param display 是否在界面上显示
+ */
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display)
 {
-    neu_adapter_t *       adapter      = NULL;
+    neu_adapter_t        *adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
-        .name = name,
+           .name = name,
     };
 
     if (0 !=
@@ -1361,6 +1477,15 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
     neu_adapter_start_single(adapter);
 }
 
+/**
+ * @brief 回复消息
+ *
+ * 向消息发送者发送回复消息
+ *
+ * @param manager 管理器实例指针
+ * @param header 原请求消息头
+ * @param data 回复数据
+ */
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data)
 {
@@ -1369,7 +1494,7 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         neu_node_manager_get_addr(manager->node_manager, header->receiver);
 
     neu_reqresp_type_e t                           = header->type;
-    void *             ctx                         = header->ctx;
+    void              *ctx                         = header->ctx;
     char               receiver[NEU_NODE_NAME_LEN] = { 0 };
     strncpy(receiver, header->receiver, sizeof(receiver));
 
@@ -1385,6 +1510,14 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
     }
 }
 
+/**
+ * @brief 更新全局时间戳
+ *
+ * 定时更新系统全局时间戳
+ *
+ * @param usr_data 用户数据（未使用）
+ * @return 始终返回0
+ */
 static int update_timestamp(void *usr_data)
 {
     (void) usr_data;

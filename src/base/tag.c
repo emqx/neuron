@@ -26,98 +26,171 @@ config_ **/
 #include "errcodes.h"
 #include "tag.h"
 
+/**
+ * @brief 从标签的meta字段获取静态值指针
+ *
+ * @param tag 标签结构体
+ * @param out 输出的值指针
+ */
 #define GET_STATIC_VALUE_PTR(tag, out)                      \
     do {                                                    \
         memcpy(&(out), (tag)->meta, sizeof(neu_value_u *)); \
     } while (0)
 
+/**
+ * @brief 设置标签的静态值指针到meta字段
+ *
+ * @param tag 标签结构体
+ * @param ptr 值指针
+ */
 #define SET_STATIC_VALUE_PTR(tag, ptr)                      \
     do {                                                    \
         memcpy((tag)->meta, &(ptr), sizeof(neu_value_u *)); \
     } while (0)
 
+/**
+ * @brief 复制标签数组元素
+ *
+ * 用于UT_array的复制回调函数，深度复制标签结构体
+ *
+ * @param _dst 目标指针
+ * @param _src 源指针
+ */
 static void tag_array_copy(void *_dst, const void *_src)
 {
     neu_datatag_t *dst = (neu_datatag_t *) _dst;
     neu_datatag_t *src = (neu_datatag_t *) _src;
 
-    dst->type        = src->type;
-    dst->attribute   = src->attribute;
-    dst->precision   = src->precision;
-    dst->decimal     = src->decimal;
-    dst->option      = src->option;
-    dst->address     = strdup(src->address);
-    dst->name        = strdup(src->name);
-    dst->description = strdup(src->description);
+    /* 复制基本属性 */
+    dst->type        = src->type;                /* 数据类型 */
+    dst->attribute   = src->attribute;           /* 标签属性 */
+    dst->precision   = src->precision;           /* 精度 */
+    dst->decimal     = src->decimal;             /* 小数位数 */
+    dst->option      = src->option;              /* 选项 */
+    dst->address     = strdup(src->address);     /* 复制地址字符串 */
+    dst->name        = strdup(src->name);        /* 复制名称字符串 */
+    dst->description = strdup(src->description); /* 复制描述字符串 */
 
+    /* 处理静态标签特有的值 */
     if (NEU_ATTRIBUTE_STATIC & src->attribute) {
         neu_value_u *dst_val = NULL, *src_val = NULL;
-        GET_STATIC_VALUE_PTR(src, src_val);
+        GET_STATIC_VALUE_PTR(src, src_val); /* 获取源标签的静态值指针 */
         if (src_val && (dst_val = calloc(1, sizeof(*dst_val)))) {
+            /* 分配并复制静态值内存 */
             memcpy(dst_val, src_val, sizeof(*dst_val));
-            SET_STATIC_VALUE_PTR(dst, dst_val);
+            SET_STATIC_VALUE_PTR(dst, dst_val); /* 设置目标标签的静态值指针 */
         } else {
+            /* 内存分配失败或源值为空，清零meta字段 */
             memset(dst->meta, 0, sizeof(dst->meta));
         }
     } else {
+        /* 非静态标签，直接复制meta字段 */
         memcpy(dst->meta, src->meta, sizeof(src->meta));
     }
 }
 
+/**
+ * @brief 释放标签数组元素
+ *
+ * 用于UT_array的释放回调函数，释放标签结构体中的动态分配内存
+ *
+ * @param _elt 要释放的元素指针
+ */
 static void tag_array_free(void *_elt)
 {
     neu_datatag_t *elt = (neu_datatag_t *) _elt;
 
+    /* 释放字符串字段 */
     free(elt->name);
     free(elt->address);
     free(elt->description);
 
+    /* 处理静态标签特有的值 */
     if (NEU_ATTRIBUTE_STATIC & elt->attribute) {
         neu_value_u *cur = NULL;
-        GET_STATIC_VALUE_PTR(elt, cur);
-        free(cur);
-        memset(elt->meta, 0, sizeof(elt->meta));
+        GET_STATIC_VALUE_PTR(elt, cur);          /* 获取静态值指针 */
+        free(cur);                               /* 释放静态值内存 */
+        memset(elt->meta, 0, sizeof(elt->meta)); /* 清零meta字段 */
     }
 }
 
+/**
+ * @brief 标签数组的UT_array接口定义
+ */
 static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,
                           tag_array_free };
 
+/**
+ * @brief 获取标签数组的UT_array接口定义
+ *
+ * @return 标签数组的UT_icd指针
+ */
 UT_icd *neu_tag_get_icd()
 {
     return &tag_icd;
 }
 
+/**
+ * @brief 复制创建一个新的标签
+ *
+ * @param tag 源标签
+ * @return 新创建的标签副本
+ */
 neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag)
 {
     neu_datatag_t *new = calloc(1, sizeof(*new));
-    tag_array_copy(new, tag);
+    tag_array_copy(new, tag); /* 使用数组复制函数复制内容 */
     return new;
 }
 
+/**
+ * @brief 将一个标签的内容复制到另一个已存在的标签
+ *
+ * 先释放目标标签中的动态资源，再复制源标签的内容
+ *
+ * @param tag 目标标签
+ * @param other 源标签
+ */
 void neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other)
 {
     if (tag) {
-        tag_array_free(tag);
-        tag_array_copy(tag, other);
+        tag_array_free(tag);        /* 释放原有资源 */
+        tag_array_copy(tag, other); /* 复制新内容 */
     }
 }
 
+/**
+ * @brief 清理标签内部资源但不释放标签结构本身
+ *
+ * @param tag 要清理的标签
+ */
 void neu_tag_fini(neu_datatag_t *tag)
 {
     if (tag) {
-        tag_array_free(tag);
+        tag_array_free(tag); /* 释放标签内部资源 */
     }
 }
 
+/**
+ * @brief 释放标签及其资源
+ *
+ * @param tag 要释放的标签
+ */
 void neu_tag_free(neu_datatag_t *tag)
 {
     if (tag) {
-        tag_array_free(tag);
-        free(tag);
+        tag_array_free(tag); /* 释放标签内部资源 */
+        free(tag);           /* 释放标签结构本身 */
     }
 }
 
+/**
+ * @brief 在字符串中查找最后一个指定字符的位置
+ *
+ * @param str 要搜索的字符串
+ * @param character 要查找的字符
+ * @return 找到则返回指向该字符的指针，未找到返回NULL
+ */
 static char *find_last_character(char *str, char character)
 {
     char *find = strchr(str, character);
@@ -131,18 +204,29 @@ static char *find_last_character(char *str, char character)
     return ret;
 }
 
-int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
+/**
+ * @brief 解析标签地址中的选项参数
+ *
+ * 从标签地址字符串中提取类型特定的选项参数
+ *
+ * @param datatag 数据标签
+ * @param option 用于存储解析结果的选项结构
+ * @return 成功返回0，失败返回-1
+ */
+int neu_datatag_parse_addr_option(const neu_datatag_t       *datatag,
                                   neu_datatag_addr_option_u *option)
 {
     int ret = 0;
 
     switch (datatag->type) {
     case NEU_TYPE_BYTES: {
+        /* 查找字节类型地址中的长度选项（格式如 "地址.长度"） */
         char *op = find_last_character(datatag->address, '.');
 
         if (op == NULL) {
-            ret = -1;
+            ret = -1; /* 未找到分隔符 */
         } else {
+            /* 解析字节长度 */
             int n = sscanf(op, ".%hhd", &option->bytes.length);
             if (n != 1 || option->string.length <= 0) {
                 ret = -1;
@@ -784,7 +868,7 @@ neu_datatag_t *neu_ndriver_tag_dup(const neu_ndriver_tag_t *tag)
     return new;
 }
 
-void neu_ndriver_tag_copy(neu_ndriver_tag_t *      tag,
+void neu_ndriver_tag_copy(neu_ndriver_tag_t       *tag,
                           const neu_ndriver_tag_t *other)
 {
     ndriver_tag_dtor(tag);

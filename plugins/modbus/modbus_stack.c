@@ -23,20 +23,42 @@
 #include "modbus_req.h"
 #include "modbus_stack.h"
 
+/**
+ * modbus_stack.c
+ * 本文件实现了 Modbus 协议栈的核心功能，包括：
+ * - 协议栈的创建和销毁
+ * - 数据收发操作
+ * - 读写命令的处理
+ * - TCP/RTU 协议的支持
+ */
+
+/**
+ * Modbus 协议栈结构体
+ */
 struct modbus_stack {
-    void *                  ctx;
-    modbus_stack_send       send_fn;
-    modbus_stack_value      value_fn;
-    modbus_stack_write_resp write_resp;
+    void                   *ctx;        // 上下文指针
+    modbus_stack_send       send_fn;    // 发送数据的回调函数
+    modbus_stack_value      value_fn;   // 处理值的回调函数
+    modbus_stack_write_resp write_resp; // 处理写响应的回调函数
 
-    modbus_protocol_e protocol;
-    uint16_t          read_seq;
-    uint16_t          write_seq;
+    modbus_protocol_e protocol;  // 协议类型：TCP 或 RTU
+    uint16_t          read_seq;  // 读请求序列号
+    uint16_t          write_seq; // 写请求序列号
 
-    uint8_t *buf;
-    uint16_t buf_size;
+    uint8_t *buf;      // 数据缓冲区
+    uint16_t buf_size; // 缓冲区大小
 };
 
+/**
+ * 创建 Modbus 协议栈对象
+ *
+ * @param ctx 上下文指针
+ * @param protocol 协议类型：TCP 或 RTU
+ * @param send_fn 发送数据的回调函数
+ * @param value_fn 处理值的回调函数
+ * @param write_resp 处理写响应的回调函数
+ * @return 协议栈对象指针
+ */
 modbus_stack_t *modbus_stack_create(void *ctx, modbus_protocol_e protocol,
                                     modbus_stack_send       send_fn,
                                     modbus_stack_value      value_fn,
@@ -56,12 +78,25 @@ modbus_stack_t *modbus_stack_create(void *ctx, modbus_protocol_e protocol,
     return stack;
 }
 
+/**
+ * 销毁 Modbus 协议栈对象并释放资源
+ *
+ * @param stack 协议栈对象
+ */
 void modbus_stack_destroy(modbus_stack_t *stack)
 {
     free(stack->buf);
     free(stack);
 }
 
+/**
+ * 处理接收到的 Modbus 数据包
+ *
+ * @param stack 协议栈对象
+ * @param slave_id 从站 ID
+ * @param buf 数据缓冲区
+ * @return 成功返回数据包大小，失败返回负数
+ */
 int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
                       neu_protocol_unpack_buf_t *buf)
 {
@@ -94,7 +129,7 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
     case MODBUS_READ_HOLD_REG:
     case MODBUS_READ_INPUT_REG: {
         struct modbus_data data  = { 0 };
-        uint8_t *          bytes = NULL;
+        uint8_t           *bytes = NULL;
         ret                      = modbus_data_unwrap(buf, &data);
         if (ret <= 0) {
             return -1;
@@ -177,6 +212,17 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
     return neu_protocol_unpack_buf_used_size(buf);
 }
 
+/**
+ * 发送 Modbus 读请求
+ *
+ * @param stack 协议栈对象
+ * @param slave_id 从站 ID
+ * @param area Modbus 区域类型
+ * @param start_address 起始地址
+ * @param n_reg 寄存器数量
+ * @param response_size 返回预期响应大小
+ * @return 成功返回发送的字节数，失败返回负数
+ */
 int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                       enum modbus_area area, uint16_t start_address,
                       uint16_t n_reg, uint16_t *response_size)
@@ -238,6 +284,21 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
     return ret;
 }
 
+/**
+ * 发送 Modbus 写请求
+ *
+ * @param stack 协议栈对象
+ * @param req 请求上下文
+ * @param slave_id 从站 ID
+ * @param area Modbus 区域类型
+ * @param start_address 起始地址
+ * @param n_reg 寄存器数量
+ * @param bytes 写入数据
+ * @param n_byte 数据字节数
+ * @param response_size 返回预期响应大小
+ * @param response 是否需要响应
+ * @return 成功返回发送的字节数，失败返回负数
+ */
 int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                        enum modbus_area area, uint16_t start_address,
                        uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,
@@ -314,6 +375,12 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
     return ret;
 }
 
+/**
+ * 判断协议栈是否为 RTU 模式
+ *
+ * @param stack 协议栈对象
+ * @return 如果是 RTU 模式则返回 true，否则返回 false
+ */
 bool modbus_stack_is_rtu(modbus_stack_t *stack)
 {
     return stack->protocol == MODBUS_PROTOCOL_RTU;

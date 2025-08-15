@@ -37,61 +37,148 @@
 #define CMSPAR 010000000000 /* mark or space (stick) parity */
 #endif
 
+/**
+ * @brief TCP客户端结构体
+ *
+ * 用于存储TCP服务器模式下连接的客户端信息
+ */
 struct tcp_client {
-    int                fd;
-    struct sockaddr_in client;
+    int                fd;     /**< 客户端套接字描述符 */
+    struct sockaddr_in client; /**< 客户端地址信息 */
 };
 
+/**
+ * @brief Neuron连接结构体
+ *
+ * 管理各种类型连接(TCP客户端/服务器、串口等)的主要结构体
+ */
 struct neu_conn {
-    neu_conn_param_t param;
-    void *           data;
-    bool             is_connected;
-    bool             stop;
-    bool             connection_ok;
+    neu_conn_param_t param;         /**< 连接参数 */
+    void            *data;          /**< 用户自定义数据 */
+    bool             is_connected;  /**< 连接状态标志 */
+    bool             stop;          /**< 停止标志 */
+    bool             connection_ok; /**< 连接是否正常 */
 
-    neu_conn_callback connected;
-    neu_conn_callback disconnected;
-    bool              callback_trigger;
+    neu_conn_callback connected;        /**< 连接建立回调函数 */
+    neu_conn_callback disconnected;     /**< 连接断开回调函数 */
+    bool              callback_trigger; /**< 回调函数是否已触发 */
 
-    pthread_mutex_t mtx;
+    pthread_mutex_t mtx; /**< 互斥锁，保护连接状态 */
 
-    int  fd;
-    bool block;
+    int  fd;    /**< 连接的文件描述符 */
+    bool block; /**< 阻塞模式标志 */
 
-    neu_conn_state_t state;
+    neu_conn_state_t state; /**< 连接状态统计信息 */
 
+    /**
+     * @brief TCP服务器相关信息
+     */
     struct {
-        struct tcp_client *clients;
-        int                n_client;
-        bool               is_listen;
+        struct tcp_client *clients;   /**< 客户端列表 */
+        int                n_client;  /**< 当前连接的客户端数量 */
+        bool               is_listen; /**< 是否处于监听状态 */
     } tcp_server;
 
-    uint8_t *buf;
-    uint16_t buf_size;
-    uint16_t offset;
+    uint8_t *buf;      /**< 数据缓冲区 */
+    uint16_t buf_size; /**< 缓冲区大小 */
+    uint16_t offset;   /**< 缓冲区偏移量 */
 };
 
+/**
+ * @brief 向TCP服务器添加客户端
+ *
+ * @param conn 连接对象指针
+ * @param fd 客户端套接字描述符
+ * @param client 客户端地址信息
+ */
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
                                        struct sockaddr_in client);
-static void conn_tcp_server_del_client(neu_conn_t *conn, int fd);
-static int  conn_tcp_server_replace_client(neu_conn_t *conn, int fd,
-                                           struct sockaddr_in client);
 
+/**
+ * @brief 从TCP服务器删除客户端
+ *
+ * @param conn 连接对象指针
+ * @param fd 客户端套接字描述符
+ */
+static void conn_tcp_server_del_client(neu_conn_t *conn, int fd);
+
+/**
+ * @brief 替换TCP服务器中的客户端
+ *
+ * 当达到最大连接数时，替换一个客户端
+ *
+ * @param conn 连接对象指针
+ * @param fd 新客户端套接字描述符
+ * @param client 新客户端地址信息
+ * @return 被替换的客户端的套接字描述符，失败返回-1
+ */
+static int conn_tcp_server_replace_client(neu_conn_t *conn, int fd,
+                                          struct sockaddr_in client);
+
+/**
+ * @brief 启动TCP服务器监听
+ *
+ * @param conn 连接对象指针
+ */
 static void conn_tcp_server_listen(neu_conn_t *conn);
+
+/**
+ * @brief 停止TCP服务器监听
+ *
+ * @param conn 连接对象指针
+ */
 static void conn_tcp_server_stop(neu_conn_t *conn);
 
+/**
+ * @brief 建立连接
+ *
+ * 根据连接类型执行相应的连接操作
+ *
+ * @param conn 连接对象指针
+ */
 static void conn_connect(neu_conn_t *conn);
+
+/**
+ * @brief 断开连接
+ *
+ * 关闭当前连接
+ *
+ * @param conn 连接对象指针
+ */
 static void conn_disconnect(neu_conn_t *conn);
 
+/**
+ * @brief 释放连接参数资源
+ *
+ * @param conn 连接对象指针
+ */
 static void conn_free_param(neu_conn_t *conn);
+
+/**
+ * @brief 初始化连接参数
+ *
+ * @param conn 连接对象指针
+ * @param param 连接参数
+ */
 static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param);
 
+/**
+ * @brief 创建新的连接对象
+ *
+ * @param param 连接参数
+ * @param data 用户自定义数据，会传递给回调函数
+ * @param connected 连接建立时的回调函数
+ * @param disconnected 连接断开时的回调函数
+ * @return 成功返回连接对象指针，失败返回NULL
+ */
 neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
                          neu_conn_callback connected,
                          neu_conn_callback disconnected)
 {
+    /* 分配连接对象内存 */
     neu_conn_t *conn = calloc(1, sizeof(neu_conn_t));
 
+    /* 初始化参数 */
     conn_init_param(conn, param);
     conn->is_connected     = false;
     conn->callback_trigger = false;
@@ -99,18 +186,28 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
     conn->disconnected     = disconnected;
     conn->connected        = connected;
 
+    /* 初始化缓冲区 */
     conn->buf_size = 2048;
     conn->buf      = calloc(conn->buf_size, 1);
     conn->offset   = 0;
     conn->stop     = false;
 
+    /* 如果是TCP服务器，启动监听 */
     conn_tcp_server_listen(conn);
 
+    /* 初始化互斥锁 */
     pthread_mutex_init(&conn->mtx, NULL);
 
     return conn;
 }
 
+/**
+ * @brief 停止连接
+ *
+ * 设置停止标志并断开当前连接
+ *
+ * @param conn 连接对象指针
+ */
 void neu_conn_stop(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
@@ -119,6 +216,13 @@ void neu_conn_stop(neu_conn_t *conn)
     pthread_mutex_unlock(&conn->mtx);
 }
 
+/**
+ * @brief 启动连接
+ *
+ * 清除停止标志，允许连接继续工作
+ *
+ * @param conn 连接对象指针
+ */
 void neu_conn_start(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
@@ -126,17 +230,29 @@ void neu_conn_start(neu_conn_t *conn)
     pthread_mutex_unlock(&conn->mtx);
 }
 
+/**
+ * @brief 重新配置连接
+ *
+ * 断开当前连接，释放旧参数，使用新参数重新初始化连接
+ *
+ * @param conn 连接对象指针
+ * @param param 新的连接参数
+ * @return 成功返回重新配置后的连接对象指针
+ */
 neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 {
     pthread_mutex_lock(&conn->mtx);
 
+    /* 断开连接并释放资源 */
     conn_disconnect(conn);
     conn_free_param(conn);
     conn_tcp_server_stop(conn);
 
+    /* 使用新参数初始化 */
     conn_init_param(conn, param);
     conn_tcp_server_listen(conn);
 
+    /* 重置状态统计信息 */
     conn->state.recv_bytes = 0;
     conn->state.send_bytes = 0;
 
@@ -145,27 +261,51 @@ neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
     return conn;
 }
 
+/**
+ * @brief 销毁连接对象
+ *
+ * 停止服务器、断开连接、释放资源并释放连接对象内存
+ *
+ * @param conn 连接对象指针
+ */
 void neu_conn_destory(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
 
+    /* 停止所有活动并释放参数资源 */
     conn_tcp_server_stop(conn);
     conn_disconnect(conn);
     conn_free_param(conn);
 
     pthread_mutex_unlock(&conn->mtx);
 
+    /* 销毁互斥锁 */
     pthread_mutex_destroy(&conn->mtx);
 
+    /* 释放缓冲区和连接对象 */
     free(conn->buf);
     free(conn);
 }
 
+/**
+ * @brief 获取连接状态
+ *
+ * @param conn 连接对象指针
+ * @return 连接状态结构体
+ */
 neu_conn_state_t neu_conn_state(neu_conn_t *conn)
 {
     return conn->state;
 }
 
+/**
+ * @brief TCP服务器接受新的客户端连接
+ *
+ * 接受来自客户端的连接请求，设置超时，并在达到最大连接数时处理
+ *
+ * @param conn 连接对象指针
+ * @return 成功返回新客户端的套接字描述符，失败返回-1
+ */
 int neu_conn_tcp_server_accept(neu_conn_t *conn)
 {
     struct sockaddr_in client     = { 0 };
@@ -173,11 +313,13 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     int                fd         = 0;
 
     pthread_mutex_lock(&conn->mtx);
+    /* 检查连接类型是否为TCP服务器 */
     if (conn->param.type != NEU_CONN_TCP_SERVER) {
         pthread_mutex_unlock(&conn->mtx);
         return -1;
     }
 
+    /* 接受新的客户端连接 */
     fd = accept(conn->fd, (struct sockaddr *) &client, &client_len);
     if (fd <= 0) {
         zlog_error(conn->param.log, "%s:%d accpet error: %s",
@@ -187,6 +329,7 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
         return -1;
     }
 
+    /* 如果是阻塞模式，设置接收和发送超时 */
     if (conn->block) {
         struct timeval tv = {
             .tv_sec  = conn->param.params.tcp_server.timeout / 1000,
@@ -196,12 +339,15 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     }
 
+    /* 检查是否达到最大连接数 */
     if (conn->tcp_server.n_client >= conn->param.params.tcp_server.max_link) {
+        /* 尝试替换一个已有客户端 */
         int free_fd = conn_tcp_server_replace_client(conn, fd, client);
         if (free_fd > 0) {
             zlog_warn(conn->param.log, "replace old client %d with %d", free_fd,
                       fd);
         } else {
+            /* 无法替换，拒绝连接 */
             close(fd);
             zlog_warn(conn->param.log, "%s:%d accpet max link: %d, reject",
                       conn->param.params.tcp_server.ip,
@@ -211,13 +357,16 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
             return -1;
         }
     } else {
+        /* 未达到最大连接数，添加新客户端 */
         conn_tcp_server_add_client(conn, fd, client);
     }
 
+    /* 更新连接状态并触发回调函数 */
     conn->is_connected = true;
     conn->connected(conn->data, fd);
     conn->callback_trigger = true;
 
+    /* 记录新连接日志 */
     zlog_notice(conn->param.log, "%s:%d accpet new client: %s:%d, fd: %d",
                 conn->param.params.tcp_server.ip,
                 conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
@@ -228,16 +377,26 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     return fd;
 }
 
+/**
+ * @brief 关闭TCP服务器的客户端连接
+ *
+ * @param conn 连接对象指针
+ * @param fd 要关闭的客户端套接字描述符
+ * @return 成功返回0，失败返回-1
+ */
 int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
 {
     pthread_mutex_lock(&conn->mtx);
+    /* 检查连接类型 */
     if (conn->param.type != NEU_CONN_TCP_SERVER) {
         pthread_mutex_unlock(&conn->mtx);
         return -1;
     }
 
+    /* 触发断开连接回调并删除客户端 */
     conn->disconnected(conn->data, fd);
     conn_tcp_server_del_client(conn, fd);
+    /* 清空缓冲区 */
     conn->offset = 0;
     memset(conn->buf, 0, conn->buf_size);
 
@@ -245,23 +404,39 @@ int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
     return 0;
 }
 
+/**
+ * @brief TCP服务器向客户端发送数据
+ *
+ * 使用非阻塞方式向指定客户端发送数据
+ *
+ * @param conn 连接对象指针
+ * @param fd 客户端套接字描述符
+ * @param buf 数据缓冲区
+ * @param len 数据长度
+ * @return 成功发送的字节数，失败返回-1
+ */
 ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len)
 {
     ssize_t ret = 0;
 
     pthread_mutex_lock(&conn->mtx);
+    /* 检查是否停止 */
     if (conn->stop) {
         pthread_mutex_unlock(&conn->mtx);
         return ret;
     }
 
+    /* 确保服务器处于监听状态 */
     conn_tcp_server_listen(conn);
+    /* 以非阻塞方式发送数据，MSG_NOSIGNAL防止管道破裂信号 */
     ret = send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
     if (ret > 0) {
+        /* 更新发送字节计数 */
         conn->state.send_bytes += ret;
     }
 
+    /* 如果发送失败且不是因为缓冲区满(EAGAIN)，则断开连接 */
     if (ret <= 0 && errno != EAGAIN) {
         conn->disconnected(conn->data, fd);
         conn_tcp_server_del_client(conn, fd);
@@ -272,27 +447,44 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
     return ret;
 }
 
+/**
+ * @brief TCP服务器从客户端接收数据
+ *
+ * 从指定的客户端套接字接收数据
+ *
+ * @param conn 连接对象指针
+ * @param fd 客户端套接字描述符
+ * @param buf 数据接收缓冲区
+ * @param len 要接收的数据长度
+ * @return 成功接收的字节数，失败返回-1或0(连接关闭)
+ */
 ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len)
 {
     ssize_t ret = 0;
 
     pthread_mutex_lock(&conn->mtx);
+    /* 检查是否停止 */
     if (conn->stop) {
         pthread_mutex_unlock(&conn->mtx);
         return ret;
     }
 
+    /* 根据阻塞模式选择接收方式 */
     if (conn->block) {
+        /* 阻塞模式等待接收完整数据 */
         ret = recv(fd, buf, len, MSG_WAITALL);
     } else {
+        /* 非阻塞模式 */
         ret = recv(fd, buf, len, 0);
     }
 
+    /* 更新接收字节计数 */
     if (ret > 0) {
         conn->state.recv_bytes += ret;
     }
 
+    /* 如果接收失败或连接关闭，则删除客户端 */
     if (ret <= 0) {
         conn->disconnected(conn->data, fd);
         conn_tcp_server_del_client(conn, fd);
