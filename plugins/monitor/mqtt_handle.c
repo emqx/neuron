@@ -17,6 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+/**
+ * mqtt_handle.c - 监控插件MQTT处理实现
+ *
+ * 该文件实现了监控插件通过MQTT协议发送监控数据和系统事件的功能：
+ * 1. 处理节点状态变化并通过MQTT发送状态更新
+ * 2. 处理系统事件（节点、组、标签的增删改）并通过MQTT发送事件通知
+ * 3. 将各类系统信息转换为JSON格式的MQTT消息
+ * 4. 管理MQTT消息的主题和发布流程
+ */
+
 #include "connection/mqtt_client.h"
 #include "errcodes.h"
 #include "version.h"
@@ -30,58 +40,87 @@
 #include "monitor.h"
 #include "mqtt_handle.h"
 
+/**
+ * 生成节点状态心跳JSON消息
+ *
+ * 将节点状态信息转换为JSON格式的MQTT消息
+ *
+ * @param plugin 监控插件实例
+ * @param states 节点状态数组
+ * @return 生成的JSON字符串，失败返回NULL
+ */
 static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states)
 {
     (void) plugin;
-    char *                 version  = NEURON_VERSION;
+    char *version = NEURON_VERSION;
+    // 创建JSON消息头部，包含版本和时间戳
     neu_json_states_head_t header   = { .version   = version,
-                                      .timpstamp = global_timestamp };
+                                        .timpstamp = global_timestamp };
     neu_json_states_t      json     = { 0 };
-    char *                 json_str = NULL;
+    char                  *json_str = NULL;
 
+    // 分配节点状态数组
     json.n_state = utarray_len(states);
     json.states  = calloc(json.n_state, sizeof(neu_json_node_state_t));
     if (NULL == json.states) {
         return NULL;
     }
 
+    // 遍历所有节点状态并填充JSON结构体
     utarray_foreach(states, neu_nodes_state_t *, state)
     {
         int index                  = utarray_eltidx(states, state);
-        json.states[index].node    = state->node;
-        json.states[index].link    = state->state.link;
-        json.states[index].running = state->state.running;
+        json.states[index].node    = state->node;          // 节点名称
+        json.states[index].link    = state->state.link;    // 连接状态
+        json.states[index].running = state->state.running; // 运行状态
     }
 
+    // 将结构体编码为JSON字符串
     neu_json_encode_with_mqtt(&json, neu_json_encode_states_resp, &header,
                               neu_json_encode_state_header_resp, &json_str);
 
+    // 释放临时分配的内存
     free(json.states);
     return json_str;
 }
 
+/**
+ * 生成事件JSON消息
+ *
+ * 根据事件类型生成对应的JSON消息内容和MQTT主题
+ *
+ * @param plugin 监控插件实例
+ * @param event 事件类型
+ * @param data 事件数据
+ * @param topic_p 返回的MQTT主题
+ * @return 生成的JSON字符串，失败返回NULL
+ */
 static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
                                  void *data, char **topic_p)
 {
     char *json_str = NULL;
+    // 联合体用于不同事件类型的JSON编码
     union {
-        neu_json_add_node_req_t            add_node;
-        neu_json_del_node_req_t            del_node;
-        neu_json_node_ctl_req_t            node_ctl;
-        neu_json_node_setting_req_t        node_setting;
-        neu_json_add_group_config_req_t    add_grp;
-        neu_json_del_group_config_req_t    del_grp;
-        neu_json_update_group_config_req_t update_grp;
-        neu_json_add_tags_req_t            add_tags;
-        neu_json_del_tags_req_t            del_tags;
+        neu_json_add_node_req_t            add_node;     // 添加节点
+        neu_json_del_node_req_t            del_node;     // 删除节点
+        neu_json_node_ctl_req_t            node_ctl;     // 节点控制
+        neu_json_node_setting_req_t        node_setting; // 节点设置
+        neu_json_add_group_config_req_t    add_grp;      // 添加组
+        neu_json_del_group_config_req_t    del_grp;      // 删除组
+        neu_json_update_group_config_req_t update_grp;   // 更新组
+        neu_json_add_tags_req_t            add_tags;     // 添加标签
+        neu_json_del_tags_req_t            del_tags;     // 删除标签
     } json_req = {};
 
+    // 根据事件类型处理不同的事件数据
     switch (event) {
     case NEU_REQ_ADD_NODE_EVENT: {
+        // 处理添加节点事件
         neu_req_add_node_t *add_node = data;
-        json_req.add_node.name       = add_node->node;
-        json_req.add_node.plugin     = add_node->plugin;
-        *topic_p                     = plugin->config->node_add_topic;
+        json_req.add_node.name       = add_node->node;   // 节点名称
+        json_req.add_node.plugin     = add_node->plugin; // 插件名称
+        *topic_p = plugin->config->node_add_topic;       // 设置MQTT主题
+        // 编码为JSON字符串
         neu_json_encode_by_fn(&json_req, neu_json_encode_add_node_req,
                               &json_str);
         break;
@@ -214,6 +253,18 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
     return json_str;
 }
 
+/**
+ * MQTT消息发布回调函数
+ *
+ * 在消息发布完成后更新指标统计
+ *
+ * @param errcode 错误码，0表示成功
+ * @param qos 服务质量等级
+ * @param topic 消息主题
+ * @param payload 消息内容
+ * @param len 消息长度
+ * @param data 用户数据（插件实例）
+ */
 static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
                        uint8_t *payload, uint32_t len, void *data)
 {
@@ -223,30 +274,48 @@ static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
 
     neu_plugin_t *plugin = data;
 
+    // 获取指标更新回调函数
     neu_adapter_update_metric_cb_t update_metric =
         plugin->common.adapter_callbacks->update_metric;
 
+    // 更新消息发送统计指标
     if (0 == errcode) {
+        // 发送成功，增加成功计数
         update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
                       NULL);
     } else {
+        // 发送失败，增加错误计数
         update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
                       1, NULL);
     }
 
+    // 释放消息内容内存
     free(payload);
 }
 
+/**
+ * 发布MQTT消息
+ *
+ * @param plugin 监控插件实例
+ * @param qos 服务质量等级
+ * @param topic 消息主题
+ * @param payload 消息内容
+ * @param payload_len 消息长度
+ * @return 0成功，非零错误码
+ */
 static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
                           char *payload, size_t payload_len)
 {
+    // 获取指标更新回调函数
     neu_adapter_update_metric_cb_t update_metric =
         plugin->common.adapter_callbacks->update_metric;
 
+    // 发布MQTT消息
     int rv = neu_mqtt_client_publish(
         plugin->mqtt_client, qos, topic, (uint8_t *) payload,
         (uint32_t) payload_len, plugin, publish_cb);
     if (0 != rv) {
+        // 发布失败，记录错误并更新错误计数
         plog_error(plugin, "pub [%s, QoS%d] fail", topic, qos);
         update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
                       1, NULL);
@@ -257,22 +326,34 @@ static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
     return rv;
 }
 
+/**
+ * 处理节点状态信息
+ *
+ * 将节点状态信息转换为JSON格式并通过MQTT发送
+ *
+ * @param plugin 监控插件实例
+ * @param states 节点状态信息
+ * @return 0成功，非零错误码
+ */
 int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
 {
     int   rv       = 0;
     char *json_str = NULL;
 
+    // 检查MQTT客户端是否存在
     if (NULL == plugin->mqtt_client) {
         rv = NEU_ERR_MQTT_IS_NULL;
         goto end;
     }
 
+    // 检查MQTT连接状态
     if (!neu_mqtt_client_is_connected(plugin->mqtt_client)) {
-        // cache disable and we are disconnected
+        // 缓存被禁用且我们已断开连接
         rv = NEU_ERR_MQTT_FAILURE;
         goto end;
     }
 
+    // 生成节点状态JSON消息
     json_str = generate_heartbeat_json(plugin, states->states);
     if (NULL == json_str) {
         plog_error(plugin, "generate heartbeat json fail");
@@ -280,7 +361,7 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
         goto end;
     }
 
-    char *         topic = plugin->config->heartbeat_topic;
+    char          *topic = plugin->config->heartbeat_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;
@@ -291,23 +372,36 @@ end:
     return rv;
 }
 
+/**
+ * 处理系统事件
+ *
+ * 将系统事件转换为JSON格式并通过MQTT发送
+ *
+ * @param plugin 监控插件实例
+ * @param event 事件类型
+ * @param data 事件数据
+ * @return 0成功，非零错误码
+ */
 int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data)
 {
     int   rv       = 0;
     char *json_str = NULL;
     char *topic    = NULL;
 
+    // 检查MQTT客户端是否存在
     if (NULL == plugin->mqtt_client) {
         rv = NEU_ERR_MQTT_IS_NULL;
         goto end;
     }
 
+    // 检查MQTT连接状态
     if (!neu_mqtt_client_is_connected(plugin->mqtt_client)) {
-        // cache disable and we are disconnected
+        // 缓存被禁用且我们已断开连接
         rv = NEU_ERR_MQTT_FAILURE;
         goto end;
     }
 
+    // 生成事件JSON消息和对应的主题
     json_str = generate_event_json(plugin, event, data, &topic);
     if (NULL == json_str) {
         plog_error(plugin, "generate event:%s json fail",
@@ -316,17 +410,22 @@ int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data)
         goto end;
     }
 
-    neu_mqtt_qos_e qos = NEU_MQTT_QOS0;
+    // 发布MQTT消息
+    neu_mqtt_qos_e qos = NEU_MQTT_QOS0; // 使用QoS0服务质量
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;
 
 end:
+    // 根据事件类型清理资源
     if (NEU_REQ_NODE_SETTING_EVENT == event) {
+        // 清理节点设置事件资源
         neu_req_node_setting_fini(data);
     } else if (NEU_REQ_ADD_TAG_EVENT == event ||
                NEU_REQ_UPDATE_TAG_EVENT == event) {
+        // 清理添加/更新标签事件资源
         neu_req_add_tag_fini(data);
     } else if (NEU_REQ_DEL_TAG_EVENT == event) {
+        // 清理删除标签事件资源
         neu_req_del_tag_fini(data);
     }
     return rv;

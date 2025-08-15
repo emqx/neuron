@@ -26,22 +26,118 @@
 #include "modbus_req.h"
 #include "modbus_stack.h"
 
+/**
+ * modbus_rtu.c
+ * 本文件实现了 Modbus RTU 协议插件的驱动接口，包括：
+ * - 初始化和配置
+ * - 启动和停止
+ * - 标签校验
+ * - 分组定时器处理
+ * - 写入操作
+ * 支持串口和 TCP 两种通信方式，以 RTU 协议格式传输。
+ */
+
+/**
+ * 创建驱动插件
+ * @return 插件对象指针
+ */
 static neu_plugin_t *driver_open(void);
 
+/**
+ * 关闭驱动插件
+ * @param plugin 插件对象
+ * @return 处理结果
+ */
 static int driver_close(neu_plugin_t *plugin);
+
+/**
+ * 初始化驱动插件
+ * @param plugin 插件对象
+ * @param load 是否加载配置
+ * @return 处理结果
+ */
 static int driver_init(neu_plugin_t *plugin, bool load);
+
+/**
+ * 反初始化驱动插件
+ * @param plugin 插件对象
+ * @return 处理结果
+ */
 static int driver_uninit(neu_plugin_t *plugin);
+
+/**
+ * 启动驱动插件
+ * @param plugin 插件对象
+ * @return 处理结果
+ */
 static int driver_start(neu_plugin_t *plugin);
+
+/**
+ * 停止驱动插件
+ * @param plugin 插件对象
+ * @return 处理结果
+ */
 static int driver_stop(neu_plugin_t *plugin);
+
+/**
+ * 配置驱动插件
+ * @param plugin 插件对象
+ * @param config 配置字符串
+ * @return 处理结果
+ */
 static int driver_config(neu_plugin_t *plugin, const char *config);
+
+/**
+ * 处理请求
+ * @param plugin 插件对象
+ * @param head 请求头
+ * @param data 请求数据
+ * @return 处理结果
+ */
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
 
+/**
+ * 验证标签格式
+ * @param tag 标签
+ * @return 验证结果
+ */
 static int driver_tag_validator(const neu_datatag_t *tag);
+
+/**
+ * 验证标签
+ * @param plugin 插件对象
+ * @param tag 标签
+ * @return 验证结果
+ */
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
+
+/**
+ * 分组定时器处理
+ * @param plugin 插件对象
+ * @param group 分组
+ * @return 处理结果
+ */
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
+
+/**
+ * 写入单个标签
+ * @param plugin 插件对象
+ * @param req 请求上下文
+ * @param tag 标签
+ * @param value 写入值
+ * @return 处理结果
+ */
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value);
+
+/**
+ * 批量写入标签
+ * @param plugin 插件对象
+ * @param req 请求上下文
+ * @param tags 标签数组
+ * @return 处理结果
+ */
 static int driver_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
@@ -104,8 +200,8 @@ static int driver_init(neu_plugin_t *plugin, bool load)
     plugin->protocol = MODBUS_PROTOCOL_RTU;
     plugin->events   = neu_event_new();
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,
-                                        modbus_send_msg, modbus_value_handle,
-                                        modbus_write_resp);
+                                           modbus_send_msg, modbus_value_handle,
+                                           modbus_write_resp);
 
     plog_notice(plugin, "%s init success", plugin->common.name);
     return 0;
@@ -146,7 +242,7 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char *           err_param = NULL;
+    char            *err_param = NULL;
     neu_conn_param_t param     = { 0 };
 
     neu_json_elem_t link     = { .name = "link", .t = NEU_JSON_INT };

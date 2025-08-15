@@ -16,6 +16,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+
+/**
+ * @file plugin_manager.c
+ * @brief 插件管理器实现
+ *
+ * 本文件实现了Neuron系统的插件管理器，负责管理系统中的所有插件。
+ * 插件管理器提供插件的加载、查找、创建实例和删除等功能。
+ */
 #include <assert.h>
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -32,30 +40,52 @@
 #include "argparse.h"
 #include "plugin_manager.h"
 
+/**
+ * @brief 插件实体结构
+ *
+ * 表示系统中的一个插件实体，包含插件名称、库名称和描述信息等
+ */
 typedef struct plugin_entity {
-    char *schema;
-    char *name;
-    char *lib_name;
-    char *description;
-    char *description_zh;
+    char *schema;         ///< 插件模式
+    char *name;           ///< 插件名称
+    char *lib_name;       ///< 插件库文件名
+    char *description;    ///< 插件英文描述
+    char *description_zh; ///< 插件中文描述
 
-    neu_plugin_kind_e kind;
-    neu_node_type_e   type;
+    neu_plugin_kind_e kind; ///< 插件类型（系统或自定义）
+    neu_node_type_e   type; ///< 节点类型（驱动或应用）
 
-    bool display;
+    bool display; ///< 是否在界面上显示
 
-    bool  single;
-    char *single_name;
+    bool  single;      ///< 是否为单例插件
+    char *single_name; ///< 单例插件名称
 
-    UT_hash_handle hh;
+    UT_hash_handle hh; ///< 哈希表句柄，用于uthash
 } plugin_entity_t;
 
+/**
+ * @brief 插件管理器结构
+ *
+ * 管理系统中的所有插件实体
+ */
 struct neu_plugin_manager {
-    plugin_entity_t *plugins;
+    plugin_entity_t *plugins; ///< 插件哈希表
 };
 
+/**
+ * @brief 释放插件实体资源
+ *
+ * @param entity 插件实体指针
+ */
 static void entity_free(plugin_entity_t *entity);
 
+/**
+ * @brief 创建插件管理器
+ *
+ * 分配并初始化插件管理器对象
+ *
+ * @return 返回新创建的插件管理器对象，失败则返回NULL
+ */
 neu_plugin_manager_t *neu_plugin_manager_create()
 {
     neu_plugin_manager_t *manager = calloc(1, sizeof(neu_plugin_manager_t));
@@ -63,10 +93,18 @@ neu_plugin_manager_t *neu_plugin_manager_create()
     return manager;
 }
 
+/**
+ * @brief 销毁插件管理器
+ *
+ * 释放插件管理器及其管理的所有插件资源
+ *
+ * @param mgr 插件管理器对象
+ */
 void neu_plugin_manager_destroy(neu_plugin_manager_t *mgr)
 {
     plugin_entity_t *el = NULL, *tmp = NULL;
 
+    // 遍历并释放所有插件实体
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
         HASH_DEL(mgr->plugins, el);
@@ -76,18 +114,29 @@ void neu_plugin_manager_destroy(neu_plugin_manager_t *mgr)
     free(mgr);
 }
 
+/**
+ * @brief 添加插件
+ *
+ * 加载指定的插件库，并添加到插件管理器中
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_lib_name 插件库文件名
+ * @return 成功返回NEU_ERR_SUCCESS，失败返回错误码
+ */
 int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
-                           const char *          plugin_lib_name)
+                           const char           *plugin_lib_name)
 {
     char                 lib_path[256] = { 0 };
-    void *               handle        = NULL;
-    void *               module        = NULL;
+    void                *handle        = NULL;
+    void                *module        = NULL;
     neu_plugin_module_t *pm            = NULL;
-    plugin_entity_t *    plugin        = NULL;
+    plugin_entity_t     *plugin        = NULL;
 
     assert(strlen(plugin_lib_name) <= NEU_PLUGIN_LIBRARY_LEN);
+    // 构建插件库路径
     snprintf(lib_path, sizeof(lib_path) - 1, "./plugins/%s", plugin_lib_name);
 
+    // 加载动态库
     handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
 
     if (handle == NULL) {
@@ -146,13 +195,25 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     return NEU_ERR_SUCCESS;
 }
 
+/**
+ * @brief 删除插件
+ *
+ * 从插件管理器中删除指定的插件，系统插件不允许删除
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_name 插件名称
+ * @return
+ * 成功返回NEU_ERR_SUCCESS，系统插件返回NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL
+ */
 int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
 {
     plugin_entity_t *plugin = NULL;
     int              ret    = NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL;
 
+    // 查找插件
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
+        // 只允许删除非系统插件
         if (plugin->kind != NEU_PLUGIN_KIND_SYSTEM) {
             HASH_DEL(mgr->plugins, plugin);
             entity_free(plugin);
@@ -163,15 +224,24 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
     return ret;
 }
 
+/**
+ * @brief 获取非单例插件列表
+ *
+ * 获取系统中所有非单例插件的信息列表
+ *
+ * @param mgr 插件管理器对象
+ * @return 非单例插件信息数组
+ */
 UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
 {
-    UT_array *       plugins;
+    UT_array        *plugins;
     UT_icd           icd = { sizeof(neu_resp_plugin_info_t), NULL, NULL, NULL };
     plugin_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(plugins, &icd);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
+        // 跳过单例插件
         if (el->single) {
             continue;
         }
@@ -194,15 +264,24 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
     return plugins;
 }
 
+/**
+ * @brief 获取单例插件列表
+ *
+ * 获取系统中所有单例插件的信息列表
+ *
+ * @param mgr 插件管理器对象
+ * @return 单例插件信息数组
+ */
 UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
 {
-    UT_array *       plugins;
+    UT_array        *plugins;
     UT_icd           icd = { sizeof(neu_resp_plugin_info_t), NULL, NULL, NULL };
     plugin_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(plugins, &icd);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
+        // 只处理单例插件
         if (el->single) {
             neu_resp_plugin_info_t info = {
                 .kind = el->kind,
@@ -229,12 +308,23 @@ UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
     return plugins;
 }
 
+/**
+ * @brief 查找插件
+ *
+ * 根据插件名称查找插件信息
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_name 插件名称
+ * @param info 用于返回插件信息的结构体指针
+ * @return 成功返回0，失败返回-1
+ */
 int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
                             neu_resp_plugin_info_t *info)
 {
     plugin_entity_t *plugin = NULL;
     int              ret    = -1;
 
+    // 查找插件
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         ret           = 0;
@@ -243,6 +333,7 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
         info->type    = plugin->type;
         info->kind    = plugin->kind;
 
+        // 如果是单例插件，复制单例名称
         if (plugin->single_name != NULL) {
             strcpy(info->single_name, plugin->single_name);
         }
@@ -255,16 +346,34 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
     return ret;
 }
 
+/**
+ * @brief 检查插件是否存在
+ *
+ * 判断指定名称的插件是否存在
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_name 插件名称
+ * @return 如果插件存在返回true，否则返回false
+ */
 bool neu_plugin_manager_exists(neu_plugin_manager_t *mgr,
-                               const char *          plugin_name)
+                               const char           *plugin_name)
 {
     plugin_entity_t *plugin = NULL;
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     return NULL != plugin;
 }
 
+/**
+ * @brief 检查插件是否为单例插件
+ *
+ * 判断指定插件是否为单例插件
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_name 插件名称
+ * @return 如果是单例插件返回true，否则返回false
+ */
 bool neu_plugin_manager_is_single(neu_plugin_manager_t *mgr,
-                                  const char *          plugin_name)
+                                  const char           *plugin_name)
 {
     plugin_entity_t *plugin = NULL;
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
@@ -276,21 +385,35 @@ bool neu_plugin_manager_is_single(neu_plugin_manager_t *mgr,
     return plugin->single;
 }
 
-int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
-                                       const char *           plugin_name,
+/**
+ * @brief 创建插件实例
+ *
+ * 根据插件名称加载插件库并创建插件实例
+ *
+ * @param mgr 插件管理器对象
+ * @param plugin_name 插件名称
+ * @param instance 用于返回插件实例的指针
+ * @return 成功返回0，失败返回-1
+ */
+int neu_plugin_manager_create_instance(neu_plugin_manager_t  *mgr,
+                                       const char            *plugin_name,
                                        neu_plugin_instance_t *instance)
 {
     plugin_entity_t *plugin = NULL;
 
+    // 查找插件
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         char lib_path[256] = { 0 };
 
+        // 构建插件库路径
         snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", g_plugin_dir,
                  plugin->lib_name);
+        // 加载动态库
         instance->handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
         assert(instance->handle != NULL);
 
+        // 获取插件模块指针
         instance->module = (neu_plugin_module_t *) dlsym(instance->handle,
                                                          "neu_plugin_module");
         assert(instance->module != NULL);
@@ -300,37 +423,65 @@ int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
     return -1;
 }
 
-void neu_plugin_manager_load_static(neu_plugin_manager_t * mgr,
-                                    const char *           plugin_name,
+/**
+ * @brief 加载静态插件
+ *
+ * 加载系统内置的静态插件（不需要动态库）
+ *
+ * @param mgr 插件管理器对象（未使用）
+ * @param plugin_name 插件名称
+ * @param instance 用于返回插件实例的指针
+ */
+void neu_plugin_manager_load_static(neu_plugin_manager_t  *mgr,
+                                    const char            *plugin_name,
                                     neu_plugin_instance_t *instance)
 {
     (void) mgr;
     instance->handle = NULL;
 
+    // 为仪表板插件设置静态模块
     if (strcmp(DEFAULT_DASHBOARD_PLUGIN_NAME, plugin_name) == 0) {
         instance->module =
             (neu_plugin_module_t *) &default_dashboard_plugin_module;
     }
 }
 
-void neu_plugin_manager_destroy_instance(neu_plugin_manager_t * mgr,
+/**
+ * @brief 销毁插件实例
+ *
+ * 关闭插件动态库，释放插件实例资源
+ *
+ * @param mgr 插件管理器对象（未使用）
+ * @param instance 要销毁的插件实例
+ */
+void neu_plugin_manager_destroy_instance(neu_plugin_manager_t  *mgr,
                                          neu_plugin_instance_t *instance)
 {
     (void) mgr;
     nlog_notice("destroy plugin instance: %s, handle: %p",
                 instance->module->module_name, instance->handle);
+    // 如果有动态库句柄，关闭动态库
     if (instance->handle != NULL) {
         dlclose(instance->handle);
     }
 }
 
+/**
+ * @brief 释放插件实体资源
+ *
+ * 释放插件实体结构体及其所有分配的内存
+ *
+ * @param entity 插件实体指针
+ */
 static void entity_free(plugin_entity_t *entity)
 {
     nlog_notice("del plugin, name: %s, library: %s, kind: %d, type: %d",
                 entity->name, entity->lib_name, entity->kind, entity->type);
+    // 释放单例插件名称
     if (entity->single) {
         free(entity->single_name);
     }
+    // 释放所有字符串资源
     free(entity->schema);
     free(entity->name);
     free(entity->lib_name);

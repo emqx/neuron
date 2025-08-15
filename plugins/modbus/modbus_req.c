@@ -23,15 +23,27 @@
 
 #include "modbus_req.h"
 
+/**
+ * modbus_req.c
+ * 本文件实现了 Modbus 协议插件的请求处理、连接管理、分组定时器等功能，
+ * 是插件与 Modbus 协议栈交互的核心部分。
+ */
+
+/**
+ * Modbus 分组数据结构，用于存储分组的标签和命令
+ */
 struct modbus_group_data {
-    UT_array *              tags;
-    char *                  group;
-    modbus_read_cmd_sort_t *cmd_sort;
+    UT_array               *tags;     // 标签数组
+    char                   *group;    // 分组名称
+    modbus_read_cmd_sort_t *cmd_sort; // 排序后的命令
 };
 
+/**
+ * Modbus 写入标签数据结构，用于存储批量写入的标签和命令
+ */
 struct modbus_write_tags_data {
-    UT_array *               tags;
-    modbus_write_cmd_sort_t *cmd_sort;
+    UT_array                *tags;     // 标签数组
+    modbus_write_cmd_sort_t *cmd_sort; // 排序后的写命令
 };
 
 static void plugin_group_free(neu_plugin_group_t *pgp);
@@ -56,11 +68,11 @@ void modbus_conn_disconnected(void *data, int fd)
 
 void modbus_tcp_server_listen(void *data, int fd)
 {
-    struct neu_plugin *  plugin = (struct neu_plugin *) data;
+    struct neu_plugin   *plugin = (struct neu_plugin *) data;
     neu_event_io_param_t param  = {
-        .cb       = modbus_tcp_server_io_callback,
-        .fd       = fd,
-        .usr_data = (void *) plugin,
+         .cb       = modbus_tcp_server_io_callback,
+         .fd       = fd,
+         .usr_data = (void *) plugin,
     };
 
     plugin->tcp_server_io = neu_event_add_io(plugin->events, param);
@@ -326,7 +338,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                         uint8_t *bytes, int error)
 {
-    neu_plugin_t *            plugin = (neu_plugin_t *) ctx;
+    neu_plugin_t             *plugin = (neu_plugin_t *) ctx;
     struct modbus_group_data *gd =
         (struct modbus_group_data *) plugin->plugin_group_data;
     uint16_t start_address = gd->cmd_sort->cmd[plugin->cmd_idx].start_address;
@@ -590,7 +602,10 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
     }
     free(gtags->cmd_sort->cmd);
     free(gtags->cmd_sort);
-    utarray_foreach(gtags->tags, modbus_point_write_t **, tag) { free(*tag); }
+    utarray_foreach(gtags->tags, modbus_point_write_t **, tag)
+    {
+        free(*tag);
+    }
     utarray_free(gtags->tags);
     free(gtags);
     return ret;
@@ -611,7 +626,10 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
 
     modbus_tag_sort_free(gd->cmd_sort);
 
-    utarray_foreach(gd->tags, modbus_point_t **, tag) { free(*tag); }
+    utarray_foreach(gd->tags, modbus_point_t **, tag)
+    {
+        free(*tag);
+    }
 
     utarray_free(gd->tags);
     free(gd->group);
@@ -622,7 +640,7 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
 static int process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
                                 uint16_t response_size)
 {
-    uint8_t *                 recv_buf = calloc(response_size, 1);
+    uint8_t                  *recv_buf = calloc(response_size, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
     if (plugin->protocol == MODBUS_PROTOCOL_TCP) {
