@@ -200,7 +200,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     }
 
     adapter->name                    = strdup(info->name);
-    adapter->events                  = neu_event_new();
+    adapter->events                  = neu_event_new("adapter");
     adapter->state                   = NEU_NODE_RUNNING_STATE_INIT;
     adapter->handle                  = info->handle;
     adapter->cb_funs.command         = callback_funs.command;
