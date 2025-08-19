@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
         .params.tty_client.timeout = 3000,
     };
 
-    events = neu_event_new();
+    events = neu_event_new("modbus_tty_simulator");
     conn   = neu_conn_new(&param, NULL, connected, disconnected);
 
     neu_conn_start(conn);
