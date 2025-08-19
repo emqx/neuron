@@ -137,7 +137,7 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 conn_eth->ic = &in_conns[i];
 
                 in_conns[i].interface = strdup(interface);
-                in_conns[i].events    = neu_event_new();
+                in_conns[i].events    = neu_event_new("eth_conn");
                 in_conns[i].count += 1;
 
                 get_mac(conn_eth, interface);
