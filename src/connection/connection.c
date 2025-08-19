@@ -858,6 +858,7 @@ static void conn_connect(neu_conn_t *conn)
         } else {
             zlog_error(conn->param.log, "invalid ip: %s",
                        conn->param.params.tcp_server.ip);
+            close(fd);
             return;
         }
 
@@ -926,6 +927,7 @@ static void conn_connect(neu_conn_t *conn)
             ret = bind(fd, (struct sockaddr *) &local,
                        sizeof(struct sockaddr_in6));
         } else {
+            close(fd);
             zlog_error(conn->param.log, "invalid ip: %s",
                        conn->param.params.tcp_server.ip);
             return;
@@ -1028,6 +1030,7 @@ static void conn_connect(neu_conn_t *conn)
             ret = bind(fd, (struct sockaddr *) &local,
                        sizeof(struct sockaddr_in6));
         } else {
+            close(fd);
             zlog_error(conn->param.log, "invalid ip: %s",
                        conn->param.params.tcp_server.ip);
             return;
