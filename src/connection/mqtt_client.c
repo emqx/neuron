@@ -907,7 +907,7 @@ static inline int client_start_timer(neu_mqtt_client_t *client)
         return 0;
     }
 
-    events = neu_event_new();
+    events = neu_event_new("mqtt_client");
     if (NULL == events) {
         return -1;
     }

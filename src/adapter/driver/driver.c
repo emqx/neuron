@@ -544,13 +544,13 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    driver->cache                                      = neu_driver_cache_new();
-    driver->driver_events                              = neu_event_new();
-    driver->adapter.cb_funs.driver.update              = update;
-    driver->adapter.cb_funs.driver.write_response      = write_response;
-    driver->adapter.cb_funs.driver.write_responses     = write_responses;
-    driver->adapter.cb_funs.driver.directory_response  = directory_response;
-    driver->adapter.cb_funs.driver.fup_open_response   = fup_open_response;
+    driver->cache                                     = neu_driver_cache_new();
+    driver->driver_events                             = neu_event_new("driver");
+    driver->adapter.cb_funs.driver.update             = update;
+    driver->adapter.cb_funs.driver.write_response     = write_response;
+    driver->adapter.cb_funs.driver.write_responses    = write_responses;
+    driver->adapter.cb_funs.driver.directory_response = directory_response;
+    driver->adapter.cb_funs.driver.fup_open_response  = fup_open_response;
     driver->adapter.cb_funs.driver.fdown_open_response = fdown_open_response;
     driver->adapter.cb_funs.driver.fup_data_response   = fup_data_response;
     driver->adapter.cb_funs.driver.update_im           = update_im;

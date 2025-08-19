@@ -98,7 +98,7 @@ neu_manager_t *neu_manager_create()
         .type        = NEU_EVENT_TIMER_NOBLOCK,
     };
 
-    manager->events            = neu_event_new();
+    manager->events            = neu_event_new("manager");
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
