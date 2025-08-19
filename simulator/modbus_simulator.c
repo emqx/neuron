@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
         .params.tcp_server.stop_listen  = stop_listen,
     };
 
-    events = neu_event_new();
+    events = neu_event_new("modbus_simulator");
     conn   = neu_conn_new(&param, NULL, connected, disconnected);
 
     signal(SIGINT, sig_handler);

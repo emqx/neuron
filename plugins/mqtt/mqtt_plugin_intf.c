@@ -62,7 +62,7 @@ static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
     }
 
     if (NULL == plugin->events) {
-        plugin->events = neu_event_new();
+        plugin->events = neu_event_new(plugin->common.name);
         if (NULL == plugin->events) {
             plog_error(plugin, "neu_event_new fail");
             return NEU_ERR_EINTERNAL;

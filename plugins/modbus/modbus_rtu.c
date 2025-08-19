@@ -107,7 +107,7 @@ static int driver_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
     plugin->protocol = MODBUS_PROTOCOL_RTU;
-    plugin->events   = neu_event_new();
+    plugin->events   = neu_event_new(plugin->common.name);
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,
                                         modbus_send_msg, modbus_value_handle,
                                         modbus_write_resp);
