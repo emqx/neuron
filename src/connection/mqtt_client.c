@@ -63,9 +63,9 @@ typedef struct {
     size_t                         ref;
     bool                           ack;
     neu_mqtt_qos_e                 qos;
-    char *                         topic;
+    char                          *topic;
     neu_mqtt_client_subscribe_cb_t cb;
-    void *                         data;
+    void                          *data;
     UT_hash_handle                 hh;
 } subscription_t;
 
@@ -80,10 +80,10 @@ typedef enum {
     struct {                                  \
         neu_mqtt_client_publish_cb_t cb;      \
         neu_mqtt_qos_e               qos;     \
-        char *                       topic;   \
-        uint8_t *                    payload; \
+        char                        *topic;   \
+        uint8_t                     *payload; \
         uint32_t                     len;     \
-        void *                       data;    \
+        void                        *data;    \
     } pub;                                    \
     subscription_t *sub;                      \
     struct {                                  \
@@ -96,7 +96,7 @@ typedef union {
 
 typedef struct task_s {
     task_kind_e kind;
-    nng_aio *   aio;
+    nng_aio    *aio;
     union {
         TASK_UNION_FIELDS;
     };
@@ -106,31 +106,31 @@ typedef struct task_s {
 
 struct neu_mqtt_client_s {
     nng_socket                      sock;
-    nng_mtx *                       mtx;
-    neu_events_t *                  events;
-    neu_event_timer_t *             timer;
+    nng_mtx                        *mtx;
+    neu_events_t                   *events;
+    neu_event_timer_t              *timer;
     neu_mqtt_version_e              version;
-    char *                          host;
+    char                           *host;
     uint16_t                        port;
-    char *                          url;
-    nng_tls_config *                tls_cfg;
-    nng_msg *                       conn_msg;
+    char                           *url;
+    nng_tls_config                 *tls_cfg;
+    nng_msg                        *conn_msg;
     nng_duration                    retry;
     bool                            open;
     bool                            connected;
     neu_mqtt_client_connection_cb_t connect_cb;
-    void *                          connect_cb_data;
+    void                           *connect_cb_data;
     neu_mqtt_client_connection_cb_t disconnect_cb;
-    void *                          disconnect_cb_data;
-    nng_mqtt_sqlite_option *        sqlite_cfg;
+    void                           *disconnect_cb_data;
+    nng_mqtt_sqlite_option         *sqlite_cfg;
     bool                            receiving;
-    nng_aio *                       recv_aio;
-    subscription_t *                subscriptions;
+    nng_aio                        *recv_aio;
+    subscription_t                 *subscriptions;
     size_t                          suback_count;
     size_t                          task_count;
     size_t                          task_limit;
-    task_t *                        task_free_list;
-    zlog_category_t *               log;
+    task_t                         *task_free_list;
+    zlog_category_t                *log;
 };
 
 static inline task_t *task_new(neu_mqtt_client_t *client);
@@ -142,10 +142,10 @@ static void           task_handle_sub(task_t *task, neu_mqtt_client_t *client);
 static void task_handle_unsub(task_t *task, neu_mqtt_client_t *client);
 static void task_handle_recv(task_t *task, neu_mqtt_client_t *client);
 
-static subscription_t *       subscription_new(neu_mqtt_client_t *client,
+static subscription_t        *subscription_new(neu_mqtt_client_t *client,
                                                neu_mqtt_qos_e qos, const char *topic,
                                                neu_mqtt_client_subscribe_cb_t cb,
-                                               void *                         data);
+                                               void                          *data);
 static inline void            subscription_free(subscription_t *subscription);
 static inline subscription_t *subscription_ref(subscription_t *subscription);
 static inline void            subscriptions_free(subscription_t *subscriptions);
@@ -159,9 +159,9 @@ static inline task_t *client_alloc_task(neu_mqtt_client_t *client);
 static inline void    client_free_task(neu_mqtt_client_t *client, task_t *task);
 static inline size_t  client_task_free_list_len(neu_mqtt_client_t *client);
 static inline void    client_add_subscription(neu_mqtt_client_t *client,
-                                              subscription_t *   sub);
+                                              subscription_t    *sub);
 static int            client_send_sub_msg(neu_mqtt_client_t *client,
-                                          subscription_t *   subscription);
+                                          subscription_t    *subscription);
 static inline void    client_start_recv(neu_mqtt_client_t *client);
 static inline int     client_start_timer(neu_mqtt_client_t *client);
 static inline int     client_make_url(neu_mqtt_client_t *client);
@@ -307,8 +307,8 @@ static inline void tasks_free(task_t *tasks)
 
 static void task_cb(void *arg)
 {
-    task_t *           task   = arg;
-    nng_aio *          aio    = task->aio;
+    task_t            *task   = arg;
+    nng_aio           *aio    = task->aio;
     neu_mqtt_client_t *client = nng_aio_get_input(aio, 0);
 
     if (TASK_PUB == task->kind) {
@@ -443,7 +443,7 @@ static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
 static subscription_t *subscription_new(neu_mqtt_client_t *client,
                                         neu_mqtt_qos_e qos, const char *topic,
                                         neu_mqtt_client_subscribe_cb_t cb,
-                                        void *                         data)
+                                        void                          *data)
 {
     (void) client;
     subscription_t *subscription = NULL;
@@ -516,7 +516,7 @@ subscription_find_match(subscription_t *subscriptions, const char *topic_name,
 static int resub_cb(void *data)
 {
     neu_mqtt_client_t *client = data;
-    subscription_t *   sub    = NULL;
+    subscription_t    *sub    = NULL;
 
     nng_mtx_lock(client->mtx);
     if (client->connected &&
@@ -538,9 +538,9 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *             client = arg;
+    neu_mqtt_client_t              *client = arg;
     neu_mqtt_client_connection_cb_t cb     = NULL;
-    void *                          data   = NULL;
+    void                           *data   = NULL;
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_CONNECT_REASON, &reason);
@@ -565,10 +565,10 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *             client = arg;
-    subscription_t *                sub    = NULL;
+    neu_mqtt_client_t              *client = arg;
+    subscription_t                 *sub    = NULL;
     neu_mqtt_client_connection_cb_t cb     = NULL;
-    void *                          data   = NULL;
+    void                           *data   = NULL;
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_DISCONNECT_REASON, &reason);
@@ -578,7 +578,10 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     client->connected = false;
     cb                = client->disconnect_cb;
     data              = client->disconnect_cb_data;
-    HASH_LOOP(hh, client->subscriptions, sub) { sub->ack = false; }
+    HASH_LOOP(hh, client->subscriptions, sub)
+    {
+        sub->ack = false;
+    }
     client->suback_count = 0;
     nng_mtx_unlock(client->mtx);
 
@@ -590,9 +593,9 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 static void recv_cb(void *arg)
 {
     int                rv           = 0;
-    subscription_t *   subscription = arg;
+    subscription_t    *subscription = arg;
     neu_mqtt_client_t *client       = arg;
-    nng_aio *          aio          = client->recv_aio;
+    nng_aio           *aio          = client->recv_aio;
 
     if (0 != (rv = nng_aio_result(aio))) {
         log(error, "mqtt client recv error: %s", nng_strerror(rv));
@@ -621,7 +624,7 @@ static void recv_cb(void *arg)
     }
 
     uint32_t    payload_len;
-    uint8_t *   payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
+    uint8_t    *payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
     uint32_t    topic_len;
     const char *topic = nng_mqtt_msg_get_publish_topic(msg, &topic_len);
     uint8_t     qos   = nng_mqtt_msg_get_publish_qos(msg);
@@ -712,7 +715,7 @@ static inline size_t client_task_free_list_len(neu_mqtt_client_t *client)
 }
 
 static inline void client_add_subscription(neu_mqtt_client_t *client,
-                                           subscription_t *   sub)
+                                           subscription_t    *sub)
 {
     subscription_t *old = NULL;
 
@@ -725,7 +728,7 @@ static inline void client_add_subscription(neu_mqtt_client_t *client,
 }
 
 static inline void client_del_subscription(neu_mqtt_client_t *client,
-                                           subscription_t *   sub)
+                                           subscription_t    *sub)
 {
     HASH_DEL(client->subscriptions, sub);
     if (sub->ack) {
@@ -735,7 +738,7 @@ static inline void client_del_subscription(neu_mqtt_client_t *client,
 }
 
 static int client_send_sub_msg(neu_mqtt_client_t *client,
-                               subscription_t *   subscription)
+                               subscription_t    *subscription)
 {
     int      rv      = 0;
     nng_msg *sub_msg = NULL;
@@ -772,7 +775,7 @@ static int client_send_sub_msg(neu_mqtt_client_t *client,
 }
 
 static int client_send_unsub_msg(neu_mqtt_client_t *client,
-                                 subscription_t *   subscription)
+                                 subscription_t    *subscription)
 {
     int      rv      = 0;
     nng_msg *sub_msg = NULL;
@@ -813,7 +816,7 @@ static inline void client_start_recv(neu_mqtt_client_t *client)
 
 static inline int client_start_timer(neu_mqtt_client_t *client)
 {
-    neu_events_t *     events = NULL;
+    neu_events_t      *events = NULL;
     neu_event_timer_t *timer  = NULL;
 
     if (client->events) {
@@ -821,7 +824,7 @@ static inline int client_start_timer(neu_mqtt_client_t *client)
         return 0;
     }
 
-    events = neu_event_new();
+    events = neu_event_new("mqtt_client");
     if (NULL == events) {
         return -1;
     }
@@ -846,7 +849,7 @@ static inline int client_start_timer(neu_mqtt_client_t *client)
 
 static inline int client_make_url(neu_mqtt_client_t *client)
 {
-    char *      url = NULL;
+    char       *url = NULL;
     const char *fmt = NULL;
 
     if (client->tls_cfg) {
@@ -906,7 +909,7 @@ static inline nng_mqtt_sqlite_option *
 alloc_sqlite_config(neu_mqtt_client_t *client)
 {
     int                     rv;
-    char *                  db  = NULL;
+    char                   *db  = NULL;
     nng_mqtt_sqlite_option *cfg = NULL;
     const mqtt_buf          client_id =
         nng_mqtt_msg_get_connect_client_id(client->conn_msg);
@@ -1113,9 +1116,9 @@ int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
     return 0;
 }
 
-int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
+int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t              *client,
                                    neu_mqtt_client_connection_cb_t cb,
-                                   void *                          data)
+                                   void                           *data)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1127,9 +1130,9 @@ int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
     return 0;
 }
 
-int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
+int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t              *client,
                                       neu_mqtt_client_connection_cb_t cb,
-                                      void *                          data)
+                                      void                           *data)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1287,7 +1290,7 @@ int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
 }
 
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
-                                      zlog_category_t *  cat)
+                                      zlog_category_t   *cat)
 {
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
@@ -1393,7 +1396,7 @@ error:
 int neu_mqtt_client_close(neu_mqtt_client_t *client)
 {
     int                rv     = 0;
-    neu_events_t *     events = NULL;
+    neu_events_t      *events = NULL;
     neu_event_timer_t *timer  = NULL;
 
     nng_mtx_lock(client->mtx);
@@ -1440,7 +1443,7 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
 {
     int      rv      = 0;
     nng_msg *pub_msg = NULL;
-    task_t * task    = NULL;
+    task_t  *task    = NULL;
 
     if (0 != (rv = nng_mqtt_msg_alloc(&pub_msg, 0))) {
         log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));

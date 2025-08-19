@@ -47,7 +47,7 @@ static int   adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                              void *data);
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
-static int adapter_responseto(neu_adapter_t *     adapter,
+static int adapter_responseto(neu_adapter_t      *adapter,
                               neu_reqresp_head_t *header, void *data,
                               struct sockaddr_in dst);
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
@@ -115,7 +115,7 @@ static void *adapter_consumer(void *arg)
 {
     neu_adapter_t *adapter = (neu_adapter_t *) arg;
     while (1) {
-        neu_msg_t *         msg    = NULL;
+        neu_msg_t          *msg    = NULL;
         uint32_t            n      = adapter_msg_q_pop(adapter->msg_q, &msg);
         neu_reqresp_head_t *header = neu_msg_get_header(msg);
 
@@ -145,7 +145,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
 {
     int                  rv      = 0;
     int                  init_rv = 0;
-    neu_adapter_t *      adapter = NULL;
+    neu_adapter_t       *adapter = NULL;
     neu_event_io_param_t param   = { 0 };
 
     switch (info->module->type) {
@@ -173,7 +173,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     }
 
     adapter->name                    = strdup(info->name);
-    adapter->events                  = neu_event_new();
+    adapter->events                  = neu_event_new("adapter");
     adapter->state                   = NEU_NODE_RUNNING_STATE_INIT;
     adapter->handle                  = info->handle;
     adapter->cb_funs.command         = callback_funs.command;
@@ -563,7 +563,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     return ret;
 }
 
-static int adapter_responseto(neu_adapter_t *     adapter,
+static int adapter_responseto(neu_adapter_t      *adapter,
                               neu_reqresp_head_t *header, void *data,
                               struct sockaddr_in dst)
 {
@@ -878,7 +878,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_TAG: {
         neu_req_get_tag_t *cmd   = (neu_req_get_tag_t *) &header[1];
         neu_resp_error_t   error = { .error = 0 };
-        UT_array *         tags  = NULL;
+        UT_array          *tags  = NULL;
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             error.error = neu_adapter_driver_query_tag(
@@ -1229,7 +1229,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_get_ndriver_tags_t *cmd =
             (neu_req_get_ndriver_tags_t *) &header[1];
         neu_resp_error_t error = { .error = 0 };
-        UT_array *       tags  = NULL;
+        UT_array        *tags  = NULL;
 
         // TODO
         (void) cmd;
@@ -1585,7 +1585,7 @@ int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
     return error;
 }
 
-neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
+neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t          *adapter,
                                          neu_event_timer_param_t param)
 {
     return neu_event_add_timer(adapter->events, param);
@@ -1610,7 +1610,7 @@ int neu_adapter_register_group_metric(neu_adapter_t *adapter,
 }
 
 int neu_adapter_update_group_metric(neu_adapter_t *adapter,
-                                    const char *   group_name,
+                                    const char    *group_name,
                                     const char *metric_name, uint64_t n)
 {
     if (NULL == adapter->metrics) {
@@ -1622,8 +1622,8 @@ int neu_adapter_update_group_metric(neu_adapter_t *adapter,
 }
 
 int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
-                                         const char *   group_name,
-                                         const char *   new_group_name)
+                                         const char    *group_name,
+                                         const char    *new_group_name)
 {
     if (NULL == adapter->metrics) {
         return -1;
@@ -1634,7 +1634,7 @@ int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
 }
 
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
-                                   const char *   group_name)
+                                   const char    *group_name)
 {
     if (NULL != adapter->metrics) {
         neu_node_metrics_del_group(adapter->metrics, group_name);

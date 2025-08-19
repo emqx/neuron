@@ -28,9 +28,9 @@
 #include "modbus_s.h"
 
 zlog_category_t *neuron           = NULL;
-neu_events_t *   events           = NULL;
-neu_event_io_t * tcp_server_event = NULL;
-neu_conn_t *     conn             = NULL;
+neu_events_t    *events           = NULL;
+neu_event_io_t  *tcp_server_event = NULL;
+neu_conn_t      *conn             = NULL;
 int64_t          global_timestamp = 0;
 bool             exiting          = false;
 
@@ -45,7 +45,7 @@ static bool mode_tcp = true;
 struct client_event {
     neu_event_io_t *client;
     int             fd;
-    void *          user_data;
+    void           *user_data;
 };
 
 struct client_event c_events[10] = { 0 };
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
         .params.tcp_server.stop_listen  = stop_listen,
     };
 
-    events = neu_event_new();
+    events = neu_event_new("modbus_simulator");
     conn   = neu_conn_new(&param, NULL, connected, disconnected);
 
     signal(SIGINT, sig_handler);
@@ -202,11 +202,11 @@ static int new_client(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_EVENT_IO_READ: {
         int client_fd = neu_conn_tcp_server_accept(conn);
         if (client_fd > 0) {
-            struct cycle_buf *   buf = calloc(1, sizeof(struct cycle_buf));
+            struct cycle_buf    *buf = calloc(1, sizeof(struct cycle_buf));
             neu_event_io_param_t io  = {
-                .fd       = client_fd,
-                .usr_data = (void *) buf,
-                .cb       = recv_msg,
+                 .fd       = client_fd,
+                 .usr_data = (void *) buf,
+                 .cb       = recv_msg,
             };
 
             neu_event_io_t *client = neu_event_add_io(events, io);

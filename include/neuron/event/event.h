@@ -35,7 +35,7 @@ typedef struct neu_events neu_events_t;
  * thread.
  * @return the newly created event.
  */
-neu_events_t *neu_event_new(void);
+neu_events_t *neu_event_new(const char *name);
 
 /**
  * @brief Close a event.
@@ -71,7 +71,7 @@ typedef struct neu_event_timer_param {
  * @param[in] timer Parameters when creating timer.
  * @return The added event timer.
  */
-neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
+neu_event_timer_t *neu_event_add_timer(neu_events_t           *events,
                                        neu_event_timer_param_t timer);
 
 /**

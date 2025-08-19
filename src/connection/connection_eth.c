@@ -60,7 +60,7 @@ typedef struct {
 } lldp_callback_elem_t;
 
 typedef struct interface_conn {
-    char *        interface;
+    char         *interface;
     neu_events_t *events;
     uint8_t       count;
 
@@ -82,7 +82,7 @@ static interface_conn_t in_conns[interface_max];
 
 struct neu_conn_eth {
     interface_conn_t *ic;
-    void *            ctx;
+    void             *ctx;
 };
 
 static int get_mac(neu_conn_eth_t *conn, const char *interface);
@@ -137,7 +137,7 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 conn_eth->ic = &in_conns[i];
 
                 in_conns[i].interface = strdup(interface);
-                in_conns[i].events    = neu_event_new();
+                in_conns[i].events    = neu_event_new("eth_conn");
                 in_conns[i].count += 1;
 
                 get_mac(conn_eth, interface);
@@ -225,7 +225,7 @@ neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn, uint8_t xmac[6],
 {
     char                tmp_mac[20] = { 0 };
     neu_conn_eth_sub_t *sub         = NULL;
-    callback_elem_t *   elem        = NULL;
+    callback_elem_t    *elem        = NULL;
 
     snprintf(tmp_mac, sizeof(tmp_mac), "%X:%X:%X-%X:%X:%X", xmac[0], xmac[1],
              xmac[2], xmac[3], xmac[4], xmac[5]);

@@ -102,10 +102,10 @@ static int driver_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
     plugin->protocol = MODBUS_PROTOCOL_RTU;
-    plugin->events   = neu_event_new();
+    plugin->events   = neu_event_new(plugin->common.name);
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,
-                                        modbus_send_msg, modbus_value_handle,
-                                        modbus_write_resp);
+                                           modbus_send_msg, modbus_value_handle,
+                                           modbus_write_resp);
 
     plog_notice(plugin, "%s init success", plugin->common.name);
     return 0;
@@ -146,7 +146,7 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char *           err_param = NULL;
+    char            *err_param = NULL;
     neu_conn_param_t param     = { 0 };
 
     neu_json_elem_t link     = { .name = "link", .t = NEU_JSON_INT };
