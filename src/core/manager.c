@@ -54,11 +54,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
 
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data);
-inline static void forward_msg(neu_manager_t *     manager,
+inline static void forward_msg(neu_manager_t      *manager,
                                neu_reqresp_head_t *header, const char *node);
-inline static void forward_msg_copy(neu_manager_t *     manager,
+inline static void forward_msg_copy(neu_manager_t      *manager,
                                     neu_reqresp_head_t *header,
-                                    const char *        node);
+                                    const char         *node);
 
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  update_timestamp(void *usr_data);
@@ -85,10 +85,10 @@ uint16_t neu_manager_get_port()
 neu_manager_t *neu_manager_create()
 {
     int                  rv      = 0;
-    neu_manager_t *      manager = calloc(1, sizeof(neu_manager_t));
+    neu_manager_t       *manager = calloc(1, sizeof(neu_manager_t));
     neu_event_io_param_t param   = {
-        .usr_data = (void *) manager,
-        .cb       = manager_loop,
+          .usr_data = (void *) manager,
+          .cb       = manager_loop,
     };
 
     neu_event_timer_param_t timestamp_timer_param = {
@@ -98,7 +98,7 @@ neu_manager_t *neu_manager_create()
         .type        = NEU_EVENT_TIMER_NOBLOCK,
     };
 
-    manager->events            = neu_event_new();
+    manager->events            = neu_event_new("manager");
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
@@ -206,9 +206,9 @@ void neu_manager_destroy(neu_manager_t *manager)
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 {
     int                 rv       = 0;
-    neu_manager_t *     manager  = (neu_manager_t *) usr_data;
+    neu_manager_t      *manager  = (neu_manager_t *) usr_data;
     struct sockaddr_in  src_addr = { 0 };
-    neu_msg_t *         msg      = NULL;
+    neu_msg_t          *msg      = NULL;
     neu_reqresp_head_t *header   = NULL;
 
     if (type == NEU_EVENT_IO_CLOSED || type == NEU_EVENT_IO_HUP) {
@@ -706,7 +706,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_PLUGIN: {
-        UT_array *            plugins = neu_manager_get_plugins(manager);
+        UT_array             *plugins = neu_manager_get_plugins(manager);
         neu_resp_get_plugin_t resp    = { .plugins = plugins };
 
         header->type = NEU_RESP_GET_PLUGIN;
@@ -1095,7 +1095,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_GET_NODE: {
         neu_req_get_node_t *cmd = (neu_req_get_node_t *) &header[1];
-        UT_array *          nodes =
+        UT_array           *nodes =
             neu_manager_get_nodes(manager, cmd->type, cmd->plugin, cmd->node);
         neu_resp_get_node_t resp = { .nodes = nodes };
 
@@ -1229,7 +1229,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
         {
             neu_resp_get_sub_driver_tags_info_t in = { 0 };
-            neu_adapter_t *                     driver =
+            neu_adapter_t                      *driver =
                 neu_node_manager_find(manager->node_manager, info->driver);
             assert(driver != NULL);
 
@@ -1669,7 +1669,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     return 0;
 }
 
-inline static void forward_msg(neu_manager_t *     manager,
+inline static void forward_msg(neu_manager_t      *manager,
                                neu_reqresp_head_t *header, const char *node)
 {
     struct sockaddr_in addr =
@@ -1690,9 +1690,9 @@ inline static void forward_msg(neu_manager_t *     manager,
     }
 }
 
-inline static void forward_msg_copy(neu_manager_t *     manager,
+inline static void forward_msg_copy(neu_manager_t      *manager,
                                     neu_reqresp_head_t *header,
-                                    const char *        node)
+                                    const char         *node)
 {
     neu_msg_t *msg = neu_msg_copy((neu_msg_t *) header);
     forward_msg(manager, neu_msg_get_header(msg), node);
@@ -1700,10 +1700,10 @@ inline static void forward_msg_copy(neu_manager_t *     manager,
 
 static void start_static_adapter(neu_manager_t *manager, const char *name)
 {
-    neu_adapter_t *       adapter      = NULL;
+    neu_adapter_t        *adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
-        .name = name,
+           .name = name,
     };
 
     neu_plugin_manager_load_static(manager->plugin_manager, name, &instance);
@@ -1719,10 +1719,10 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display)
 {
-    neu_adapter_t *       adapter      = NULL;
+    neu_adapter_t        *adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
-        .name = name,
+           .name = name,
     };
 
     if (0 !=
@@ -1752,7 +1752,7 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         neu_node_manager_get_addr(manager->node_manager, header->receiver);
 
     neu_reqresp_type_e t                           = header->type;
-    void *             ctx                         = header->ctx;
+    void              *ctx                         = header->ctx;
     char               receiver[NEU_NODE_NAME_LEN] = { 0 };
     strncpy(receiver, header->receiver, sizeof(receiver));
 

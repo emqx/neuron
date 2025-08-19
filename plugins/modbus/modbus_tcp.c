@@ -102,10 +102,10 @@ static int driver_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
     plugin->protocol = MODBUS_PROTOCOL_TCP;
-    plugin->events   = neu_event_new();
+    plugin->events   = neu_event_new(plugin->common.name);
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_TCP,
-                                        modbus_send_msg, modbus_value_handle,
-                                        modbus_write_resp);
+                                           modbus_send_msg, modbus_value_handle,
+                                           modbus_write_resp);
 
     plog_notice(plugin, "%s init success", plugin->common.name);
     return 0;
@@ -146,20 +146,20 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char *           err_param = NULL;
+    char            *err_param = NULL;
     neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t  host      = { .name      = "host",
-                             .t         = NEU_JSON_STR,
-                             .v.val_str = NULL };
+                                   .t         = NEU_JSON_STR,
+                                   .v.val_str = NULL };
     neu_json_elem_t  interval  = { .name = "interval", .t = NEU_JSON_INT };
     neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
     neu_conn_param_t param = { 0 };
     neu_json_elem_t  max_retries = { .name = "max_retries", .t = NEU_JSON_INT };
     neu_json_elem_t  retry_interval = { .name = "retry_interval",
-                                       .t    = NEU_JSON_INT };
+                                        .t    = NEU_JSON_INT };
     neu_json_elem_t  endianess_64   = { .name = "endianess_64",
-                                     .t    = NEU_JSON_INT };
+                                        .t    = NEU_JSON_INT };
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);

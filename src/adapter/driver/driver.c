@@ -39,8 +39,8 @@ typedef struct to_be_write_tag {
     bool           single;
     neu_datatag_t *tag;
     neu_value_u    value;
-    UT_array *     tvs;
-    void *         req;
+    UT_array      *tvs;
+    void          *req;
 } to_be_write_tag_t;
 
 typedef struct {
@@ -52,16 +52,16 @@ typedef struct group {
     char *name;
 
     int64_t         timestamp;
-    neu_group_t *   group;
-    UT_array *      static_tags;
-    UT_array *      wt_tags;
+    neu_group_t    *group;
+    UT_array       *static_tags;
+    UT_array       *wt_tags;
     pthread_mutex_t wt_mtx;
 
     neu_event_timer_t *report;
     neu_event_timer_t *read;
     neu_event_timer_t *write;
 
-    UT_array *      apps; // sub_app_t array
+    UT_array       *apps; // sub_app_t array
     pthread_mutex_t apps_mtx;
 
     neu_plugin_group_t    grp;
@@ -74,7 +74,7 @@ struct neu_adapter_driver {
     neu_adapter_t adapter;
 
     neu_driver_cache_t *cache;
-    neu_events_t *      driver_events;
+    neu_events_t       *driver_events;
 
     size_t        tag_cnt;
     struct group *groups;
@@ -106,10 +106,10 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
-static group_t *   find_group(neu_adapter_driver_t *driver, const char *name);
+static group_t    *find_group(neu_adapter_driver_t *driver, const char *name);
 static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
 static inline void start_group_timer(neu_adapter_driver_t *driver,
-                                     group_t *             grp);
+                                     group_t              *grp);
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
 
 static void format_tag_value(neu_dvalue_t *value)
@@ -173,7 +173,7 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta)
 {
-    neu_adapter_driver_t *         driver = (neu_adapter_driver_t *) adapter;
+    neu_adapter_driver_t          *driver = (neu_adapter_driver_t *) adapter;
     neu_adapter_update_metric_cb_t update_metric =
         driver->adapter.cb_funs.update_metric;
 
@@ -337,9 +337,9 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    driver->cache                                   = neu_driver_cache_new();
-    driver->driver_events                           = neu_event_new();
-    driver->adapter.cb_funs.driver.update           = update;
+    driver->cache                         = neu_driver_cache_new();
+    driver->driver_events                 = neu_event_new("adapter_driver");
+    driver->adapter.cb_funs.driver.update = update;
     driver->adapter.cb_funs.driver.write_response   = write_response;
     driver->adapter.cb_funs.driver.update_im        = update_im;
     driver->adapter.cb_funs.driver.update_with_meta = update_with_meta;
@@ -472,14 +472,17 @@ void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
 
-    HASH_ITER(hh, driver->groups, el, tmp) { stop_group_timer(driver, el); }
+    HASH_ITER(hh, driver->groups, el, tmp)
+    {
+        stop_group_timer(driver, el);
+    }
 }
 
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
-                                   neu_reqresp_head_t *  req)
+                                   neu_reqresp_head_t   *req)
 {
     neu_req_read_group_t *cmd = (neu_req_read_group_t *) &req[1];
-    group_t *             g   = find_group(driver, cmd->group);
+    group_t              *g   = find_group(driver, cmd->group);
     if (g == NULL) {
         neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
         req->type              = NEU_RESP_ERROR;
@@ -489,7 +492,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     }
 
     neu_resp_read_group_t resp  = { 0 };
-    neu_group_t *         group = g->group;
+    neu_group_t          *group = g->group;
     UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
 
     utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
@@ -549,7 +552,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 }
 
 void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
-                                            neu_reqresp_head_t *  req)
+                                            neu_reqresp_head_t   *req)
 {
     neu_req_read_group_paginate_t *cmd =
         (neu_req_read_group_paginate_t *) &req[1];
@@ -563,8 +566,8 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
     }
 
     neu_resp_read_group_paginate_t resp  = { 0 };
-    neu_group_t *                  group = g->group;
-    UT_array *                     tags;
+    neu_group_t                   *group = g->group;
+    UT_array                      *tags;
 
     if (cmd->is_error != true && cmd->current_page > 0 && cmd->page_size > 0) {
         tags = neu_group_query_read_tag_paginate(
@@ -837,7 +840,7 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
 }
 
 void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
-                                   neu_reqresp_head_t *  req)
+                                   neu_reqresp_head_t   *req)
 {
     neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
 
@@ -911,10 +914,10 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
 }
 
 void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
-                                    neu_reqresp_head_t *  req)
+                                    neu_reqresp_head_t   *req)
 {
     neu_req_write_gtags_t *cmd     = (neu_req_write_gtags_t *) &req[1];
-    group_t *              first_g = NULL;
+    group_t               *first_g = NULL;
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         driver->adapter.cb_funs.driver.write_response(
@@ -1008,7 +1011,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
 }
 
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
-                                  neu_reqresp_head_t *  req)
+                                  neu_reqresp_head_t   *req)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         driver->adapter.cb_funs.driver.write_response(
@@ -1017,7 +1020,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     }
 
     neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
-    group_t *            g   = find_group(driver, cmd->group);
+    group_t             *g   = find_group(driver, cmd->group);
 
     if (g == NULL) {
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
@@ -1268,7 +1271,7 @@ uint16_t neu_adapter_driver_group_count(neu_adapter_driver_t *driver)
 }
 
 uint16_t neu_adapter_driver_new_group_count(neu_adapter_driver_t *driver,
-                                            neu_req_add_gtag_t *  cmd)
+                                            neu_req_add_gtag_t   *cmd)
 {
     uint16_t new_groups_count = 0;
     for (int i = 0; i < cmd->n_group; i++) {
@@ -1290,7 +1293,7 @@ static group_t *find_group(neu_adapter_driver_t *driver, const char *name)
     return find;
 }
 int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
-                                   const char *          name)
+                                   const char           *name)
 {
     group_t *find = NULL;
     int      ret  = NEU_ERR_GROUP_NOT_EXIST;
@@ -1305,7 +1308,7 @@ int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
 
 UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
 {
-    group_t * el = NULL, *tmp = NULL;
+    group_t  *el = NULL, *tmp = NULL;
     UT_array *groups = NULL;
     UT_icd    icd    = { sizeof(neu_resp_group_info_t), NULL, NULL, NULL };
 
@@ -1558,9 +1561,9 @@ void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
 }
 
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
-                                          const char *          group)
+                                          const char           *group)
 {
-    group_t * find = NULL;
+    group_t  *find = NULL;
     UT_array *tags = NULL;
 
     HASH_FIND_STR(driver->groups, group, find);
@@ -1574,7 +1577,7 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
 UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
                                       const char *group, const char *tag)
 {
-    group_t * find = NULL;
+    group_t  *find = NULL;
     UT_array *tags = NULL;
 
     HASH_FIND_STR(driver->groups, group, find);
@@ -1640,7 +1643,7 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
 
 static int report_callback(void *usr_data)
 {
-    group_t *                group = (group_t *) usr_data;
+    group_t                 *group = (group_t *) usr_data;
     neu_node_running_state_e state = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
@@ -1777,7 +1780,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
 
 static int write_callback(void *usr_data)
 {
-    group_t *                group = (group_t *) usr_data;
+    group_t                 *group = (group_t *) usr_data;
     neu_node_running_state_e state = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
@@ -1809,7 +1812,7 @@ static int write_callback(void *usr_data)
 
 static int read_callback(void *usr_data)
 {
-    group_t *                group = (group_t *) usr_data;
+    group_t                 *group = (group_t *) usr_data;
     neu_node_running_state_e state = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
@@ -2377,10 +2380,10 @@ static void store_write_tag(group_t *group, to_be_write_tag_t *tag)
 }
 
 void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
-                                  neu_req_subscribe_t * req)
+                                  neu_req_subscribe_t  *req)
 {
     sub_app_t sub_app = { 0 };
-    group_t * find    = NULL;
+    group_t  *find    = NULL;
 
     HASH_FIND_STR(driver->groups, req->group, find);
     if (find == NULL) {
@@ -2411,7 +2414,7 @@ void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
     report_to_app(driver, find, sub_app.addr);
 }
 
-void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
+void neu_adapter_driver_unsubscribe(neu_adapter_driver_t  *driver,
                                     neu_req_unsubscribe_t *req)
 {
     group_t *find = NULL;
