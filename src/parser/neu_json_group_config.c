@@ -405,6 +405,50 @@ int neu_json_encode_get_subscribe_resp(void *object, void *param)
     return ret;
 }
 
+int neu_json_encode_get_driver_subscribe_resp(void *object, void *param)
+{
+
+    neu_json_get_driver_subscribe_resp_t *resp =
+        (neu_json_get_driver_subscribe_resp_t *) param;
+
+    void *driver_array = neu_json_array();
+    for (int i = 0; i < resp->n_driver; i++) {
+        if (resp->drivers[i].n_group == 0) {
+            continue;
+        }
+
+        json_t *ob          = json_object();
+        void *  group_array = neu_json_array();
+
+        json_object_set_new(ob, "name", json_string(resp->drivers[i].driver));
+
+        for (int j = 0; j < resp->drivers[i].n_group; j++) {
+            json_t *group_ob = json_object();
+
+            json_object_set_new(group_ob, "name",
+                                json_string(resp->drivers[i].groups[j].group));
+            json_object_set_new(
+                group_ob, "subscribed",
+                json_boolean(resp->drivers[i].groups[j].subscribed));
+
+            json_array_append_new(group_array, group_ob);
+        }
+
+        json_object_set_new(ob, "groups", group_array);
+
+        json_array_append_new(driver_array, ob);
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "drivers",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = driver_array,
+    } };
+
+    return neu_json_encode_field(object, resp_elems,
+                                 NEU_JSON_ELEM_SIZE(resp_elems));
+}
+
 static inline int dump_params(void *root, char **const result)
 {
     return neu_json_dump_key(root, "params", result, false);
