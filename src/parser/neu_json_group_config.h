@@ -112,6 +112,24 @@ int neu_json_encode_get_subscribe_resp(void *json_object, void *param);
 
 typedef struct {
     char *group;
+    bool  subscribed;
+} neu_json_get_driver_subscribe_resp_group_t;
+
+typedef struct {
+    char *                                      driver;
+    int                                         n_group;
+    neu_json_get_driver_subscribe_resp_group_t *groups;
+} neu_json_get_driver_subscribe_resp_driver_t;
+
+typedef struct {
+    int                                          n_driver;
+    neu_json_get_driver_subscribe_resp_driver_t *drivers;
+} neu_json_get_driver_subscribe_resp_t;
+
+int neu_json_encode_get_driver_subscribe_resp(void *json_object, void *param);
+
+typedef struct {
+    char *group;
     char *app;
     char *driver;
     char *params;

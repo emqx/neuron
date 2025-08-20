@@ -727,6 +727,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_REQ_UPDATE_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
+    case NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP:
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
     case NEU_RESP_UPDATE_TAG:
