@@ -361,6 +361,12 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_grp_get_subscribe,
     },
     {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribes",
+        .value.handler = handle_grp_get_subscribes,
+    },
+    {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/subscribes",
