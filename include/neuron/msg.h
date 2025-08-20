@@ -60,6 +60,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_SUBSCRIBE_GROUPS,
     NEU_REQ_GET_SUBSCRIBE_GROUP,
     NEU_RESP_GET_SUBSCRIBE_GROUP,
+    NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP,
+    NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP,
     NEU_REQ_GET_SUB_DRIVER_TAGS,
     NEU_RESP_GET_SUB_DRIVER_TAGS,
 
@@ -143,14 +145,17 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_WRITE_TAGS]           = "NEU_REQ_WRITE_TAGS",
     [NEU_REQ_WRITE_GTAGS]          = "NEU_REQ_WRITE_GTAGS",
 
-    [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
-    [NEU_REQ_UNSUBSCRIBE_GROUP]      = "NEU_REQ_UNSUBSCRIBE_GROUP",
-    [NEU_REQ_UPDATE_SUBSCRIBE_GROUP] = "NEU_REQ_UPDATE_SUBSCRIBE_GROUP",
-    [NEU_REQ_SUBSCRIBE_GROUPS]       = "NEU_REQ_SUBSCRIBE_GROUPS",
-    [NEU_REQ_GET_SUBSCRIBE_GROUP]    = "NEU_REQ_GET_SUBSCRIBE_GROUP",
-    [NEU_RESP_GET_SUBSCRIBE_GROUP]   = "NEU_RESP_GET_SUBSCRIBE_GROUP",
-    [NEU_REQ_GET_SUB_DRIVER_TAGS]    = "NEU_REQ_GET_SUB_DRIVER_TAGS",
-    [NEU_RESP_GET_SUB_DRIVER_TAGS]   = "NEU_RESP_GET_SUB_DRIVER_TAGS",
+    [NEU_REQ_SUBSCRIBE_GROUP]            = "NEU_REQ_SUBSCRIBE_GROUP",
+    [NEU_REQ_UNSUBSCRIBE_GROUP]          = "NEU_REQ_UNSUBSCRIBE_GROUP",
+    [NEU_REQ_UPDATE_SUBSCRIBE_GROUP]     = "NEU_REQ_UPDATE_SUBSCRIBE_GROUP",
+    [NEU_REQ_SUBSCRIBE_GROUPS]           = "NEU_REQ_SUBSCRIBE_GROUPS",
+    [NEU_REQ_GET_SUBSCRIBE_GROUP]        = "NEU_REQ_GET_SUBSCRIBE_GROUP",
+    [NEU_RESP_GET_SUBSCRIBE_GROUP]       = "NEU_RESP_GET_SUBSCRIBE_GROUP",
+    [NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP] = "NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP",
+    [NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP] =
+        "NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP",
+    [NEU_REQ_GET_SUB_DRIVER_TAGS]  = "NEU_REQ_GET_SUB_DRIVER_TAGS",
+    [NEU_RESP_GET_SUB_DRIVER_TAGS] = "NEU_RESP_GET_SUB_DRIVER_TAGS",
 
     [NEU_REQ_NODE_INIT]         = "NEU_REQ_NODE_INIT",
     [NEU_REQ_NODE_UNINIT]       = "NEU_REQ_NODE_UNINIT",
@@ -547,6 +552,11 @@ typedef struct neu_req_get_subscribe_group {
     char group[NEU_GROUP_NAME_LEN];
 } neu_req_get_subscribe_group_t;
 
+typedef struct neu_req_get_driver_subscribe_group {
+    char app[NEU_NODE_NAME_LEN];
+    char name[NEU_NODE_NAME_LEN];
+} neu_req_get_driver_subscribe_group_t;
+
 typedef struct {
     char app[NEU_NODE_NAME_LEN];
 } neu_req_get_sub_driver_tags_t;
@@ -558,6 +568,13 @@ typedef struct neu_resp_subscribe_info {
     char *params;
     char *static_tags;
 } neu_resp_subscribe_info_t;
+
+typedef struct neu_resp_driver_subscribe_info {
+    char driver[NEU_NODE_NAME_LEN];
+    char app[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+    bool subscribed;
+} neu_resp_driver_subscribe_info_t;
 
 static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)
 {
@@ -582,7 +599,8 @@ typedef struct {
 } neu_resp_get_sub_driver_tags_t;
 
 typedef struct neu_resp_get_subscribe_group {
-    UT_array *groups; // array neu_resp_subscribe_info_t
+    UT_array *groups; // array neu_resp_subscribe_info_t or
+                      // neu_resp_driver_subscribe_info_t
 } neu_resp_get_subscribe_group_t;
 
 typedef struct neu_req_node_setting {
