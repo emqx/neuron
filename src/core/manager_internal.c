@@ -380,6 +380,55 @@ UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
     return subs;
 }
 
+UT_array *neu_manager_get_driver_groups(neu_manager_t *manager, const char *app,
+                                        const char *name)
+{
+    UT_icd icd = { sizeof(neu_resp_driver_subscribe_info_t), NULL, NULL, NULL };
+    UT_array *result = NULL;
+
+    UT_array *sub_groups =
+        neu_subscribe_manager_get(manager->subscribe_manager, app, NULL, NULL);
+    UT_array *driver_groups = neu_manager_get_driver_group(manager);
+
+    utarray_new(result, &icd);
+    utarray_foreach(driver_groups, neu_resp_driver_group_info_t *, grp)
+    {
+        neu_resp_driver_subscribe_info_t info = { 0 };
+
+        if (name != NULL && strlen(name) > 0) {
+            if (strcmp(grp->driver, name) == 0 ||
+                strcmp(grp->group, name) == 0) {
+                strcpy(info.app, app);
+                strcpy(info.driver, grp->driver);
+                strcpy(info.group, grp->group);
+                info.subscribed = false;
+            }
+        } else {
+            strcpy(info.app, app);
+            strcpy(info.driver, grp->driver);
+            strcpy(info.group, grp->group);
+            info.subscribed = false;
+        }
+
+        if (strlen(info.driver) > 0 && strlen(info.group) > 0) {
+            utarray_foreach(sub_groups, neu_resp_subscribe_info_t *, sub)
+            {
+                if (strcmp(sub->driver, info.driver) == 0 &&
+                    strcmp(sub->group, info.group) == 0) {
+                    info.subscribed = true;
+                    break;
+                }
+            }
+
+            utarray_push_back(result, &info);
+        }
+    }
+
+    utarray_free(sub_groups);
+    utarray_free(driver_groups);
+    return result;
+}
+
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info)
 {
