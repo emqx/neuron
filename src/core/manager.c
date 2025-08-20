@@ -1010,6 +1010,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP: {
+        neu_req_get_driver_subscribe_group_t *cmd =
+            (neu_req_get_driver_subscribe_group_t *) &header[1];
+        UT_array *groups =
+            neu_manager_get_driver_groups(manager, cmd->app, cmd->name);
+        neu_resp_get_subscribe_group_t resp = { .groups = groups };
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP;
+        reply(manager, header, &resp);
+        break;
+    }
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
         neu_req_get_sub_driver_tags_t *cmd =
             (neu_req_get_sub_driver_tags_t *) &header[1];
