@@ -396,8 +396,8 @@ UT_array *neu_manager_get_driver_groups(neu_manager_t *manager, const char *app,
         neu_resp_driver_subscribe_info_t info = { 0 };
 
         if (name != NULL && strlen(name) > 0) {
-            if (strcmp(grp->driver, name) == 0 ||
-                strcmp(grp->group, name) == 0) {
+            if (strstr(grp->driver, name) != NULL ||
+                strstr(grp->group, name) != NULL) {
                 strcpy(info.app, app);
                 strcpy(info.driver, grp->driver);
                 strcpy(info.group, grp->group);
