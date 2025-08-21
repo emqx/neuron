@@ -406,10 +406,16 @@ void handle_grp_subscribes(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_groups_req_t,
         neu_json_decode_subscribe_groups_req, {
-            int ret = send_subscribe_groups(aio, req);
-            if (0 != ret) {
+            int ret = 0;
+            if (req->n_group == 0) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
+            } else {
+                ret = send_subscribe_groups(aio, req);
+                if (0 != ret) {
+                    NEU_JSON_RESPONSE_ERROR(
+                        ret, { neu_http_response(aio, ret, result_error); });
+                }
             }
         })
 }
