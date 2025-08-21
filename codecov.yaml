@@ -1,5 +1,6 @@
 ignore:
   - "src/otel/*.pb-c.c"
+  - "plugins/mqtt/azure_iot_plugin.c"
 coverage:
   status:
     project:
