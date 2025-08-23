@@ -130,15 +130,23 @@ static int driver_uninit(neu_plugin_t *plugin)
         modbus_stack_destroy(plugin->stack);
     }
 
-    if (!plugin->is_server) {
+    // Repair: Release the corresponding IP memory according to the current
+    // mode.
+    if (plugin->is_server) {
+        if (plugin->param.params.tcp_server.ip != NULL) {
+            free(plugin->param.params.tcp_server.ip);
+            plugin->param.params.tcp_server.ip = NULL;
+        }
+    } else {
         if (plugin->param.params.tcp_client.ip != NULL) {
             free(plugin->param.params.tcp_client.ip);
             plugin->param.params.tcp_client.ip = NULL;
         }
-        if (plugin->param_backup.params.tcp_client.ip != NULL) {
-            free(plugin->param_backup.params.tcp_client.ip);
-            plugin->param_backup.params.tcp_client.ip = NULL;
-        }
+    }
+    // Fix: Release the backup IP memory.
+    if (plugin->param_backup.params.tcp_client.ip != NULL) {
+        free(plugin->param_backup.params.tcp_client.ip);
+        plugin->param_backup.params.tcp_client.ip = NULL;
     }
 
     neu_event_close(plugin->events);
@@ -282,33 +290,58 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->address_base   = address_base.v.val_int;
 
     if (mode.v.val_int == 1) {
-        param.type                           = NEU_CONN_TCP_SERVER;
-        param.params.tcp_server.ip           = host.v.val_str;
+        param.type                 = NEU_CONN_TCP_SERVER;
+        param.params.tcp_server.ip = strdup(
+            host.v.val_str); // fix: Create a copy instead of direct assignment
         param.params.tcp_server.port         = port.v.val_int;
         param.params.tcp_server.start_listen = modbus_tcp_server_listen;
         param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
         param.params.tcp_server.timeout      = timeout.v.val_int;
         param.params.tcp_server.max_link     = 1;
-        plugin->is_server                    = true;
         backup                               = false;
 
-        if (plugin->param.params.tcp_client.ip != NULL) {
-            free(plugin->param.params.tcp_client.ip);
-            plugin->param.params.tcp_client.ip = NULL;
+        // Fix: Release previous memory when switching to Server mode. Note: Due
+        // to union sharing memory, it is necessary to determine how to release
+        // based on the previous mode.
+        if (!plugin->is_server) {
+            // before client to server
+            if (plugin->param.params.tcp_client.ip != NULL) {
+                free(plugin->param.params.tcp_client.ip);
+                plugin->param.params.tcp_client.ip = NULL;
+            }
+        } else {
+            // before server to server
+            if (plugin->param.params.tcp_server.ip != NULL) {
+                free(plugin->param.params.tcp_server.ip);
+                plugin->param.params.tcp_server.ip = NULL;
+            }
         }
+
+        plugin->is_server = true;
+
         if (plugin->param_backup.params.tcp_client.ip != NULL) {
             free(plugin->param_backup.params.tcp_client.ip);
             plugin->param_backup.params.tcp_client.ip = NULL;
         }
     }
     if (mode.v.val_int == 0) {
-        plugin->is_server = false;
-        param.type        = NEU_CONN_TCP_CLIENT;
-
-        if (plugin->param.params.tcp_client.ip != NULL) {
-            free(plugin->param.params.tcp_client.ip);
-            plugin->param.params.tcp_client.ip = NULL;
+        param.type = NEU_CONN_TCP_CLIENT;
+        // Fix: Release memory based on the previous mode when switching to
+        // Client mode
+        if (plugin->is_server) {
+            // before server to client
+            if (plugin->param.params.tcp_server.ip != NULL) {
+                free(plugin->param.params.tcp_server.ip);
+                plugin->param.params.tcp_server.ip = NULL;
+            }
+        } else {
+            // before client to client
+            if (plugin->param.params.tcp_client.ip != NULL) {
+                free(plugin->param.params.tcp_client.ip);
+                plugin->param.params.tcp_client.ip = NULL;
+            }
         }
+        plugin->is_server = false;
 
         param.params.tcp_client.ip      = strdup(host.v.val_str);
         param.params.tcp_client.port    = port.v.val_int;
