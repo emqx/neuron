@@ -56,6 +56,66 @@ typedef struct {
     char *hash;
 } neu_persist_user_info_t;
 
+typedef struct {
+    int    id;
+    char * app_name;
+    char * common_name;
+    char * subject;
+    char * issuer;
+    char * valid_from;
+    char * valid_to;
+    char * serial_number;
+    char * fingerprint;
+    void * certificate_data;
+    size_t certificate_size;
+    void * private_key_data;
+    size_t private_key_size;
+    char * created_at;
+    char * updated_at;
+} neu_persist_server_cert_info_t;
+
+typedef struct {
+    int    id;
+    char * app_name;
+    char * common_name;
+    char * subject;
+    char * issuer;
+    char * valid_from;
+    char * valid_to;
+    char * serial_number;
+    char * fingerprint;
+    void * certificate_data;
+    size_t certificate_size;
+    int    is_ca;
+    int    trust_status;
+    char * created_at;
+} neu_persist_client_cert_info_t;
+
+typedef struct {
+    int   id;
+    char *app_name;
+    char *policy_name;
+    char *created_at;
+    char *updated_at;
+} neu_persist_security_policy_info_t;
+
+typedef struct {
+    int   id;
+    char *app_name;
+    int   enabled;
+    char *created_at;
+    char *updated_at;
+} neu_persist_auth_setting_info_t;
+
+typedef struct {
+    int   id;
+    char *app_name;
+    char *username;
+    char *password_hash;
+    char *created_at;
+    char *updated_at;
+} neu_persist_auth_user_info_t;
+
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
     utarray_free(plugin_infos);
@@ -90,6 +150,65 @@ static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
 {
     free(info->name);
     free(info->hash);
+}
+
+static inline void
+neu_persist_server_cert_info_fini(neu_persist_server_cert_info_t *info)
+{
+    free(info->app_name);
+    free(info->common_name);
+    free(info->subject);
+    free(info->issuer);
+    free(info->valid_from);
+    free(info->valid_to);
+    free(info->serial_number);
+    free(info->fingerprint);
+    free(info->certificate_data);
+    free(info->private_key_data);
+    free(info->created_at);
+    free(info->updated_at);
+}
+
+static inline void
+neu_persist_client_cert_info_fini(neu_persist_client_cert_info_t *info)
+{
+    free(info->app_name);
+    free(info->common_name);
+    free(info->subject);
+    free(info->issuer);
+    free(info->valid_from);
+    free(info->valid_to);
+    free(info->serial_number);
+    free(info->fingerprint);
+    free(info->certificate_data);
+    free(info->created_at);
+}
+
+static inline void
+neu_persist_security_policy_info_fini(neu_persist_security_policy_info_t *info)
+{
+    free(info->app_name);
+    free(info->policy_name);
+    free(info->created_at);
+    free(info->updated_at);
+}
+
+static inline void
+neu_persist_auth_setting_info_fini(neu_persist_auth_setting_info_t *info)
+{
+    free(info->app_name);
+    free(info->created_at);
+    free(info->updated_at);
+}
+
+static inline void
+neu_persist_auth_user_info_fini(neu_persist_auth_user_info_t *info)
+{
+    free(info->app_name);
+    free(info->username);
+    free(info->password_hash);
+    free(info->created_at);
+    free(info->updated_at);
 }
 
 /**
@@ -352,6 +471,190 @@ int neu_persister_load_user(const char *              user_name,
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_delete_user(const char *user_name);
+
+/**
+ * Save server certificate.
+ * @param cert_info                 server certificate info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_server_cert(
+    const neu_persist_server_cert_info_t *cert_info);
+
+/**
+ * Update server certificate.
+ * @param cert_info                 server certificate info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_server_cert(
+    const neu_persist_server_cert_info_t *cert_info);
+
+/**
+ * Load server certificate by app name.
+ * @param app_name                  name of the application
+ * @param cert_info_p               output parameter of certificate info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_server_cert(
+    const char *app_name, neu_persist_server_cert_info_t **cert_info_p);
+
+/**
+ * Delete server certificate by app name.
+ * @param app_name                  name of the application
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_server_cert(const char *app_name);
+
+/**
+ * Load all server certificates.
+ * @param[out] cert_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_server_cert_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_server_certs(UT_array **cert_infos);
+
+/**
+ * Save client certificate.
+ * @param cert_info                 client certificate info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_client_cert(
+    const neu_persist_client_cert_info_t *cert_info);
+
+/**
+ * Update client certificate.
+ * @param cert_info                 client certificate info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_client_cert(
+    const neu_persist_client_cert_info_t *cert_info);
+
+/**
+ * Load client certificates by app name.
+ * @param app_name                  name of the application
+ * @param[out] cert_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_client_cert_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_client_certs_by_app(const char *app_name,
+                                           UT_array ** cert_infos);
+
+/**
+ * Load all client certificates.
+ * @param[out] cert_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_client_cert_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_client_certs(UT_array **cert_infos);
+
+/**
+ * Delete client certificate fingerprint .
+ * @param fingerprint                   fingerprint of the certificate
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_client_cert(const char *fingerprint);
+
+/**
+ * Save security policy.
+ * @param policy_info               security policy info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_security_policy(
+    const neu_persist_security_policy_info_t *policy_info);
+
+/**
+ * Update security policy.
+ * @param policy_info               security policy info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_security_policy(
+    const neu_persist_security_policy_info_t *policy_info);
+
+/**
+ * Load security policy by app name.
+ * @param app_name                  name of the application
+ * @param policy_info_p             output parameter of security policy info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_security_policy(
+    const char *app_name, neu_persist_security_policy_info_t **policy_info_p);
+
+/**
+ * Load all security policies.
+ * @param[out] policy_infos         used to return pointer to heap allocated
+ *                                  vector of
+ * neu_persist_security_policy_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_security_policies(UT_array **policy_infos);
+
+/**
+ * Save authentication setting.
+ * @param auth_info                 authentication setting info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_auth_setting(
+    const neu_persist_auth_setting_info_t *auth_info);
+
+/**
+ * Update authentication setting.
+ * @param auth_info                 authentication setting info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_auth_setting(
+    const neu_persist_auth_setting_info_t *auth_info);
+
+/**
+ * Load authentication setting by app name.
+ * @param app_name                  name of the application
+ * @param auth_info_p               output parameter of auth setting info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_auth_setting(
+    const char *app_name, neu_persist_auth_setting_info_t **auth_info_p);
+
+/**
+ * Save authentication user.
+ * @param user_info                 authentication user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_auth_user(
+    const neu_persist_auth_user_info_t *user_info);
+
+/**
+ * Update authentication user.
+ * @param user_info                 authentication user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_auth_user(
+    const neu_persist_auth_user_info_t *user_info);
+
+/**
+ * Load authentication user by app name and username.
+ * @param app_name                  name of the application
+ * @param username                  name of the user
+ * @param user_info_p               output parameter of auth user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_auth_user(const char *app_name, const char *username,
+                                 neu_persist_auth_user_info_t **user_info_p);
+
+/**
+ * Load authentication users by app name.
+ * @param app_name                  name of the application
+ * @param[out] user_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_auth_user_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_auth_users_by_app(const char *app_name,
+                                         UT_array ** user_infos);
+
+/**
+ * Delete authentication user by app name and username.
+ * @param app_name                  name of the application
+ * @param username                  name of the user
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_auth_user(const char *app_name, const char *username);
 
 char *neu_persister_save_file_tmp(const char *file_data, uint32_t len,
                                   const char *suffix);

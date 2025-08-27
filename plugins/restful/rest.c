@@ -26,6 +26,7 @@
 
 #include "adapter_handle.h"
 #include "argparse.h"
+#include "cert_handle.h"
 #include "datalayers_handle.h"
 #include "datatag_handle.h"
 #include "define.h"
@@ -358,6 +359,48 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                     scope, NEU_OTEL_STATUS_OK,
                     ((neu_resp_scan_tags_t *) data)->error);
             }
+        }
+        break;
+    case NEU_RESP_SERVER_CERT_INFO:
+        handle_server_cert_get_resp(header->ctx,
+                                    (neu_resp_server_cert_data_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_SERVER_CERT_EXPORT:
+        handle_server_cert_export_resp(header->ctx,
+                                       (neu_resp_server_cert_export_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_CLIENT_CERT_INFO:
+        handle_client_cert_get_resp(header->ctx,
+                                    (neu_resp_client_certs_data_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_SERVER_AUTH_USER_INFO:
+        handle_get_basic_users_resp(header->ctx,
+                                    (neu_resp_server_auth_users_info_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
+        handle_auth_basic_status_resp(
+            header->ctx, (neu_resp_server_auth_switch_status_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_SERVER_SECURITY_POLICY_STATUS:
+        handle_get_server_security_policy_resp(
+            header->ctx, (neu_resp_server_security_policy_status_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }
         break;
     default:

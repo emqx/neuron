@@ -134,8 +134,6 @@ def get_group(node="", group=""):
         return requests.get(url=config.BASE_URL + f'/api/v2/group?node={node}&group={group}', headers={"Authorization": config.default_jwt})
 
 
-
-
 @gen_check
 def add_tags(node, group, tags):
     return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt, "traceparent": "00-6fb7651916cd43dd8448eb211c80319c-c7ad6b7169203331-01", "tracestate": "service.name=neuron,a=b,c=d"}, json={"node": node, "group": group, "tags": tags})
@@ -386,6 +384,7 @@ def modbus_rtu_node_setting_base(node, port=502, connection_mode=0, transport_mo
                                     "max_retries": max_retries, "retry_interval": retry_interval, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data, "address_base": base})
 
+
 def modbus_tcp_node_setting_backup(node, port, backup_port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=2000, max_retries=2, retry_interval=1):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
                                     "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "retry_interval": retry_interval, "backup_host": "127.0.0.1", "backup_port": backup_port})
@@ -417,8 +416,131 @@ def otel_stop():
 def otel_get():
     return requests.get(url=config.BASE_URL + "/api/v2/otel", headers={"Authorization": config.default_jwt})
 
+
 def get_log_list():
     return requests.get(url=config.BASE_URL + "/api/v2/log/list", headers={"Authorization": config.default_jwt})
 
+
 def get_log_file(file_name=""):
     return requests.get(url=config.BASE_URL + "/api/v2/log/file?name=" + file_name, headers={"Authorization": config.default_jwt})
+
+
+# Certificate Management APIs
+
+@gen_check
+def server_cert_self_sign(app_name, jwt=config.default_jwt):
+    """Generate self-signed server certificate"""
+    return requests.post(url=config.BASE_URL + "/api/v2/certs/self-signed",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name})
+
+
+@gen_check
+def server_cert_upload(app_name, certificate, private_key, jwt=config.default_jwt):
+    """Upload server certificate and private key"""
+    return requests.post(url=config.BASE_URL + "/api/v2/certs/server",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "certificate": certificate, "privateKey": private_key})
+
+
+def server_cert_get(node, jwt=config.default_jwt):
+    """Get server certificate information"""
+    return requests.get(url=config.BASE_URL + "/api/v2/certs/server",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+def server_cert_export(node, jwt=config.default_jwt):
+    """Export server certificate"""
+    return requests.get(url=config.BASE_URL + "/api/v2/certs/server/export",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+@gen_check
+def client_cert_upload(app_name, certificate, is_ca=False, jwt=config.default_jwt):
+    """Upload client certificate"""
+    return requests.post(url=config.BASE_URL + "/api/v2/certs/client",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "certificate": certificate, "isCa": is_ca})
+
+
+@gen_check
+def client_cert_delete(app_name, fingerprint, jwt=config.default_jwt):
+    """Delete client certificate by fingerprint"""
+    return requests.delete(url=config.BASE_URL + "/api/v2/certs/client",
+                           headers={"Authorization": jwt},
+                           json={"node": app_name, "fingerprint": fingerprint})
+
+
+@gen_check
+def client_cert_trust(app_name, fingerprint, jwt=config.default_jwt):
+    """Trust client certificate by fingerprint"""
+    return requests.post(url=config.BASE_URL + "/api/v2/certs/client/trust",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "fingerprint": fingerprint})
+
+
+def client_cert_get(node, jwt=config.default_jwt):
+    """Get client certificates information"""
+    return requests.get(url=config.BASE_URL + "/api/v2/certs/client",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+# Authentication APIs
+@gen_check
+def auth_basic_enable(app_name, enabled=True, jwt=config.default_jwt):
+    """Enable or disable basic authentication"""
+    return requests.post(url=config.BASE_URL + "/api/v2/auth/basic/enable",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "enabled": enabled})
+
+
+def auth_basic_status(node, jwt=config.default_jwt):
+    """Get basic authentication status"""
+    return requests.get(url=config.BASE_URL + "/api/v2/auth/basic/enable",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+def add_basic_user(app_name, username, password, jwt=config.default_jwt):
+    """Add basic authentication user"""
+    return requests.post(url=config.BASE_URL + "/api/v2/auth/basic/users",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "username": username, "password": password})
+
+
+def update_basic_user(app_name, username, new_password, jwt=config.default_jwt):
+    """Update basic authentication user password"""
+    return requests.put(url=config.BASE_URL + "/api/v2/auth/basic/users",
+                        headers={"Authorization": jwt},
+                        json={"node": app_name, "username": username, "password": new_password})
+
+
+def delete_basic_user(app_name, username, jwt=config.default_jwt):
+    """Delete basic authentication user"""
+    return requests.delete(url=config.BASE_URL + "/api/v2/auth/basic/users",
+                           headers={"Authorization": jwt},
+                           json={"node": app_name, "username": username})
+
+
+def get_basic_users(node, jwt=config.default_jwt):
+    """Get list of basic authentication users"""
+    return requests.get(url=config.BASE_URL + "/api/v2/auth/basic/users",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+def get_server_security_policy(node, jwt=config.default_jwt):
+    """Get server security policy"""
+    return requests.get(url=config.BASE_URL + "/api/v2/auth/basic/security_policies",
+                        headers={"Authorization": jwt},
+                        params={"node": node})
+
+
+def server_security_policy(app_name, policy_name, jwt=config.default_jwt):
+    """Set server security policy"""
+    return requests.post(url=config.BASE_URL + "/api/v2/auth/basic/security_policies",
+                         headers={"Authorization": jwt},
+                         json={"node": app_name, "policyName": policy_name})

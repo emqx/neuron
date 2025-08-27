@@ -172,6 +172,29 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UNSUBSCRIBE_GROUP_EVENT,
     NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT,
     NEU_REQ_SUBSCRIBE_GROUPS_EVENT,
+
+    NEU_REQ_SERVER_CERT_SELF_SIGN,
+    NEU_REQ_SERVER_CERT_UPLOAD,
+    NEU_REQ_SERVER_CERT_INFO,
+    NEU_RESP_SERVER_CERT_INFO,
+    NEU_REQ_SERVER_CERT_EXPORT,
+    NEU_RESP_SERVER_CERT_EXPORT,
+    NEU_REQ_CLIENT_CERT_UPLOAD,
+    NEU_REQ_CLIENT_CERT_DELETE,
+    NEU_REQ_CLIENT_CERT_TRUST,
+    NEU_REQ_CLIENT_CERT_INFO,
+    NEU_RESP_CLIENT_CERT_INFO,
+    NEU_REQ_SERVER_SECURITY_POLICY,
+    NEU_REQ_SERVER_SECURITY_POLICY_STATUS,
+    NEU_RESP_SERVER_SECURITY_POLICY_STATUS,
+    NEU_REQ_SERVER_AUTH_SWITCH,
+    NEU_REQ_SERVER_AUTH_SWITCH_STATUS,
+    NEU_RESP_SERVER_AUTH_SWITCH_STATUS,
+    NEU_REQ_SERVER_AUTH_USER_ADD,
+    NEU_REQ_SERVER_AUTH_USER_DELETE,
+    NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD,
+    NEU_REQ_SERVER_AUTH_USER_INFO,
+    NEU_RESP_SERVER_AUTH_USER_INFO,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -302,6 +325,32 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT] =
         "NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT",
     [NEU_REQ_SUBSCRIBE_GROUPS_EVENT] = "NEU_REQ_SUBSCRIBE_GROUPS_EVENT",
+
+    [NEU_REQ_SERVER_CERT_SELF_SIGN]  = "NEU_REQ_SERVER_CERT_SELF_SIGN",
+    [NEU_REQ_SERVER_CERT_UPLOAD]     = "NEU_REQ_SERVER_CERT_UPLOAD",
+    [NEU_REQ_SERVER_CERT_INFO]       = "NEU_REQ_SERVER_CERT_INFO",
+    [NEU_RESP_SERVER_CERT_INFO]      = "NEU_RESP_SERVER_CERT_INFO",
+    [NEU_REQ_SERVER_CERT_EXPORT]     = "NEU_REQ_SERVER_CERT_EXPORT",
+    [NEU_RESP_SERVER_CERT_EXPORT]    = "NEU_RESP_SERVER_CERT_EXPORT",
+    [NEU_REQ_CLIENT_CERT_UPLOAD]     = "NEU_REQ_CLIENT_CERT_UPLOAD",
+    [NEU_REQ_CLIENT_CERT_DELETE]     = "NEU_REQ_CLIENT_CERT_DELETE",
+    [NEU_REQ_CLIENT_CERT_TRUST]      = "NEU_REQ_CLIENT_CERT_TRUST",
+    [NEU_REQ_CLIENT_CERT_INFO]       = "NEU_REQ_CLIENT_CERT_INFO",
+    [NEU_RESP_CLIENT_CERT_INFO]      = "NEU_RESP_CLIENT_CERT_INFO",
+    [NEU_REQ_SERVER_SECURITY_POLICY] = "NEU_REQ_SERVER_SECURITY_POLICY",
+    [NEU_REQ_SERVER_SECURITY_POLICY_STATUS] =
+        "NEU_REQ_SERVER_SECURITY_POLICY_STATUS",
+    [NEU_RESP_SERVER_SECURITY_POLICY_STATUS] =
+        "NEU_RESP_SERVER_SECURITY_POLICY_STATUS",
+    [NEU_REQ_SERVER_AUTH_SWITCH]         = "NEU_REQ_SERVER_AUTH_SWITCH",
+    [NEU_REQ_SERVER_AUTH_SWITCH_STATUS]  = "NEU_REQ_SERVER_AUTH_SWITCH_STATUS",
+    [NEU_RESP_SERVER_AUTH_SWITCH_STATUS] = "NEU_RESP_SERVER_AUTH_SWITCH_STATUS",
+    [NEU_REQ_SERVER_AUTH_USER_ADD]       = "NEU_REQ_SERVER_AUTH_USER_ADD",
+    [NEU_REQ_SERVER_AUTH_USER_DELETE]    = "NEU_REQ_SERVER_AUTH_USER_DELETE",
+    [NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD] =
+        "NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD",
+    [NEU_REQ_SERVER_AUTH_USER_INFO]  = "NEU_REQ_SERVER_AUTH_USER_INFO",
+    [NEU_RESP_SERVER_AUTH_USER_INFO] = "NEU_RESP_SERVER_AUTH_USER_INFO",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -997,6 +1046,13 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
         } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
                    tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
             free(tag_value->value.value.bools.bools);
+        } else if (NEU_TYPE_ARRAY_STRING == tag_value->value.type) {
+            for (size_t i = 0; i < tag_value->value.value.strs.length; ++i) {
+                free(tag_value->value.value.strs.strs[i]);
+            }
+            free(tag_value->value.value.strs.strs);
+        } else if (NEU_TYPE_CUSTOM == tag_value->value.type) {
+            json_decref(tag_value->value.value.json);
         }
 
         if (tag_value->metas != NULL) {
@@ -1021,6 +1077,13 @@ neu_resp_read_paginate_free(neu_resp_read_group_paginate_t *resp)
         } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
                    tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
             free(tag_value->value.value.bools.bools);
+        } else if (NEU_TYPE_ARRAY_STRING == tag_value->value.type) {
+            for (size_t i = 0; i < tag_value->value.value.strs.length; ++i) {
+                free(tag_value->value.value.strs.strs[i]);
+            }
+            free(tag_value->value.value.strs.strs);
+        } else if (NEU_TYPE_CUSTOM == tag_value->value.type) {
+            json_decref(tag_value->value.value.json);
         }
 
         if (tag_value->metas != NULL) {
@@ -1105,6 +1168,8 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
             } else if (NEU_TYPE_ARRAY_CHAR < tag_value->value.type &&
                        tag_value->value.type < NEU_TYPE_ARRAY_STRING) {
                 free(tag_value->value.value.bools.bools);
+            } else if (NEU_TYPE_CUSTOM == tag_value->value.type) {
+                json_decref(tag_value->value.value.json);
             }
 
             if (tag_value->metas != NULL) {
@@ -1316,8 +1381,9 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         tag_json->value.val_array_str.p_strs = tag_value->value.value.strs.strs;
         break;
     case NEU_TYPE_CUSTOM:
-        tag_json->t                = NEU_JSON_OBJECT;
-        tag_json->value.val_object = tag_value->value.value.json;
+        tag_json->t = NEU_JSON_OBJECT;
+        tag_json->value.val_object =
+            json_deep_copy(tag_value->value.value.json);
         break;
     default:
         break;
@@ -1627,6 +1693,192 @@ typedef struct {
     neu_json_value_u value;
     int64_t          error;
 } neu_resp_test_read_tag_t;
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+    int  days_valid;
+} neu_req_server_cert_self_sign_t;
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *cert_base64;
+    char *key_base64;
+} neu_req_server_cert_upload_t;
+
+static inline void
+neu_req_server_cert_upload_fini(neu_req_server_cert_upload_t *req)
+{
+    free(req->cert_base64);
+    free(req->key_base64);
+}
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+} neu_req_server_cert_data_t;
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *subject;
+    char *issuer;
+    char *expire;
+    char *fingerprint;
+} neu_resp_server_cert_data_t;
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+} neu_req_server_cert_export_t;
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *cert_base64;
+} neu_resp_server_cert_export_t;
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+    int  ca;
+} neu_req_client_cert_data_t;
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *cert_base64;
+    bool  ca;
+} neu_req_client_cert_upload_t;
+
+static inline void
+neu_req_client_cert_upload_fini(neu_req_client_cert_upload_t *req)
+{
+    free(req->cert_base64);
+}
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *fingerprint;
+} neu_req_client_cert_del_t;
+
+static inline void neu_req_client_cert_del_fini(neu_req_client_cert_del_t *req)
+{
+    free(req->fingerprint);
+}
+
+typedef neu_req_client_cert_del_t neu_req_client_cert_trust_t;
+typedef struct {
+    char *subject;
+    char *issuer;
+    char *expire;
+    char *fingerprint;
+    int   ca;
+    int   trust_status;
+} neu_resp_client_cert_data_t;
+
+typedef struct {
+    char      app_name[NEU_NODE_NAME_LEN];
+    UT_array *certs; // array of neu_resp_client_cert_data_t
+} neu_resp_client_certs_data_t;
+
+static inline void
+neu_resp_client_certs_data_free(neu_resp_client_certs_data_t *resp)
+{
+    utarray_foreach(resp->certs, neu_resp_client_cert_data_t *, cert)
+    {
+        free(cert->subject);
+        free(cert->issuer);
+        free(cert->expire);
+        free(cert->fingerprint);
+    }
+    utarray_free(resp->certs);
+}
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *policy_name;
+} neu_req_server_security_policy_t;
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+} neu_req_server_security_policy_status_t;
+
+typedef neu_req_server_security_policy_t
+    neu_resp_server_security_policy_status_t;
+
+static inline void neu_resp_server_security_policy_status_fini(
+    neu_resp_server_security_policy_status_t *resp)
+{
+    free(resp->policy_name);
+}
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+} neu_req_server_auth_switch_status_t;
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+    bool enable;
+} neu_req_server_auth_switch_t;
+
+typedef neu_req_server_auth_switch_t neu_resp_server_auth_switch_status_t;
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *user;
+    char *pwd;
+} neu_req_server_auth_user_add_t;
+
+static inline void
+neu_req_server_auth_user_add_fini(neu_req_server_auth_user_add_t *req)
+{
+    free(req->user);
+    free(req->pwd);
+}
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *user;
+} neu_req_server_auth_user_del_t;
+
+static inline void
+neu_req_server_auth_user_del_fini(neu_req_server_auth_user_del_t *req)
+{
+    free(req->user);
+}
+
+typedef struct {
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *user;
+    char *pwd;
+    char *new_pwd;
+} neu_req_server_auth_user_update_t;
+
+static inline void
+neu_req_server_auth_user_update_fini(neu_req_server_auth_user_update_t *req)
+{
+    free(req->user);
+    free(req->new_pwd);
+}
+
+typedef struct {
+    char app_name[NEU_NODE_NAME_LEN];
+} neu_req_server_auth_users_info_t;
+
+typedef struct {
+    char *user;
+    char *pwd_mask;
+} neu_server_auth_user_t;
+
+typedef struct {
+    char      app_name[NEU_NODE_NAME_LEN];
+    UT_array *users; // array of neu_server_auth_user_t
+} neu_resp_server_auth_users_info_t;
+
+static inline void
+neu_resp_server_auth_users_info_fini(neu_resp_server_auth_users_info_t *resp)
+{
+    utarray_foreach(resp->users, neu_server_auth_user_t *, user)
+    {
+        free(user->user);
+        free(user->pwd_mask);
+    }
+    utarray_free(resp->users);
+}
 
 #ifdef __cplusplus
 }

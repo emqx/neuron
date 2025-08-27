@@ -409,35 +409,55 @@ static inline int open_db(const char *schema_dir, sqlite3 **db_p)
 }
 
 static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
-    .destroy             = neu_sqlite_persister_destroy,
-    .native_handle       = neu_sqlite_persister_native_handle,
-    .store_node          = neu_sqlite_persister_store_node,
-    .load_nodes          = neu_sqlite_persister_load_nodes,
-    .delete_node         = neu_sqlite_persister_delete_node,
-    .update_node         = neu_sqlite_persister_update_node,
-    .update_node_state   = neu_sqlite_persister_update_node_state,
-    .store_tag           = neu_sqlite_persister_store_tag,
-    .store_tags          = neu_sqlite_persister_store_tags,
-    .load_tags           = neu_sqlite_persister_load_tags,
-    .update_tag          = neu_sqlite_persister_update_tag,
-    .update_tag_value    = neu_sqlite_persister_update_tag_value,
-    .delete_tag          = neu_sqlite_persister_delete_tag,
-    .store_subscription  = neu_sqlite_persister_store_subscription,
-    .update_subscription = neu_sqlite_persister_update_subscription,
-    .load_subscriptions  = neu_sqlite_persister_load_subscriptions,
-    .delete_subscription = neu_sqlite_persister_delete_subscription,
-    .store_group         = neu_sqlite_persister_store_group,
-    .update_group        = neu_sqlite_persister_update_group,
-    .load_groups         = neu_sqlite_persister_load_groups,
-    .delete_group        = neu_sqlite_persister_delete_group,
-    .store_node_setting  = neu_sqlite_persister_store_node_setting,
-    .load_node_setting   = neu_sqlite_persister_load_node_setting,
-    .delete_node_setting = neu_sqlite_persister_delete_node_setting,
-    .load_users          = neu_sqlite_persister_load_users,
-    .store_user          = neu_sqlite_persister_store_user,
-    .update_user         = neu_sqlite_persister_update_user,
-    .load_user           = neu_sqlite_persister_load_user,
-    .delete_user         = neu_sqlite_persister_delete_user,
+    .destroy                  = neu_sqlite_persister_destroy,
+    .native_handle            = neu_sqlite_persister_native_handle,
+    .store_node               = neu_sqlite_persister_store_node,
+    .load_nodes               = neu_sqlite_persister_load_nodes,
+    .delete_node              = neu_sqlite_persister_delete_node,
+    .update_node              = neu_sqlite_persister_update_node,
+    .update_node_state        = neu_sqlite_persister_update_node_state,
+    .store_tag                = neu_sqlite_persister_store_tag,
+    .store_tags               = neu_sqlite_persister_store_tags,
+    .load_tags                = neu_sqlite_persister_load_tags,
+    .update_tag               = neu_sqlite_persister_update_tag,
+    .update_tag_value         = neu_sqlite_persister_update_tag_value,
+    .delete_tag               = neu_sqlite_persister_delete_tag,
+    .store_subscription       = neu_sqlite_persister_store_subscription,
+    .update_subscription      = neu_sqlite_persister_update_subscription,
+    .load_subscriptions       = neu_sqlite_persister_load_subscriptions,
+    .delete_subscription      = neu_sqlite_persister_delete_subscription,
+    .store_group              = neu_sqlite_persister_store_group,
+    .update_group             = neu_sqlite_persister_update_group,
+    .load_groups              = neu_sqlite_persister_load_groups,
+    .delete_group             = neu_sqlite_persister_delete_group,
+    .store_node_setting       = neu_sqlite_persister_store_node_setting,
+    .load_node_setting        = neu_sqlite_persister_load_node_setting,
+    .delete_node_setting      = neu_sqlite_persister_delete_node_setting,
+    .load_users               = neu_sqlite_persister_load_users,
+    .store_user               = neu_sqlite_persister_store_user,
+    .update_user              = neu_sqlite_persister_update_user,
+    .load_user                = neu_sqlite_persister_load_user,
+    .delete_user              = neu_sqlite_persister_delete_user,
+    .store_server_cert        = neu_sqlite_persister_store_server_cert,
+    .update_server_cert       = neu_sqlite_persister_update_server_cert,
+    .load_server_cert         = neu_sqlite_persister_load_server_cert,
+    .store_client_cert        = neu_sqlite_persister_store_client_cert,
+    .update_client_cert       = neu_sqlite_persister_update_client_cert,
+    .load_client_certs_by_app = neu_sqlite_persister_load_client_certs_by_app,
+    .load_client_certs        = neu_sqlite_persister_load_client_certs,
+    .delete_client_cert       = neu_sqlite_persister_delete_client_cert,
+    .store_security_policy    = neu_sqlite_persister_store_security_policy,
+    .update_security_policy   = neu_sqlite_persister_update_security_policy,
+    .load_security_policy     = neu_sqlite_persister_load_security_policy,
+    .load_security_policies   = neu_sqlite_persister_load_security_policies,
+    .store_auth_setting       = neu_sqlite_persister_store_auth_setting,
+    .update_auth_setting      = neu_sqlite_persister_update_auth_setting,
+    .load_auth_setting        = neu_sqlite_persister_load_auth_setting,
+    .store_auth_user          = neu_sqlite_persister_store_auth_user,
+    .update_auth_user         = neu_sqlite_persister_update_auth_user,
+    .load_auth_user           = neu_sqlite_persister_load_auth_user,
+    .load_auth_users_by_app   = neu_sqlite_persister_load_auth_users_by_app,
+    .delete_auth_user         = neu_sqlite_persister_delete_auth_user,
 };
 
 neu_persister_t *neu_sqlite_persister_create(const char *schema_dir)
@@ -1306,4 +1326,892 @@ int neu_sqlite_persister_delete_user(neu_persister_t *self,
 {
     return execute_sql(((neu_sqlite_persister_t *) self)->db,
                        "DELETE FROM users WHERE name=%Q", user_name);
+}
+
+static UT_icd client_cert_info_icd = {
+    sizeof(neu_persist_client_cert_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_client_cert_info_fini,
+};
+
+int neu_sqlite_persister_store_server_cert(
+    neu_persister_t *self, const neu_persist_server_cert_info_t *cert_info)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "INSERT OR REPLACE INTO server_certificates "
+        "(app_name, common_name, subject, issuer, valid_from, valid_to, "
+        "serial_number, fingerprint, certificate_data, private_key_data) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    sqlite3_bind_text(stmt, 1, cert_info->app_name, -1, NULL);
+    sqlite3_bind_text(stmt, 2, cert_info->common_name, -1, NULL);
+    sqlite3_bind_text(stmt, 3, cert_info->subject, -1, NULL);
+    sqlite3_bind_text(stmt, 4, cert_info->issuer, -1, NULL);
+    sqlite3_bind_text(stmt, 5, cert_info->valid_from, -1, NULL);
+    sqlite3_bind_text(stmt, 6, cert_info->valid_to, -1, NULL);
+    sqlite3_bind_text(stmt, 7, cert_info->serial_number, -1, NULL);
+    sqlite3_bind_text(stmt, 8, cert_info->fingerprint, -1, NULL);
+
+    if (cert_info->certificate_data && cert_info->certificate_size > 0) {
+        sqlite3_bind_blob(stmt, 9, cert_info->certificate_data,
+                          cert_info->certificate_size, NULL);
+    } else {
+        sqlite3_bind_null(stmt, 9);
+    }
+
+    if (cert_info->private_key_data && cert_info->private_key_size > 0) {
+        sqlite3_bind_blob(stmt, 10, cert_info->private_key_data,
+                          cert_info->private_key_size, NULL);
+    } else {
+        sqlite3_bind_null(stmt, 10);
+    }
+
+    int rv = 0;
+    if (SQLITE_DONE != sqlite3_step(stmt)) {
+        nlog_error("execute `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        rv = NEU_ERR_EINTERNAL;
+    }
+
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
+int neu_sqlite_persister_update_server_cert(
+    neu_persister_t *self, const neu_persist_server_cert_info_t *cert_info)
+{
+    // For server certificates, each app can only have one record, so update and
+    // insert are the same operation
+    return neu_sqlite_persister_store_server_cert(self, cert_info);
+}
+
+int neu_sqlite_persister_load_server_cert(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_server_cert_info_t **cert_info_p)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, common_name, subject, issuer, valid_from, "
+        "valid_to, "
+        "serial_number, fingerprint, certificate_data, private_key_data, "
+        "created_at, updated_at FROM server_certificates WHERE app_name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        sqlite3_finalize(stmt);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    neu_persist_server_cert_info_t *cert_info = NULL;
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        sqlite3_finalize(stmt);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    cert_info = calloc(1, sizeof(*cert_info));
+    if (NULL == cert_info) {
+        sqlite3_finalize(stmt);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    // Read all fields
+    cert_info->id          = sqlite3_column_int(stmt, 0);
+    cert_info->app_name    = strdup((char *) sqlite3_column_text(stmt, 1));
+    cert_info->common_name = strdup((char *) sqlite3_column_text(stmt, 2));
+
+    char *subject      = (char *) sqlite3_column_text(stmt, 3);
+    cert_info->subject = subject ? strdup(subject) : NULL;
+
+    char *issuer      = (char *) sqlite3_column_text(stmt, 4);
+    cert_info->issuer = issuer ? strdup(issuer) : NULL;
+
+    char *valid_from      = (char *) sqlite3_column_text(stmt, 5);
+    cert_info->valid_from = valid_from ? strdup(valid_from) : NULL;
+
+    char *valid_to      = (char *) sqlite3_column_text(stmt, 6);
+    cert_info->valid_to = valid_to ? strdup(valid_to) : NULL;
+
+    char *serial_number      = (char *) sqlite3_column_text(stmt, 7);
+    cert_info->serial_number = serial_number ? strdup(serial_number) : NULL;
+
+    char *fingerprint      = (char *) sqlite3_column_text(stmt, 8);
+    cert_info->fingerprint = fingerprint ? strdup(fingerprint) : NULL;
+
+    // Read certificate data
+    const void *cert_data       = sqlite3_column_blob(stmt, 9);
+    cert_info->certificate_size = sqlite3_column_bytes(stmt, 9);
+    if (cert_data && cert_info->certificate_size > 0) {
+        cert_info->certificate_data = malloc(cert_info->certificate_size);
+        if (cert_info->certificate_data) {
+            memcpy(cert_info->certificate_data, cert_data,
+                   cert_info->certificate_size);
+        }
+    }
+
+    // Read private key data
+    const void *key_data        = sqlite3_column_blob(stmt, 10);
+    cert_info->private_key_size = sqlite3_column_bytes(stmt, 10);
+    if (key_data && cert_info->private_key_size > 0) {
+        cert_info->private_key_data = malloc(cert_info->private_key_size);
+        if (cert_info->private_key_data) {
+            memcpy(cert_info->private_key_data, key_data,
+                   cert_info->private_key_size);
+        }
+    }
+
+    char *created_at      = (char *) sqlite3_column_text(stmt, 11);
+    cert_info->created_at = created_at ? strdup(created_at) : NULL;
+
+    char *updated_at      = (char *) sqlite3_column_text(stmt, 12);
+    cert_info->updated_at = updated_at ? strdup(updated_at) : NULL;
+
+    *cert_info_p = cert_info;
+    sqlite3_finalize(stmt);
+    return 0;
+}
+
+static int collect_client_cert_info(sqlite3_stmt *stmt, UT_array **cert_infos)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_client_cert_info_t info = {};
+
+        info.id = sqlite3_column_int(stmt, 0);
+
+        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == app_name) {
+            break;
+        }
+        info.app_name = app_name;
+
+        char *common_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        if (NULL == common_name) {
+            free(app_name);
+            break;
+        }
+        info.common_name = common_name;
+
+        char *subject = (char *) sqlite3_column_text(stmt, 3);
+        if (subject != NULL) {
+            info.subject = strdup(subject);
+        } else {
+            info.subject = NULL;
+        }
+
+        char *issuer = (char *) sqlite3_column_text(stmt, 4);
+        if (issuer != NULL) {
+            info.issuer = strdup(issuer);
+        } else {
+            info.issuer = NULL;
+        }
+
+        char *valid_from = (char *) sqlite3_column_text(stmt, 5);
+        if (valid_from != NULL) {
+            info.valid_from = strdup(valid_from);
+        } else {
+            info.valid_from = NULL;
+        }
+
+        char *valid_to = (char *) sqlite3_column_text(stmt, 6);
+        if (valid_to != NULL) {
+            info.valid_to = strdup(valid_to);
+        } else {
+            info.valid_to = NULL;
+        }
+
+        char *serial_number = (char *) sqlite3_column_text(stmt, 7);
+        if (serial_number != NULL) {
+            info.serial_number = strdup(serial_number);
+        } else {
+            info.serial_number = NULL;
+        }
+
+        char *fingerprint = (char *) sqlite3_column_text(stmt, 8);
+        if (fingerprint != NULL) {
+            info.fingerprint = strdup(fingerprint);
+        } else {
+            info.fingerprint = NULL;
+        }
+
+        // Handle certificate data (BLOB)
+        const void *cert_data = sqlite3_column_blob(stmt, 9);
+        info.certificate_size = sqlite3_column_bytes(stmt, 9);
+        if (cert_data != NULL && info.certificate_size > 0) {
+            info.certificate_data = malloc(info.certificate_size);
+            if (info.certificate_data != NULL) {
+                memcpy(info.certificate_data, cert_data, info.certificate_size);
+            }
+        } else {
+            info.certificate_data = NULL;
+            info.certificate_size = 0;
+        }
+
+        info.is_ca        = sqlite3_column_int(stmt, 10);
+        info.trust_status = sqlite3_column_int(stmt, 11);
+
+        char *created_at = (char *) sqlite3_column_text(stmt, 12);
+        if (created_at != NULL) {
+            info.created_at = strdup(created_at);
+        } else {
+            info.created_at = NULL;
+        }
+
+        utarray_push_back(*cert_infos, &info);
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int neu_sqlite_persister_store_client_cert(
+    neu_persister_t *self, const neu_persist_client_cert_info_t *cert_info)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            sql =
+        "INSERT INTO client_certificates "
+        "(app_name, common_name, subject, issuer, valid_from, valid_to, "
+        "serial_number, fingerprint, certificate_data, is_ca, trust_status) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    if (SQLITE_OK != sqlite3_prepare_v2(persister->db, sql, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", sql, sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    sqlite3_bind_text(stmt, 1, cert_info->app_name, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, cert_info->common_name, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, cert_info->subject, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, cert_info->issuer, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, cert_info->valid_from, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, cert_info->valid_to, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 7, cert_info->serial_number, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 8, cert_info->fingerprint, -1, SQLITE_STATIC);
+
+    if (cert_info->certificate_data && cert_info->certificate_size > 0) {
+        sqlite3_bind_blob(stmt, 9, cert_info->certificate_data,
+                          cert_info->certificate_size, SQLITE_STATIC);
+    } else {
+        sqlite3_bind_null(stmt, 9);
+    }
+
+    sqlite3_bind_int(stmt, 10, cert_info->is_ca);
+    sqlite3_bind_int(stmt, 11, cert_info->trust_status);
+
+    int ret = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (SQLITE_DONE != ret) {
+        nlog_error("execute `%s` fail: %s", sql, sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    return 0;
+}
+
+int neu_sqlite_persister_update_client_cert(
+    neu_persister_t *self, const neu_persist_client_cert_info_t *cert_info)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            sql =
+        "UPDATE client_certificates SET trust_status=? WHERE fingerprint=?";
+
+    if (SQLITE_OK != sqlite3_prepare_v2(persister->db, sql, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", sql, sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    sqlite3_bind_int(stmt, 1, cert_info->trust_status);
+    sqlite3_bind_text(stmt, 2, cert_info->fingerprint, -1, SQLITE_STATIC);
+
+    int ret = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (SQLITE_DONE != ret) {
+        nlog_error("execute `%s` fail: %s", sql, sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    return 0;
+}
+
+int neu_sqlite_persister_load_client_certs_by_app(neu_persister_t *self,
+                                                  const char *     app_name,
+                                                  UT_array **      cert_infos)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, common_name, subject, issuer, valid_from, "
+        "valid_to, serial_number, fingerprint, certificate_data, is_ca, "
+        "trust_status, created_at FROM client_certificates WHERE app_name=? "
+        "ORDER BY id";
+
+    utarray_new(*cert_infos, &client_cert_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    sqlite3_bind_text(stmt, 1, app_name, -1, SQLITE_STATIC);
+
+    if (0 != collect_client_cert_info(stmt, cert_infos)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*cert_infos);
+    *cert_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_sqlite_persister_load_client_certs(neu_persister_t *self,
+                                           UT_array **      cert_infos)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, common_name, subject, issuer, valid_from, "
+        "valid_to, serial_number, fingerprint, certificate_data, is_ca, "
+        "trust_status, created_at FROM client_certificates ORDER BY app_name, "
+        "id";
+
+    utarray_new(*cert_infos, &client_cert_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (0 != collect_client_cert_info(stmt, cert_infos)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*cert_infos);
+    *cert_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_sqlite_persister_delete_client_cert(neu_persister_t *self,
+                                            const char *     fingerprint)
+{
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "DELETE FROM client_certificates WHERE fingerprint=%Q",
+                       fingerprint);
+}
+
+// Security policy operations implementation
+int neu_sqlite_persister_store_security_policy(
+    neu_persister_t *                         self,
+    const neu_persist_security_policy_info_t *policy_info)
+{
+    return execute_sql(
+        ((neu_sqlite_persister_t *) self)->db,
+        "INSERT OR REPLACE INTO security_policies (app_name, policy_name) "
+        "VALUES (%Q, %Q)",
+        policy_info->app_name, policy_info->policy_name);
+}
+
+int neu_sqlite_persister_update_security_policy(
+    neu_persister_t *                         self,
+    const neu_persist_security_policy_info_t *policy_info)
+{
+    // For security policies, each app can only have one policy record,
+    // so update and insert are the same operation
+    return neu_sqlite_persister_store_security_policy(self, policy_info);
+}
+
+int neu_sqlite_persister_load_security_policy(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_security_policy_info_t **policy_info_p)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, policy_name, created_at, updated_at "
+        "FROM security_policies WHERE app_name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        sqlite3_finalize(stmt);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    int step = sqlite3_step(stmt);
+    if (SQLITE_ROW == step) {
+        neu_persist_security_policy_info_t *info =
+            calloc(1, sizeof(neu_persist_security_policy_info_t));
+        if (NULL == info) {
+            sqlite3_finalize(stmt);
+            return NEU_ERR_EINTERNAL;
+        }
+
+        info->id = sqlite3_column_int(stmt, 0);
+
+        char *app_name_col = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == app_name_col) {
+            free(info);
+            sqlite3_finalize(stmt);
+            return NEU_ERR_EINTERNAL;
+        }
+        info->app_name = app_name_col;
+
+        char *policy_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        if (NULL == policy_name) {
+            free(info->app_name);
+            free(info);
+            sqlite3_finalize(stmt);
+            return NEU_ERR_EINTERNAL;
+        }
+        info->policy_name = policy_name;
+
+        char *created_at = (char *) sqlite3_column_text(stmt, 3);
+        if (created_at != NULL) {
+            info->created_at = strdup(created_at);
+        } else {
+            info->created_at = NULL;
+        }
+
+        char *updated_at = (char *) sqlite3_column_text(stmt, 4);
+        if (updated_at != NULL) {
+            info->updated_at = strdup(updated_at);
+        } else {
+            info->updated_at = NULL;
+        }
+
+        *policy_info_p = info;
+        sqlite3_finalize(stmt);
+        return 0;
+    } else if (SQLITE_DONE == step) {
+        // No policy found for this app
+        sqlite3_finalize(stmt);
+        return NEU_ERR_NODE_NOT_EXIST;
+    } else {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        sqlite3_finalize(stmt);
+        return NEU_ERR_EINTERNAL;
+    }
+}
+
+static UT_icd security_policy_info_icd = {
+    sizeof(neu_persist_security_policy_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_security_policy_info_fini,
+};
+
+static int collect_security_policy_info(sqlite3_stmt *stmt,
+                                        UT_array **   policy_infos)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_security_policy_info_t info = {};
+
+        info.id = sqlite3_column_int(stmt, 0);
+
+        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == app_name) {
+            break;
+        }
+        info.app_name = app_name;
+
+        char *policy_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        if (NULL == policy_name) {
+            free(app_name);
+            break;
+        }
+        info.policy_name = policy_name;
+
+        char *created_at = (char *) sqlite3_column_text(stmt, 3);
+        if (created_at != NULL) {
+            info.created_at = strdup(created_at);
+        } else {
+            info.created_at = NULL;
+        }
+
+        char *updated_at = (char *) sqlite3_column_text(stmt, 4);
+        if (updated_at != NULL) {
+            info.updated_at = strdup(updated_at);
+        } else {
+            info.updated_at = NULL;
+        }
+
+        utarray_push_back(*policy_infos, &info);
+        step = sqlite3_step(stmt);
+    }
+
+    return step;
+}
+
+int neu_sqlite_persister_load_security_policies(neu_persister_t *self,
+                                                UT_array **      policy_infos)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, policy_name, created_at, updated_at "
+        "FROM security_policies ORDER BY app_name";
+
+    utarray_new(*policy_infos, &security_policy_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (0 != collect_security_policy_info(stmt, policy_infos)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*policy_infos);
+    *policy_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+static UT_icd auth_user_info_icd = {
+    sizeof(neu_persist_auth_user_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_auth_user_info_fini,
+};
+
+int neu_sqlite_persister_store_auth_setting(
+    neu_persister_t *self, const neu_persist_auth_setting_info_t *auth_info)
+{
+    return execute_sql(
+        ((neu_sqlite_persister_t *) self)->db,
+        "INSERT INTO auth_settings (app_name, enabled) VALUES (%Q, %d)",
+        auth_info->app_name, auth_info->enabled);
+}
+
+int neu_sqlite_persister_update_auth_setting(
+    neu_persister_t *self, const neu_persist_auth_setting_info_t *auth_info)
+{
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "UPDATE auth_settings SET enabled=%d WHERE app_name=%Q",
+                       auth_info->enabled, auth_info->app_name);
+}
+
+int neu_sqlite_persister_load_auth_setting(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_auth_setting_info_t **auth_info_p)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+
+    neu_persist_auth_setting_info_t *auth_info = NULL;
+    sqlite3_stmt *                   stmt      = NULL;
+    const char *query = "SELECT id, app_name, enabled, created_at, updated_at "
+                        "FROM auth_settings WHERE app_name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        nlog_warn("SQL `%s` with `%s` fail: %s", query, app_name,
+                  sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    auth_info = calloc(1, sizeof(*auth_info));
+    if (NULL == auth_info) {
+        goto error;
+    }
+
+    auth_info->id      = sqlite3_column_int(stmt, 0);
+    auth_info->enabled = sqlite3_column_int(stmt, 2);
+
+    auth_info->app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+    if (NULL == auth_info->app_name) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    char *created_at = (char *) sqlite3_column_text(stmt, 3);
+    if (created_at != NULL) {
+        auth_info->created_at = strdup(created_at);
+    }
+
+    char *updated_at = (char *) sqlite3_column_text(stmt, 4);
+    if (updated_at != NULL) {
+        auth_info->updated_at = strdup(updated_at);
+    }
+
+    sqlite3_finalize(stmt);
+    *auth_info_p = auth_info;
+    return 0;
+
+error:
+    if (auth_info) {
+        neu_persist_auth_setting_info_fini(auth_info);
+        free(auth_info);
+    }
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
+}
+
+static int collect_auth_user_info(sqlite3_stmt *stmt, UT_array **user_infos)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_auth_user_info_t info = {};
+
+        info.id = sqlite3_column_int(stmt, 0);
+
+        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == app_name) {
+            break;
+        }
+        info.app_name = app_name;
+
+        char *username = strdup((char *) sqlite3_column_text(stmt, 2));
+        if (NULL == username) {
+            free(app_name);
+            break;
+        }
+        info.username = username;
+
+        char *password_hash = strdup((char *) sqlite3_column_text(stmt, 3));
+        if (NULL == password_hash) {
+            free(app_name);
+            free(username);
+            break;
+        }
+        info.password_hash = password_hash;
+
+        char *created_at = (char *) sqlite3_column_text(stmt, 4);
+        if (created_at != NULL) {
+            info.created_at = strdup(created_at);
+        } else {
+            info.created_at = NULL;
+        }
+
+        char *updated_at = (char *) sqlite3_column_text(stmt, 5);
+        if (updated_at != NULL) {
+            info.updated_at = strdup(updated_at);
+        } else {
+            info.updated_at = NULL;
+        }
+
+        utarray_push_back(*user_infos, &info);
+        step = sqlite3_step(stmt);
+    }
+
+    return step;
+}
+
+int neu_sqlite_persister_store_auth_user(
+    neu_persister_t *self, const neu_persist_auth_user_info_t *user_info)
+{
+    return execute_sql(
+        ((neu_sqlite_persister_t *) self)->db,
+        "INSERT INTO auth_users (app_name, username, password_hash) "
+        "VALUES (%Q, %Q, %Q)",
+        user_info->app_name, user_info->username, user_info->password_hash);
+}
+
+int neu_sqlite_persister_update_auth_user(
+    neu_persister_t *self, const neu_persist_auth_user_info_t *user_info)
+{
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "UPDATE auth_users SET password_hash=%Q "
+                       "WHERE app_name=%Q AND username=%Q",
+                       user_info->password_hash, user_info->app_name,
+                       user_info->username);
+}
+
+int neu_sqlite_persister_load_auth_user(
+    neu_persister_t *self, const char *app_name, const char *username,
+    neu_persist_auth_user_info_t **user_info_p)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+
+    neu_persist_auth_user_info_t *user_info = NULL;
+    sqlite3_stmt *                stmt      = NULL;
+    const char *                  query =
+        "SELECT id, app_name, username, password_hash, created_at, updated_at "
+        "FROM auth_users WHERE app_name=? AND username=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s:%s` fail: %s", query, app_name,
+                   username, sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, username, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, username,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        nlog_warn("SQL `%s` with `%s:%s` fail: %s", query, app_name, username,
+                  sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    user_info = calloc(1, sizeof(*user_info));
+    if (NULL == user_info) {
+        goto error;
+    }
+
+    user_info->id = sqlite3_column_int(stmt, 0);
+
+    user_info->app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+    if (NULL == user_info->app_name) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    user_info->username = strdup((char *) sqlite3_column_text(stmt, 2));
+    if (NULL == user_info->username) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    user_info->password_hash = strdup((char *) sqlite3_column_text(stmt, 3));
+    if (NULL == user_info->password_hash) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    char *created_at = (char *) sqlite3_column_text(stmt, 4);
+    if (created_at != NULL) {
+        user_info->created_at = strdup(created_at);
+    }
+
+    char *updated_at = (char *) sqlite3_column_text(stmt, 5);
+    if (updated_at != NULL) {
+        user_info->updated_at = strdup(updated_at);
+    }
+
+    sqlite3_finalize(stmt);
+    *user_info_p = user_info;
+    return 0;
+
+error:
+    if (user_info) {
+        neu_persist_auth_user_info_fini(user_info);
+        free(user_info);
+    }
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_sqlite_persister_load_auth_users_by_app(neu_persister_t *self,
+                                                const char *     app_name,
+                                                UT_array **      user_infos)
+{
+    neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
+    sqlite3_stmt *          stmt      = NULL;
+    const char *            query =
+        "SELECT id, app_name, username, password_hash, created_at, updated_at "
+        "FROM auth_users WHERE app_name=? ORDER BY username";
+
+    utarray_new(*user_infos, &auth_user_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (0 != collect_auth_user_info(stmt, user_infos)) {
+        nlog_warn("query `%s` with `%s` fail: %s", query, app_name,
+                  sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*user_infos);
+    *user_infos = NULL;
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_sqlite_persister_delete_auth_user(neu_persister_t *self,
+                                          const char *     app_name,
+                                          const char *     username)
+{
+    return execute_sql(
+        ((neu_sqlite_persister_t *) self)->db,
+        "DELETE FROM auth_users WHERE app_name=%Q AND username=%Q", app_name,
+        username);
 }
