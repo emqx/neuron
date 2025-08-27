@@ -414,7 +414,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .kind            = NEU_PLUGIN_KIND_SYSTEM,
     .type            = NEU_NA_TYPE_APP,
     .display         = true,
-    .single          = false,
+    .single          = true,
     .single_name     = "monitor",
 };
 
