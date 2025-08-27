@@ -73,11 +73,20 @@ $ ./neuron --log
 
 4. 浏览器中打开 `http://localhost:7000` 访问 Neuron。
 
+### Docker
+
+```bash
+$ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
+```
+
+目前 Neuron 维护的最新镜像是 emqx/neuron:2.6.9，2.7.x 及后续的版本不再提供镜像。
+
 ### 采集 Modbus TCP 数据并通过 MQTT 发送。
 
 ## Dashboard
 
 开源版 [Dashboard](https://github.com/emqx/neuron-dashboard) 最新 Release 的版本为 2.6.3，目前已暂停开发与维护，此版本也是 Neuron 默认集成的版本。要用更完善与更专业的 Dashboard，请使用 [NeuronEX](https://www.emqx.com/zh/products/neuronex)。
+
 
 ## 社区
 

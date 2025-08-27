@@ -72,6 +72,14 @@ $ ./neuron --log
 
 5. Open a web browser and navigate to `http://localhost:7000` to access the Neuron web interface.
 
+### Docker
+
+```bash
+$ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
+```
+
+Currently, the latest image maintained for Neuron is `emqx/neuron:2.6.9`, and images for versions `2.7.x` and later are no longer provided.
+
 ### Modbus TCP Data Collection and MQTT Transmission
 
 ## Dashboard
