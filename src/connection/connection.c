@@ -503,7 +503,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                 conn->param.log,
                 "tcp conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
                 conn->fd, len, ret, strerror(errno), errno);
-            if (ret == 0 || (ret == -1 && errno != EAGAIN)) {
+            if (ret == 0 || (conn->connection_ok && ret == -1 && errno != EAGAIN)) {
                 conn_disconnect(conn);
             }
         }
