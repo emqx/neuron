@@ -34,6 +34,8 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 
 ## 快速开始
 
+Neuron 管理面板的默认登陆账号为 `admin`，密码为 `0000`。
+
 ### 下载 tar 包运行
 
 选择 [Relase](https://github.com/emqx/neuron/releases) 版本下载
@@ -81,7 +83,7 @@ $ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
 
 目前 Neuron 维护的最新镜像是 emqx/neuron:2.6.9，2.7.x 及后续的版本不再提供镜像。
 
-### 采集 Modbus TCP 数据并通过 MQTT 发送。
+### [采集 Modbus TCP 数据并通过 MQTT 发送](./docs/quick_start/quick_start_cn.md)
 
 ## Dashboard
 

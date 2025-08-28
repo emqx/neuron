@@ -34,6 +34,8 @@ Neuron only provides limited plugins in the open source version. To use more plu
 
 ## Quick Start
 
+Default username is `admin` and password is `0000`.
+
 ### Download
 
 You can download from [Release](https://github.com/emqx/neuron/releases).
@@ -80,7 +82,7 @@ $ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
 
 Currently, the latest image maintained for Neuron is `emqx/neuron:2.6.9`, and images for versions `2.7.x` and later are no longer provided.
 
-### Modbus TCP Data Collection and MQTT Transmission
+### [Modbus TCP Data Collection and MQTT Transmission](./docs/quick_start/quick_start.md)
 
 ## Dashboard
 
