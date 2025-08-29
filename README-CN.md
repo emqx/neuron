@@ -26,7 +26,7 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 - 通过 SparkplugB 解决方案支持对工业应用程序的数据访问，例如 MES 或 ERP、SCADA、historian 和数据分析软件。
 - 具有非常低的内存占用，小于 10M 的内存占用和 CPU 使用率，可以在 ARM、x86 和 RISC-V 等资源有限的硬件上运行。
 - 支持在本地安装可执行文件或部署在容器化环境中。
-- 控制工业设备，通过HTTP API 和 MQTT API 服务更改参数和数据标签。
+- 控制工业设备，通过 [HTTP API](docs/api/cn/http.md) 和 [MQTT API](docs/api/cn/mqtt.md) 服务更改参数和数据标签。
 - 与其他 EMQ 产品高度集成，包括  [EMQX](https://www.emqx.com/zh/products/emqx)、[NanoMQ](https://nanomq.io/zh)、[eKuiper](https://ekuiper.org/zh)。
 - 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。
 
