@@ -26,7 +26,7 @@ The following are some important features of Neuron:
 - Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via SparkplugB solution.
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices, and make changes to the parameters and data tags through HTTP API and MQTT API services.
+- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](docs/api/english/http.md) and [MQTT API](docs/api/english/mqtt.md) services.
 - Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
 - The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3.
 
