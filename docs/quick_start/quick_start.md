@@ -12,7 +12,7 @@ The Neuron source code or release package includes a test simulator that runs on
 
 ```bash
 # If compiling from source, it's in the build/simulator directory
-# In the release package, it's in the simulator directory
+# In the release package, it's in the root directory
 
 # Run the Modbus simulator, use TCP mode, and bind to 0.0.0.0:1502
 $ ./modbus_simulator tcp 1502 ip_v4

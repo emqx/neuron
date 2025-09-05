@@ -12,7 +12,7 @@ Neuron 源码或 Release 中自带了在 Linux 上运行的测试模拟器，可
 
 ```bash
 # 通过源码编译的方式，build/simulator 目录下
-# Release 包中 simulator 目录下
+# Release 包中根目录下
 
 # 运行 Modbus 模拟器，使用 TCP 模式，绑定 0.0.0.0:1502
 $ ./modbus_simulator tcp 1502 ip_v4
