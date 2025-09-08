@@ -548,6 +548,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_IMPORT_TAGS: {
+        neu_req_import_tags_t *cmd = (neu_req_import_tags_t *) data;
+        strcpy(pheader->receiver, cmd->node);
+        break;
+    }
     case NEU_REQ_ADD_GTAG: {
         neu_req_add_gtag_t *cmd = (neu_req_add_gtag_t *) data;
         strcpy(pheader->receiver, cmd->driver);
@@ -778,6 +783,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_DATALAYERS_TAG:
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
+    case NEU_RESP_IMPORT_TAGS:
     case NEU_RESP_UPDATE_TAG:
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_NODE:
@@ -1414,6 +1420,62 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(adapter, header, &resp);
         break;
     }
+    case NEU_REQ_IMPORT_TAGS: {
+        neu_req_import_tags_t *cmd  = (neu_req_import_tags_t *) &header[1];
+        neu_resp_add_tag_t     resp = { 0 };
+
+        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
+        } else {
+            const char *plugin_name = adapter->module->module_name;
+            if (!neu_plugin_support_import_tags(adapter, plugin_name)) {
+                resp.error = NEU_ERR_PLUGIN_NOT_SUPPORT_IMPORT_TAGS;
+            } else {
+                char json_file_path[512] = { 0 };
+                if (neu_adapter_get_json_path_for_plugin(
+                        adapter, plugin_name, json_file_path,
+                        sizeof(json_file_path)) != 0) {
+                    resp.error = NEU_ERR_LIBRARY_NOT_FOUND;
+                } else {
+                    neu_req_add_gtag_t gtag_cmd = { 0 };
+                    strcpy(gtag_cmd.driver, cmd->node);
+
+                    if (neu_adapter_parse_json_to_gtags(json_file_path,
+                                                        &gtag_cmd) == 0) {
+                        if (neu_adapter_validate_gtags(adapter, &gtag_cmd,
+                                                       &resp) == 0 &&
+                            neu_adapter_try_add_gtags(adapter, &gtag_cmd,
+                                                      &resp) == 0 &&
+                            neu_adapter_add_gtags(adapter, &gtag_cmd, &resp) ==
+                                0) {
+
+                            for (int i = 0; i < gtag_cmd.n_group; i++) {
+                                adapter_storage_add_tags(
+                                    gtag_cmd.driver, gtag_cmd.groups[i].group,
+                                    gtag_cmd.groups[i].tags,
+                                    gtag_cmd.groups[i].n_tag);
+                            }
+                        }
+
+                        for (int i = 0; i < gtag_cmd.n_group; i++) {
+                            for (int j = 0; j < gtag_cmd.groups[i].n_tag; j++) {
+                                neu_tag_fini(&gtag_cmd.groups[i].tags[j]);
+                            }
+                            free(gtag_cmd.groups[i].tags);
+                        }
+                        free(gtag_cmd.groups);
+                    } else {
+                        resp.error = NEU_ERR_FILE_READ_FAILURE;
+                    }
+                }
+            }
+        }
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_IMPORT_TAGS;
+        reply(adapter, header, &resp);
+        break;
+    }
     case NEU_REQ_UPDATE_TAG: {
         neu_req_update_tag_t *cmd  = (neu_req_update_tag_t *) &header[1];
         neu_resp_update_tag_t resp = { 0 };
@@ -1997,4 +2059,299 @@ inline static void notify_monitor(neu_adapter_t *    adapter,
                   errno);
         neu_msg_free(msg);
     }
+}
+
+static const struct {
+    const char *plugin_name;
+    const char *json_file_path;
+} plugin_json_mapping[] = {
+    { "Fanuc Focas Ethernet", "plugins/tags/focas_cnc.json" },
+    { "focas", "plugins/tags/focas_cnc.json" },
+
+    { "HEIDENHAIN CNC", "plugins/tags/heidenhain_cnc.json" },
+    { "heidenhain_cnc", "plugins/tags/heidenhain_cnc.json" },
+
+    { "KND CNC", "plugins/tags/knd_cnc.json" },
+    { "knd", "plugins/tags/knd_cnc.json" },
+
+    // neuhub SYNTEC CNC
+    // neuhub MITSUBISHI CNC
+
+    { NULL, NULL }
+};
+
+int neu_adapter_get_json_path_for_plugin(neu_adapter_t *adapter,
+                                         const char *   plugin_name,
+                                         char *json_file_path, size_t path_size)
+{
+    if (!plugin_name || !json_file_path) {
+        return -1;
+    }
+
+    if (strcmp(plugin_name, "neuhub") == 0 ||
+        strcmp(plugin_name, "Neuron HUB") == 0) {
+        if (adapter && adapter->setting) {
+            json_t *setting_json = json_loads(adapter->setting, 0, NULL);
+            if (setting_json) {
+                json_t *params_obj = json_object_get(setting_json, "params");
+                if (params_obj) {
+                    json_t *type_obj = json_object_get(params_obj, "type");
+                    if (json_is_integer(type_obj)) {
+                        int type_value = json_integer_value(type_obj);
+                        if (type_value == 2) {
+                            snprintf(json_file_path, path_size,
+                                     "plugins/tags/syntec_cnc.json");
+                            json_decref(setting_json);
+                            return 0;
+                        } else if (type_value == 3) {
+                            snprintf(json_file_path, path_size,
+                                     "plugins/tags/mitsubishi_cnc.json");
+                            json_decref(setting_json);
+                            return 0;
+                        }
+                    }
+                }
+                json_decref(setting_json);
+            }
+        }
+        return -1;
+    }
+
+    for (int i = 0; plugin_json_mapping[i].plugin_name != NULL; i++) {
+        if (strcmp(plugin_json_mapping[i].plugin_name, plugin_name) == 0) {
+            strncpy(json_file_path, plugin_json_mapping[i].json_file_path,
+                    path_size - 1);
+            json_file_path[path_size - 1] = '\0';
+            return 0;
+        }
+    }
+
+    char safe_plugin_name[256];
+    strncpy(safe_plugin_name, plugin_name, sizeof(safe_plugin_name) - 1);
+    safe_plugin_name[sizeof(safe_plugin_name) - 1] = '\0';
+
+    for (char *p = safe_plugin_name; *p; p++) {
+        if (*p == ' ') {
+            *p = '_';
+        }
+    }
+
+    snprintf(json_file_path, path_size, "plugins/tags/%s.json",
+             safe_plugin_name);
+    return 0;
+}
+
+bool neu_plugin_support_import_tags(neu_adapter_t *adapter,
+                                    const char *   plugin_name)
+{
+    if (!plugin_name) {
+        return false;
+    }
+
+    if (strcmp(plugin_name, "neuhub") == 0 ||
+        strcmp(plugin_name, "Neuron HUB") == 0) {
+        if (adapter && adapter->setting) {
+            json_t *setting_json = json_loads(adapter->setting, 0, NULL);
+            if (setting_json) {
+                json_t *params_obj = json_object_get(setting_json, "params");
+                if (params_obj) {
+                    json_t *type_obj = json_object_get(params_obj, "type");
+                    if (json_is_integer(type_obj)) {
+                        int type_value = json_integer_value(type_obj);
+                        json_decref(setting_json);
+                        return (type_value == 2 ||
+                                type_value ==
+                                    3); // SYNTEC CNC(2) MITSUBISHI CNC(3)
+                    }
+                }
+                json_decref(setting_json);
+            }
+        }
+        return false;
+    }
+
+    for (int i = 0; plugin_json_mapping[i].plugin_name != NULL; i++) {
+        if (strcmp(plugin_json_mapping[i].plugin_name, plugin_name) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool neu_plugin_support_import_tags_simple(const char *plugin_name)
+{
+    if (!plugin_name) {
+        return false;
+    }
+
+    if (strcmp(plugin_name, "neuhub") == 0 ||
+        strcmp(plugin_name, "Neuron HUB") == 0) {
+        return true;
+    }
+
+    for (int i = 0; plugin_json_mapping[i].plugin_name != NULL; i++) {
+        if (strcmp(plugin_json_mapping[i].plugin_name, plugin_name) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int neu_adapter_parse_json_to_gtags(const char *        json_file_path,
+                                    neu_req_add_gtag_t *gtag_cmd)
+{
+    FILE *       fp   = NULL;
+    json_t *     root = NULL;
+    json_error_t error;
+    int          ret = -1;
+
+    if (!json_file_path || !gtag_cmd) {
+        return -1;
+    }
+
+    fp = fopen(json_file_path, "r");
+    if (!fp) {
+        nlog_error("Failed to open JSON file: %s", json_file_path);
+        return -1;
+    }
+
+    root = json_loadf(fp, 0, &error);
+    fclose(fp);
+
+    if (!root) {
+        nlog_error("Failed to parse JSON file %s: %s", json_file_path,
+                   error.text);
+        return -1;
+    }
+
+    json_t *groups_array = json_object_get(root, "groups");
+    if (!json_is_array(groups_array)) {
+        nlog_error("JSON file %s does not contain valid 'groups' array",
+                   json_file_path);
+        goto cleanup;
+    }
+
+    size_t group_count = json_array_size(groups_array);
+    if (group_count == 0) {
+        nlog_warn("JSON file %s contains empty groups array", json_file_path);
+        ret = 0;
+        goto cleanup;
+    }
+
+    gtag_cmd->n_group = group_count;
+    gtag_cmd->groups  = calloc(group_count, sizeof(neu_gdatatag_t));
+    if (!gtag_cmd->groups) {
+        nlog_error("Failed to allocate memory for groups");
+        goto cleanup;
+    }
+
+    for (size_t i = 0; i < group_count; i++) {
+        json_t *group_obj = json_array_get(groups_array, i);
+        if (!json_is_object(group_obj)) {
+            nlog_error("Group %zu is not a valid object", i);
+            goto cleanup;
+        }
+
+        json_t *group_name = json_object_get(group_obj, "group");
+        if (!json_is_string(group_name)) {
+            nlog_error("Group %zu missing valid 'group' name", i);
+            goto cleanup;
+        }
+        strncpy(gtag_cmd->groups[i].group, json_string_value(group_name),
+                NEU_GROUP_NAME_LEN - 1);
+
+        json_t *interval = json_object_get(group_obj, "interval");
+        gtag_cmd->groups[i].interval =
+            json_is_integer(interval) ? json_integer_value(interval) : 1000;
+
+        json_t *tags_array = json_object_get(group_obj, "tags");
+        if (!json_is_array(tags_array)) {
+            nlog_error("Group %zu does not contain valid 'tags' array", i);
+            goto cleanup;
+        }
+
+        size_t tag_count          = json_array_size(tags_array);
+        gtag_cmd->groups[i].n_tag = tag_count;
+
+        if (tag_count > 0) {
+            gtag_cmd->groups[i].tags = calloc(tag_count, sizeof(neu_datatag_t));
+            if (!gtag_cmd->groups[i].tags) {
+                nlog_error("Failed to allocate memory for tags in group %zu",
+                           i);
+                goto cleanup;
+            }
+
+            for (size_t j = 0; j < tag_count; j++) {
+                json_t *tag_obj = json_array_get(tags_array, j);
+                if (!json_is_object(tag_obj)) {
+                    nlog_error("Tag %zu in group %zu is not a valid object", j,
+                               i);
+                    goto cleanup;
+                }
+
+                json_t *name        = json_object_get(tag_obj, "name");
+                json_t *address     = json_object_get(tag_obj, "address");
+                json_t *type        = json_object_get(tag_obj, "type");
+                json_t *attribute   = json_object_get(tag_obj, "attribute");
+                json_t *description = json_object_get(tag_obj, "description");
+
+                if (!json_is_string(name) || !json_is_string(address) ||
+                    !json_is_integer(type)) {
+                    nlog_error("Tag %zu in group %zu missing required fields",
+                               j, i);
+                    goto cleanup;
+                }
+
+                gtag_cmd->groups[i].tags[j].name =
+                    strdup(json_string_value(name));
+                gtag_cmd->groups[i].tags[j].address =
+                    strdup(json_string_value(address));
+                gtag_cmd->groups[i].tags[j].type = json_integer_value(type);
+                gtag_cmd->groups[i].tags[j].attribute =
+                    json_is_integer(attribute) ? json_integer_value(attribute)
+                                               : NEU_ATTRIBUTE_READ;
+                gtag_cmd->groups[i].tags[j].description =
+                    json_is_string(description)
+                    ? strdup(json_string_value(description))
+                    : strdup("");
+
+                json_t *precision = json_object_get(tag_obj, "precision");
+                json_t *decimal   = json_object_get(tag_obj, "decimal");
+                json_t *bias      = json_object_get(tag_obj, "bias");
+
+                gtag_cmd->groups[i].tags[j].precision =
+                    json_is_integer(precision) ? json_integer_value(precision)
+                                               : 0;
+                gtag_cmd->groups[i].tags[j].decimal =
+                    json_is_number(decimal) ? json_number_value(decimal) : 0.0;
+                gtag_cmd->groups[i].tags[j].bias =
+                    json_is_number(bias) ? json_number_value(bias) : 0.0;
+            }
+        }
+    }
+
+    ret = 0;
+
+cleanup:
+    if (root) {
+        json_decref(root);
+    }
+
+    if (ret != 0 && gtag_cmd->groups) {
+        for (int i = 0; i < gtag_cmd->n_group; i++) {
+            if (gtag_cmd->groups[i].tags) {
+                for (int j = 0; j < gtag_cmd->groups[i].n_tag; j++) {
+                    neu_tag_fini(&gtag_cmd->groups[i].tags[j]);
+                }
+                free(gtag_cmd->groups[i].tags);
+            }
+        }
+        free(gtag_cmd->groups);
+        gtag_cmd->groups  = NULL;
+        gtag_cmd->n_group = 0;
+    }
+
+    return ret;
 }

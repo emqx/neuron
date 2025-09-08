@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "adapter.h"
+#include "adapter/adapter_internal.h"
 #include "define.h"
 #include "errcodes.h"
 #include "plugin.h"
@@ -235,6 +236,8 @@ void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
 
         nodes_res.nodes[index].name   = info->node;
         nodes_res.nodes[index].plugin = info->plugin;
+        nodes_res.nodes[index].support_import_tags =
+            neu_plugin_support_import_tags_simple(info->plugin);
     }
 
     neu_json_encode_by_fn(&nodes_res, neu_json_encode_get_nodes_resp, &result);

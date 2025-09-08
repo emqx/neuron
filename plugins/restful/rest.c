@@ -264,6 +264,13 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                 scope, "error", ((neu_resp_add_tag_t *) data)->error);
         }
         break;
+    case NEU_RESP_IMPORT_TAGS:
+        handle_import_tags_resp(header->ctx, (neu_resp_add_tag_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_add_span_attr_int(
+                scope, "error", ((neu_resp_add_tag_t *) data)->error);
+        }
+        break;
     case NEU_RESP_UPDATE_TAG:
         handle_update_tags_resp(header->ctx, (neu_resp_update_tag_t *) data);
         if (neu_otel_control_is_started() && trace) {

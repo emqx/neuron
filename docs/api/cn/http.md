@@ -328,11 +328,13 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
             //node name
             "name": "sample-driver-adapter",
             //plugin name
-            "plugin": "Modbus TCP"
+            "plugin": "Modbus TCP",
+            "support_import_tags": false
         },
         {
             "name": "modbus-tcp-adapter",
-            "plugin": "Modbus TCP"
+            "plugin": "Modbus TCP",
+            "support_import_tags": false
         }
     ]
 }
@@ -858,6 +860,49 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
             ]
         }
     ]
+}
+
+```
+
+
+### 响应
+
+```json
+{
+    //tags count
+    "index": 4,
+    "error": 0
+}
+```
+
+## 导入内置 Tag
+
+*POST*  /api/v2/tags/import
+
+### 请求头部
+
+**Content-Type**  application/json
+
+**Authorization** Bearer \<token\>
+
+### 响应状态
+
+* 200 OK
+* 206
+  * 2202 tag name conflict
+  * 2203 tag attribute not support
+  * 2204 tag type not support
+  * 2205 tag address format invalid
+* 404
+  * 2003 node not exist
+  * 3029 not support import tags
+
+### 请求体
+
+```json
+{
+    //node name
+    "node": "cnc-node"
 }
 
 ```

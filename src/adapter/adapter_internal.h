@@ -124,4 +124,15 @@ int neu_adapter_try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
 int neu_adapter_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                           neu_resp_add_tag_t *resp);
 
+// Import tags functions
+int  neu_adapter_get_json_path_for_plugin(neu_adapter_t *adapter,
+                                          const char *   plugin_name,
+                                          char *         json_file_path,
+                                          size_t         path_size);
+int  neu_adapter_parse_json_to_gtags(const char *        json_file_path,
+                                     neu_req_add_gtag_t *gtag_cmd);
+bool neu_plugin_support_import_tags(neu_adapter_t *adapter,
+                                    const char *   plugin_name);
+bool neu_plugin_support_import_tags_simple(const char *plugin_name);
+
 #endif

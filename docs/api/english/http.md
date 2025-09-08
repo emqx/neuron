@@ -320,11 +320,13 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
             //node name
             "name": "sample-driver-adapter",
             //plugin name
-            "plugin": "Modbus TCP"
+            "plugin": "Modbus TCP",
+            "support_import_tags": false
         },
         {
             "name": "modbus-tcp-adapter",
-            "plugin": "Modbus TCP"
+            "plugin": "Modbus TCP",
+            "support_import_tags": false
         }
     ]
 }
@@ -839,6 +841,49 @@ To update both group name and interval:
             ]
         }
     ]
+}
+
+```
+
+
+### Response
+
+```json
+{
+    //tags count
+    "index": 4,
+    "error": 0
+}
+```
+
+## Add builtin Tag
+
+*POST*  /api/v2/tags/import
+
+### Request Headers
+
+**Content-Type**  application/json
+
+**Authorization** Bearer \<token\>
+
+### Response Status
+
+* 200 OK
+* 206
+  * 2202 tag name conflict
+  * 2203 tag attribute not support
+  * 2204 tag type not support
+  * 2205 tag address format invalid
+* 404
+  * 2003 node not exist
+  * 3029 not support import tags
+
+### Body
+
+```json
+{
+    //node name
+    "node": "cnc-node"
 }
 
 ```
