@@ -86,6 +86,7 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param);
 typedef struct {
     char *name;
     char *plugin;
+    bool  support_import_tags;
 } neu_json_get_nodes_resp_node_t;
 
 typedef struct {

@@ -83,6 +83,8 @@ extern "C" {
     XX(NEU_RESP_ADD_TAG, neu_resp_add_tag_t)                                \
     XX(NEU_REQ_ADD_GTAG, neu_req_add_gtag_t)                                \
     XX(NEU_RESP_ADD_GTAG, neu_resp_add_tag_t)                               \
+    XX(NEU_REQ_IMPORT_TAGS, neu_req_import_tags_t)                          \
+    XX(NEU_RESP_IMPORT_TAGS, neu_resp_add_tag_t)                            \
     XX(NEU_REQ_DEL_TAG, neu_req_del_tag_t)                                  \
     XX(NEU_REQ_UPDATE_TAG, neu_req_update_tag_t)                            \
     XX(NEU_RESP_UPDATE_TAG, neu_resp_update_tag_t)                          \
@@ -128,6 +130,7 @@ extern "C" {
     XX(NEU_REQ_DEL_TAG_EVENT, neu_req_del_tag_t)                            \
     XX(NEU_REQ_UPDATE_TAG_EVENT, neu_req_update_tag_t)                      \
     XX(NEU_REQ_ADD_GTAG_EVENT, neu_req_add_gtag_t)                          \
+    XX(NEU_REQ_IMPORT_TAGS_EVENT, neu_req_import_tags_t)                    \
     XX(NEU_REQ_ADD_PLUGIN_EVENT, neu_req_add_plugin_t)                      \
     XX(NEU_REQ_DEL_PLUGIN_EVENT, neu_req_del_plugin_t)                      \
     XX(NEU_REQ_SUBSCRIBE_GROUP_EVENT, neu_req_subscribe_t)                  \

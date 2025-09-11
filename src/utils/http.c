@@ -355,6 +355,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TEMPLATE_NOT_FOUND:
     case NEU_ERR_PLUGIN_NOT_FOUND:
     case NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS:
+    case NEU_ERR_PLUGIN_NOT_SUPPORT_IMPORT_TAGS:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:

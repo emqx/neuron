@@ -144,6 +144,21 @@ int  neu_json_decode_update_tags_req(char *                       buf,
                                      neu_json_update_tags_req_t **result);
 void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req);
 
+typedef struct {
+    char *node;
+} neu_json_import_tags_req_t;
+
+int  neu_json_decode_import_tags_req(char *                       buf,
+                                     neu_json_import_tags_req_t **result);
+void neu_json_decode_import_tags_req_free(neu_json_import_tags_req_t *req);
+
+typedef struct {
+    uint16_t index;
+    int      error;
+} neu_json_import_tags_res_t;
+
+int neu_json_encode_import_tags_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

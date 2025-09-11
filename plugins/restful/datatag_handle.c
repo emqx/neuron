@@ -248,6 +248,51 @@ void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     free(result);
 }
 
+void handle_import_tags(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_import_tags_req_t, neu_json_decode_import_tags_req, {
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
+                    neu_http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
+                                      result_error);
+                });
+            } else {
+                neu_reqresp_head_t    header = { 0 };
+                neu_req_import_tags_t cmd    = { 0 };
+
+                header.ctx             = aio;
+                header.type            = NEU_REQ_IMPORT_TAGS;
+                header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+
+                strcpy(cmd.node, req->node);
+
+                int ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
+            }
+        })
+}
+
+void handle_import_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
+{
+    neu_json_import_tags_res_t res    = { 0 };
+    char *                     result = NULL;
+
+    res.error = resp->error;
+    res.index = resp->index;
+
+    neu_json_encode_by_fn(&res, neu_json_encode_import_tags_resp, &result);
+    NEU_JSON_RESPONSE_ERROR(resp->error,
+                            { neu_http_response(aio, resp->error, result); });
+    free(result);
+}
+
 void handle_del_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();

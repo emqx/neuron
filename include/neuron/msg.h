@@ -106,6 +106,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_ADD_TAG,
     NEU_REQ_ADD_GTAG,
     NEU_RESP_ADD_GTAG,
+    NEU_REQ_IMPORT_TAGS,
+    NEU_RESP_IMPORT_TAGS,
     NEU_REQ_DEL_TAG,
     NEU_REQ_UPDATE_TAG,
     NEU_RESP_UPDATE_TAG,
@@ -164,6 +166,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_TAG_EVENT,
     NEU_REQ_DEL_TAG_EVENT,
     NEU_REQ_UPDATE_TAG_EVENT,
+    NEU_REQ_IMPORT_TAGS_EVENT,
 
     NEU_REQ_ADD_GTAG_EVENT,
 
@@ -238,15 +241,17 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_DRIVER_GROUP]     = "NEU_REQ_GET_DRIVER_GROUP",
     [NEU_RESP_GET_DRIVER_GROUP]    = "NEU_RESP_GET_DRIVER_GROUP",
 
-    [NEU_REQ_ADD_TAG]     = "NEU_REQ_ADD_TAG",
-    [NEU_RESP_ADD_TAG]    = "NEU_RESP_ADD_TAG",
-    [NEU_REQ_ADD_GTAG]    = "NEU_REQ_ADD_GTAG",
-    [NEU_RESP_ADD_GTAG]   = "NEU_RESP_ADD_GTAG",
-    [NEU_REQ_DEL_TAG]     = "NEU_REQ_DEL_TAG",
-    [NEU_REQ_UPDATE_TAG]  = "NEU_REQ_UPDATE_TAG",
-    [NEU_RESP_UPDATE_TAG] = "NEU_RESP_UPDATE_TAG",
-    [NEU_REQ_GET_TAG]     = "NEU_REQ_GET_TAG",
-    [NEU_RESP_GET_TAG]    = "NEU_RESP_GET_TAG",
+    [NEU_REQ_ADD_TAG]      = "NEU_REQ_ADD_TAG",
+    [NEU_RESP_ADD_TAG]     = "NEU_RESP_ADD_TAG",
+    [NEU_REQ_ADD_GTAG]     = "NEU_REQ_ADD_GTAG",
+    [NEU_RESP_ADD_GTAG]    = "NEU_RESP_ADD_GTAG",
+    [NEU_REQ_IMPORT_TAGS]  = "NEU_REQ_IMPORT_TAGS",
+    [NEU_RESP_IMPORT_TAGS] = "NEU_RESP_IMPORT_TAGS",
+    [NEU_REQ_DEL_TAG]      = "NEU_REQ_DEL_TAG",
+    [NEU_REQ_UPDATE_TAG]   = "NEU_REQ_UPDATE_TAG",
+    [NEU_RESP_UPDATE_TAG]  = "NEU_RESP_UPDATE_TAG",
+    [NEU_REQ_GET_TAG]      = "NEU_REQ_GET_TAG",
+    [NEU_RESP_GET_TAG]     = "NEU_RESP_GET_TAG",
 
     [NEU_REQ_ADD_PLUGIN]    = "NEU_REQ_ADD_PLUGIN",
     [NEU_REQ_DEL_PLUGIN]    = "NEU_REQ_DEL_PLUGIN",
@@ -299,6 +304,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_ADD_TAG_EVENT]           = "NEU_REQ_ADD_TAG_EVENT",
     [NEU_REQ_DEL_TAG_EVENT]           = "NEU_REQ_DEL_TAG_EVENT",
     [NEU_REQ_UPDATE_TAG_EVENT]        = "NEU_REQ_UPDATE_TAG_EVENT",
+    [NEU_REQ_IMPORT_TAGS_EVENT]       = "NEU_REQ_IMPORT_TAGS_EVENT",
     [NEU_REQ_ADD_GTAG_EVENT]          = "NEU_REQ_ADD_GTAG_EVENT",
     [NEU_REQ_ADD_PLUGIN_EVENT]        = "NEU_REQ_ADD_PLUGIN_EVENT",
     [NEU_REQ_DEL_PLUGIN_EVENT]        = "NEU_REQ_DEL_PLUGIN_EVENT",
@@ -561,6 +567,10 @@ typedef struct {
     uint16_t        n_group;
     neu_gdatatag_t *groups;
 } neu_req_add_gtag_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_import_tags_t;
 
 typedef struct {
     char     driver[NEU_NODE_NAME_LEN];

@@ -325,6 +325,11 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_node->name,
             },
+            {
+                .name       = "support_import_tags",
+                .t          = NEU_JSON_BOOL,
+                .v.val_bool = p_node->support_import_tags,
+            },
         };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));

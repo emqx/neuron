@@ -1474,6 +1474,19 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_IMPORT_TAGS: {
+        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
+            NULL) {
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+        } else {
+            forward_msg(manager, header, header->receiver);
+        }
+
+        break;
+    }
     case NEU_REQ_NODE_SETTING:
     case NEU_REQ_NODE_SETTING_EVENT: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) &header[1];
@@ -1493,6 +1506,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
+    case NEU_RESP_IMPORT_TAGS:
     case NEU_RESP_UPDATE_TAG:
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_GROUP:

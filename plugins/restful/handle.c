@@ -211,6 +211,12 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_add_gtags,
     },
     {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags/import",
+        .value.handler = handle_import_tags,
+    },
+    {
         .method        = NEU_HTTP_METHOD_PUT,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
