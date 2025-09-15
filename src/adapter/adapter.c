@@ -1572,6 +1572,25 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_UPDATE_NODE_LOG_LEVEL: {
+        neu_req_update_node_log_level_t *cmd =
+            (neu_req_update_node_log_level_t *) &header[1];
+
+        adapter->log_level = cmd->log_level;
+        zlog_level_switch(neu_plugin_to_plugin_common(adapter->plugin)->log,
+                          cmd->log_level);
+
+        struct timeval tv = { 0 };
+        gettimeofday(&tv, NULL);
+        adapter->timestamp_lev = tv.tv_sec;
+
+        nlog_debug("Node %s log level updated to %d",
+                   neu_plugin_to_plugin_common(adapter->plugin)->name,
+                   cmd->log_level);
+
+        neu_msg_free((neu_msg_t *) header);
+        break;
+    }
     case NEU_REQ_PRGFILE_UPLOAD: {
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);

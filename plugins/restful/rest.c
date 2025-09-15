@@ -34,6 +34,7 @@
 #include "handle.h"
 #include "normal_handle.h"
 #include "otel/otel_manager.h"
+#include "parser/neu_json_log.h"
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"

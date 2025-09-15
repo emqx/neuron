@@ -415,6 +415,18 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_log_level,
     },
     {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/global",
+        .value.handler = handle_global_log_level,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/global",
+        .value.handler = handle_get_global_log_level,
+    },
+    {
         .method        = NEU_HTTP_METHOD_GET,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/log/list",

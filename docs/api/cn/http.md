@@ -1844,6 +1844,63 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
 }
 ```
 
+## 修改全局日志等级
+
+*PUT*  /api/v2/log/global
+
+### 请求头部
+
+**Authorization** Bearer \<token\>
+
+### 响应状态
+
+* 200 OK
+* 500
+  * 1001 内部错误
+  * 1010 程序繁忙
+
+### 请求体
+
+```json
+{
+    "level": "debug",
+}
+```
+
+::: tip
+修改所有节点以及核心的日志等级。
+:::
+
+### 响应
+
+```json
+{
+    "error": 0
+}
+```
+
+## 获取全局日志等级
+
+*GET*  /api/v2/log/global
+
+### 请求头部
+
+**Authorization** Bearer \<token\>
+
+### 响应状态
+
+* 200
+* 500
+  * 1001 服务器内部错误
+
+### 响应
+
+```json
+{
+    "level": "info",
+}
+```
+
 ## 批量添加 Drivers
 
 *PUT* /api/v2/global/drivers

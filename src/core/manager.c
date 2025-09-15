@@ -82,6 +82,15 @@ uint16_t neu_manager_get_port()
     return port++;
 }
 
+int neu_manager_get_global_log_level()
+{
+    extern neu_manager_t *g_manager;
+    if (g_manager != NULL) {
+        return g_manager->log_level;
+    }
+    return ZLOG_LEVEL_INFO;
+}
+
 neu_manager_t *neu_manager_create()
 {
     int                  rv      = 0;
@@ -1603,6 +1612,61 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 reply(manager, header, &e);
             }
         }
+
+        break;
+    }
+    case NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL: {
+        neu_req_update_global_log_level_t *cmd =
+            (neu_req_update_global_log_level_t *) &header[1];
+
+        nlog_info("Setting global log level to %d for core and all nodes",
+                  cmd->log_level);
+
+        manager->log_level = cmd->log_level;
+        nlog_level_change(manager->log_level);
+
+        UT_array *nodes = neu_node_manager_get_all(manager->node_manager);
+        if (nodes != NULL) {
+            neu_resp_node_info_t *node_info = NULL;
+            while ((node_info = (neu_resp_node_info_t *) utarray_next(
+                        nodes, node_info)) != NULL) {
+                neu_reqresp_head_t              node_header = { 0 };
+                neu_req_update_node_log_level_t node_cmd    = { 0 };
+
+                node_header.type            = NEU_REQ_UPDATE_NODE_LOG_LEVEL;
+                node_header.ctx             = NULL;
+                node_header.otel_trace_type = header->otel_trace_type;
+                node_header.monitor         = false;
+                strcpy(node_header.sender, "manager");
+                strcpy(node_header.receiver, node_info->node);
+
+                node_cmd.log_level = cmd->log_level;
+
+                neu_msg_t *node_msg = neu_msg_new(NEU_REQ_UPDATE_NODE_LOG_LEVEL,
+                                                  &node_header, &node_cmd);
+                if (node_msg != NULL) {
+                    struct sockaddr_un addr = neu_node_manager_get_addr(
+                        manager->node_manager, node_info->node);
+                    int ret =
+                        neu_send_msg_to(manager->server_fd, &addr, node_msg);
+                    if (ret != 0) {
+                        nlog_warn("Failed to send global log level update to "
+                                  "node %s, ret: %d",
+                                  node_info->node, ret);
+                        neu_msg_free(node_msg);
+                    } else {
+                        nlog_debug("Sent global log level update to node %s",
+                                   node_info->node);
+                    }
+                }
+            }
+            utarray_free(nodes);
+        }
+
+        neu_resp_error_t e = { .error = NEU_ERR_SUCCESS };
+        header->type       = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(manager, header, &e);
 
         break;
     }
