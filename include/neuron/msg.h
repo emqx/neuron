@@ -127,6 +127,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_DRIVERS,
 
     NEU_REQ_UPDATE_LOG_LEVEL,
+    NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL,
+    NEU_REQ_UPDATE_NODE_LOG_LEVEL,
 
     NEU_REQ_PRGFILE_UPLOAD,
     NEU_REQ_PRGFILE_PROCESS,
@@ -265,10 +267,12 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_ADD_DRIVERS] = "NEU_REQ_ADD_DRIVERS",
 
-    [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
-    [NEU_REQ_PRGFILE_UPLOAD]   = "NEU_REQ_PRGFILE_UPLOAD",
-    [NEU_REQ_PRGFILE_PROCESS]  = "NEU_REQ_PRGFILE_PROCESS",
-    [NEU_RESP_PRGFILE_PROCESS] = "NEU_RESP_PRGFILE_PROCESS",
+    [NEU_REQ_UPDATE_LOG_LEVEL]        = "NEU_REQ_UPDATE_LOG_LEVEL",
+    [NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL] = "NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL",
+    [NEU_REQ_UPDATE_NODE_LOG_LEVEL]   = "NEU_REQ_UPDATE_NODE_LOG_LEVEL",
+    [NEU_REQ_PRGFILE_UPLOAD]          = "NEU_REQ_PRGFILE_UPLOAD",
+    [NEU_REQ_PRGFILE_PROCESS]         = "NEU_REQ_PRGFILE_PROCESS",
+    [NEU_RESP_PRGFILE_PROCESS]        = "NEU_RESP_PRGFILE_PROCESS",
 
     [NEU_REQ_SCAN_TAGS]  = "NEU_REQ_SCAN_TAGS",
     [NEU_RESP_SCAN_TAGS] = "NEU_RESP_SCAN_TAGS",
@@ -1572,6 +1576,14 @@ typedef struct neu_req_update_log_level {
     int  log_level;
     bool core;
 } neu_req_update_log_level_t;
+
+typedef struct neu_req_update_global_log_level {
+    int log_level;
+} neu_req_update_global_log_level_t;
+
+typedef struct neu_req_update_node_log_level {
+    int log_level;
+} neu_req_update_node_log_level_t;
 
 void neu_msg_gen(neu_reqresp_head_t *header, void *data);
 

@@ -27,10 +27,12 @@
 
 #include "json/json.h"
 
+#include "msg.h"
 #include "neu_json_log.h"
 #include "utils/log.h"
 #include "utils/utarray.h"
 #include "utils/utextend.h"
+#include "utils/zlog.h"
 
 int neu_json_decode_update_log_level_req(
     char *buf, neu_json_update_log_level_req_t **result)
@@ -95,6 +97,54 @@ void neu_json_decode_update_log_level_req_free(
     if (req->node_name != NULL) {
         free(req->node_name);
     }
+    if (req->log_level != NULL) {
+        free(req->log_level);
+    }
+    if (req != NULL) {
+        free(req);
+    }
+}
+
+int neu_json_decode_update_global_log_level_req(
+    char *buf, neu_json_update_global_log_level_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = neu_json_decode_new(buf);
+
+    neu_json_update_global_log_level_req_t *req =
+        calloc(1, sizeof(neu_json_update_global_log_level_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+        .name = "level",
+        .t    = NEU_JSON_STR,
+    } };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->log_level = req_elems[0].v.val_str;
+    *result        = req;
+    goto decode_exit;
+
+decode_fail:
+    free(req);
+    ret = -1;
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_update_global_log_level_req_free(
+    neu_json_update_global_log_level_req_t *req)
+{
     if (req->log_level != NULL) {
         free(req->log_level);
     }

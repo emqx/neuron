@@ -1825,6 +1825,63 @@ The node field is optional. If this field is not filled in, the core cannot be f
 }
 ```
 
+## Update global log level
+
+*PUT*  /api/v2/log/global
+
+### Request Headers
+
+**Authorization** Bearer \<token\>
+
+### Response Status
+
+* 200 OK
+* 500
+  * 1001 internal error
+  * 1010 is busy
+
+### Body
+
+```json
+{
+    "level": "debug",
+}
+```
+
+::: tip
+Update log level of all nodes, including the core log level.
+:::
+
+### Response
+
+```json
+{
+    "error": 0
+}
+```
+
+## Get global log level
+
+*GET*  /api/v2/log/global
+
+### Request Headers
+
+**Authorization** Bearer \<token\>
+
+### Response Status
+
+* 200
+* 500
+  * 1001 internal error
+
+### Response
+
+```json
+{
+    "level": "info",
+}
+```
+
 ## Get file list information
 
 *GET* /api/v2/file/info
