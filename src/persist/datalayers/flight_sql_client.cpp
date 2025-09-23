@@ -109,7 +109,7 @@ arrow::Status Client::InsertPrepared(const std::string &         table_name,
 {
     flight::FlightCallOptions call_options;
     call_options.headers.push_back(
-        std::make_pair("authorization", "Bearer " + bearer_token_));
+        std::make_pair("authorization", bearer_token_));
 
     std::string sql = "INSERT INTO " + table_name +
         " (time, node_name, group_name, tag, value) VALUES (?, ?, ?, ?, ?)";
