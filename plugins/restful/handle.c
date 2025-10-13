@@ -148,6 +148,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/users",
     },
+    {
+        .url = "/api/v2/export/db",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -499,6 +502,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/users",
         .value.handler = handle_delete_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/export/db",
+        .value.handler = handle_export_db,
     },
 };
 

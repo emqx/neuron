@@ -36,4 +36,6 @@ void handle_add_user(nng_aio *aio);
 void handle_update_user(nng_aio *aio);
 void handle_delete_user(nng_aio *aio);
 
+void handle_export_db(nng_aio *aio);
+
 #endif
