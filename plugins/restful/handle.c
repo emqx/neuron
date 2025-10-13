@@ -162,6 +162,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/datalayers/tag",
     },
+    {
+        .url = "/api/v2/export/db",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -555,6 +558,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/datalayers/tag",
         .value.handler = handle_datalayers_get_tag,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/export/db",
+        .value.handler = handle_export_db,
     },
 };
 

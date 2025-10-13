@@ -517,3 +517,40 @@ int neu_http_post_otel_trace(uint8_t *data, int len)
     nng_aio_free(aio);
     return status;
 }
+
+int neu_http_response_file(nng_aio *aio, void *data, size_t len,
+                           const char *disposition)
+{
+    nng_http_res *res = NULL;
+    int           rv  = 0;
+
+    if (((rv = nng_http_res_alloc(&res)) != 0) ||
+        ((rv = nng_http_res_set_status(res, NNG_HTTP_STATUS_OK)) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Content-Type",
+                                       "application/octet-stream")) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Content-Disposition",
+                                       disposition)) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Origin",
+                                       "*")) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Methods",
+                                       "POST,GET,PUT,DELETE,OPTIONS")) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Headers",
+                                       "*")) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Access-Control-Expose-Headers",
+                                       "Content-Disposition")) != 0) ||
+        ((rv = nng_http_res_copy_data(res, data, len)) != 0)) {
+        nng_http_res_free(res);
+        nng_aio_finish(aio, rv);
+
+        return -1;
+    }
+
+    nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+    nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
+                nng_http_req_get_uri(nng_req), NNG_HTTP_STATUS_OK);
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+
+    return 0;
+}
