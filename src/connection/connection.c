@@ -69,6 +69,8 @@ struct neu_conn {
     uint8_t *buf;
     uint16_t buf_size;
     uint16_t offset;
+
+    uint16_t udp_act_port;
 };
 
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
@@ -951,6 +953,13 @@ static void conn_connect(neu_conn_t *conn)
             return;
         }
 
+        struct sockaddr_in local_addr     = { 0 };
+        socklen_t          local_addr_len = sizeof(local_addr);
+        if (getsockname(fd, (struct sockaddr *) &local_addr, &local_addr_len) ==
+            0) {
+            conn->udp_act_port = ntohs(local_addr.sin_port);
+        }
+
         if (is_ipv4(conn->param.params.udp.dst_ip)) {
             struct sockaddr_in remote = {
                 .sin_family      = AF_INET,
@@ -1460,4 +1469,9 @@ int is_ipv6(const char *ip)
 {
     struct sockaddr_in6 sa;
     return inet_pton(AF_INET6, ip, &(sa.sin6_addr)) != 0;
+}
+
+uint16_t neu_conn_udp_act_port(neu_conn_t *conn)
+{
+    return conn->udp_act_port;
 }
