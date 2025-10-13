@@ -303,4 +303,6 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
 int is_ipv4(const char *ip);
 int is_ipv6(const char *ip);
 
+uint16_t neu_conn_udp_act_port(neu_conn_t *conn);
+
 #endif
