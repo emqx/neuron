@@ -1063,6 +1063,13 @@ static void conn_connect(neu_conn_t *conn)
             return;
         }
 
+        struct sockaddr_in local_addr     = { 0 };
+        socklen_t          local_addr_len = sizeof(local_addr);
+        if (getsockname(fd, (struct sockaddr *) &local_addr, &local_addr_len) ==
+            0) {
+            conn->udp_act_port = ntohs(local_addr.sin_port);
+        }
+
         conn->is_connected = true;
         conn->fd           = fd;
 
