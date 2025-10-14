@@ -47,6 +47,9 @@ extern "C" {
     XX(NEU_REQ_SUBSCRIBE_GROUPS, neu_req_subscribe_groups_t)                   \
     XX(NEU_REQ_GET_SUBSCRIBE_GROUP, neu_req_get_subscribe_group_t)             \
     XX(NEU_RESP_GET_SUBSCRIBE_GROUP, neu_resp_get_subscribe_group_t)           \
+    XX(NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP,                                     \
+       neu_req_get_driver_subscribe_group_t)                                   \
+    XX(NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP, neu_resp_get_subscribe_group_t)    \
     XX(NEU_REQ_GET_SUB_DRIVER_TAGS, neu_req_get_sub_driver_tags_t)             \
     XX(NEU_RESP_GET_SUB_DRIVER_TAGS, neu_resp_get_sub_driver_tags_t)           \
     XX(NEU_REQ_NODE_INIT, neu_req_node_init_t)                                 \
