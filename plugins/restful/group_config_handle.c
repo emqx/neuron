@@ -406,10 +406,16 @@ void handle_grp_subscribes(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_groups_req_t,
         neu_json_decode_subscribe_groups_req, {
-            int ret = send_subscribe_groups(aio, req);
-            if (0 != ret) {
+            int ret = 0;
+            if (req->n_group == 0) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
+            } else {
+                ret = send_subscribe_groups(aio, req);
+                if (0 != ret) {
+                    NEU_JSON_RESPONSE_ERROR(
+                        ret, { neu_http_response(aio, ret, result_error); });
+                }
             }
         })
 }
@@ -488,4 +494,111 @@ void handle_grp_get_subscribe_resp(nng_aio *                       aio,
     free(result);
     free(sub_grp_configs.groups);
     utarray_free(groups->groups);
+}
+
+void handle_grp_get_subscribes(nng_aio *aio)
+{
+    int                                  ret    = 0;
+    neu_plugin_t *                       plugin = neu_rest_get_plugin();
+    neu_req_get_driver_subscribe_group_t cmd    = { 0 };
+    neu_reqresp_head_t                   header = {
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    NEU_VALIDATE_JWT(aio);
+
+    // required parameter
+    ret = neu_http_get_param_str(aio, "app", cmd.app, sizeof(cmd.app));
+    if (ret <= 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
+    // optional parameter
+    ret = neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+    if (-1 == ret || (size_t) ret == sizeof(cmd.name)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_grp_get_subscribes_resp(nng_aio *                       aio,
+                                    neu_resp_get_subscribe_group_t *drivers)
+{
+    char *                               result       = NULL;
+    neu_json_get_driver_subscribe_resp_t drivers_resp = { 0 };
+
+    utarray_foreach(drivers->groups, neu_resp_driver_subscribe_info_t *, group)
+    {
+        // int  index = utarray_eltidx(drivers->groups, group);
+        bool found = false;
+
+        for (int k = 0; k < drivers_resp.n_driver; k++) {
+            if (strcmp(drivers_resp.drivers[k].driver, group->driver) == 0) {
+                found = true;
+                drivers_resp.drivers[k].n_group++;
+                drivers_resp.drivers[k].groups = realloc(
+                    drivers_resp.drivers[k].groups,
+                    drivers_resp.drivers[k].n_group *
+                        sizeof(neu_json_get_driver_subscribe_resp_group_t));
+                drivers_resp.drivers[k]
+                    .groups[drivers_resp.drivers[k].n_group - 1]
+                    .group = strdup(group->group);
+                drivers_resp.drivers[k]
+                    .groups[drivers_resp.drivers[k].n_group - 1]
+                    .subscribed = group->subscribed;
+                break;
+            }
+        }
+
+        if (!found) {
+            drivers_resp.n_driver++;
+            drivers_resp.drivers = realloc(
+                drivers_resp.drivers,
+                drivers_resp.n_driver *
+                    sizeof(neu_json_get_driver_subscribe_resp_driver_t));
+
+            drivers_resp.drivers[drivers_resp.n_driver - 1].driver =
+                strdup(group->driver);
+            drivers_resp.drivers[drivers_resp.n_driver - 1].n_group = 1;
+            drivers_resp.drivers[drivers_resp.n_driver - 1].groups =
+                calloc(1, sizeof(neu_json_get_driver_subscribe_resp_group_t));
+
+            drivers_resp.drivers[drivers_resp.n_driver - 1].groups[0].group =
+                strdup(group->group);
+            drivers_resp.drivers[drivers_resp.n_driver - 1]
+                .groups[0]
+                .subscribed = group->subscribed;
+        }
+    }
+
+    neu_json_encode_by_fn(&drivers_resp,
+                          neu_json_encode_get_driver_subscribe_resp, &result);
+
+    neu_http_ok(aio, result);
+    free(result);
+
+    for (int i = 0; i < drivers_resp.n_driver; i++) {
+        free(drivers_resp.drivers[i].driver);
+        for (int j = 0; j < drivers_resp.drivers[i].n_group; j++) {
+            free(drivers_resp.drivers[i].groups[j].group);
+        }
+        free(drivers_resp.drivers[i].groups);
+    }
+    free(drivers_resp.drivers);
+
+    utarray_free(drivers->groups);
 }

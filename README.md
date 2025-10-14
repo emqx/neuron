@@ -8,6 +8,9 @@
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
 [![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
 
+English | [简体中文](https://github.com/emqx/neuron/blob/main/README-CN.md)
+
+
 Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and AI/ML technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol and realize the interconnection between IIoT platforms and various industrial devices.
 
 ![neuron-overview](docs/pictures/neuron-final.png)
@@ -15,46 +18,75 @@ Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and A
 The following are some important features of Neuron:
 
 - Edge native application with real-time capability to leverage the low latency network of edge side.
-- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/introduction/architecture/architecture.html) for extending more functional services by pluggable modules.
+- Loosely-coupled modularity architecture design for extending more functional services by pluggable modules.
 - Support hot plugins that can update device and application modules during runtime.
-- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/configuration/south-devices/south-devices.html).
+- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and more.
 - Support simultaneous connection of a large number of industrial devices with different protocols.
 - Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
-- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use-cases/sparkplug/sparkplug.html) solution.
+- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via SparkplugB solution.
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](https://neugates.io/docs/en/latest/api/configuration.html) and [MQTT API](https://neugates.io/docs/en/latest/configuration/north-apps/mqtt/api.html) services.
+- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](docs/api/english/http.md) and [MQTT API](docs/api/english/mqtt.md) services.
 - Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
-- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/installation/license-install/license-install.html) to run.
+- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3.
 
-For more information, please visit [Neuron homepage](https://neugates.io/).
+Neuron only provides limited plugins in the open source version. To use more plugins and a more complete Dashboard, please use [NeuronEX](https://www.emqx.com/en/products/neuronex).
 
-## Get Started
+## Quick Start
 
-#### Run Neuron using Docker
+Default username is `admin` and password is `0000`.
 
+### Download
+
+You can download from [Release](https://github.com/emqx/neuron/releases).
+
+```bash
+$ tar xvf neuron-{version}-linux-amd64.tar.gz
+$ cd neuron
+$ ./neuron --log
 ```
-docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
+
+Open a web browser and navigate to `http://localhost:7000` to access the Neuron web interface.
+
+### Build and Run
+
+1. [Install Dependencies](https://github.com/emqx/neuron/install-dependencies.md)
+
+2. Build Neuron
+```bash
+$ git clone https://github.com/emqx/neuron
+$ cd neuron && mkdir build && cd build
+$ cmake .. && make
 ```
 
-Next, please follow the [getting started guide](https://neugates.io/docs/en/latest/quick-start/hardware-specifications.html) to tour the Neuron features.
+3. Download and Unzip Dashboard
+```bash
+$ wget https://github.com/emqx/neuron-dashboard/releases/download/2.6.3/neuron-dashboard.zip
 
-> **Limitations**
->
-> Neuron open source edition only includes Modbus and MQTT drivers.
->
-> If you need more driver protocol support and edge computing services, you can choose Neuron's commercial version [NeuronEX](https://www.emqx.com/en/products/neuronex).
-> NeuronEX comes with a built-in license for 30 data tags that can be applied to all southbound drivers. And NeuronEX also supports edge intelligent analysis of industrial data to enable you to quickly gain business insights. To download NeuronEX, please click [here](https://www.emqx.com/en/downloads-and-install/neuronex).
+# Unzip neuron-dashboard.zip to the build directory
+$ unzip neuron-dashboard.zip
+```
 
-#### More installation options
+4. Run Neuron
+```bash
+$ ./neuron --log
+```
 
-If you prefer to install and manage Neuron yourself, you can download the latest version from [neugates.io/downloads?os=Linux](https://neugates.io/downloads?os=Linux).
+5. Open a web browser and navigate to `http://localhost:7000` to access the Neuron web interface.
 
-For more installation options, see the [Neuron installation documentation](https://neugates.io/docs/en/latest/installation/installation.html).
+### Docker
 
-## Documentation
+```bash
+$ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
+```
 
-The Neuron documentation is available at [neugates.io/docs/en/latest/](https://neugates.io/docs/en/latest/).
+Currently, the latest image maintained for Neuron is `emqx/neuron:2.6.9`, and images for versions `2.7.x` and later are no longer provided.
+
+### [Modbus TCP Data Collection and MQTT Transmission](./docs/quick_start/quick_start.md)
+
+## Dashboard
+
+The open-source version of the [Dashboard](https://github.com/emqx/neuron-dashboard) is currently at version 2.6.3, which has been suspended for development and maintenance. This version is also the one integrated by default with Neuron. For a more complete and professional Dashboard, please use [NeuronEX](https://www.emqx.com/en/products/neuronex).
 
 ## Get Involved
 
@@ -63,36 +95,6 @@ The Neuron documentation is available at [neugates.io/docs/en/latest/](https://n
 - For general discussions, join us on the [official Discord](https://discord.gg/xYGf3fQnES) team.
 - Keep updated on [EMQ YouTube](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q) by subscribing.
 
-## Build From Source
-
-**Install required dependencies**
-
-[Install-dependencies](https://github.com/emqx/neuron/blob/main/Install-dependencies.md)
-
-**Build**
-
-```
-$ git clone https://github.com/emqx/neuron
-$ cd neuron
-$ mkdir build && cd build
-$ cmake .. && make
-```
-
-**Install Dashboard**
-
-Download the latest `neuron-dashboard.zip` from the [neuron-dashboard](https://github.com/emqx/neuron-dashboard/releases) page, unzip it and put it to the `dist` directory under the Neuron executable directory.
-
-**Run**
-
-```
-$ cd build
-$ ./neuron
-```
-
->**Log level**
->
->Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
->
 
 ## License
 

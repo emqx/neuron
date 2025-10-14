@@ -1113,7 +1113,7 @@ static int otel_timer_cb(void *data)
 void neu_otel_start()
 {
     if (otel_event == NULL) {
-        otel_event = neu_event_new();
+        otel_event = neu_event_new("otel_event");
     }
 
     if (otel_timer == NULL) {

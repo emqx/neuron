@@ -18,7 +18,7 @@
  **/
 
 #ifndef _NEU_SCAN_HANDLE_H_
-#define _NEU_ACAN_HANDLE_H_
+#define _NEU_SCAN_HANDLE_H_
 
 #include <nng/nng.h>
 

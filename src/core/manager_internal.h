@@ -85,6 +85,8 @@ UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
                                               const char *   app,
                                               const char *   driver,
                                               const char *   group);
+UT_array *neu_manager_get_driver_groups(neu_manager_t *manager, const char *app,
+                                        const char *name);
 
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info);

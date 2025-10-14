@@ -95,7 +95,8 @@ set(NEURON_BASE_SOURCES
     src/utils/base64.c
     src/utils/async_queue.c
     src/utils/log.c
-	src/utils/cid.c
+    src/utils/cid.c
+    src/utils/tpy.c
     ${PERSIST_SOURCES})
   
 if (SMART_LINK) 
@@ -164,6 +165,7 @@ set(NEURON_SOURCES
     plugins/restful/scan_handle.c
     plugins/restful/otel_handle.c
     plugins/restful/cid_handle.c
+    plugins/restful/tpy_handle.c
     plugins/restful/system_handle.c
     plugins/restful/datalayers_handle.c
     plugins/restful/rest.c

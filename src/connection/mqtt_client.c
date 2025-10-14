@@ -407,6 +407,11 @@ static void task_handle_sub(task_t *task, neu_mqtt_client_t *client)
     }
 
     rc = nng_mqtt_msg_get_suback_return_codes(msg, &n);
+    if (NULL == rc) {
+        log(error, "failed to get SUBACK return codes");
+        rv = -1;
+        goto end;
+    }
     log(debug, "recv SUBACK return_code:%d", *rc);
     rv             = 0x80 == *rc ? -1 : 0;
     task->sub->ack = true;
@@ -907,7 +912,7 @@ static inline int client_start_timer(neu_mqtt_client_t *client)
         return 0;
     }
 
-    events = neu_event_new();
+    events = neu_event_new("mqtt_client");
     if (NULL == events) {
         return -1;
     }

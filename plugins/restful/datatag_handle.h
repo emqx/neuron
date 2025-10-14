@@ -28,6 +28,8 @@ void handle_add_tags(nng_aio *aio);
 void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp);
 void handle_add_gtags(nng_aio *aio);
 void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp);
+void handle_import_tags(nng_aio *aio);
+void handle_import_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp);
 void handle_del_tags(nng_aio *aio);
 void handle_update_tags(nng_aio *aio);
 void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp);

@@ -61,6 +61,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_SUBSCRIBE_GROUPS,
     NEU_REQ_GET_SUBSCRIBE_GROUP,
     NEU_RESP_GET_SUBSCRIBE_GROUP,
+    NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP,
+    NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP,
     NEU_REQ_GET_SUB_DRIVER_TAGS,
     NEU_RESP_GET_SUB_DRIVER_TAGS,
 
@@ -104,6 +106,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_ADD_TAG,
     NEU_REQ_ADD_GTAG,
     NEU_RESP_ADD_GTAG,
+    NEU_REQ_IMPORT_TAGS,
+    NEU_RESP_IMPORT_TAGS,
     NEU_REQ_DEL_TAG,
     NEU_REQ_UPDATE_TAG,
     NEU_RESP_UPDATE_TAG,
@@ -123,6 +127,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_DRIVERS,
 
     NEU_REQ_UPDATE_LOG_LEVEL,
+    NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL,
+    NEU_REQ_UPDATE_NODE_LOG_LEVEL,
 
     NEU_REQ_PRGFILE_UPLOAD,
     NEU_REQ_PRGFILE_PROCESS,
@@ -162,6 +168,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_TAG_EVENT,
     NEU_REQ_DEL_TAG_EVENT,
     NEU_REQ_UPDATE_TAG_EVENT,
+    NEU_REQ_IMPORT_TAGS_EVENT,
 
     NEU_REQ_ADD_GTAG_EVENT,
 
@@ -211,14 +218,17 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_WRITE_TAGS]          = "NEU_RESP_WRITE_TAGS",
     [NEU_REQ_WRITE_GTAGS]          = "NEU_REQ_WRITE_GTAGS",
 
-    [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
-    [NEU_REQ_UNSUBSCRIBE_GROUP]      = "NEU_REQ_UNSUBSCRIBE_GROUP",
-    [NEU_REQ_UPDATE_SUBSCRIBE_GROUP] = "NEU_REQ_UPDATE_SUBSCRIBE_GROUP",
-    [NEU_REQ_SUBSCRIBE_GROUPS]       = "NEU_REQ_SUBSCRIBE_GROUPS",
-    [NEU_REQ_GET_SUBSCRIBE_GROUP]    = "NEU_REQ_GET_SUBSCRIBE_GROUP",
-    [NEU_RESP_GET_SUBSCRIBE_GROUP]   = "NEU_RESP_GET_SUBSCRIBE_GROUP",
-    [NEU_REQ_GET_SUB_DRIVER_TAGS]    = "NEU_REQ_GET_SUB_DRIVER_TAGS",
-    [NEU_RESP_GET_SUB_DRIVER_TAGS]   = "NEU_RESP_GET_SUB_DRIVER_TAGS",
+    [NEU_REQ_SUBSCRIBE_GROUP]            = "NEU_REQ_SUBSCRIBE_GROUP",
+    [NEU_REQ_UNSUBSCRIBE_GROUP]          = "NEU_REQ_UNSUBSCRIBE_GROUP",
+    [NEU_REQ_UPDATE_SUBSCRIBE_GROUP]     = "NEU_REQ_UPDATE_SUBSCRIBE_GROUP",
+    [NEU_REQ_SUBSCRIBE_GROUPS]           = "NEU_REQ_SUBSCRIBE_GROUPS",
+    [NEU_REQ_GET_SUBSCRIBE_GROUP]        = "NEU_REQ_GET_SUBSCRIBE_GROUP",
+    [NEU_RESP_GET_SUBSCRIBE_GROUP]       = "NEU_RESP_GET_SUBSCRIBE_GROUP",
+    [NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP] = "NEU_REQ_GET_DRIVER_SUBSCRIBE_GROUP",
+    [NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP] =
+        "NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP",
+    [NEU_REQ_GET_SUB_DRIVER_TAGS]  = "NEU_REQ_GET_SUB_DRIVER_TAGS",
+    [NEU_RESP_GET_SUB_DRIVER_TAGS] = "NEU_RESP_GET_SUB_DRIVER_TAGS",
 
     [NEU_REQ_GET_DATALAYERS_GROUPS]  = "NEU_REQ_GET_DATALAYERS_GROUPS",
     [NEU_RESP_GET_DATALAYERS_GROUPS] = "NEU_RESP_GET_DATALAYERS_GROUPS",
@@ -256,15 +266,17 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_DRIVER_GROUP]     = "NEU_REQ_GET_DRIVER_GROUP",
     [NEU_RESP_GET_DRIVER_GROUP]    = "NEU_RESP_GET_DRIVER_GROUP",
 
-    [NEU_REQ_ADD_TAG]     = "NEU_REQ_ADD_TAG",
-    [NEU_RESP_ADD_TAG]    = "NEU_RESP_ADD_TAG",
-    [NEU_REQ_ADD_GTAG]    = "NEU_REQ_ADD_GTAG",
-    [NEU_RESP_ADD_GTAG]   = "NEU_RESP_ADD_GTAG",
-    [NEU_REQ_DEL_TAG]     = "NEU_REQ_DEL_TAG",
-    [NEU_REQ_UPDATE_TAG]  = "NEU_REQ_UPDATE_TAG",
-    [NEU_RESP_UPDATE_TAG] = "NEU_RESP_UPDATE_TAG",
-    [NEU_REQ_GET_TAG]     = "NEU_REQ_GET_TAG",
-    [NEU_RESP_GET_TAG]    = "NEU_RESP_GET_TAG",
+    [NEU_REQ_ADD_TAG]      = "NEU_REQ_ADD_TAG",
+    [NEU_RESP_ADD_TAG]     = "NEU_RESP_ADD_TAG",
+    [NEU_REQ_ADD_GTAG]     = "NEU_REQ_ADD_GTAG",
+    [NEU_RESP_ADD_GTAG]    = "NEU_RESP_ADD_GTAG",
+    [NEU_REQ_IMPORT_TAGS]  = "NEU_REQ_IMPORT_TAGS",
+    [NEU_RESP_IMPORT_TAGS] = "NEU_RESP_IMPORT_TAGS",
+    [NEU_REQ_DEL_TAG]      = "NEU_REQ_DEL_TAG",
+    [NEU_REQ_UPDATE_TAG]   = "NEU_REQ_UPDATE_TAG",
+    [NEU_RESP_UPDATE_TAG]  = "NEU_RESP_UPDATE_TAG",
+    [NEU_REQ_GET_TAG]      = "NEU_REQ_GET_TAG",
+    [NEU_RESP_GET_TAG]     = "NEU_RESP_GET_TAG",
 
     [NEU_REQ_ADD_PLUGIN]    = "NEU_REQ_ADD_PLUGIN",
     [NEU_REQ_DEL_PLUGIN]    = "NEU_REQ_DEL_PLUGIN",
@@ -278,10 +290,12 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_ADD_DRIVERS] = "NEU_REQ_ADD_DRIVERS",
 
-    [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
-    [NEU_REQ_PRGFILE_UPLOAD]   = "NEU_REQ_PRGFILE_UPLOAD",
-    [NEU_REQ_PRGFILE_PROCESS]  = "NEU_REQ_PRGFILE_PROCESS",
-    [NEU_RESP_PRGFILE_PROCESS] = "NEU_RESP_PRGFILE_PROCESS",
+    [NEU_REQ_UPDATE_LOG_LEVEL]        = "NEU_REQ_UPDATE_LOG_LEVEL",
+    [NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL] = "NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL",
+    [NEU_REQ_UPDATE_NODE_LOG_LEVEL]   = "NEU_REQ_UPDATE_NODE_LOG_LEVEL",
+    [NEU_REQ_PRGFILE_UPLOAD]          = "NEU_REQ_PRGFILE_UPLOAD",
+    [NEU_REQ_PRGFILE_PROCESS]         = "NEU_REQ_PRGFILE_PROCESS",
+    [NEU_RESP_PRGFILE_PROCESS]        = "NEU_RESP_PRGFILE_PROCESS",
 
     [NEU_REQ_SCAN_TAGS]  = "NEU_REQ_SCAN_TAGS",
     [NEU_RESP_SCAN_TAGS] = "NEU_RESP_SCAN_TAGS",
@@ -317,6 +331,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_ADD_TAG_EVENT]           = "NEU_REQ_ADD_TAG_EVENT",
     [NEU_REQ_DEL_TAG_EVENT]           = "NEU_REQ_DEL_TAG_EVENT",
     [NEU_REQ_UPDATE_TAG_EVENT]        = "NEU_REQ_UPDATE_TAG_EVENT",
+    [NEU_REQ_IMPORT_TAGS_EVENT]       = "NEU_REQ_IMPORT_TAGS_EVENT",
     [NEU_REQ_ADD_GTAG_EVENT]          = "NEU_REQ_ADD_GTAG_EVENT",
     [NEU_REQ_ADD_PLUGIN_EVENT]        = "NEU_REQ_ADD_PLUGIN_EVENT",
     [NEU_REQ_DEL_PLUGIN_EVENT]        = "NEU_REQ_DEL_PLUGIN_EVENT",
@@ -607,6 +622,10 @@ typedef struct {
 } neu_req_add_gtag_t;
 
 typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_import_tags_t;
+
+typedef struct {
     char     driver[NEU_NODE_NAME_LEN];
     char     group[NEU_GROUP_NAME_LEN];
     uint16_t tag_count;
@@ -748,6 +767,11 @@ typedef struct neu_req_get_subscribe_group {
     char group[NEU_GROUP_NAME_LEN];
 } neu_req_get_subscribe_group_t;
 
+typedef struct neu_req_get_driver_subscribe_group {
+    char app[NEU_NODE_NAME_LEN];
+    char name[NEU_NODE_NAME_LEN];
+} neu_req_get_driver_subscribe_group_t;
+
 typedef struct {
     char app[NEU_NODE_NAME_LEN];
     char driver[NEU_NODE_NAME_LEN];
@@ -762,6 +786,13 @@ typedef struct neu_resp_subscribe_info {
     char *params;
     char *static_tags;
 } neu_resp_subscribe_info_t;
+
+typedef struct neu_resp_driver_subscribe_info {
+    char driver[NEU_NODE_NAME_LEN];
+    char app[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+    bool subscribed;
+} neu_resp_driver_subscribe_info_t;
 
 static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)
 {
@@ -786,7 +817,8 @@ typedef struct {
 } neu_resp_get_sub_driver_tags_t;
 
 typedef struct neu_resp_get_subscribe_group {
-    UT_array *groups; // array neu_resp_subscribe_info_t
+    UT_array *groups; // array neu_resp_subscribe_info_t or
+                      // neu_resp_driver_subscribe_info_t
 } neu_resp_get_subscribe_group_t;
 
 typedef struct neu_req_node_setting {
@@ -1610,6 +1642,14 @@ typedef struct neu_req_update_log_level {
     int  log_level;
     bool core;
 } neu_req_update_log_level_t;
+
+typedef struct neu_req_update_global_log_level {
+    int log_level;
+} neu_req_update_global_log_level_t;
+
+typedef struct neu_req_update_node_log_level {
+    int log_level;
+} neu_req_update_node_log_level_t;
 
 void neu_msg_gen(neu_reqresp_head_t *header, void *data);
 

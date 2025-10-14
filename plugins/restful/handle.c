@@ -39,6 +39,7 @@
 #include "rw_handle.h"
 #include "scan_handle.h"
 #include "system_handle.h"
+#include "tpy_handle.h"
 #include "utils/http.h"
 #include "version_handle.h"
 
@@ -145,6 +146,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/cid",
     },
     {
+        .url = "/api/v2/tpy",
+    },
+    {
         .url = "/api/v2/system/ctl",
     },
     {
@@ -207,6 +211,12 @@ static struct neu_http_handler rest_handlers[] = {
     {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/tpy",
+        .value.handler = handle_tpy,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
         .value.handler = handle_ping,
     },
@@ -234,6 +244,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/gtags",
         .value.handler = handle_add_gtags,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags/import",
+        .value.handler = handle_import_tags,
     },
     {
         .method        = NEU_HTTP_METHOD_PUT,
@@ -386,6 +402,12 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_grp_get_subscribe,
     },
     {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribes",
+        .value.handler = handle_grp_get_subscribes,
+    },
+    {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/subscribes",
@@ -426,6 +448,18 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/log/level",
         .value.handler = handle_log_level,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/global",
+        .value.handler = handle_global_log_level,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/log/global",
+        .value.handler = handle_get_global_log_level,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

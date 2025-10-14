@@ -937,3 +937,84 @@ void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req)
 
     free(req);
 }
+
+int neu_json_decode_import_tags_req(char *                       buf,
+                                    neu_json_import_tags_req_t **result)
+{
+    int                         ret = 0;
+    void *                      json_obj;
+    neu_json_import_tags_req_t *req;
+    neu_json_elem_t             req_elems[] = { {
+        .name = "node",
+        .t    = NEU_JSON_STR,
+    } };
+
+    *result = NULL;
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    req = calloc(1, sizeof(neu_json_import_tags_req_t));
+    if (NULL == req) {
+        ret = -1;
+        goto error;
+    }
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto error;
+    }
+
+    req->node = req_elems[0].v.val_str;
+
+    *result = req;
+    goto success;
+
+error:
+    if (req) {
+        neu_json_decode_import_tags_req_free(req);
+    }
+
+success:
+    if (json_obj) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_import_tags_req_free(neu_json_import_tags_req_t *req)
+{
+    if (!req) {
+        return;
+    }
+
+    free(req->node);
+    free(req);
+}
+
+int neu_json_encode_import_tags_resp(void *json_object, void *param)
+{
+    int                         ret = 0;
+    neu_json_import_tags_res_t *res = param;
+
+    neu_json_elem_t res_elems[] = {
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = res->error,
+        },
+        {
+            .name      = "index",
+            .t         = NEU_JSON_INT,
+            .v.val_int = res->index,
+        },
+    };
+
+    ret = neu_json_encode_field(json_object, res_elems,
+                                NEU_JSON_ELEM_SIZE(res_elems));
+
+    return ret;
+}

@@ -35,7 +35,7 @@ typedef struct neu_events neu_events_t;
  * thread.
  * @return the newly created event.
  */
-neu_events_t *neu_event_new(void);
+neu_events_t *neu_event_new(const char *name);
 
 /**
  * @brief Close a event.

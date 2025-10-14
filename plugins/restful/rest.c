@@ -35,6 +35,7 @@
 #include "handle.h"
 #include "normal_handle.h"
 #include "otel/otel_manager.h"
+#include "parser/neu_json_log.h"
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
@@ -265,6 +266,13 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                 scope, "error", ((neu_resp_add_tag_t *) data)->error);
         }
         break;
+    case NEU_RESP_IMPORT_TAGS:
+        handle_import_tags_resp(header->ctx, (neu_resp_add_tag_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_add_span_attr_int(
+                scope, "error", ((neu_resp_add_tag_t *) data)->error);
+        }
+        break;
     case NEU_RESP_UPDATE_TAG:
         handle_update_tags_resp(header->ctx, (neu_resp_update_tag_t *) data);
         if (neu_otel_control_is_started() && trace) {
@@ -302,6 +310,13 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_DATALAYERS_TAG:
         handle_datalayers_get_tag_resp(header->ctx,
                                        (neu_resp_get_sub_driver_tags_t *) data);
+        if (neu_otel_control_is_started() && trace) {
+            neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
+        }
+        break;
+    case NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP:
+        handle_grp_get_subscribes_resp(header->ctx,
+                                       (neu_resp_get_subscribe_group_t *) data);
         if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_status_code2(scope, NEU_OTEL_STATUS_OK, 0);
         }

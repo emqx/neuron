@@ -1,0 +1,71 @@
+name: manual check
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugins:
+        description: 'Comma separated list of plugins to test (default: all unused plugins)'
+        required: false
+        default: 'azure,launch'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: compile
+        run: |
+          git config --global --add safe.directory $(pwd)
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          make -j4  
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: neuron-build-unused-plugins
+          path: |
+            build
+
+  unused_plugins_test:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
+    needs: [build]
+    strategy:
+      matrix:
+        plugin: [azure, launch]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: setup dependencies
+        run: |
+          sudo apt-get install -y mosquitto
+          pip install -U pytest requests prometheus-client gmqtt pynng sniffio
+          sudo apt-get install -y socat
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-build-unused-plugins
+          path: ./build
+
+      - name: function test
+        run: |
+          chmod -R +x ./build/
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cd ..        
+          if [ "${{ matrix.plugin }}" = "azure" ]; then
+            pytest -s -v tests/ft/app/"test_azure.py"
+          elif [ "${{ matrix.plugin }}" = "launch" ]; then
+            pytest -s -v tests/ft/login
+          fi
+
+      - name: Test completed
+        run: |
+          echo "Testing for ${{ matrix.plugin }} completed successfully"
