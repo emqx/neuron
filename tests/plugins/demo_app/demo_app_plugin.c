@@ -21,9 +21,9 @@
 #include <string.h>
 #include <time.h>
 
+#include "persist/persist.h"
+#include "utils/base64.h"
 #include <neuron.h>
-#include <neuron/persist/persist.h>
-#include <neuron/utils/base64.h>
 
 #include "demo_app_plugin.h"
 
