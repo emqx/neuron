@@ -150,6 +150,7 @@ set(NEURON_SOURCES
     src/adapter/adapter.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
+    plugins/restful/cert_handle.c
     plugins/restful/handle.c
     plugins/restful/log_handle.c
     plugins/restful/metric_handle.c
@@ -203,6 +204,7 @@ endif()
 add_subdirectory(tests/plugins/c1)
 add_subdirectory(tests/plugins/s1)
 add_subdirectory(tests/plugins/sc1)
+add_subdirectory(tests/plugins/demo_app)
 
 # Set sane defaults for multi-lib linux systems
 include(GNUInstallDirs)

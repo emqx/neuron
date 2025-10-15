@@ -117,6 +117,67 @@ int neu_sqlite_persister_load_user(neu_persister_t *self, const char *user_name,
 int neu_sqlite_persister_delete_user(neu_persister_t *self,
                                      const char *     user_name);
 
+int neu_sqlite_persister_store_server_cert(
+    neu_persister_t *self, const neu_persist_server_cert_info_t *cert_info);
+int neu_sqlite_persister_update_server_cert(
+    neu_persister_t *self, const neu_persist_server_cert_info_t *cert_info);
+int neu_sqlite_persister_load_server_cert(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_server_cert_info_t **cert_info_p);
+int neu_sqlite_persister_delete_server_cert(neu_persister_t *self,
+                                            const char *     app_name);
+int neu_sqlite_persister_load_server_certs(neu_persister_t *self,
+                                           UT_array **      cert_infos);
+
+// Client certificate operations
+int neu_sqlite_persister_store_client_cert(
+    neu_persister_t *self, const neu_persist_client_cert_info_t *cert_info);
+int neu_sqlite_persister_update_client_cert(
+    neu_persister_t *self, const neu_persist_client_cert_info_t *cert_info);
+int neu_sqlite_persister_load_client_certs_by_app(neu_persister_t *self,
+                                                  const char *     app_name,
+                                                  UT_array **      cert_infos);
+int neu_sqlite_persister_load_client_certs(neu_persister_t *self,
+                                           UT_array **      cert_infos);
+int neu_sqlite_persister_delete_client_cert(neu_persister_t *self,
+                                            const char *     fingerprint);
+
+// Security policy operations
+int neu_sqlite_persister_store_security_policy(
+    neu_persister_t *                         self,
+    const neu_persist_security_policy_info_t *policy_info);
+int neu_sqlite_persister_update_security_policy(
+    neu_persister_t *                         self,
+    const neu_persist_security_policy_info_t *policy_info);
+int neu_sqlite_persister_load_security_policy(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_security_policy_info_t **policy_info_p);
+int neu_sqlite_persister_load_security_policies(neu_persister_t *self,
+                                                UT_array **      policy_infos);
+
+int neu_sqlite_persister_store_auth_setting(
+    neu_persister_t *self, const neu_persist_auth_setting_info_t *auth_info);
+int neu_sqlite_persister_update_auth_setting(
+    neu_persister_t *self, const neu_persist_auth_setting_info_t *auth_info);
+int neu_sqlite_persister_load_auth_setting(
+    neu_persister_t *self, const char *app_name,
+    neu_persist_auth_setting_info_t **auth_info_p);
+
+// Auth user operations
+int neu_sqlite_persister_store_auth_user(
+    neu_persister_t *self, const neu_persist_auth_user_info_t *user_info);
+int neu_sqlite_persister_update_auth_user(
+    neu_persister_t *self, const neu_persist_auth_user_info_t *user_info);
+int neu_sqlite_persister_load_auth_user(
+    neu_persister_t *self, const char *app_name, const char *username,
+    neu_persist_auth_user_info_t **user_info_p);
+int neu_sqlite_persister_load_auth_users_by_app(neu_persister_t *self,
+                                                const char *     app_name,
+                                                UT_array **      user_infos);
+int neu_sqlite_persister_delete_auth_user(neu_persister_t *self,
+                                          const char *     app_name,
+                                          const char *     username);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1211,7 +1211,22 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
-
+    case NEU_REQ_SERVER_SECURITY_POLICY:
+    case NEU_REQ_SERVER_SECURITY_POLICY_STATUS:
+    case NEU_REQ_SERVER_AUTH_SWITCH_STATUS:
+    case NEU_REQ_SERVER_AUTH_USER_INFO:
+    case NEU_REQ_SERVER_AUTH_USER_DELETE:
+    case NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD:
+    case NEU_REQ_SERVER_AUTH_USER_ADD:
+    case NEU_REQ_SERVER_AUTH_SWITCH:
+    case NEU_REQ_SERVER_CERT_INFO:
+    case NEU_REQ_SERVER_CERT_EXPORT:
+    case NEU_REQ_CLIENT_CERT_UPLOAD:
+    case NEU_REQ_CLIENT_CERT_TRUST:
+    case NEU_REQ_CLIENT_CERT_DELETE:
+    case NEU_REQ_CLIENT_CERT_INFO:
+    case NEU_REQ_SERVER_CERT_UPLOAD:
+    case NEU_REQ_SERVER_CERT_SELF_SIGN:
     case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
@@ -1437,6 +1452,25 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             reply(manager, header, &e);
         } else {
             forward_msg(manager, header, header->receiver);
+
+            UT_array *apps = neu_subscribe_manager_find(
+                manager->subscribe_manager, cmd->driver, cmd->group);
+
+            if (NULL != apps) {
+                // notify app nodes about tag deletion
+                utarray_foreach(apps, neu_app_subscribe_t *, app)
+                {
+                    neu_msg_t *msg_copy = neu_msg_copy((neu_msg_t *) header);
+                    neu_reqresp_head_t *header_copy =
+                        neu_msg_get_header(msg_copy);
+                    neu_req_del_tag_t *cmd_copy =
+                        (neu_req_del_tag_t *) &header_copy[1];
+                    neu_req_del_tag_copy(cmd, cmd_copy);
+                    forward_msg(manager, header_copy, app->app_name);
+                }
+
+                utarray_free(apps);
+            }
         }
 
         break;
@@ -1533,6 +1567,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_PRGFILE_PROCESS:
     case NEU_RESP_SCAN_TAGS:
     case NEU_RESP_WRITE_TAGS:
+    case NEU_RESP_SERVER_CERT_INFO:
+    case NEU_RESP_CLIENT_CERT_INFO:
+    case NEU_RESP_SERVER_CERT_EXPORT:
+    case NEU_RESP_SERVER_SECURITY_POLICY_STATUS:
+    case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
+    case NEU_RESP_SERVER_AUTH_USER_INFO:
         forward_msg(manager, header, header->receiver);
         break;
 
