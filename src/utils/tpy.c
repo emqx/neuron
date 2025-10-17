@@ -211,7 +211,7 @@ void neu_tpy_to_msg(char *driver, tpy_t *tpy, neu_req_add_gtag_t *cmd)
                 to_neu_type(tpy->statics[i].vars[k].type);
             cmd->groups[i].tags[k].attribute =
                 NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_WRITE;
-            snprintf(address, sizeof(address) - 1, "%ld,%ld",
+            snprintf(address, sizeof(address) - 1, "%" PRIi64 ",%" PRIi64,
                      tpy->statics[i].vars[k].igroup,
                      tpy->statics[i].vars[k].ioffset);
             cmd->groups[i].tags[k].address     = strdup(address);
