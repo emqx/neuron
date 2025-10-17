@@ -85,22 +85,6 @@ jobs:
           cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           ctest --output-on-failure
 
-      - name: create cov report
-        run: |
-            sudo apt-get update
-            sudo apt-get -y install lcov
-            mkdir -p cov_report
-            ./create_cov_report.sh ut
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          verbose: true
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./cov_report/
-          files: ./cov_report/cov-ut.info
-
   pft:
     runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-v2.13
@@ -149,19 +133,3 @@ jobs:
           else
             pytest -s -v tests/ft/metrics/"test_metrics.py"          
           fi
-
-      - name: create cov report
-        run: |
-            sudo apt-get update
-            sudo apt-get -y install lcov
-            mkdir -p cov_report
-            ./create_cov_report.sh ${{ matrix.plugin }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          verbose: true
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: ./cov_report/
-          files: ./cov_report/cov-${{ matrix.plugin }}.info
