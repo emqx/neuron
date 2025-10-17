@@ -602,6 +602,108 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_SERVER_CERT_SELF_SIGN: {
+        neu_req_server_cert_self_sign_t *cmd =
+            (neu_req_server_cert_self_sign_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_CERT_UPLOAD: {
+        neu_req_server_cert_upload_t *cmd =
+            (neu_req_server_cert_upload_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_DELETE: {
+        neu_req_client_cert_del_t *cmd = (neu_req_client_cert_del_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_TRUST: {
+        neu_req_client_cert_trust_t *cmd = (neu_req_client_cert_trust_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_CERT_INFO: {
+        neu_req_server_cert_data_t *cmd = (neu_req_server_cert_data_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_INFO: {
+        neu_req_client_cert_data_t *cmd = (neu_req_client_cert_data_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_SWITCH: {
+        neu_req_server_auth_switch_t *cmd =
+            (neu_req_server_auth_switch_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_SWITCH_STATUS: {
+        neu_req_server_auth_switch_status_t *cmd =
+            (neu_req_server_auth_switch_status_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_ADD: {
+        neu_req_server_auth_user_add_t *cmd =
+            (neu_req_server_auth_user_add_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_DELETE: {
+        neu_req_server_auth_user_del_t *cmd =
+            (neu_req_server_auth_user_del_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD: {
+        neu_req_server_auth_user_update_t *cmd =
+            (neu_req_server_auth_user_update_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_INFO: {
+        neu_req_server_auth_users_info_t *cmd =
+            (neu_req_server_auth_users_info_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_SECURITY_POLICY: {
+        neu_req_server_security_policy_t *cmd =
+            (neu_req_server_security_policy_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_SECURITY_POLICY_STATUS: {
+        neu_req_server_security_policy_status_t *cmd =
+            (neu_req_server_security_policy_status_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_SERVER_CERT_EXPORT: {
+        neu_req_server_cert_export_t *cmd =
+            (neu_req_server_cert_export_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_UPLOAD: {
+        neu_req_client_cert_upload_t *cmd =
+            (neu_req_client_cert_upload_t *) data;
+        strcpy(pheader->receiver, cmd->app_name);
+        break;
+    }
+    case NEU_RESP_ERROR:
+    case NEU_RESP_SERVER_AUTH_USER_INFO:
+    case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
+    case NEU_RESP_SERVER_SECURITY_POLICY_STATUS:
+    case NEU_RESP_SERVER_CERT_EXPORT:
+    case NEU_RESP_CLIENT_CERT_INFO:
+    case NEU_RESP_SERVER_CERT_INFO: {
+        strcpy(pheader->receiver, header.sender);
+        break;
+    }
     default:
         break;
     }
@@ -818,10 +920,149 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT:
     case NEU_REQ_SUBSCRIBE_GROUPS_EVENT:
     case NEU_RESP_WRITE_TAGS:
+    case NEU_REQ_SERVER_CERT_INFO:
+    case NEU_REQ_CLIENT_CERT_INFO:
+    case NEU_REQ_SERVER_CERT_EXPORT:
+    case NEU_REQ_SERVER_AUTH_SWITCH_STATUS:
+    case NEU_REQ_SERVER_SECURITY_POLICY_STATUS:
+    case NEU_REQ_SERVER_AUTH_USER_INFO:
+    case NEU_RESP_SERVER_CERT_INFO:
+    case NEU_RESP_SERVER_CERT_EXPORT:
+    case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
         break;
+    case NEU_RESP_SERVER_AUTH_USER_INFO: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_server_auth_users_info_fini(
+            (neu_resp_server_auth_users_info_t *) &header[1]);
+        neu_msg_free(msg);
+        break;
+    }
+    case NEU_RESP_CLIENT_CERT_INFO: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_client_certs_data_free(
+            (neu_resp_client_certs_data_t *) &header[1]);
+        neu_msg_free(msg);
+        break;
+    }
+    case NEU_RESP_SERVER_SECURITY_POLICY_STATUS: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_server_security_policy_status_fini(
+            (neu_resp_server_security_policy_status_t *) &header[1]);
+        neu_msg_free(msg);
+        break;
+    }
+    case NEU_REQ_SERVER_CERT_SELF_SIGN:
+    case NEU_REQ_SERVER_AUTH_SWITCH: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_SERVER_CERT_UPLOAD: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_server_cert_upload_fini(
+            (neu_req_server_cert_upload_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_DELETE: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_client_cert_del_fini((neu_req_client_cert_del_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_TRUST: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_client_cert_del_fini(
+            (neu_req_client_cert_trust_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_CLIENT_CERT_UPLOAD: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_client_cert_upload_fini(
+            (neu_req_client_cert_upload_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_ADD: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_server_auth_user_add_fini(
+            (neu_req_server_auth_user_add_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_server_auth_user_update_fini(
+            (neu_req_server_auth_user_update_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_SERVER_SECURITY_POLICY: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_server_security_policy_status_fini(
+            (neu_req_server_security_policy_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_SERVER_AUTH_USER_DELETE: {
+        int error_no = adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_req_server_auth_user_del_fini(
+            (neu_req_server_auth_user_del_t *) &header[1]);
+        neu_resp_error_t error = { 0 };
+        error.error            = error_no;
+        header->type           = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(adapter, header, &error);
+        break;
+    }
     case NEU_RESP_READ_GROUP:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
@@ -1299,7 +1540,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 }
             }
         } else {
-            error.error = NEU_ERR_GROUP_NOT_ALLOW;
+            error.error = adapter->module->intf_funs->request(
+                adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+            neu_req_del_tag_fini((neu_req_del_tag_t *) &header[1]);
+            neu_msg_free(msg);
+            break;
         }
 
         if (0 == error.error && header->monitor) {

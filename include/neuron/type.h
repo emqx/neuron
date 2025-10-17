@@ -25,6 +25,8 @@ extern "C" {
 #endif
 
 #include <assert.h>
+#include <float.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -342,6 +344,260 @@ typedef struct {
     neu_value_u value;
     uint8_t     precision;
 } neu_dvalue_t;
+
+static inline bool neu_equal_dvalue(const neu_dvalue_t *one, neu_dvalue_t *two)
+{
+    if (one == NULL || two == NULL) {
+        return false;
+    }
+
+    // Compare type and precision
+    if (one->type != two->type || one->precision != two->precision) {
+        return false;
+    }
+
+    // Compare values based on type
+    switch (one->type) {
+    case NEU_TYPE_BOOL:
+        return one->value.boolean == two->value.boolean;
+    case NEU_TYPE_INT8:
+        return one->value.i8 == two->value.i8;
+    case NEU_TYPE_UINT8:
+    case NEU_TYPE_BIT:
+        return one->value.u8 == two->value.u8;
+    case NEU_TYPE_INT16:
+        return one->value.i16 == two->value.i16;
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_WORD:
+        return one->value.u16 == two->value.u16;
+    case NEU_TYPE_ERROR:
+    case NEU_TYPE_INT32:
+        return one->value.i32 == two->value.i32;
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_DWORD:
+        return one->value.u32 == two->value.u32;
+    case NEU_TYPE_INT64:
+        return one->value.i64 == two->value.i64;
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_LWORD:
+        return one->value.u64 == two->value.u64;
+    case NEU_TYPE_FLOAT:
+        // Use epsilon comparison for floating point
+        return fabsf(one->value.f32 - two->value.f32) < FLT_EPSILON;
+    case NEU_TYPE_DOUBLE:
+        // Use epsilon comparison for double
+        return fabs(one->value.d64 - two->value.d64) < DBL_EPSILON;
+    case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
+    case NEU_TYPE_ARRAY_CHAR:
+        return strcmp(one->value.str, two->value.str) == 0;
+    case NEU_TYPE_BYTES:
+        return one->value.bytes.length == two->value.bytes.length &&
+            memcmp(one->value.bytes.bytes, two->value.bytes.bytes,
+                   one->value.bytes.length) == 0;
+    case NEU_TYPE_PTR:
+        return one->value.ptr.type == two->value.ptr.type &&
+            one->value.ptr.length == two->value.ptr.length &&
+            memcmp(one->value.ptr.ptr, two->value.ptr.ptr,
+                   one->value.ptr.length) == 0;
+    case NEU_TYPE_ARRAY_INT8:
+        if (one->value.i8s.length != two->value.i8s.length) {
+            return false;
+        }
+        return memcmp(one->value.i8s.i8s, two->value.i8s.i8s,
+                      sizeof(int8_t) * one->value.i8s.length) == 0;
+    case NEU_TYPE_ARRAY_UINT8:
+        if (one->value.u8s.length != two->value.u8s.length) {
+            return false;
+        }
+        return memcmp(one->value.u8s.u8s, two->value.u8s.u8s,
+                      sizeof(uint8_t) * one->value.u8s.length) == 0;
+    case NEU_TYPE_ARRAY_INT16:
+        if (one->value.i16s.length != two->value.i16s.length) {
+            return false;
+        }
+        return memcmp(one->value.i16s.i16s, two->value.i16s.i16s,
+                      sizeof(int16_t) * one->value.i16s.length) == 0;
+    case NEU_TYPE_ARRAY_UINT16:
+        if (one->value.u16s.length != two->value.u16s.length) {
+            return false;
+        }
+        return memcmp(one->value.u16s.u16s, two->value.u16s.u16s,
+                      sizeof(uint16_t) * one->value.u16s.length) == 0;
+    case NEU_TYPE_ARRAY_INT32:
+        if (one->value.i32s.length != two->value.i32s.length) {
+            return false;
+        }
+        return memcmp(one->value.i32s.i32s, two->value.i32s.i32s,
+                      sizeof(int32_t) * one->value.i32s.length) == 0;
+    case NEU_TYPE_ARRAY_UINT32:
+        if (one->value.u32s.length != two->value.u32s.length) {
+            return false;
+        }
+        return memcmp(one->value.u32s.u32s, two->value.u32s.u32s,
+                      sizeof(uint32_t) * one->value.u32s.length) == 0;
+    case NEU_TYPE_ARRAY_INT64:
+        if (one->value.i64s.length != two->value.i64s.length) {
+            return false;
+        }
+        return memcmp(one->value.i64s.i64s, two->value.i64s.i64s,
+                      sizeof(int64_t) * one->value.i64s.length) == 0;
+    case NEU_TYPE_ARRAY_UINT64:
+        if (one->value.u64s.length != two->value.u64s.length) {
+            return false;
+        }
+        return memcmp(one->value.u64s.u64s, two->value.u64s.u64s,
+                      sizeof(uint64_t) * one->value.u64s.length) == 0;
+    case NEU_TYPE_ARRAY_FLOAT:
+        if (one->value.f32s.length != two->value.f32s.length) {
+            return false;
+        }
+        for (uint32_t i = 0; i < one->value.f32s.length; i++) {
+            if (fabsf(one->value.f32s.f32s[i] - two->value.f32s.f32s[i]) >=
+                FLT_EPSILON) {
+                return false;
+            }
+        }
+        return true;
+    case NEU_TYPE_ARRAY_DOUBLE:
+        if (one->value.f64s.length != two->value.f64s.length) {
+            return false;
+        }
+        for (uint32_t i = 0; i < one->value.f64s.length; i++) {
+            if (fabs(one->value.f64s.f64s[i] - two->value.f64s.f64s[i]) >=
+                DBL_EPSILON) {
+                return false;
+            }
+        }
+        return true;
+    case NEU_TYPE_ARRAY_BOOL:
+        if (one->value.bools.length != two->value.bools.length) {
+            return false;
+        }
+        return memcmp(one->value.bools.bools, two->value.bools.bools,
+                      sizeof(bool) * one->value.bools.length) == 0;
+    case NEU_TYPE_ARRAY_STRING:
+        if (one->value.strs.length != two->value.strs.length) {
+            return false;
+        }
+        for (uint32_t i = 0; i < one->value.strs.length; i++) {
+            if (strcmp(one->value.strs.strs[i], two->value.strs.strs[i]) != 0) {
+                return false;
+            }
+        }
+        return true;
+    case NEU_TYPE_CUSTOM:
+        return json_equal(one->value.json, two->value.json);
+    default:
+        return false;
+    }
+}
+
+static inline void neu_copy_dvalue(const neu_dvalue_t *src, neu_dvalue_t *dst)
+{
+    if (src == NULL || dst == NULL) {
+        return;
+    }
+
+    dst->type      = src->type;
+    dst->precision = src->precision;
+    dst->value     = src->value;
+
+    // value need deep copy
+    switch (src->type) {
+    case NEU_TYPE_ARRAY_INT8:
+        dst->value.i8s.i8s =
+            (int8_t *) malloc(sizeof(int8_t) * src->value.i8s.length);
+        memcpy(dst->value.i8s.i8s, src->value.i8s.i8s,
+               sizeof(int8_t) * src->value.i8s.length);
+        dst->value.i8s.length = src->value.i8s.length;
+        break;
+    case NEU_TYPE_ARRAY_UINT8:
+        dst->value.u8s.u8s =
+            (uint8_t *) malloc(sizeof(uint8_t) * src->value.u8s.length);
+        memcpy(dst->value.u8s.u8s, src->value.u8s.u8s,
+               sizeof(uint8_t) * src->value.u8s.length);
+        dst->value.u8s.length = src->value.u8s.length;
+        break;
+    case NEU_TYPE_ARRAY_INT16:
+        dst->value.i16s.i16s =
+            (int16_t *) malloc(sizeof(int16_t) * src->value.i16s.length);
+        memcpy(dst->value.i16s.i16s, src->value.i16s.i16s,
+               sizeof(int16_t) * src->value.i16s.length);
+        dst->value.i16s.length = src->value.i16s.length;
+        break;
+    case NEU_TYPE_ARRAY_UINT16:
+        dst->value.u16s.u16s =
+            (uint16_t *) malloc(sizeof(uint16_t) * src->value.u16s.length);
+        memcpy(dst->value.u16s.u16s, src->value.u16s.u16s,
+               sizeof(uint16_t) * src->value.u16s.length);
+        dst->value.u16s.length = src->value.u16s.length;
+        break;
+    case NEU_TYPE_ARRAY_INT32:
+        dst->value.i32s.i32s =
+            (int32_t *) malloc(sizeof(int32_t) * src->value.i32s.length);
+        memcpy(dst->value.i32s.i32s, src->value.i32s.i32s,
+               sizeof(int32_t) * src->value.i32s.length);
+        dst->value.i32s.length = src->value.i32s.length;
+        break;
+    case NEU_TYPE_ARRAY_UINT32:
+        dst->value.u32s.u32s =
+            (uint32_t *) malloc(sizeof(uint32_t) * src->value.u32s.length);
+        memcpy(dst->value.u32s.u32s, src->value.u32s.u32s,
+               sizeof(uint32_t) * src->value.u32s.length);
+        dst->value.u32s.length = src->value.u32s.length;
+        break;
+    case NEU_TYPE_ARRAY_INT64:
+        dst->value.i64s.i64s =
+            (int64_t *) malloc(sizeof(int64_t) * src->value.i64s.length);
+        memcpy(dst->value.i64s.i64s, src->value.i64s.i64s,
+               sizeof(int64_t) * src->value.i64s.length);
+        dst->value.i64s.length = src->value.i64s.length;
+        break;
+    case NEU_TYPE_ARRAY_UINT64:
+        dst->value.u64s.u64s =
+            (uint64_t *) malloc(sizeof(uint64_t) * src->value.u64s.length);
+        memcpy(dst->value.u64s.u64s, src->value.u64s.u64s,
+               sizeof(uint64_t) * src->value.u64s.length);
+        dst->value.u64s.length = src->value.u64s.length;
+        break;
+    case NEU_TYPE_ARRAY_FLOAT:
+        dst->value.f32s.f32s =
+            (float *) malloc(sizeof(float) * src->value.f32s.length);
+        memcpy(dst->value.f32s.f32s, src->value.f32s.f32s,
+               sizeof(float) * src->value.f32s.length);
+        dst->value.f32s.length = src->value.f32s.length;
+        break;
+    case NEU_TYPE_ARRAY_DOUBLE:
+        dst->value.f64s.f64s =
+            (double *) malloc(sizeof(double) * src->value.f64s.length);
+        memcpy(dst->value.f64s.f64s, src->value.f64s.f64s,
+               sizeof(double) * src->value.f64s.length);
+        dst->value.f64s.length = src->value.f64s.length;
+        break;
+    case NEU_TYPE_ARRAY_BOOL:
+        dst->value.bools.bools =
+            (bool *) malloc(sizeof(bool) * src->value.bools.length);
+        memcpy(dst->value.bools.bools, src->value.bools.bools,
+               sizeof(bool) * src->value.bools.length);
+        dst->value.bools.length = src->value.bools.length;
+        break;
+    case NEU_TYPE_ARRAY_STRING:
+        dst->value.strs.strs =
+            (char **) malloc(sizeof(char *) * src->value.strs.length);
+        for (uint32_t i = 0; i < src->value.strs.length; i++) {
+            dst->value.strs.strs[i] = strdup(src->value.strs.strs[i]);
+        }
+        dst->value.strs.length = src->value.strs.length;
+        break;
+    case NEU_TYPE_CUSTOM:
+        dst->value.json = json_deep_copy(src->value.json);
+        break;
+    default:
+        break;
+    }
+}
 
 static inline void neu_free_dvalue(neu_dvalue_t *dvalue)
 {

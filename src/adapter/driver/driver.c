@@ -400,6 +400,15 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         return;
     }
 
+    group_t *find = NULL;
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find == NULL) {
+        nlog_error("update_im group not found, driver: %s, group: %s, tag: %s",
+                   driver->adapter.name, group, tag);
+        return;
+    }
+
     neu_driver_cache_update_change(driver->cache, group, tag, global_timestamp,
                                    value, metas, n_meta, true);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
@@ -445,58 +454,25 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                       driver->cache, group, tags, data->tags);
 
     if (utarray_len(data->tags) > 0) {
-        group_t *find = NULL;
-        HASH_FIND_STR(driver->groups, group, find);
-        if (find != NULL) {
+
+        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+        data->ctx->index = utarray_len(find->apps);
+        pthread_mutex_init(&data->ctx->mtx, NULL);
+
+        if (utarray_len(find->apps) > 0) {
             pthread_mutex_lock(&find->apps_mtx);
 
-            if (utarray_len(find->apps) > 0) {
-                data->ctx = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-                data->ctx->index = utarray_len(find->apps);
-                pthread_mutex_init(&data->ctx->mtx, NULL);
-
-                utarray_foreach(find->apps, sub_app_t *, app)
-                {
-                    if (driver->adapter.cb_funs.responseto(
-                            &driver->adapter, &header, data, app->addr) != 0) {
-                        neu_trans_data_free(data);
-                    }
+            utarray_foreach(find->apps, sub_app_t *, app)
+            {
+                if (driver->adapter.cb_funs.responseto(
+                        &driver->adapter, &header, data, app->addr) != 0) {
+                    neu_trans_data_free(data);
                 }
-            } else {
-                utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
-                                tag_value)
-                {
-                    if (tag_value->value.type == NEU_TYPE_PTR) {
-                        free(tag_value->value.value.ptr.ptr);
-                    } else {
-                        neu_free_dvalue(&tag_value->value);
-                    }
-                }
-                utarray_free(data->tags);
-                free(data->group);
-                free(data->driver);
             }
 
             pthread_mutex_unlock(&find->apps_mtx);
         } else {
-            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
-            {
-                if (tag_value->value.type == NEU_TYPE_PTR) {
-                    free(tag_value->value.value.ptr.ptr);
-                } else {
-                    neu_free_dvalue(&tag_value->value);
-                }
-
-                if (tag_value->metas != NULL) {
-                    for (int i = 0; i < tag_value->n_meta; i++) {
-                        neu_free_dvalue(&tag_value->metas[i].value);
-                    }
-                    free(tag_value->metas);
-                }
-            }
-            utarray_free(data->tags);
-            free(data->group);
-            free(data->driver);
+            neu_trans_data_free(data);
         }
     } else {
         utarray_free(data->tags);
@@ -2282,22 +2258,12 @@ static int report_callback(void *usr_data)
 
     if (utarray_len(data->tags) > 0) {
         pthread_mutex_lock(&group->apps_mtx);
+        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+        data->ctx->index = utarray_len(group->apps);
+        pthread_mutex_init(&data->ctx->mtx, NULL);
 
         if (utarray_len(group->apps) > 0) {
-            int app_num      = 0;
-            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-            data->ctx->index = utarray_len(group->apps);
-            pthread_mutex_init(&data->ctx->mtx, NULL);
-
-            for (uint16_t i = 0; i < utarray_len(group->apps) - 1; i++) {
-                utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
-                                tag_value)
-                {
-                    if (tag_value->value.type == NEU_TYPE_CUSTOM) {
-                        json_incref(tag_value->value.value.json);
-                    }
-                }
-            }
+            int app_num = 0;
 
             if (trans_trace) {
                 neu_otel_set_internal_parent_span(trans_trace);
@@ -2308,13 +2274,6 @@ static int report_callback(void *usr_data)
                 if (group->driver->adapter.cb_funs.responseto(
                         &group->driver->adapter, &header, data, app->addr) !=
                     0) {
-                    utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
-                                    tag_value)
-                    {
-                        if (tag_value->value.type == NEU_TYPE_CUSTOM) {
-                            json_decref(tag_value->value.value.json);
-                        }
-                    }
                     neu_trans_data_free(data);
                     if (trans_trace) {
                         neu_otel_scope_add_span_attr_int(trans_scope, app->app,
@@ -2338,24 +2297,7 @@ static int report_callback(void *usr_data)
             }
 
         } else {
-            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
-            {
-                if (tag_value->value.type == NEU_TYPE_PTR) {
-                    free(tag_value->value.value.ptr.ptr);
-                } else {
-                    neu_free_dvalue(&tag_value->value);
-                }
-
-                if (tag_value->metas != NULL) {
-                    for (int i = 0; i < tag_value->n_meta; i++) {
-                        neu_free_dvalue(&tag_value->metas[i].value);
-                    }
-                    free(tag_value->metas);
-                }
-            }
-            utarray_free(data->tags);
-            free(data->group);
-            free(data->driver);
+            neu_trans_data_free(data);
 
             if (trans_trace) {
                 neu_otel_scope_add_span_attr_int(trans_scope, "no sub app", 1);
@@ -2574,6 +2516,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             }
         }
         strcpy(tag_value.tag, tag->name);
+        tag_value.datatag = *tag;
 
         tag_value.datatag.bias = tag->bias;
 

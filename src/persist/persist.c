@@ -487,3 +487,119 @@ int neu_persister_load_users(UT_array **user_infos)
 {
     return g_impl->vtbl->load_users(g_impl, user_infos);
 }
+
+int neu_persister_store_server_cert(
+    const neu_persist_server_cert_info_t *cert_info)
+{
+    return g_impl->vtbl->store_server_cert(g_impl, cert_info);
+}
+
+int neu_persister_update_server_cert(
+    const neu_persist_server_cert_info_t *cert_info)
+{
+    return g_impl->vtbl->update_server_cert(g_impl, cert_info);
+}
+
+int neu_persister_load_server_cert(const char *                     app_name,
+                                   neu_persist_server_cert_info_t **cert_info_p)
+{
+    return g_impl->vtbl->load_server_cert(g_impl, app_name, cert_info_p);
+}
+
+int neu_persister_store_client_cert(
+    const neu_persist_client_cert_info_t *cert_info)
+{
+    return g_impl->vtbl->store_client_cert(g_impl, cert_info);
+}
+
+int neu_persister_update_client_cert(
+    const neu_persist_client_cert_info_t *cert_info)
+{
+    return g_impl->vtbl->update_client_cert(g_impl, cert_info);
+}
+
+int neu_persister_load_client_certs_by_app(const char *app_name,
+                                           UT_array ** cert_infos)
+{
+    return g_impl->vtbl->load_client_certs_by_app(g_impl, app_name, cert_infos);
+}
+
+int neu_persister_load_client_certs(UT_array **cert_infos)
+{
+    return g_impl->vtbl->load_client_certs(g_impl, cert_infos);
+}
+
+int neu_persister_delete_client_cert(const char *fingerprint)
+{
+    return g_impl->vtbl->delete_client_cert(g_impl, fingerprint);
+}
+
+int neu_persister_store_security_policy(
+    const neu_persist_security_policy_info_t *policy_info)
+{
+    return g_impl->vtbl->store_security_policy(g_impl, policy_info);
+}
+
+int neu_persister_update_security_policy(
+    const neu_persist_security_policy_info_t *policy_info)
+{
+    return g_impl->vtbl->update_security_policy(g_impl, policy_info);
+}
+
+int neu_persister_load_security_policy(
+    const char *app_name, neu_persist_security_policy_info_t **policy_info_p)
+{
+    return g_impl->vtbl->load_security_policy(g_impl, app_name, policy_info_p);
+}
+
+int neu_persister_load_security_policies(UT_array **policy_infos)
+{
+    return g_impl->vtbl->load_security_policies(g_impl, policy_infos);
+}
+
+int neu_persister_store_auth_setting(
+    const neu_persist_auth_setting_info_t *auth_info)
+{
+    return g_impl->vtbl->store_auth_setting(g_impl, auth_info);
+}
+
+int neu_persister_update_auth_setting(
+    const neu_persist_auth_setting_info_t *auth_info)
+{
+    return g_impl->vtbl->update_auth_setting(g_impl, auth_info);
+}
+
+int neu_persister_load_auth_setting(
+    const char *app_name, neu_persist_auth_setting_info_t **auth_info_p)
+{
+    return g_impl->vtbl->load_auth_setting(g_impl, app_name, auth_info_p);
+}
+
+int neu_persister_store_auth_user(const neu_persist_auth_user_info_t *user_info)
+{
+    return g_impl->vtbl->store_auth_user(g_impl, user_info);
+}
+
+int neu_persister_update_auth_user(
+    const neu_persist_auth_user_info_t *user_info)
+{
+    return g_impl->vtbl->update_auth_user(g_impl, user_info);
+}
+
+int neu_persister_load_auth_user(const char *app_name, const char *username,
+                                 neu_persist_auth_user_info_t **user_info_p)
+{
+    return g_impl->vtbl->load_auth_user(g_impl, app_name, username,
+                                        user_info_p);
+}
+
+int neu_persister_load_auth_users_by_app(const char *app_name,
+                                         UT_array ** user_infos)
+{
+    return g_impl->vtbl->load_auth_users_by_app(g_impl, app_name, user_infos);
+}
+
+int neu_persister_delete_auth_user(const char *app_name, const char *username)
+{
+    return g_impl->vtbl->delete_auth_user(g_impl, app_name, username);
+}

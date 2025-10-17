@@ -25,6 +25,7 @@
 #include "plugin.h"
 
 #include "adapter_handle.h"
+#include "cert_handle.h"
 #include "cid_handle.h"
 #include "datalayers_handle.h"
 #include "datatag_handle.h"
@@ -164,6 +165,30 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/export/db",
+    },
+    {
+        .url = "/api/v2/certs/self-signed",
+    },
+    {
+        .url = "/api/v2/certs/server",
+    },
+    {
+        .url = "/api/v2/certs/server/export",
+    },
+    {
+        .url = "/api/v2/certs/client",
+    },
+    {
+        .url = "/api/v2/certs/client/trust",
+    },
+    {
+        .url = "/api/v2/auth/basic/enable",
+    },
+    {
+        .url = "/api/v2/auth/basic/users",
+    },
+    {
+        .url = "/api/v2/auth/basic/security_policies",
     },
 };
 
@@ -564,6 +589,102 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/export/db",
         .value.handler = handle_export_db,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/self-signed",
+        .value.handler = handle_server_cert_self_sign,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/server",
+        .value.handler = handle_server_cert_upload,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/server",
+        .value.handler = handle_server_cert_get,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/server/export",
+        .value.handler = handle_server_cert_export,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/client",
+        .value.handler = handle_client_cert_upload,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/client",
+        .value.handler = handle_client_cert_delete,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/client/trust",
+        .value.handler = handle_client_cert_trust,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/certs/client",
+        .value.handler = handle_client_cert_get,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/enable",
+        .value.handler = handle_auth_basic_enable,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/enable",
+        .value.handler = handle_auth_basic_status,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/users",
+        .value.handler = handle_add_basic_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/users",
+        .value.handler = handle_update_basic_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/users",
+        .value.handler = handle_delete_basic_user,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/users",
+        .value.handler = handle_get_basic_users,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/security_policies",
+        .value.handler = handle_get_server_security_policy,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/auth/basic/security_policies",
+        .value.handler = handle_server_security_policy,
     },
 };
 

@@ -294,6 +294,184 @@ struct neu_persister_vtbl_s {
      * @return 0 on success, none-zero on failure
      */
     int (*delete_user)(neu_persister_t *self, const char *user_name);
+
+    /**
+     * Save server certificate.
+     * @param cert_info                 server certificate info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*store_server_cert)(neu_persister_t *                     self,
+                             const neu_persist_server_cert_info_t *cert_info);
+
+    /**
+     * Update server certificate.
+     * @param cert_info                 server certificate info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*update_server_cert)(neu_persister_t *                     self,
+                              const neu_persist_server_cert_info_t *cert_info);
+
+    /**
+     * Load server certificate by app name.
+     * @param app_name                  name of the application
+     * @param cert_info_p               output parameter of certificate info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*load_server_cert)(neu_persister_t *self, const char *app_name,
+                            neu_persist_server_cert_info_t **cert_info_p);
+
+    /**
+     * Save client certificate.
+     * @param cert_info                 client certificate info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*store_client_cert)(neu_persister_t *                     self,
+                             const neu_persist_client_cert_info_t *cert_info);
+
+    /**
+     * Update client certificate.
+     * @param cert_info                 client certificate info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*update_client_cert)(neu_persister_t *                     self,
+                              const neu_persist_client_cert_info_t *cert_info);
+
+    /**
+     * Load client certificates by app name.
+     * @param app_name                  name of the application
+     * @param[out] cert_infos           used to return pointer to heap allocated
+     *                                  vector of
+     * neu_persist_client_cert_info_t.
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*load_client_certs_by_app)(neu_persister_t *self, const char *app_name,
+                                    UT_array **cert_infos);
+
+    /**
+     * Load all client certificates.
+     * @param[out] cert_infos           used to return pointer to heap allocated
+     *                                  vector of
+     * neu_persist_client_cert_info_t.
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*load_client_certs)(neu_persister_t *self, UT_array **cert_infos);
+
+    /**
+     * Delete client certificate by id.
+     * @param cert_id                   id of the certificate
+     * @return 0 on success, none-zero on failure
+     */
+    int (*delete_client_cert)(neu_persister_t *self, const char *fingerprint);
+
+    /**
+     * Save security policy.
+     * @param policy_info               security policy info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*store_security_policy)(
+        neu_persister_t *                         self,
+        const neu_persist_security_policy_info_t *policy_info);
+
+    /**
+     * Update security policy.
+     * @param policy_info               security policy info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*update_security_policy)(
+        neu_persister_t *                         self,
+        const neu_persist_security_policy_info_t *policy_info);
+
+    /**
+     * Load security policy by app name.
+     * @param app_name                  name of the application
+     * @param policy_info_p             output parameter of security policy info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*load_security_policy)(
+        neu_persister_t *self, const char *app_name,
+        neu_persist_security_policy_info_t **policy_info_p);
+
+    /**
+     * Load all security policies.
+     * @param[out] policy_infos         used to return pointer to heap allocated
+     *                                  vector of
+     * neu_persist_security_policy_info_t.
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*load_security_policies)(neu_persister_t *self,
+                                  UT_array **      policy_infos);
+
+    /**
+     * Save authentication setting.
+     * @param auth_info                 authentication setting info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*store_auth_setting)(neu_persister_t *                      self,
+                              const neu_persist_auth_setting_info_t *auth_info);
+
+    /**
+     * Update authentication setting.
+     * @param auth_info                 authentication setting info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*update_auth_setting)(
+        neu_persister_t *                      self,
+        const neu_persist_auth_setting_info_t *auth_info);
+
+    /**
+     * Load authentication setting by app name.
+     * @param app_name                  name of the application
+     * @param auth_info_p               output parameter of auth setting info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*load_auth_setting)(neu_persister_t *self, const char *app_name,
+                             neu_persist_auth_setting_info_t **auth_info_p);
+
+    /**
+     * Save authentication user.
+     * @param user_info                 authentication user info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*store_auth_user)(neu_persister_t *                   self,
+                           const neu_persist_auth_user_info_t *user_info);
+
+    /**
+     * Update authentication user.
+     * @param user_info                 authentication user info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*update_auth_user)(neu_persister_t *                   self,
+                            const neu_persist_auth_user_info_t *user_info);
+
+    /**
+     * Load authentication user by app name and username.
+     * @param app_name                  name of the application
+     * @param username                  name of the user
+     * @param user_info_p               output parameter of auth user info
+     * @return 0 on success, none-zero on failure
+     */
+    int (*load_auth_user)(neu_persister_t *self, const char *app_name,
+                          const char *                   username,
+                          neu_persist_auth_user_info_t **user_info_p);
+
+    /**
+     * Load authentication users by app name.
+     * @param app_name                  name of the application
+     * @param[out] user_infos           used to return pointer to heap allocated
+     *                                  vector of neu_persist_auth_user_info_t.
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*load_auth_users_by_app)(neu_persister_t *self, const char *app_name,
+                                  UT_array **user_infos);
+
+    /**
+     * Delete authentication user by app name and username.
+     * @param app_name                  name of the application
+     * @param username                  name of the user
+     * @return 0 on success, none-zero on failure
+     */
+    int (*delete_auth_user)(neu_persister_t *self, const char *app_name,
+                            const char *username);
 };
 
 // read all file contents as string

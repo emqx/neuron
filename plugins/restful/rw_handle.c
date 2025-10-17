@@ -863,14 +863,6 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
         }
-
-        if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
-            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
-                 j++) {
-                free(api_res.tags[i].value.val_array_str.p_strs[j]);
-            }
-            free(api_res.tags[i].value.val_array_str.p_strs);
-        }
     }
     neu_http_ok(aio, result);
     free(api_res.tags);
@@ -1010,14 +1002,6 @@ void handle_read_paginate_resp(nng_aio *                       aio,
     for (int i = 0; i < api_res.n_tag; i++) {
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
-        }
-
-        if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
-            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
-                 j++) {
-                free(api_res.tags[i].value.val_array_str.p_strs[j]);
-            }
-            free(api_res.tags[i].value.val_array_str.p_strs);
         }
     }
     neu_http_ok(aio, result);
