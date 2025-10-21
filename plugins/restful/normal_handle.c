@@ -722,7 +722,7 @@ int tags_write_to_csv(const char *filename, const char *node_name,
 
 int write_csv_header()
 {
-    FILE *f = fopen("nodes.csv", "w");
+    FILE *f = fopen("/tmp/nodes.csv", "w");
     if (NULL == f) {
         nlog_error("failed to open file:%s", "nodes.csv");
         return -1;
@@ -730,7 +730,7 @@ int write_csv_header()
     fprintf(f, "name,type,state,plugin_name\n");
     fclose(f);
 
-    f = fopen("settings.csv", "w");
+    f = fopen("/tmp/settings.csv", "w");
     if (NULL == f) {
         nlog_error("failed to open file:%s", "settings.csv");
         return -1;
@@ -738,7 +738,7 @@ int write_csv_header()
     fprintf(f, "node_name,setting\n");
     fclose(f);
 
-    f = fopen("groups.csv", "w");
+    f = fopen("/tmp/groups.csv", "w");
     if (NULL == f) {
         nlog_error("failed to open file:%s", "groups.csv");
         return -1;
@@ -746,7 +746,7 @@ int write_csv_header()
     fprintf(f, "driver_name,name,interval,context\n");
     fclose(f);
 
-    f = fopen("tags.csv", "w");
+    f = fopen("/tmp/tags.csv", "w");
     if (NULL == f) {
         nlog_error("failed to open file:%s", "tags.csv");
         return -1;
@@ -756,7 +756,7 @@ int write_csv_header()
             "decimal,bias,type,description,format,value\n");
     fclose(f);
 
-    f = fopen("subscribes.csv", "w");
+    f = fopen("/tmp/subscribes.csv", "w");
     if (NULL == f) {
         nlog_error("failed to open file:%s", "subscribes.csv");
         return -1;
@@ -820,7 +820,7 @@ void handle_export_db(nng_aio *aio)
         return;
     }
 
-    rv = nodes_write_to_csv("nodes.csv", nodes);
+    rv = nodes_write_to_csv("/tmp/nodes.csv", nodes);
     if (rv != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
             neu_http_response(aio, error_code.error, result_error);
@@ -835,13 +835,9 @@ void handle_export_db(nng_aio *aio)
         rv             = neu_persister_load_node_setting(node->name,
                                              (const char **) &settings);
         if (rv != 0) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            utarray_free(nodes);
-            return;
+            continue;
         }
-        rv = settings_write_to_csv("settings.csv", node->name, settings);
+        rv = settings_write_to_csv("/tmp/settings.csv", node->name, settings);
         free(settings);
         if (rv != 0) {
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
@@ -858,13 +854,9 @@ void handle_export_db(nng_aio *aio)
             UT_array *subscribers = NULL;
             rv = neu_persister_load_subscriptions(node->name, &subscribers);
             if (rv != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                utarray_free(nodes);
-                return;
+                continue;
             }
-            rv = subscribes_write_to_csv("subscribes.csv", node->name,
+            rv = subscribes_write_to_csv("/tmp/subscribes.csv", node->name,
                                          subscribers);
             utarray_free(subscribers);
             if (rv != 0) {
@@ -882,13 +874,9 @@ void handle_export_db(nng_aio *aio)
         UT_array *groups = NULL;
         rv               = neu_persister_load_groups(node->name, &groups);
         if (rv != 0) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            utarray_free(nodes);
-            return;
+            continue;
         }
-        rv = groups_write_to_csv("groups.csv", node->name, groups);
+        rv = groups_write_to_csv("/tmp/groups.csv", node->name, groups);
         if (rv != 0) {
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
                 neu_http_response(aio, error_code.error, result_error);
@@ -902,14 +890,10 @@ void handle_export_db(nng_aio *aio)
             UT_array *tags = NULL;
             rv = neu_persister_load_tags(node->name, group->name, &tags);
             if (rv != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                utarray_free(nodes);
-                utarray_free(groups);
-                return;
+                continue;
             }
-            rv = tags_write_to_csv("tags.csv", node->name, group->name, tags);
+            rv = tags_write_to_csv("/tmp/tags.csv", node->name, group->name,
+                                   tags);
             if (rv != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
                     neu_http_response(aio, error_code.error, result_error);
@@ -925,14 +909,16 @@ void handle_export_db(nng_aio *aio)
 
     utarray_free(nodes);
 
-    system("rm -rf neuron.zip");
-    system("zip neuron.zip nodes.csv settings.csv groups.csv tags.csv "
-           "subscribes.csv");
+    system("rm -rf /tmp/neuron.zip");
+    system("zip /tmp/neuron.zip /tmp/nodes.csv /tmp/settings.csv "
+           "/tmp/groups.csv /tmp/tags.csv "
+           "/tmp/subscribes.csv");
 
     void * data = NULL;
     size_t len  = 0;
 
-    rv = read_file("neuron.zip", &data, &len);
+    rv = read_file("/tmp/neuron.zip", &data, &len);
+    nlog_info("read_file /tmp/neuron.zip rv=%d, len=%zu", rv, len);
     if (rv != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_READ_FAILURE, {
             neu_http_response(aio, error_code.error, result_error);
