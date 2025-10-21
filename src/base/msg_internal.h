@@ -98,6 +98,8 @@ extern "C" {
     XX(NEU_REQRESP_NODE_DELETED, neu_reqresp_node_deleted_t)                   \
     XX(NEU_REQ_ADD_DRIVERS, neu_req_driver_array_t)                            \
     XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)                   \
+    XX(NEU_REQ_UPDATE_GLOBAL_LOG_LEVEL, neu_req_update_global_log_level_t)     \
+    XX(NEU_REQ_UPDATE_NODE_LOG_LEVEL, neu_req_update_node_log_level_t)         \
     XX(NEU_REQ_PRGFILE_UPLOAD, neu_req_prgfile_upload_t)                       \
     XX(NEU_REQ_PRGFILE_PROCESS, neu_req_prgfile_process_t)                     \
     XX(NEU_RESP_PRGFILE_PROCESS, neu_resp_prgfile_process_t)                   \
