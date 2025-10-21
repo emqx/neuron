@@ -835,11 +835,7 @@ void handle_export_db(nng_aio *aio)
         rv             = neu_persister_load_node_setting(node->name,
                                              (const char **) &settings);
         if (rv != 0) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            utarray_free(nodes);
-            return;
+            continue;
         }
         rv = settings_write_to_csv("settings.csv", node->name, settings);
         free(settings);
@@ -858,11 +854,7 @@ void handle_export_db(nng_aio *aio)
             UT_array *subscribers = NULL;
             rv = neu_persister_load_subscriptions(node->name, &subscribers);
             if (rv != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                utarray_free(nodes);
-                return;
+                continue;
             }
             rv = subscribes_write_to_csv("subscribes.csv", node->name,
                                          subscribers);
@@ -882,11 +874,7 @@ void handle_export_db(nng_aio *aio)
         UT_array *groups = NULL;
         rv               = neu_persister_load_groups(node->name, &groups);
         if (rv != 0) {
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            utarray_free(nodes);
-            return;
+            continue;
         }
         rv = groups_write_to_csv("groups.csv", node->name, groups);
         if (rv != 0) {
@@ -902,12 +890,7 @@ void handle_export_db(nng_aio *aio)
             UT_array *tags = NULL;
             rv = neu_persister_load_tags(node->name, group->name, &tags);
             if (rv != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_WRITE_FAILURE, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                utarray_free(nodes);
-                utarray_free(groups);
-                return;
+                continue;
             }
             rv = tags_write_to_csv("tags.csv", node->name, group->name, tags);
             if (rv != 0) {
@@ -925,14 +908,14 @@ void handle_export_db(nng_aio *aio)
 
     utarray_free(nodes);
 
-    system("rm -rf neuron.zip");
-    system("zip neuron.zip nodes.csv settings.csv groups.csv tags.csv "
+    system("rm -rf /tmp/neuron.zip");
+    system("zip /tmp/neuron.zip nodes.csv settings.csv groups.csv tags.csv "
            "subscribes.csv");
 
     void * data = NULL;
     size_t len  = 0;
 
-    rv = read_file("neuron.zip", &data, &len);
+    rv = read_file("/tmp/neuron.zip", &data, &len);
     if (rv != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_READ_FAILURE, {
             neu_http_response(aio, error_code.error, result_error);
