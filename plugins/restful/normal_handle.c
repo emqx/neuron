@@ -925,14 +925,14 @@ void handle_export_db(nng_aio *aio)
 
     utarray_free(nodes);
 
-    system("rm -rf neuron.zip");
-    system("zip neuron.zip nodes.csv settings.csv groups.csv tags.csv "
+    system("rm -rf /tmp/neuron.zip");
+    system("zip /tmp/neuron.zip nodes.csv settings.csv groups.csv tags.csv "
            "subscribes.csv");
 
     void * data = NULL;
     size_t len  = 0;
 
-    rv = read_file("neuron.zip", &data, &len);
+    rv = read_file("/tmp/neuron.zip", &data, &len);
     if (rv != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_READ_FAILURE, {
             neu_http_response(aio, error_code.error, result_error);
