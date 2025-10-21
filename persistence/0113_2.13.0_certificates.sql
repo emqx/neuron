@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS client_certificates (
     valid_from DATETIME,
     valid_to DATETIME,
     serial_number TEXT,
-    fingerprint TEXT UNIQUE,
+    fingerprint TEXT,
     certificate_data BLOB NOT NULL,
     is_ca INTEGER DEFAULT 0,
     trust_status INTEGER DEFAULT 0,
