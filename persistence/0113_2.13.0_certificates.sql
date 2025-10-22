@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS client_certificates (
     valid_from DATETIME,
     valid_to DATETIME,
     serial_number TEXT,
-    fingerprint TEXT UNIQUE,
+    fingerprint TEXT,
     certificate_data BLOB NOT NULL,
     is_ca INTEGER DEFAULT 0,
     trust_status INTEGER DEFAULT 0,
@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS client_certificates (
 CREATE INDEX IF NOT EXISTS idx_client_certificates_app_name ON client_certificates(app_name);
 CREATE INDEX IF NOT EXISTS idx_client_certificates_common_name ON client_certificates(common_name);
 CREATE INDEX IF NOT EXISTS idx_client_certificates_fingerprint ON client_certificates(fingerprint);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_client_certificates_app_name_fingerprint ON client_certificates(app_name, fingerprint);
 
 -- Create security policies table for northbound app security management
 CREATE TABLE IF NOT EXISTS security_policies (

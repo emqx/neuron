@@ -2690,6 +2690,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
         neu_driver_cache_value_t  value     = { 0 };
 
         strcpy(tag_value.tag, tag->name);
+        tag_value.datatag = *tag;
 
         tag_value.datatag.bias = tag->bias;
 
