@@ -1072,25 +1072,32 @@ static int otel_timer_cb(void *data)
 
     HASH_ITER(hh, traces_table, el, tmp)
     {
+        bool should_send = false;
+        bool is_timeout  = false;
+
         if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
-            nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
-            HASH_DEL(traces_table, el);
-            neu_otel_free_trace(el->ctx);
-            free(el);
+            should_send = true;
+            is_timeout  = true;
+            nlog_debug("trace:%s time out, reporting incomplete trace",
+                       (char *) el->ctx->trace_id);
         } else if (el->ctx->final &&
                    el->ctx->span_num ==
                        el->ctx->trace_data.resource_spans[0]
                            ->scope_spans[0]
                            ->n_spans &&
                    el->ctx->expected_span_num <= 0) {
-            int data_size = neu_otel_trace_pack_size(el->ctx);
+            should_send = true;
+        }
 
-            uint8_t *data_buf = calloc(1, data_size);
+        if (should_send) {
+            int      data_size = neu_otel_trace_pack_size(el->ctx);
+            uint8_t *data_buf  = calloc(1, data_size);
             neu_otel_trace_pack(el->ctx, data_buf);
             int status = neu_http_post_otel_trace(data_buf, data_size);
             free(data_buf);
-            nlog_debug("send trace:%s status:%d", (char *) el->ctx->trace_id,
-                       status);
+            nlog_debug("send %strace:%s status:%d", is_timeout ? "timeout " : "",
+                       (char *) el->ctx->trace_id, status);
+
             if (status == 200 || status == 400) {
                 HASH_DEL(traces_table, el);
                 neu_otel_free_trace(el->ctx);

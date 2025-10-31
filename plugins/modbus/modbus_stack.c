@@ -107,7 +107,8 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
         neu_otel_trace_ctx trace = NULL;
         neu_otel_scope_ctx scope = NULL;
         if (neu_otel_data_is_started()) {
-            trace = neu_otel_find_trace((void *) (intptr_t) stack->read_seq);
+            trace = neu_otel_find_trace(
+                (void *) ((intptr_t) stack + (intptr_t) stack->read_seq));
             if (trace) {
                 char new_span_id[36] = { 0 };
                 neu_otel_new_span_id(new_span_id);
@@ -374,8 +375,10 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                     neu_otel_trace_ctx trace = NULL;
                     neu_otel_scope_ctx scope = NULL;
                     trace                    = neu_otel_create_trace(
-                        new_trace_id, (void *) (intptr_t) stack->read_seq, 0,
-                        trace_state);
+                        new_trace_id,
+                        (void *) ((intptr_t) stack +
+                                  (intptr_t) stack->read_seq),
+                        0, trace_state);
                     if (trace) {
                         scope = neu_otel_add_span(trace);
                         neu_otel_scope_set_span_name(scope, "driver cmd send");
