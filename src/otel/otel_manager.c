@@ -1095,8 +1095,9 @@ static int otel_timer_cb(void *data)
             neu_otel_trace_pack(el->ctx, data_buf);
             int status = neu_http_post_otel_trace(data_buf, data_size);
             free(data_buf);
-            nlog_debug("send %strace:%s status:%d", is_timeout ? "timeout " : "",
-                       (char *) el->ctx->trace_id, status);
+            nlog_debug("send %strace:%s status:%d",
+                       is_timeout ? "timeout " : "", (char *) el->ctx->trace_id,
+                       status);
 
             if (status == 200 || status == 400) {
                 HASH_DEL(traces_table, el);
