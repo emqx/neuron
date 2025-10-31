@@ -37,7 +37,7 @@
 
 #define SPAN_ID_LENGTH 16
 #define ID_CHARSET "0123456789abcdef"
-#define TRACE_TIME_OUT (3 * 60 * 1000)
+#define TRACE_TIME_OUT (60 * 1000)
 
 bool   otel_flag               = false;
 char   otel_collector_url[128] = { 0 };
