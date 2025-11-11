@@ -175,7 +175,8 @@ static void write_responses(neu_adapter_t *adapter, void *r,
                             neu_driver_write_responses_t *response,
                             int                           n_response)
 {
-    neu_reqresp_head_t *  req   = (neu_reqresp_head_t *) r;
+    neu_reqresp_head_t *req = (neu_reqresp_head_t *) r;
+    const char *iface = (req->sender[0] != '\0') ? req->sender : "unknown";
     neu_resp_write_tags_t nresp = { 0 };
     req->type                   = NEU_RESP_WRITE_TAGS;
     UT_icd    icd   = { sizeof(neu_resp_write_tags_ele_t), NULL, NULL, NULL };
@@ -190,8 +191,16 @@ static void write_responses(neu_adapter_t *adapter, void *r,
         strcpy(ele.group, resp->group);
         strcpy(ele.tag, resp->name);
         ele.error = resp->error;
+
+        nlog_info("driver multi write response detail, driver: %s, interface: "
+                  "%s, group: %s, tag: %s, error: %d",
+                  adapter->name, iface, resp->group, resp->name, resp->error);
+
         utarray_push_back(array, &ele);
     }
+    nlog_info("driver multi write response summary, driver: %s, interface: %s, "
+              "result_count: %d",
+              adapter->name, iface, n_response);
 
     nresp.tags = array;
     adapter->cb_funs.response(adapter, req, &nresp);
@@ -199,8 +208,10 @@ static void write_responses(neu_adapter_t *adapter, void *r,
 
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
-    neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
-    neu_resp_error_t    nerror = { .error = error };
+    neu_reqresp_head_t *req      = (neu_reqresp_head_t *) r;
+    neu_reqresp_type_e  req_type = req->type;
+    const char *     iface = (req->sender[0] != '\0') ? req->sender : "unknown";
+    neu_resp_error_t nerror = { .error = error };
 
     neu_otel_trace_ctx trace = NULL;
     neu_otel_scope_ctx scope = NULL;
@@ -226,13 +237,42 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
         if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write tag response");
         }
-    } else if (NEU_REQ_WRITE_TAGS == req->type) {
-        neu_req_write_tags_fini((neu_req_write_tags_t *) &req[1]);
+    } else if (NEU_REQ_WRITE_TAGS == req_type) {
+        neu_req_write_tags_t *cmd   = (neu_req_write_tags_t *) &req[1];
+        const char *          group = cmd->group ? cmd->group : "";
+        nlog_info("driver multi write response, driver: %s, interface: %s, "
+                  "group: %s, tag_count: %d, error: %d",
+                  adapter->name, iface, group, cmd->n_tag, error);
+        for (int i = 0; i < cmd->n_tag; i++) {
+            const char *tag_name = cmd->tags[i].tag;
+            nlog_info("driver multi write response tag detail, driver: %s, "
+                      "group: %s, tag: %s, %s",
+                      adapter->name, group, tag_name ? tag_name : "",
+                      neu_value_str(cmd->tags[i].value.type,
+                                    cmd->tags[i].value.value));
+        }
+        neu_req_write_tags_fini(cmd);
         if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write tags response");
         }
-    } else if (NEU_REQ_WRITE_GTAGS == req->type) {
-        neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
+    } else if (NEU_REQ_WRITE_GTAGS == req_type) {
+        neu_req_write_gtags_t *cmd = (neu_req_write_gtags_t *) &req[1];
+        nlog_info("driver multi write response, driver: %s, interface: %s, "
+                  "group_count: %d, error: %d",
+                  adapter->name, iface, cmd->n_group, error);
+        for (int i = 0; i < cmd->n_group; i++) {
+            const char *group_name =
+                cmd->groups[i].group ? cmd->groups[i].group : "";
+            for (int k = 0; k < cmd->groups[i].n_tag; k++) {
+                const char *tag_name = cmd->groups[i].tags[k].tag;
+                nlog_info("driver multi write response tag detail, driver: %s, "
+                          "group: %s, tag: %s, %s",
+                          adapter->name, group_name, tag_name ? tag_name : "",
+                          neu_value_str(cmd->groups[i].tags[k].value.type,
+                                        cmd->groups[i].tags[k].value.value));
+            }
+        }
+        neu_req_write_gtags_fini(cmd);
         if (neu_otel_control_is_started() && trace) {
             neu_otel_scope_set_span_name(scope, "driver write gtags response");
         }
@@ -1425,6 +1465,23 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         return NEU_ERR_TAG_NOT_EXIST;
     }
 
+    const neu_reqresp_head_t *head = (const neu_reqresp_head_t *) req;
+    const char *              iface =
+        (head && head->sender[0] != '\0') ? head->sender : "unknown";
+
+    nlog_info("driver multi write request received, driver: %s, group: %s, "
+              "interface: %s, tag_count: %d",
+              driver->adapter.name, cmd->group, iface, cmd->n_tag);
+
+    for (int i = 0; i < cmd->n_tag; i++) {
+        const char *tag_name = cmd->tags[i].tag;
+        nlog_info(
+            "driver multi write request tag detail, driver: %s, group: %s, "
+            "tag: %s, %s",
+            driver->adapter.name, cmd->group, tag_name ? tag_name : "",
+            neu_value_str(cmd->tags[i].value.type, cmd->tags[i].value.value));
+    }
+
     to_be_write_tag_t wtag = { 0 };
     wtag.single            = false;
     wtag.req               = (void *) req;
@@ -1547,6 +1604,28 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         }
         utarray_free(tags);
         return NEU_ERR_TAG_NOT_EXIST;
+    }
+
+    const neu_reqresp_head_t *head = (const neu_reqresp_head_t *) req;
+    const char *              iface =
+        (head && head->sender[0] != '\0') ? head->sender : "unknown";
+
+    nlog_info("driver multi write request received, driver: %s, interface: %s, "
+              "group_count: %d, tag_count: %u",
+              driver->adapter.name, iface, cmd->n_group, n_tag);
+
+    for (int i = 0; i < cmd->n_group; i++) {
+        const char *group_name =
+            cmd->groups[i].group ? cmd->groups[i].group : "";
+        for (int k = 0; k < cmd->groups[i].n_tag; k++) {
+            const char *tag_name = cmd->groups[i].tags[k].tag;
+            nlog_info("driver multi write request tag detail, driver: %s, "
+                      "group: %s, tag: %s, %s",
+                      driver->adapter.name, group_name,
+                      tag_name ? tag_name : "",
+                      neu_value_str(cmd->groups[i].tags[k].value.type,
+                                    cmd->groups[i].tags[k].value.value));
+        }
     }
 
     to_be_write_tag_t wtag = { 0 };
@@ -2436,9 +2515,35 @@ static int write_callback(void *usr_data)
             e_time = neu_time_ns();
             neu_tag_free(wtag->tag);
         } else {
-            group->driver->adapter.module->intf_funs->driver.write_tags(
-                group->driver->adapter.plugin, (void *) wtag->req, wtag->tvs);
+            const neu_reqresp_head_t *head =
+                (const neu_reqresp_head_t *) wtag->req;
+            const char *iface =
+                (head && head->sender[0] != '\0') ? head->sender : "unknown";
+
+            size_t tag_count = utarray_len(wtag->tvs);
+            nlog_info("driver multi write request start, driver: %s, group: "
+                      "%s, interface: %s, tag_count: %zu",
+                      group->driver->adapter.name, group->name, iface,
+                      tag_count);
+            utarray_foreach(wtag->tvs, neu_plugin_tag_value_t *, tv)
+            {
+                const char *tag_name =
+                    (tv && tv->tag && tv->tag->name) ? tv->tag->name : "";
+                nlog_info("driver multi write tag detail, driver: %s, group: "
+                          "%s, tag: %s, %s",
+                          group->driver->adapter.name, group->name, tag_name,
+                          neu_value_str(tv->type, tv->value));
+            }
+
+            int ret =
+                group->driver->adapter.module->intf_funs->driver.write_tags(
+                    group->driver->adapter.plugin, (void *) wtag->req,
+                    wtag->tvs);
             e_time = neu_time_ms();
+
+            nlog_info("driver multi write request done, driver: %s, group: %s, "
+                      "interface: %s, ret: %d",
+                      group->driver->adapter.name, group->name, iface, ret);
             utarray_foreach(wtag->tvs, neu_plugin_tag_value_t *, tv)
             {
                 neu_tag_free(tv->tag);
