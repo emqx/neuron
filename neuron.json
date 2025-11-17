@@ -4,5 +4,6 @@
 	"disable_auth": 0,
 	"syslog_host": "",
 	"syslog_port": 541,
-	"sub_filter_error": 0
+	"sub_filter_error": 0,
+	"modbus_simulator": { "port":502 }
 }

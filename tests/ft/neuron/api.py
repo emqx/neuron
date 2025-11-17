@@ -544,3 +544,37 @@ def server_security_policy(app_name, policy_name, jwt=config.default_jwt):
     return requests.post(url=config.BASE_URL + "/api/v2/auth/basic/security_policies",
                          headers={"Authorization": jwt},
                          json={"node": app_name, "policyName": policy_name})
+
+
+def simulator_status(jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + "/api/v2/simulator/status",
+                        headers={"Authorization": jwt})
+
+
+@gen_check
+def simulator_start(jwt=config.default_jwt):
+    return requests.post(url=config.BASE_URL + "/api/v2/simulator/start",
+                         headers={"Authorization": jwt})
+
+
+@gen_check
+def simulator_stop(jwt=config.default_jwt):
+    return requests.post(url=config.BASE_URL + "/api/v2/simulator/stop",
+                         headers={"Authorization": jwt})
+
+
+@gen_check
+def simulator_set_config(tags, jwt=config.default_jwt):
+    return requests.post(url=config.BASE_URL + "/api/v2/simulator/config",
+                         headers={"Authorization": jwt},
+                         json={"tags": tags})
+
+
+def simulator_export(jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + "/api/v2/simulator/export",
+                        headers={"Authorization": jwt})
+
+
+def simulator_list_tags(jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + "/api/v2/simulator/tags",
+                        headers={"Authorization": jwt})

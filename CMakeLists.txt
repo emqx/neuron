@@ -169,7 +169,9 @@ set(NEURON_SOURCES
     plugins/restful/system_handle.c
     plugins/restful/datalayers_handle.c
     plugins/restful/rest.c
-    plugins/restful/user.c)
+    plugins/restful/user.c
+    plugins/restful/simulator_handle.c
+    simulator/modbus_tcp_simulator.c)
 
 set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)

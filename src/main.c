@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "core/manager.h"
+#include "modbus_tcp_simulator.h"
 #include "utils/log.h"
 #include "utils/time.h"
 
@@ -143,6 +144,8 @@ static int neuron_run(const neu_cli_args_t *args)
     rv = neu_persister_create(args->config_dir);
     assert(rv == 0);
 
+    neu_modbus_simulator_apply_persist();
+
     zlog_notice(neuron, "neuron start, daemon: %d, version: %s (%s %s)",
                 args->daemonized, NEURON_VERSION,
                 NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
@@ -189,6 +192,10 @@ int main(int argc, char *argv[])
 
     neuron = zlog_get_category("neuron");
     zlog_level_switch(neuron, default_log_level);
+
+    if (neu_modbus_simulator_init(args.config_dir) != 0) {
+        nlog_warn("modbus simulator init failed");
+    }
 
     if (neuron_already_running()) {
         if (args.stop) {
@@ -242,6 +249,7 @@ int main(int argc, char *argv[])
 
 main_end:
     neu_cli_args_fini(&args);
+    neu_modbus_simulator_fini();
     zlog_fini();
     return rv;
 }

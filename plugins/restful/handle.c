@@ -44,6 +44,7 @@
 #include "version_handle.h"
 
 #include "handle.h"
+#include "simulator_handle.h"
 
 struct neu_rest_handle_ctx {
     void *plugin;
@@ -189,6 +190,24 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/auth/basic/security_policies",
+    },
+    {
+        .url = "/api/v2/simulator/status",
+    },
+    {
+        .url = "/api/v2/simulator/start",
+    },
+    {
+        .url = "/api/v2/simulator/stop",
+    },
+    {
+        .url = "/api/v2/simulator/config",
+    },
+    {
+        .url = "/api/v2/simulator/tags",
+    },
+    {
+        .url = "/api/v2/simulator/export",
     },
 };
 
@@ -685,6 +704,42 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/auth/basic/security_policies",
         .value.handler = handle_server_security_policy,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/status",
+        .value.handler = handle_simulator_status,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/tags",
+        .value.handler = handle_simulator_list_tags,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/start",
+        .value.handler = handle_simulator_start,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/stop",
+        .value.handler = handle_simulator_stop,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/config",
+        .value.handler = handle_simulator_set_config,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/simulator/export",
+        .value.handler = handle_simulator_export,
     },
 };
 
