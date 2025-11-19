@@ -242,8 +242,13 @@ void recv_data_callback(void *arg)
         rv = send_write_tags_req(plugin, &req->plural, json_str, trace_flag,
                                  trace_id, span_id);
         if (rv == 0) {
-            plog_notice(plugin, "write %d tags on node %s", req->plural.n_tag,
-                        req->plural.node);
+            if (req->plural.n_tag == 0) {
+                plog_warn(plugin, "no tags to write on node %s",
+                          req->plural.node);
+            } else {
+                plog_notice(plugin, "write %d tags on node %s",
+                            req->plural.n_tag, req->plural.node);
+            }
         }
     }
 
