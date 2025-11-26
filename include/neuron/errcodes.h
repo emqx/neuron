@@ -53,6 +53,7 @@ typedef enum {
     NEU_ERR_USER_NOT_EXISTS          = 1020,
     NEU_ERR_INVALID_USER_LEN         = 1021,
     NEU_ERR_USER_NO_PERMISSION       = 1022,
+    NEU_ERR_PORT_IN_USE              = 1023,
 
     NEU_ERR_NODE_EXIST               = 2002,
     NEU_ERR_NODE_NOT_EXIST           = 2003,

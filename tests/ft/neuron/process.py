@@ -38,7 +38,9 @@ def start_neuron_disable_auth(dir='build/'):
     process = subprocess.Popen(
         command, stderr=subprocess.PIPE, cwd=dir)
     time.sleep(1)
-    assert process.poll() is None
+    if process.poll() is not None:
+        stderr = process.stderr.read().decode()
+        assert False, "Neuron failed to start. Stderr: " + stderr
     return process
 
 def start_neuron_debug(dir='build/'):
@@ -46,7 +48,9 @@ def start_neuron_debug(dir='build/'):
     process = subprocess.Popen(
         command, stderr=subprocess.PIPE, cwd=dir)
     time.sleep(1)
-    assert process.poll() is None
+    if process.poll() is not None:
+        stderr = process.stderr.read().decode()
+        assert False, "Neuron failed to start. Stderr: " + stderr
     return process
 
 def start_neuron_sub_filter_err(dir='build/'):
@@ -54,14 +58,18 @@ def start_neuron_sub_filter_err(dir='build/'):
     process = subprocess.Popen(
         command, stderr=subprocess.PIPE, cwd=dir)
     time.sleep(1)
-    assert process.poll() is None
+    if process.poll() is not None:
+        stderr = process.stderr.read().decode()
+        assert False, "Neuron failed to start. Stderr: " + stderr
     return process
 
 def start_neuron(dir='build/'):
     process = subprocess.Popen(
         ['./neuron'], stderr=subprocess.PIPE, cwd=dir)
     time.sleep(1)
-    assert process.poll() is None
+    if process.poll() is not None:
+        stderr = process.stderr.read().decode()
+        assert False, "Neuron failed to start. Stderr: " + stderr
     return process
 
 
