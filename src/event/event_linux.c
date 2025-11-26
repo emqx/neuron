@@ -72,7 +72,8 @@ struct neu_events {
     int       epoll_fd;
     pthread_t thread;
     bool      stop;
-    char *    name;
+
+    zlog_category_t *log;
 
     pthread_mutex_t   mtx;
     int               n_event;
@@ -123,8 +124,8 @@ static void *event_loop(void *arg)
         }
 
         if (ret == -1 || events->stop) {
-            zlog_warn(neuron, "event loop(%s) exit, errno: %s(%d), stop: %d",
-                      events->name, strerror(errno), errno, events->stop);
+            zlog_warn(events->log, "event loop exit, errno: %s(%d), stop: %d",
+                      strerror(errno), errno, events->stop);
             break;
         }
 
@@ -182,14 +183,14 @@ neu_events_t *neu_event_new(const char *name)
 {
     neu_events_t *events = calloc(1, sizeof(struct neu_events));
 
+    events->log      = zlog_get_category(name);
     events->epoll_fd = epoll_create(1);
 
-    nlog_notice("create epoll(%s): %d(%d)", name, events->epoll_fd, errno);
+    zlog_notice(events->log, "create epoll: %d(%d)", events->epoll_fd, errno);
     assert(events->epoll_fd > 0);
 
     events->stop    = false;
     events->n_event = 0;
-    events->name    = strdup(name);
     pthread_mutex_init(&events->mtx, NULL);
 
     pthread_create(&events->thread, NULL, event_loop, events);
@@ -201,7 +202,6 @@ int neu_event_close(neu_events_t *events)
 {
     events->stop = true;
     close(events->epoll_fd);
-    free(events->name);
 
     pthread_join(events->thread, NULL);
     pthread_mutex_destroy(&events->mtx);
@@ -223,8 +223,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     };
     int index = get_free_event(events);
     if (index < 0) {
-        zlog_fatal(neuron, "no free event(%s): %d", events->name,
-                   events->epoll_fd);
+        zlog_fatal(events->log, "no free event: %d", events->epoll_fd);
     }
     assert(index >= 0);
 
@@ -253,21 +252,20 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
 
-    zlog_notice(neuron,
+    zlog_notice(events->log,
                 "add timer, second: %" PRId64 ", millisecond: %" PRId64
-                ", timer: %d in epoll(%s) %d, "
+                ", timer: %d in epoll %d, "
                 "ret: %d, index: %d",
-                timer.second, timer.millisecond, timer_fd, events->name,
-                events->epoll_fd, ret, index);
+                timer.second, timer.millisecond, timer_fd, events->epoll_fd,
+                ret, index);
 
     return timer_ctx;
 }
 
 int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 {
-    zlog_notice(neuron, "del timer: %d from epoll(%s): %d, index: %d",
-                timer->fd, events->name, events->epoll_fd,
-                timer->event_data->index);
+    zlog_notice(events->log, "del timer: %d from epoll: %d, index: %d",
+                timer->fd, events->epoll_fd, timer->event_data->index);
 
     timer->stop = true;
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
@@ -286,7 +284,7 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
     int ret   = 0;
     int index = get_free_event(events);
 
-    nlog_notice("add io, fd: %d, epoll(%s): %d, index: %d", io.fd, events->name,
+    zlog_notice(events->log, "add io, fd: %d, epoll: %d, index: %d", io.fd,
                 events->epoll_fd, index);
     assert(index >= 0);
 
@@ -308,8 +306,9 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
-    nlog_notice("add io, fd: %d, epoll(%s): %d, ret: %d(%d), index: %d", io.fd,
-                events->name, events->epoll_fd, ret, errno, index);
+    zlog_notice(events->log,
+                "add io, fd: %d, epoll: %d, ret: %d(%d), index: %d", io.fd,
+                events->epoll_fd, ret, errno, index);
     assert(ret == 0);
 
     return io_ctx;
@@ -321,8 +320,8 @@ int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
         return 0;
     }
 
-    zlog_notice(neuron, "del io: %d from epoll(%s): %d, index: %d", io->fd,
-                events->name, events->epoll_fd, io->event_data->index);
+    zlog_notice(events->log, "del io: %d from epoll: %d, index: %d", io->fd,
+                events->epoll_fd, io->event_data->index);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
     free_event(events, io->event_data->index);
