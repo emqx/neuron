@@ -1625,8 +1625,9 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
         tag_json->value.val_array_str.p_strs = tag_value->value.value.strs.strs;
         break;
     case NEU_TYPE_CUSTOM:
-        tag_json->t                = NEU_JSON_OBJECT;
-        tag_json->value.val_object = tag_value->value.value.json;
+        tag_json->t = NEU_JSON_OBJECT;
+        tag_json->value.val_object =
+            json_deep_copy(tag_value->value.value.json);
         break;
     default:
         break;
