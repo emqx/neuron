@@ -114,6 +114,8 @@ inline static cid_basictype_e decode_basictype(const char *btype)
         ret = VisString64;
     } else if (strcmp(btype, "VisString255") == 0) {
         ret = VisString255;
+    } else if (strcmp(btype, "VisString65") == 0) {
+        ret = Unicode255;
     } else if (strcmp(btype, "Octet64") == 0) {
         ret = Octet64;
     } else if (strcmp(btype, "Struct") == 0) {
