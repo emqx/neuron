@@ -265,16 +265,6 @@ static cid_tm_do_type_t *find_do_type(cid_template_t *template,
         }
     }
 
-    if (dotype->n_das == 0 && dotype->n_sdos > 0) {
-        for (int i = 0; i < template->n_dotypes; i++) {
-            if (strcmp(template->dotypes[i].id, dotype->sdos[0].ref_type) ==
-                0) {
-                dotype = &template->dotypes[i];
-                break;
-            }
-        }
-    }
-
     return dotype;
 }
 
@@ -329,11 +319,7 @@ static int find_basic_type(cid_template_t *template, const char *type_id,
         return 0;
     }
 
-    nlog_notice("Found do type %s for %s, %d", dotype->id, do_name,
-                dotype->n_das);
     for (int i = 0; i < dotype->n_das; i++) {
-        nlog_notice("Check da %s %d %s", dotype->das[i].name, dotype->das[i].fc,
-                    do_name);
         if (fc != dotype->das[i].fc) {
             continue;
         }
@@ -342,8 +328,6 @@ static int find_basic_type(cid_template_t *template, const char *type_id,
             index += 1;
             *btypes = realloc(*btypes, index * sizeof(cid_basictype_e));
             (*btypes)[index - 1] = dotype->das[i].btype;
-            nlog_notice("Found basic type %s %d, %s %s", dotype->das[i].name,
-                        dotype->das[i].btype, do_name, da_name);
             continue;
         }
 
@@ -382,11 +366,6 @@ static void update_dataset(cid_dataset_t *dataset, cid_ldevice_t *ldev,
             int              ret = find_basic_type(
                 template, type_id, dataset->fcdas[i].do_name,
                 dataset->fcdas[i].da_name, dataset->fcdas[i].fc, &bs);
-            nlog_notice("Found %d basic types for %s %s %s %s %s %d %s", ret,
-                        dataset->fcdas[i].da_name, dataset->fcdas[i].do_name,
-                        dataset->fcdas[i].lnclass, dataset->fcdas[i].lninst,
-                        dataset->fcdas[i].prefix, dataset->fcdas[i].fc,
-                        type_id);
             if (ret > 0) {
                 if (ret <= 16) {
                     memcpy(dataset->fcdas[i].btypes, bs,
