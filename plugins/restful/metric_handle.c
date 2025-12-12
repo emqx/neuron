@@ -118,8 +118,8 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     nng_http_res_set_status(res, status);
 
     nng_http_req *nng_req = nng_aio_get_input(aio, 0);
-    nlog_info("%s %s [%d]", nng_http_req_get_method(nng_req),
-              nng_http_req_get_uri(nng_req), status);
+    nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
+                nng_http_req_get_uri(nng_req), status);
 
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
