@@ -307,7 +307,8 @@ static int find_da_basic_type(cid_template_t *template, const char *datype_id,
 
 static int find_basic_type(cid_template_t *template, const char *type_id,
                            const char *do_name, const char *da_name,
-                           cid_fc_e fc, cid_basictype_e **btypes)
+                           cid_fc_e fc, cid_basictype_e **btypes,
+                           bool *is_array, uint8_t *array_size)
 {
     *btypes                  = NULL;
     cid_tm_do_type_t *dotype = NULL;
@@ -330,6 +331,8 @@ static int find_basic_type(cid_template_t *template, const char *type_id,
             (*btypes)[index - 1] = dotype->das[i].btype;
             continue;
         }
+        *is_array   = dotype->das[i].is_array;
+        *array_size = dotype->das[i].array_size;
 
         da_basic_type_t da_types[32] = { 0 };
         int n_da_types = find_da_basic_type(template, dotype->das[i].ref_type,
@@ -362,15 +365,28 @@ static void update_dataset(cid_dataset_t *dataset, cid_ldevice_t *ldev,
             find_type_id(ldev, dataset->fcdas[i].prefix,
                          dataset->fcdas[i].lnclass, dataset->fcdas[i].lninst);
         if (type_id != NULL) {
-            cid_basictype_e *bs  = NULL;
-            int              ret = find_basic_type(
-                template, type_id, dataset->fcdas[i].do_name,
-                dataset->fcdas[i].da_name, dataset->fcdas[i].fc, &bs);
+            cid_basictype_e *bs         = NULL;
+            bool             is_array   = false;
+            uint8_t          array_size = 0;
+
+            int ret =
+                find_basic_type(template, type_id, dataset->fcdas[i].do_name,
+                                dataset->fcdas[i].da_name, dataset->fcdas[i].fc,
+                                &bs, &is_array, &array_size);
             if (ret > 0) {
                 if (ret <= 16) {
                     memcpy(dataset->fcdas[i].btypes, bs,
                            ret * sizeof(cid_basictype_e));
-                    dataset->fcdas[i].n_btypes = ret;
+                    dataset->fcdas[i].btype = bs[0];
+                    for (int j = 1; j < ret; j++) {
+                        if ((bs[j] & 0x7f) != 15 && (bs[j] & 0x7f) != 16) {
+                            dataset->fcdas[i].btype = bs[j];
+                        }
+                    }
+
+                    dataset->fcdas[i].n_btypes   = ret;
+                    dataset->fcdas[i].is_array   = is_array;
+                    dataset->fcdas[i].array_size = array_size;
                 } else {
                     nlog_warn(
                         "Too many basic types for %s %s %s %s %s %d %s",
@@ -987,6 +1003,8 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                             (char *) xmlGetProp(da, (const xmlChar *) "name");
                         char *ref_type =
                             (char *) xmlGetProp(da, (const xmlChar *) "type");
+                        char *count =
+                            (char *) xmlGetProp(da, (const xmlChar *) "count");
 
                         if (btype != NULL && fc != NULL && name != NULL) {
                             tm_do->n_das += 1;
@@ -1014,6 +1032,14 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                                 nlog_warn("Unknown fc %s, %d", fc,
                                           (int) da->line);
                             }
+
+                            if (count != NULL) {
+                                tm_da->is_array   = true;
+                                tm_da->array_size = atoi(count);
+                            } else {
+                                tm_da->is_array   = false;
+                                tm_da->array_size = 0;
+                            }
                         }
 
                         if (btype != NULL) {
@@ -1027,6 +1053,9 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                         }
                         if (ref_type != NULL) {
                             xmlFree(ref_type);
+                        }
+                        if (count != NULL) {
+                            xmlFree(count);
                         }
                     }
 
@@ -1475,7 +1504,7 @@ static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
                                  fc_to_str(ln->datasets[j].fcdas[k].fc),
                                  ln->datasets[j].fcdas[k].do_name);
                     }
-                    switch (ln->datasets[j].fcdas[k].btypes[0] & 0x7f) {
+                    switch (ln->datasets[j].fcdas[k].btype & 0x7f) {
                     case BOOLEAN:
                         tag->type = NEU_TYPE_BOOL;
                         break;
@@ -1506,9 +1535,15 @@ static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
                     case INT32U:
                         tag->type = NEU_TYPE_UINT32;
                         break;
-                    case FLOAT32:
-                        tag->type = NEU_TYPE_FLOAT;
-                        break;
+                    case FLOAT32: {
+                        if (ln->datasets[j].fcdas[k].is_array) {
+                            tag->type = NEU_TYPE_ARRAY_FLOAT;
+                            break;
+                        } else {
+                            tag->type = NEU_TYPE_FLOAT;
+                            break;
+                        }
+                    }
                     case FLOAT64:
                         tag->type = NEU_TYPE_DOUBLE;
                         break;

@@ -202,6 +202,10 @@ typedef struct {
 
     cid_basictype_e btypes[NEU_TAG_FORMAT_LENGTH]; // for do-[da]
     int             n_btypes;
+    cid_basictype_e btype;
+
+    bool    is_array;
+    uint8_t array_size;
 } cid_fcda_t;
 
 typedef struct {
@@ -300,6 +304,9 @@ typedef struct {
 
     cid_basictype_e btype;
     cid_fc_e        fc;
+
+    bool    is_array;
+    uint8_t array_size;
 } cid_tm_do_da_t;
 
 typedef struct {
