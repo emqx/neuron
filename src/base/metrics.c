@@ -18,6 +18,7 @@
  **/
 
 #include <dirent.h>
+#include <errno.h>
 #include <pthread.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
@@ -45,7 +46,7 @@ static void find_os_info()
     FILE *f = popen(cmd, "r");
 
     if (NULL == f) {
-        nlog_error("popen command fail");
+        nlog_error("popen command fail(%s)", strerror(errno));
         return;
     }
 
@@ -100,7 +101,7 @@ static size_t parse_memory_fields(int col)
 
     f = popen(buf, "r");
     if (NULL == f) {
-        nlog_error("popen command fail");
+        nlog_error("popen command fail(%s)", strerror(errno));
         return 0;
     }
 
@@ -135,7 +136,7 @@ static inline size_t neuron_memory_used()
 
     f = popen(buf, "r");
     if (NULL == f) {
-        nlog_error("popen command fail");
+        nlog_error("popen command fail(%s)", strerror(errno));
         return 0;
     }
 
