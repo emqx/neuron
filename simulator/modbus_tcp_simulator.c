@@ -502,7 +502,7 @@ static void *generator_thread(void *arg)
                 sim_update_random(addr, tms);
         }
         pthread_mutex_unlock(&g_sim.lock);
-        usleep(1000 * 1000);
+        usleep(100 * 1000);
     }
     return NULL;
 }
