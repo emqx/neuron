@@ -871,6 +871,7 @@ static void conn_connect(neu_conn_t *conn)
         } else {
             zlog_error(conn->param.log, "invalid ip: %s",
                        conn->param.params.tcp_server.ip);
+            close(fd);
             return;
         }
 
@@ -941,6 +942,7 @@ static void conn_connect(neu_conn_t *conn)
         } else {
             zlog_error(conn->param.log, "invalid ip: %s",
                        conn->param.params.tcp_server.ip);
+            close(fd);
             return;
         }
 
