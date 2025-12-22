@@ -28,6 +28,9 @@ void handle_put_global_config(nng_aio *aio);
 
 void handle_get_drivers(nng_aio *aio);
 
+void handle_get_apps(nng_aio *aio);
+void handle_put_apps(nng_aio *aio);
+
 void handle_global_config_resp(nng_aio *aio, neu_reqresp_type_e type,
                                void *data);
 

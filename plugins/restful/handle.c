@@ -135,6 +135,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/global/drivers",
     },
     {
+        .url = "/api/v2/global/apps",
+    },
+    {
         .url = "/api/v2/metrics",
     },
     {
@@ -524,6 +527,18 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/drivers",
         .value.handler = handle_get_drivers,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/global/apps",
+        .value.handler = handle_get_apps,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/global/apps",
+        .value.handler = handle_put_apps,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

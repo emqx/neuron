@@ -308,6 +308,16 @@ def put_drivers(drivers, jwt=config.default_jwt):
     return requests.put(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, json={"nodes": drivers})
 
 
+def get_apps(names=None, jwt=config.default_jwt):
+    if names and not isinstance(names, str):
+        names = ','.join(names)
+    return requests.get(url=config.BASE_URL + '/api/v2/global/apps', headers={"Authorization": jwt}, params={"name": names})
+
+
+def put_apps(apps, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/global/apps', headers={"Authorization": jwt}, json={"nodes": apps})
+
+
 def get_status():
     return requests.get(url=config.BASE_URL + "/api/v2/status", headers={"Authorization": config.default_jwt})
 

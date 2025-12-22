@@ -97,6 +97,41 @@ int  neu_json_encode_drivers_req(void *obj_json, void *param);
 int  neu_json_decode_drivers_req(char *buf, neu_json_drivers_req_t **result);
 void neu_json_decode_drivers_req_free(neu_json_drivers_req_t *req);
 
+typedef struct {
+    char *driver;
+    char *group;
+    char *params;
+} neu_json_app_group_t;
+
+typedef struct {
+    int                   n_group;
+    neu_json_app_group_t *groups;
+} neu_json_app_group_array_t;
+
+typedef struct {
+    neu_json_add_node_req_t    node;
+    neu_json_app_group_array_t subscriptions;
+} neu_json_app_t;
+
+int  neu_json_encode_app(void *node_json, void *param);
+int  neu_json_decode_app_json(void *node_json, neu_json_app_t *app_p);
+void neu_json_app_fini(neu_json_app_t *app);
+
+typedef struct {
+    int             n_app;
+    neu_json_app_t *apps;
+} neu_json_app_array_t;
+
+int  neu_json_encode_app_array(void *obj_json, void *param);
+int  neu_json_decode_app_array_json(void *obj_json, neu_json_app_array_t *arr);
+void neu_json_app_array_fini(neu_json_app_array_t *arr);
+
+typedef neu_json_app_array_t neu_json_apps_req_t;
+
+int  neu_json_encode_apps_req(void *obj_json, void *param);
+int  neu_json_decode_apps_req(char *buf, neu_json_apps_req_t **result);
+void neu_json_decode_apps_req_free(neu_json_apps_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif
