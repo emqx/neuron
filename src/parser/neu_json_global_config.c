@@ -583,3 +583,267 @@ void neu_json_decode_drivers_req_free(neu_json_drivers_req_t *req)
         free(req);
     }
 }
+
+static void fini_app_group(neu_json_app_group_t *grp)
+{
+    free(grp->driver);
+    free(grp->group);
+    free(grp->params);
+}
+
+int neu_json_encode_app(void *node_json, void *param)
+{
+    neu_json_app_t *app = param;
+
+    if (!json_is_object((json_t *) node_json)) {
+        return -1;
+    }
+
+    if (0 != neu_json_encode_add_node_req(node_json, &app->node)) {
+        return -1;
+    }
+
+    json_t *groups_json = json_array();
+    if (NULL == groups_json ||
+        0 != json_object_set_new(node_json, "groups", groups_json)) {
+        return -1;
+    }
+
+    for (int i = 0; i < app->subscriptions.n_group; ++i) {
+        json_t *grp_json = json_object();
+        if (NULL == grp_json) {
+            return -1;
+        }
+
+        neu_json_app_group_t *grp         = &app->subscriptions.groups[i];
+        neu_json_elem_t       grp_elems[] = {
+            {
+                .name      = "driver",
+                .t         = NEU_JSON_STR,
+                .v.val_str = grp->driver,
+            },
+            {
+                .name      = "group",
+                .t         = NEU_JSON_STR,
+                .v.val_str = grp->group,
+            },
+        };
+
+        if (0 !=
+            neu_json_encode_field(grp_json, grp_elems,
+                                  NEU_JSON_ELEM_SIZE(grp_elems))) {
+            json_decref(grp_json);
+            return -1;
+        }
+
+        if (grp->params && strlen(grp->params) > 0) {
+            if (0 !=
+                neu_json_load_key(grp_json, "params", grp->params, false)) {
+                json_decref(grp_json);
+                return -1;
+            }
+        }
+
+        if (0 != json_array_append_new(groups_json, grp_json)) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_decode_app_json(void *node_json, neu_json_app_t *app_p)
+{
+    if (!json_is_object((json_t *) node_json)) {
+        return -1;
+    }
+
+    if (0 != neu_json_decode_add_node_req_json(node_json, &app_p->node)) {
+        return -1;
+    }
+
+    json_t *groups_json = json_object_get(node_json, "groups");
+    if (NULL == groups_json) {
+        app_p->subscriptions.n_group = 0;
+        app_p->subscriptions.groups  = NULL;
+        return 0;
+    }
+
+    if (!json_is_array(groups_json)) {
+        neu_json_decode_add_node_req_fini(&app_p->node);
+        return -1;
+    }
+
+    int n_group = json_array_size(groups_json);
+    if (n_group <= 0) {
+        app_p->subscriptions.n_group = 0;
+        app_p->subscriptions.groups  = NULL;
+        return 0;
+    }
+
+    neu_json_app_group_t *groups = calloc(n_group, sizeof(*groups));
+    if (NULL == groups) {
+        neu_json_decode_add_node_req_fini(&app_p->node);
+        return -1;
+    }
+
+    for (int i = 0; i < n_group; ++i) {
+        json_t *grp_json = json_array_get(groups_json, i);
+
+        neu_json_elem_t grp_elems[] = {
+            {
+                .name = "driver",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "group",
+                .t    = NEU_JSON_STR,
+            },
+        };
+
+        if (0 !=
+            neu_json_decode_by_json(grp_json, NEU_JSON_ELEM_SIZE(grp_elems),
+                                    grp_elems)) {
+            for (int j = 0; j < i; ++j) {
+                fini_app_group(&groups[j]);
+            }
+            free(groups);
+            neu_json_decode_add_node_req_fini(&app_p->node);
+            return -1;
+        }
+
+        groups[i].driver = grp_elems[0].v.val_str;
+        groups[i].group  = grp_elems[1].v.val_str;
+        neu_json_dump_key(grp_json, "params", &groups[i].params, false);
+    }
+
+    app_p->subscriptions.n_group = n_group;
+    app_p->subscriptions.groups  = groups;
+
+    return 0;
+}
+
+void neu_json_app_fini(neu_json_app_t *app)
+{
+    neu_json_decode_add_node_req_fini(&app->node);
+    for (int i = 0; i < app->subscriptions.n_group; ++i) {
+        fini_app_group(&app->subscriptions.groups[i]);
+    }
+    free(app->subscriptions.groups);
+}
+
+int neu_json_encode_app_array(void *obj_json, void *param)
+{
+    neu_json_app_array_t *arr = param;
+
+    json_t *nodes_json = obj_json;
+    if (!json_is_array(nodes_json)) {
+        return -1;
+    }
+
+    for (int i = 0; i < arr->n_app; ++i) {
+        json_t *node_json = json_object();
+        if (NULL == node_json ||
+            0 != json_array_append_new(nodes_json, node_json)) {
+            return -1;
+        }
+        if (0 != neu_json_encode_app(node_json, &arr->apps[i])) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_decode_app_array_json(void *obj_json, neu_json_app_array_t *arr)
+{
+    json_t *nodes_json = obj_json;
+    if (!json_is_array(nodes_json)) {
+        return -1;
+    }
+
+    int             n_app = json_array_size(nodes_json);
+    neu_json_app_t *apps  = calloc(n_app, sizeof(*apps));
+    if (NULL == apps) {
+        return -1;
+    }
+
+    for (int i = 0; i < n_app; ++i) {
+        if (0 !=
+            neu_json_decode_app_json(json_array_get(nodes_json, i), &apps[i])) {
+            while (--i >= 0) {
+                neu_json_app_fini(&apps[i]);
+            }
+            free(apps);
+            return -1;
+        }
+    }
+
+    arr->n_app = n_app;
+    arr->apps  = apps;
+    return 0;
+}
+
+void neu_json_app_array_fini(neu_json_app_array_t *arr)
+{
+    for (int i = 0; i < arr->n_app; ++i) {
+        neu_json_app_fini(&arr->apps[i]);
+    }
+    free(arr->apps);
+}
+
+int neu_json_encode_apps_req(void *obj_json, void *param)
+{
+    json_t *root = obj_json;
+    if (!json_is_object(root)) {
+        return -1;
+    }
+
+    json_t *nodes_json = json_array();
+    if (NULL == nodes_json ||
+        0 != json_object_set_new(root, "nodes", nodes_json)) {
+        return -1;
+    }
+
+    return neu_json_encode_app_array(nodes_json, param);
+}
+
+int neu_json_decode_apps_req(char *buf, neu_json_apps_req_t **result)
+{
+    int                  ret = 0;
+    neu_json_apps_req_t *req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    json_t *nodes_json = json_object_get(json_obj, "nodes");
+    if (!json_is_array(nodes_json)) {
+        neu_json_decode_free(json_obj);
+        free(req);
+        return -1;
+    }
+
+    ret = neu_json_decode_app_array_json(nodes_json, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_apps_req_free(neu_json_apps_req_t *req)
+{
+    if (req) {
+        neu_json_app_array_fini(req);
+        free(req);
+    }
+}

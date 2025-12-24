@@ -44,6 +44,8 @@ typedef enum {
     GET_GLOBAL,
     PUT_GLOBAL,
     GET_DRIVERS,
+    GET_APPS,
+    PUT_APPS,
 } context_type_e;
 
 typedef enum {
@@ -79,14 +81,17 @@ typedef struct {
             UT_array *              groups;
             void *                  iter;
             neu_json_driver_array_t jdrivers; // get drivers
-            char *                  names;    //
-            neu_strset_t            filter;   //
+            neu_json_app_array_t    japps;    // get apps
+            char *                  names;
+            neu_strset_t            filter;
         };
         // put
         struct {
             neu_json_global_config_req_t *req;
+            neu_json_apps_req_t *         apps_req;
             UT_array *                    nodes;
             size_t                        idx;
+            size_t                        sub_idx;
         };
     };
 } context_t;
@@ -134,7 +139,8 @@ static context_t *context_new(nng_aio *aio, context_type_e t)
     ctx->type  = t;
     ctx->state = STATE_START;
 
-    if (PUT_GLOBAL != ctx->type && !(ctx->json = neu_json_encode_new())) {
+    if (PUT_GLOBAL != ctx->type && PUT_APPS != ctx->type &&
+        !(ctx->json = neu_json_encode_new())) {
         free(ctx);
         return NULL;
     }
@@ -164,6 +170,29 @@ static void context_free(context_t *ctx)
             utarray_free(ctx->nodes);
         }
         neu_json_decode_global_config_req_free(ctx->req);
+    } else if (GET_APPS == ctx->type) {
+        neu_json_encode_free(ctx->json);
+        if (ctx->apps) {
+            utarray_free(ctx->apps);
+        }
+        free(ctx->names);
+        neu_strset_free(&ctx->filter);
+        for (int i = 0; i < ctx->japps.n_app; ++i) {
+            neu_json_app_t *app = &ctx->japps.apps[i];
+            free(app->node.setting);
+            for (int j = 0; j < app->subscriptions.n_group; ++j) {
+                free(app->subscriptions.groups[j].driver);
+                free(app->subscriptions.groups[j].group);
+                free(app->subscriptions.groups[j].params);
+            }
+            free(app->subscriptions.groups);
+        }
+        free(ctx->japps.apps);
+    } else if (PUT_APPS == ctx->type) {
+        if (ctx->nodes) {
+            utarray_free(ctx->nodes);
+        }
+        neu_json_decode_apps_req_free(ctx->apps_req);
     } else {
         neu_json_encode_free(ctx->json);
         if (ctx->drivers) {
@@ -558,12 +587,206 @@ static void get_drivers_context_next(context_t *ctx, neu_reqresp_type_e type,
     }
 }
 
+static int get_apps_resp(context_t *ctx, neu_resp_get_node_t *resp);
+static int get_app_setting_resp(context_t *                  ctx,
+                                neu_resp_get_node_setting_t *setting);
+static int get_app_subscriptions_resp(context_t *                     ctx,
+                                      neu_resp_get_subscribe_group_t *groups);
+static int del_app_node(context_t *ctx, neu_json_app_t *app);
+static int add_app_node(context_t *ctx, neu_json_app_t *app);
+static int add_app_setting(context_t *ctx, neu_json_app_t *app);
+static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
+                                neu_json_app_group_t *grp);
+
+static inline bool is_default_app_node(const char *name, const char *plugin)
+{
+    return (0 == strcmp("DataStorage", name) &&
+            0 == strcmp("Datalayers", plugin)) ||
+        (0 == strcmp("DataProcessing", name) &&
+         0 == strcmp("eKuiper", plugin)) ||
+        (0 == strcmp("monitor", name) && 0 == strcmp("Monitor", plugin));
+}
+
+static void get_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
+                                  void *data)
+{
+    char *result = NULL;
+
+    switch (ctx->state) {
+    case STATE_START:
+        NEXT(ctx, get_nodes, NEU_NA_TYPE_APP);
+        ctx->state = STATE_GET_APP;
+        break;
+    case STATE_GET_APP:
+        NEXT(ctx, get_apps_resp, data);
+        ctx->iter  = NULL;
+        ctx->state = STATE_GET_APP_SETTING;
+        // fall through
+    case STATE_GET_APP_SETTING:
+        if (NULL != ctx->iter && NEU_RESP_ERROR != type) {
+            NEXT(ctx, get_app_setting_resp, data);
+        }
+        ctx->iter = utarray_next(ctx->apps, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_setting, ctx->iter);
+            break;
+        }
+        ctx->iter  = NULL;
+        ctx->state = STATE_GET_SUBSCRIPTION;
+        // fall through
+    case STATE_GET_SUBSCRIPTION:
+        if (NULL != ctx->iter && NEU_RESP_ERROR != type) {
+            NEXT(ctx, get_app_subscriptions_resp, data);
+        }
+        ctx->iter = utarray_next(ctx->apps, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_subscriptions, ctx->iter);
+            break;
+        }
+        if (0 != neu_json_encode_apps_req(ctx->json, &ctx->japps)) {
+            ctx->error = NEU_ERR_EINTERNAL;
+        }
+        ctx->state = STATE_END;
+        break;
+    default:
+        ctx->error = NEU_ERR_EINTERNAL;
+        ctx->state = STATE_END;
+        break;
+    }
+
+    if (STATE_END == ctx->state) {
+        if (ctx->error) {
+            NEU_JSON_RESPONSE_ERROR(ctx->error, {
+                neu_http_response(ctx->aio, ctx->error, result_error);
+            });
+        } else {
+            neu_json_encode(ctx->json, &result);
+            neu_http_response_file(ctx->aio, result, strlen(result),
+                                   "attachment; filename=\"apps.json\"");
+            free(result);
+        }
+        context_free(ctx);
+    }
+}
+
+static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
+                                  void *data)
+{
+    (void) type;
+
+    switch (ctx->state) {
+    case STATE_START:
+        ctx->idx     = 0;
+        ctx->sub_idx = 0;
+        ctx->state   = STATE_DEL_APP;
+        // fall through
+
+    case STATE_DEL_APP: {
+        neu_resp_error_t *   err  = data;
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (ctx->idx > 0 && 0 != err->error &&
+            NEU_ERR_NODE_NOT_EXIST != err->error) {
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
+            neu_json_app_t *app = &apps->apps[ctx->idx];
+            if (!is_default_app_node(app->node.name, app->node.plugin)) {
+                NEXT(ctx, del_app_node, app);
+                ++ctx->idx;
+                goto done;
+            }
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_NODE;
+    }
+        // fall through
+
+    case STATE_ADD_NODE: {
+        neu_resp_error_t *   err  = data;
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
+            neu_json_app_t *app = &apps->apps[ctx->idx];
+            if (is_default_app_node(app->node.name, app->node.plugin)) {
+                if (NULL == app->node.setting) {
+                    continue;
+                }
+                NEXT(ctx, add_app_setting, app);
+            } else {
+                NEXT(ctx, add_app_node, app);
+            }
+            ++ctx->idx;
+            goto done;
+        }
+
+        ctx->idx     = 0;
+        ctx->sub_idx = 0;
+        ctx->state   = STATE_ADD_SUBSCRIPTION;
+    }
+        // fall through
+
+    case STATE_ADD_SUBSCRIPTION: {
+        neu_resp_error_t *   err  = data;
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (ctx->sub_idx > 0 && 0 != err->error) {
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        while (ctx->idx < (size_t) apps->n_app) {
+            neu_json_app_t *app = &apps->apps[ctx->idx];
+            if (ctx->sub_idx < (size_t) app->subscriptions.n_group) {
+                NEXT(ctx, add_app_subscription, app,
+                     &app->subscriptions.groups[ctx->sub_idx]);
+                ++ctx->sub_idx;
+                goto done;
+            }
+            ++ctx->idx;
+            ctx->sub_idx = 0;
+        }
+
+        ctx->state = STATE_END;
+        break;
+    }
+
+    default:
+        ctx->error = NEU_ERR_EINTERNAL;
+        ctx->state = STATE_END;
+        break;
+    }
+
+done:
+    if (STATE_END == ctx->state) {
+        NEU_JSON_RESPONSE_ERROR(ctx->error, {
+            neu_http_response(ctx->aio, ctx->error, result_error);
+        });
+        context_free(ctx);
+    }
+}
+
 static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
 {
     if (GET_GLOBAL == ctx->type) {
         get_global_context_next(ctx, type, data);
     } else if (PUT_GLOBAL == ctx->type) {
         put_global_context_next(ctx, type, data);
+    } else if (GET_APPS == ctx->type) {
+        get_apps_context_next(ctx, type, data);
+    } else if (PUT_APPS == ctx->type) {
+        put_apps_context_next(ctx, type, data);
     } else {
         get_drivers_context_next(ctx, type, data);
     }
@@ -1326,6 +1549,302 @@ void handle_get_drivers(nng_aio *aio)
 error:
     NEU_JSON_RESPONSE_ERROR(rv, { neu_http_response(aio, rv, result_error); });
     context_free(ctx);
+}
+
+static int get_apps_resp(context_t *ctx, neu_resp_get_node_t *resp)
+{
+    int                  rv    = 0;
+    neu_json_app_array_t apps  = { 0 };
+    UT_array *           nodes = resp->nodes;
+
+    if (ctx->filter) {
+        utarray_new(nodes, &resp->nodes->icd);
+        utarray_foreach(resp->nodes, neu_resp_node_info_t *, info)
+        {
+            if (neu_strset_test(&ctx->filter, info->node)) {
+                utarray_push_back(nodes, info);
+            }
+        }
+        utarray_free(resp->nodes);
+    }
+
+    apps.n_app = utarray_len(nodes);
+    if (apps.n_app > 0) {
+        apps.apps = calloc(apps.n_app, sizeof(apps.apps[0]));
+        if (NULL == apps.apps) {
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+    }
+
+    for (unsigned i = 0; i < utarray_len(nodes); ++i) {
+        neu_resp_node_info_t *info = utarray_eltptr(nodes, i);
+        apps.apps[i].node.name     = info->node;
+        apps.apps[i].node.plugin   = info->plugin;
+    }
+
+end:
+    ctx->apps  = nodes;
+    ctx->japps = apps;
+
+    return rv;
+}
+
+static int get_app_setting_resp(context_t *                  ctx,
+                                neu_resp_get_node_setting_t *setting)
+{
+    int i = utarray_eltidx(ctx->apps, ctx->iter);
+    if (i >= ctx->japps.n_app ||
+        0 != strcmp(ctx->japps.apps[i].node.name, setting->node)) {
+        if (setting) {
+            free(setting->setting);
+        }
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    ctx->japps.apps[i].node.setting = setting->setting;
+    return 0;
+}
+
+static int get_app_subscriptions_resp(context_t *                     ctx,
+                                      neu_resp_get_subscribe_group_t *groups)
+{
+    int rv = 0;
+    int i  = utarray_eltidx(ctx->apps, ctx->iter);
+
+    if (i >= ctx->japps.n_app) {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+        goto end;
+    }
+
+    if (NULL == groups || NULL == groups->groups ||
+        0 == utarray_len(groups->groups)) {
+        ctx->japps.apps[i].subscriptions.n_group = 0;
+        ctx->japps.apps[i].subscriptions.groups  = NULL;
+        goto end;
+    }
+
+    int                   n_grp = utarray_len(groups->groups);
+    neu_json_app_group_t *grps  = calloc(n_grp, sizeof(*grps));
+    if (NULL == grps) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    utarray_foreach(groups->groups, neu_resp_subscribe_info_t *, group)
+    {
+        int index          = utarray_eltidx(groups->groups, group);
+        grps[index].driver = strdup(group->driver);
+        grps[index].group  = strdup(group->group);
+        grps[index].params = group->params ? strdup(group->params) : NULL;
+
+        if (NULL == grps[index].driver || NULL == grps[index].group) {
+            for (int j = 0; j <= index; ++j) {
+                free(grps[j].driver);
+                free(grps[j].group);
+                free(grps[j].params);
+            }
+            free(grps);
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+    }
+
+    ctx->japps.apps[i].subscriptions.n_group = n_grp;
+    ctx->japps.apps[i].subscriptions.groups  = grps;
+
+end:
+    if (groups && groups->groups) {
+        utarray_free(groups->groups);
+    }
+    return rv;
+}
+
+static int del_app_node(context_t *ctx, neu_json_app_t *app)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type            = NEU_REQ_DEL_NODE,
+        .ctx             = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_del_node_t cmd = { 0 };
+    strcpy(cmd.node, app->node.name);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int add_app_node(context_t *ctx, neu_json_app_t *app)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type            = NEU_REQ_ADD_NODE,
+        .ctx             = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_add_node_t cmd = { 0 };
+    strcpy(cmd.node, app->node.name);
+    strcpy(cmd.plugin, app->node.plugin);
+    cmd.setting       = app->node.setting;
+    app->node.setting = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int add_app_setting(context_t *ctx, neu_json_app_t *app)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_NODE_SETTING,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_node_setting_t cmd = { 0 };
+    strcpy(cmd.node, app->node.name);
+    cmd.setting       = app->node.setting;
+    app->node.setting = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
+                                neu_json_app_group_t *grp)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_subscribe_t cmd = { 0 };
+    strcpy(cmd.app, app->node.name);
+    strcpy(cmd.driver, grp->driver);
+    strcpy(cmd.group, grp->group);
+    cmd.params  = grp->params;
+    grp->params = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_get_apps(nng_aio *aio)
+{
+    int rv = 0;
+
+    NEU_VALIDATE_JWT(aio);
+
+    context_t *ctx = context_new(aio, GET_APPS);
+    if (NULL == ctx) {
+        rv = NEU_ERR_EINTERNAL;
+        goto error;
+    }
+
+    size_t      len   = 0;
+    const char *param = neu_http_get_param(aio, "name", &len);
+    if (NULL != param) {
+        char *names = NULL;
+
+        len += 1;
+        if (NULL == (names = calloc(len, 1))) {
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+        ctx->names = names;
+
+        if (neu_url_decode(param, len, names, len) < 0) {
+            rv = NEU_ERR_PARAM_IS_WRONG;
+            goto error;
+        }
+
+        for (char *next = NULL; names; names = next) {
+            if (NULL != (next = strchr(names, ','))) {
+                *next++ = '\0';
+            }
+            if (neu_strset_add(&ctx->filter, names) < 0) {
+                rv = NEU_ERR_EINTERNAL;
+                goto error;
+            }
+        }
+    }
+
+    (void) rv;
+    nng_aio_set_input(aio, 3, ctx);
+    context_next(ctx, NEU_REQ_GET_NODE, NULL);
+    return;
+
+error:
+    NEU_JSON_RESPONSE_ERROR(rv, { neu_http_response(aio, rv, result_error); });
+    context_free(ctx);
+}
+
+void handle_put_apps(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_apps_req_t, neu_json_decode_apps_req, {
+            int ret = 0;
+            for (int i = 0; i < req->n_app && 0 == ret; ++i) {
+                if (strlen(req->apps[i].node.name) >= NEU_NODE_NAME_LEN) {
+                    ret = NEU_ERR_NODE_NAME_TOO_LONG;
+                    break;
+                }
+                if (strlen(req->apps[i].node.plugin) >= NEU_PLUGIN_NAME_LEN) {
+                    ret = NEU_ERR_PLUGIN_NAME_TOO_LONG;
+                    break;
+                }
+                for (int j = 0; j < req->apps[i].subscriptions.n_group; ++j) {
+                    neu_json_app_group_t *grp =
+                        &req->apps[i].subscriptions.groups[j];
+                    if (strlen(grp->driver) >= NEU_NODE_NAME_LEN) {
+                        ret = NEU_ERR_NODE_NAME_TOO_LONG;
+                        break;
+                    }
+                    if (strlen(grp->group) >= NEU_GROUP_NAME_LEN) {
+                        ret = NEU_ERR_GROUP_NAME_TOO_LONG;
+                        break;
+                    }
+                }
+            }
+
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            } else {
+                context_t *ctx = context_new(aio, PUT_APPS);
+                if (NULL == ctx) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                        neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+                    });
+                } else {
+                    nng_aio_set_input(aio, 3, ctx);
+                    ctx->apps_req = req;
+                    req           = NULL;
+                    context_next(ctx, NEU_REQ_ADD_NODE, NULL);
+                }
+            }
+        });
 }
 
 void handle_global_config_resp(nng_aio *aio, neu_reqresp_type_e type,
