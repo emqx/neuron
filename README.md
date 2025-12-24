@@ -10,19 +10,6 @@
 
 Neuron is an Industrial IoT (IIoT) connectivity server that bridges industrial devices and modern data platforms. It supports dozens of industrial protocols and converts them into MQTT for seamless integration between IIoT platforms and shop-floor devices.
 
-## About NeuronEX
-
-[NeuronEX](https://www.emqx.com/en/products/emqx-neuron) is the commercial distribution of Neuron, offering extended capabilities and professional support. Compared to the open-source Neuron:
-
-- **Extended protocol support**: Additional industrial protocols (e.g., OPC UA, Siemens S7, Ethernet/IP, etc.)
-- **Advanced dashboard**: Full-featured web UI with enhanced visualization and management capabilities
-- **Enterprise plugins**: More southbound device adapters, northbound application connectors, and rule engines
-- **Cloud integration**: Direct connectors for major cloud platforms (AWS, Azure, Google Cloud, etc.)
-- **Data security**: Enhanced encryption, auditing, and compliance features
-- **Professional support**: 24/7 technical support and regular updates
-
-For more details, visit the [NeuronEX documentation](https://docs.emqx.com/en/neuronex/latest/).
-
 ![neuron-overview](docs/pictures/neuron-final.png)
 
 Key features:
@@ -40,7 +27,17 @@ Key features:
 - Works well with [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), and [eKuiper](https://ekuiper.org/).
 - Core framework and Modbus/MQTT/eKuiper plugins are available under LGPLv3.
 
-Note: The open-source edition provides a subset of plugins. For more plugins and a full-featured Dashboard, see [NeuronEX](https://www.emqx.com/en/products/neuronex).
+## About NeuronEX
+
+[NeuronEX](https://www.emqx.com/en/products/emqx-neuron) is the commercial distribution of Neuron, offering extended capabilities and professional support. Compared to the open-source Neuron:
+
+- **Extended protocol support**: Additional industrial protocols (e.g., OPC UA, Siemens S7, Ethernet/IP, etc.)
+- **Advanced dashboard**: Full-featured web UI with enhanced visualization and management capabilities
+- **Enterprise plugins**: More southbound device adapters, northbound application connectors, and rule engines
+- **Cloud integration**: Direct connectors for major cloud platforms (AWS, Azure, Google Cloud, etc.)
+- **Data security**: Enhanced encryption, auditing, and compliance features
+
+For more details, visit the [NeuronEX documentation](https://docs.emqx.com/en/neuronex/latest/).
 
 ## Table of Contents
 
