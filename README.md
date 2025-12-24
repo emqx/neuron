@@ -8,33 +8,57 @@
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
 [![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
 
-English | [简体中文](https://github.com/emqx/neuron/blob/main/README-CN.md)
+Neuron is an Industrial IoT (IIoT) connectivity server that bridges industrial devices and modern data platforms. It supports dozens of industrial protocols and converts them into MQTT for seamless integration between IIoT platforms and shop-floor devices.
 
+## About NeuronEX
 
-Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and AI/ML technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol and realize the interconnection between IIoT platforms and various industrial devices.
+[NeuronEX](https://www.emqx.com/en/products/emqx-neuron) is the commercial distribution of Neuron, offering extended capabilities and professional support. Compared to the open-source Neuron:
+
+- **Extended protocol support**: Additional industrial protocols (e.g., OPC UA, Siemens S7, Ethernet/IP, etc.)
+- **Advanced dashboard**: Full-featured web UI with enhanced visualization and management capabilities
+- **Enterprise plugins**: More southbound device adapters, northbound application connectors, and rule engines
+- **Cloud integration**: Direct connectors for major cloud platforms (AWS, Azure, Google Cloud, etc.)
+- **Data security**: Enhanced encryption, auditing, and compliance features
+- **Professional support**: 24/7 technical support and regular updates
+
+For more details, visit the [NeuronEX documentation](https://docs.emqx.com/en/neuronex/latest/).
 
 ![neuron-overview](docs/pictures/neuron-final.png)
 
-The following are some important features of Neuron:
+Key features:
 
-- Edge native application with real-time capability to leverage the low latency network of edge side.
-- Loosely-coupled modularity architecture design for extending more functional services by pluggable modules.
-- Support hot plugins that can update device and application modules during runtime.
-- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and more.
-- Support simultaneous connection of a large number of industrial devices with different protocols.
-- Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
-- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via SparkplugB solution.
-- Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
-- Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](docs/api/english/http.md) and [MQTT API](docs/api/english/mqtt.md) services.
-- Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
-- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3.
+- Edge-native application with real-time capability and low latency at the edge.
+- Loosely coupled modular architecture with pluggable modules for easy extension.
+- Hot-pluggable plugins: update device and application modules at runtime.
+- Broad protocol support: Modbus, OPC UA, Ethernet/IP, IEC 60870-5-104, BACnet, and more.
+- High concurrency: connect many devices with heterogeneous protocols simultaneously.
+- Built-in stream processing via [eKuiper](https://www.lfedge.org/projects/ekuiper) for rules and AI/ML analytics.
+- Northbound access for MES/ERP, SCADA, historians, and analytics via Sparkplug B.
+- Tiny footprint (<10 MB) and low CPU usage; runs on ARM, x86, and RISC-V.
+- Flexible deployments: native binaries or containers.
+- Manage devices and tags via [HTTP API](docs/api/english/http.md) and [MQTT API](docs/api/english/mqtt.md).
+- Works well with [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), and [eKuiper](https://ekuiper.org/).
+- Core framework and Modbus/MQTT/eKuiper plugins are available under LGPLv3.
 
-Neuron only provides limited plugins in the open source version. To use more plugins and a more complete Dashboard, please use [NeuronEX](https://www.emqx.com/en/products/neuronex).
+Note: The open-source edition provides a subset of plugins. For more plugins and a full-featured Dashboard, see [NeuronEX](https://www.emqx.com/en/products/neuronex).
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Installation](#installation)
+	- [Binaries](#binaries)
+	- [Build from Source](#build-from-source)
+- [Configuration](#configuration)
+- [Documentation](#documentation)
+- [Dashboard](#dashboard)
+- [Community](#community)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
 
 ## Quick Start
 
-Default username is `admin` and password is `0000`.
+Default credentials: username `admin`, password `0000`.
 
 ### Download
 
@@ -46,11 +70,17 @@ $ cd neuron
 $ ./neuron --log
 ```
 
-Open a web browser and navigate to `http://localhost:7000` to access the Neuron web interface.
+Open a browser and navigate to `http://localhost:7000` to access the Neuron web interface.
 
-### Build and Run
+## Installation
 
-1. [Install Dependencies](https://github.com/emqx/neuron/install-dependencies.md)
+### Binaries
+
+Download the latest release from [Releases](https://github.com/emqx/neuron/releases), then extract and run as shown above.
+
+### Build from Source
+
+1. [Install Dependencies](./Install-dependencies.md)
 
 2. Build Neuron
 ```bash
@@ -72,28 +102,40 @@ $ unzip neuron-dashboard.zip
 $ ./neuron --log
 ```
 
-5. Open a web browser and navigate to `http://localhost:7000` to access the Neuron web interface.
+5. Open a browser and navigate to `http://localhost:7000` to access the Neuron web interface.
 
-### Docker
+## Configuration
 
-```bash
-$ docker run -d --name neuron -p 7000:7000 emqx/neuron:2.6.9
-```
+- Web UI: `http://localhost:7000` (default credentials above)
+- Main config: `neuron.conf`
+- Default plugins: `default_plugins.json`
+- Logging: `zlog.conf` / `sdk-zlog.conf`
 
-Currently, the latest image maintained for Neuron is `emqx/neuron:2.6.9`, and images for versions `2.7.x` and later are no longer provided.
+See the quick start for a hands-on walkthrough.
 
-### [Modbus TCP Data Collection and MQTT Transmission](./docs/quick_start/quick_start.md)
+## Documentation
+
+- Quick start: [Modbus TCP collection and MQTT publishing](./docs/quick_start/quick_start.md)
+- APIs: [HTTP](docs/api/english/http.md), [MQTT](docs/api/english/mqtt.md)
 
 ## Dashboard
 
 The open-source version of the [Dashboard](https://github.com/emqx/neuron-dashboard) is currently at version 2.6.3, which has been suspended for development and maintenance. This version is also the one integrated by default with Neuron. For a more complete and professional Dashboard, please use [NeuronEX](https://www.emqx.com/en/products/neuronex).
 
-## Get Involved
+## Community
 
 - Follow [@EMQTech on Twitter](https://twitter.com/EMQTech).
 - If you have a specific question, check out our [discussion forums](https://github.com/emqx/neuron/discussions).
 - For general discussions, join us on the [official Discord](https://discord.gg/xYGf3fQnES) team.
 - Keep updated on [EMQ YouTube](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q) by subscribing.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues and pull requests to improve Neuron. If you plan a larger change, please start a discussion first to align on direction.
+
+## Security
+
+If you believe you have found a security vulnerability, please avoid creating a public issue. Instead, contact the maintainers privately (e.g., via GitHub Security Advisories) so we can investigate and fix it responsibly.
 
 
 ## License
