@@ -62,6 +62,8 @@ typedef enum {
     STATE_ADD_NODE,
     STATE_ADD_GROUP,
     STATE_ADD_TAG,
+    STATE_GET_APP_SUBS,
+    STATE_UNSUB_APP,
     STATE_ADD_SUBSCRIPTION,
     STATE_ADD_SETTING,
     STATE_END,
@@ -92,6 +94,8 @@ typedef struct {
             UT_array *                    nodes;
             size_t                        idx;
             size_t                        sub_idx;
+            size_t                        unsub_idx;
+            UT_array *                    default_app_subs;
         };
     };
 } context_t;
@@ -191,6 +195,9 @@ static void context_free(context_t *ctx)
     } else if (PUT_APPS == ctx->type) {
         if (ctx->nodes) {
             utarray_free(ctx->nodes);
+        }
+        if (ctx->default_app_subs) {
+            utarray_free(ctx->default_app_subs);
         }
         neu_json_decode_apps_req_free(ctx->apps_req);
     } else {
@@ -597,6 +604,10 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app);
 static int add_app_setting(context_t *ctx, neu_json_app_t *app);
 static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
                                 neu_json_app_group_t *grp);
+static int get_default_app_subs(context_t *ctx, neu_json_app_t *app);
+static int get_default_app_subs_resp(context_t *                     ctx,
+                                     neu_resp_get_subscribe_group_t *groups);
+static int unsub_app(context_t *ctx, neu_resp_subscribe_info_t *info);
 
 static inline bool is_default_app_node(const char *name, const char *plugin)
 {
@@ -676,9 +687,10 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
 
     switch (ctx->state) {
     case STATE_START:
-        ctx->idx     = 0;
-        ctx->sub_idx = 0;
-        ctx->state   = STATE_DEL_APP;
+        ctx->idx       = 0;
+        ctx->sub_idx   = 0;
+        ctx->unsub_idx = 0;
+        ctx->state     = STATE_DEL_APP;
         // fall through
 
     case STATE_DEL_APP: {
@@ -730,10 +742,71 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
             goto done;
         }
 
-        ctx->idx     = 0;
-        ctx->sub_idx = 0;
-        ctx->state   = STATE_ADD_SUBSCRIPTION;
+        // After adding nodes, get subscriptions for default apps to unsub
+        ctx->idx       = 0;
+        ctx->unsub_idx = 0;
+        ctx->state     = STATE_GET_APP_SUBS;
     }
+        // fall through
+
+    case STATE_GET_APP_SUBS: {
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (NEU_RESP_GET_SUBSCRIBE_GROUP == type && data) {
+            NEXT(ctx, get_default_app_subs_resp, data);
+            if (ctx->default_app_subs &&
+                utarray_len(ctx->default_app_subs) > 0) {
+                ctx->unsub_idx = 0;
+                ctx->state     = STATE_UNSUB_APP;
+                // fall through to STATE_UNSUB_APP
+            }
+        }
+
+        if (STATE_UNSUB_APP != ctx->state) {
+            // Find next default app to get subscriptions
+            for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
+                neu_json_app_t *app = &apps->apps[ctx->idx];
+                if (is_default_app_node(app->node.name, app->node.plugin) &&
+                    app->subscriptions.n_group > 0) {
+                    NEXT(ctx, get_default_app_subs, app);
+                    ++ctx->idx;
+                    goto done;
+                }
+            }
+
+            // No more default apps, proceed to add subscriptions
+            ctx->idx     = 0;
+            ctx->sub_idx = 0;
+            ctx->state   = STATE_ADD_SUBSCRIPTION;
+        }
+    }
+        if (STATE_UNSUB_APP != ctx->state &&
+            STATE_ADD_SUBSCRIPTION != ctx->state) {
+            break;
+        }
+        if (STATE_UNSUB_APP == ctx->state) {
+            // fall through
+        case STATE_UNSUB_APP: {
+            if (ctx->default_app_subs) {
+                size_t len = utarray_len(ctx->default_app_subs);
+                if (ctx->unsub_idx < len) {
+                    neu_resp_subscribe_info_t *info =
+                        (neu_resp_subscribe_info_t *) utarray_eltptr(
+                            ctx->default_app_subs, ctx->unsub_idx);
+                    NEXT(ctx, unsub_app, info);
+                    ++ctx->unsub_idx;
+                    goto done;
+                }
+
+                utarray_free(ctx->default_app_subs);
+                ctx->default_app_subs = NULL;
+            }
+
+            ctx->state = STATE_GET_APP_SUBS;
+            put_apps_context_next(ctx, type, data);
+            return;
+        }
+        }
         // fall through
 
     case STATE_ADD_SUBSCRIPTION: {
@@ -1742,6 +1815,84 @@ static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
     strcpy(cmd.group, grp->group);
     cmd.params  = grp->params;
     grp->params = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int get_default_app_subs(context_t *ctx, neu_json_app_t *app)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_SUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_get_subscribe_group_t cmd = { 0 };
+    strcpy(cmd.app, app->node.name);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int get_default_app_subs_resp(context_t *                     ctx,
+                                     neu_resp_get_subscribe_group_t *resp)
+{
+    if (NULL == resp || NULL == resp->groups) {
+        return 0;
+    }
+
+    if (ctx->default_app_subs) {
+        utarray_free(ctx->default_app_subs);
+        ctx->default_app_subs = NULL;
+    }
+
+    size_t len = utarray_len(resp->groups);
+    if (len > 0) {
+        UT_icd icd = { sizeof(neu_resp_subscribe_info_t), NULL, NULL, NULL };
+        utarray_new(ctx->default_app_subs, &icd);
+
+        utarray_foreach(resp->groups, neu_resp_subscribe_info_t *, info)
+        {
+            neu_resp_subscribe_info_t copy = { 0 };
+            strcpy(copy.app, info->app);
+            strcpy(copy.driver, info->driver);
+            strcpy(copy.group, info->group);
+            utarray_push_back(ctx->default_app_subs, &copy);
+        }
+    }
+
+    utarray_foreach(resp->groups, neu_resp_subscribe_info_t *, info)
+    {
+        neu_resp_subscribe_info_fini(info);
+    }
+    utarray_free(resp->groups);
+
+    return 0;
+}
+
+static int unsub_app(context_t *ctx, neu_resp_subscribe_info_t *info)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_UNSUBSCRIBE_GROUP,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_unsubscribe_t cmd = { 0 };
+    strcpy(cmd.app, info->app);
+    strcpy(cmd.driver, info->driver);
+    strcpy(cmd.group, info->group);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
