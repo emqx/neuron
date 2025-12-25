@@ -1846,6 +1846,10 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
     if (NULL != new_name && 0 != strcmp(name, new_name)) {
         char *new_name_cp1 = strdup(new_name);
         char *new_name_cp2 = strdup(new_name);
+        if (find->grp.group_free != NULL) {
+            find->grp.group_free(&find->grp);
+            find->grp.group_free = NULL;
+        }
         if (new_name_cp1 && new_name_cp2 &&
             0 == neu_group_set_name(find->group, new_name)) {
             HASH_DEL(driver->groups, find);
