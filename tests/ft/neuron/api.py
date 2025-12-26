@@ -315,7 +315,7 @@ def get_apps(names=None, jwt=config.default_jwt):
 
 
 def put_apps(apps, jwt=config.default_jwt):
-    return requests.put(url=config.BASE_URL + '/api/v2/global/apps', headers={"Authorization": jwt}, json={"nodes": apps})
+    return requests.put(url=config.BASE_URL + '/api/v2/global/apps', headers={"Authorization": jwt}, json={"apps": apps})
 
 
 def get_status():

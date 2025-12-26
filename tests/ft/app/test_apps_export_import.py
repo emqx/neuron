@@ -31,10 +31,10 @@ class TestAppsExportImport:
             assert 'attachment' in response.headers.get('Content-Disposition', '')
 
             data = response.json()
-            assert 'nodes' in data
+            assert 'apps' in data
 
             app_data = None
-            for node in data['nodes']:
+            for node in data['apps']:
                 if node['name'] == app:
                     app_data = node
                     break
@@ -127,8 +127,8 @@ class TestAppsExportImport:
             response = api.get_apps(names=[app])
             assert 200 == response.status_code
             data = response.json()
-            assert len(data['nodes']) == 1
-            assert 'neuron_overwrite_test' in str(data['nodes'][0].get('params', ''))
+            assert len(data['apps']) == 1
+            assert 'neuron_overwrite_test' in str(data['apps'][0].get('params', ''))
 
         finally:
             api.del_node(app)
@@ -190,16 +190,16 @@ class TestAppsExportImport:
             assert 200 == response.status_code
             exported_data = response.json()
 
-            assert 'nodes' in exported_data
-            assert len(exported_data['nodes']) == 1
-            app_config = exported_data['nodes'][0]
+            assert 'apps' in exported_data
+            assert len(exported_data['apps']) == 1
+            app_config = exported_data['apps'][0]
             assert app_config['name'] == app
 
             api.del_node(app)
             response = api.get_nodes_state(app)
             assert response.json()['error'] == error.NEU_ERR_NODE_NOT_EXIST
 
-            response = api.put_apps(exported_data['nodes'])
+            response = api.put_apps(exported_data['apps'])
             assert 200 == response.status_code
             assert error.NEU_ERR_SUCCESS == response.json()['error']
 
