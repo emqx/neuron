@@ -799,13 +799,13 @@ int neu_json_encode_apps_req(void *obj_json, void *param)
         return -1;
     }
 
-    json_t *nodes_json = json_array();
-    if (NULL == nodes_json ||
-        0 != json_object_set_new(root, "nodes", nodes_json)) {
+    json_t *apps_json = json_array();
+    if (NULL == apps_json ||
+        0 != json_object_set_new(root, "apps", apps_json)) {
         return -1;
     }
 
-    return neu_json_encode_app_array(nodes_json, param);
+    return neu_json_encode_app_array(apps_json, param);
 }
 
 int neu_json_decode_apps_req(char *buf, neu_json_apps_req_t **result)
@@ -822,14 +822,14 @@ int neu_json_decode_apps_req(char *buf, neu_json_apps_req_t **result)
         return -1;
     }
 
-    json_t *nodes_json = json_object_get(json_obj, "nodes");
-    if (!json_is_array(nodes_json)) {
+    json_t *apps_json = json_object_get(json_obj, "apps");
+    if (!json_is_array(apps_json)) {
         neu_json_decode_free(json_obj);
         free(req);
         return -1;
     }
 
-    ret = neu_json_decode_app_array_json(nodes_json, req);
+    ret = neu_json_decode_app_array_json(apps_json, req);
     if (0 == ret) {
         *result = req;
     } else {
