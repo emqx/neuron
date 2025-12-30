@@ -24,7 +24,7 @@
 
 #define NEU_VERSION_MAJOR 2
 #define NEU_VERSION_MINOR 11
-#define NEU_VERSION_FIX 4
+#define NEU_VERSION_FIX 5
 
 #define NEU_GET_VERSION_MAJOR(V) ((0xffff0000 & V) >> 16)
 #define NEU_GET_VERSION_MINOR(V) ((0x0000ff00 & V) >> 8)
