@@ -1,7 +1,7 @@
 set(CMAKE_SYSTEM_NAME Linux)
 set(COMPILER_PREFIX arm-linux-gnueabi)
 set(CMAKE_SYSTEM_PROCESSOR armv5tejl)
-set(LIBRARY_DIR /home/neuron/main/libs)
+set(LIBRARY_DIR /home/neuron/v2.14/libs)
 
 set(CMAKE_C_COMPILER ${COMPILER_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${COMPILER_PREFIX}-g++)
