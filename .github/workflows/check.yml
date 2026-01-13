@@ -27,7 +27,7 @@ jobs:
 
   cppcheck:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.14
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.14
 
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.14
     needs: [build]
 
     steps:
@@ -103,7 +103,7 @@ jobs:
 
   pft:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.14
     needs: [build]
     strategy:
       matrix:
