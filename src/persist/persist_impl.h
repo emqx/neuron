@@ -73,6 +73,8 @@ struct neu_persister_vtbl_s {
      */
     int (*update_node)(neu_persister_t *self, const char *node_name,
                        const char *new_name);
+    int (*update_node_tags)(neu_persister_t *self, const char *node_name,
+                            const char *tags);
 
     /**
      * Update node state.

@@ -38,7 +38,8 @@ void manager_strorage_plugin(neu_manager_t *manager)
     return;
 }
 
-void manager_storage_add_node(neu_manager_t *manager, const char *node)
+void manager_storage_add_node(neu_manager_t *manager, const char *node,
+                              const char *tags)
 {
     int                     rv        = 0;
     neu_persist_node_info_t node_info = {};
@@ -48,6 +49,7 @@ void manager_storage_add_node(neu_manager_t *manager, const char *node)
         nlog_error("unable to get adapter:%s info", node);
         return;
     }
+    node_info.tags = tags ? strdup(tags) : NULL;
 
     rv = neu_persister_store_node(&node_info);
     if (0 != rv) {
@@ -62,6 +64,13 @@ void manager_storage_update_node(neu_manager_t *manager, const char *node,
 {
     (void) manager;
     neu_persister_update_node(node, new_name);
+}
+
+void manager_storage_update_node_tags(neu_manager_t *manager, const char *node,
+                                      const char *new_tags)
+{
+    (void) manager;
+    neu_persister_update_node_tags(node, new_tags);
 }
 
 void manager_storage_del_node(neu_manager_t *manager, const char *node)
@@ -146,7 +155,7 @@ int manager_load_node(neu_manager_t *manager)
     utarray_foreach(node_infos, neu_persist_node_info_t *, node_info)
     {
         rv                    = neu_manager_add_node(manager, node_info->name,
-                                  node_info->plugin_name, NULL,
+                                  node_info->plugin_name, NULL, node_info->tags,
                                   node_info->state, true);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         nlog_notice("load adapter %s type:%d, name:%s plugin:%s state:%d",

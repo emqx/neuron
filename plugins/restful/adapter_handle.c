@@ -37,6 +37,23 @@
 #include "utils/utextend.h"
 #include "utils/uthash.h"
 
+static int tags_length(const char *tags)
+{
+    int   length = 0;
+    char *tag    = NULL;
+    char *tmp    = strdup(tags);
+    char *save   = NULL;
+
+    tag = strtok_r(tmp, ",", &save);
+    while (tag != NULL) {
+        length++;
+        tag = strtok_r(NULL, ",", &save);
+    }
+
+    free(tmp);
+    return length;
+}
+
 void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -45,6 +62,10 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 CHECK_NODE_NAME_LENGTH_ERR;
+            } else if (req->tags != NULL && tags_length(req->tags) > 5) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_TOO_MANY, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
             } else if (strcmp(req->name, "monitor") == 0 ||
                        strcmp(req->name, "DataStorage") == 0) {
                 CHECK_NODE_SINGLE_ERR;
@@ -59,7 +80,9 @@ void handle_add_adapter(nng_aio *aio)
                 strcpy(cmd.node, req->name);
                 strcpy(cmd.plugin, req->plugin);
                 cmd.setting  = req->setting;
+                cmd.tags     = req->tags;
                 req->setting = NULL; // moved
+                req->tags    = NULL; // moved
                 ret          = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     neu_req_add_node_fini(&cmd);
@@ -236,6 +259,7 @@ void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
 
         nodes_res.nodes[index].name   = info->node;
         nodes_res.nodes[index].plugin = info->plugin;
+        nodes_res.nodes[index].tags   = info->tags;
         nodes_res.nodes[index].support_import_tags =
             neu_plugin_support_import_tags_simple(info->plugin);
     }
@@ -501,6 +525,11 @@ static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
             ret = NEU_ERR_NODE_NAME_TOO_LONG;
             goto check_end;
         }
+        if (strlen(driver->node.tags) >= NEU_NODE_TAGS_LEN) {
+            ret = NEU_ERR_NODE_TAGS_TOO_LONG;
+            goto check_end;
+        }
+
         if (strlen(driver->node.plugin) >= NEU_PLUGIN_NAME_LEN) {
             ret = NEU_ERR_PLUGIN_NAME_TOO_LONG;
             goto check_end;
@@ -592,9 +621,11 @@ check_end:
         cmd.drivers[i].plugin     = driver->node.plugin;
         cmd.drivers[i].setting    = driver->node.setting;
         cmd.drivers[i].n_group    = driver->gtags.len;
+        cmd.drivers[i].tags       = driver->node.tags;
         driver->node.name         = NULL; // moved
         driver->node.plugin       = NULL; // moved
         driver->node.setting      = NULL; // moved
+        driver->node.tags         = NULL; // moved
         cmd.n_driver += 1;
 
         ret = json_to_gdatatags(&driver->gtags, &cmd.drivers[i].groups);
@@ -620,6 +651,37 @@ void handle_put_drivers(nng_aio *aio)
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
+void handle_put_node_tag(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_node_tag_req_t,
+        neu_json_decode_update_node_tag_req, {
+            int                       ret    = 0;
+            neu_reqresp_head_t        header = { 0 };
+            neu_req_update_node_tag_t cmd    = { 0 };
+
+            if (req->tags != NULL && tags_length(req->tags) > 5) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_TAGS_TOO_MANY, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_UPDATE_NODE_TAG;
+            strcpy(cmd.node, req->name);
+            strcpy(cmd.tags, req->tags);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
         })
 }

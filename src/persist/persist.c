@@ -346,6 +346,11 @@ int neu_persister_update_node(const char *node_name, const char *new_name)
     return g_impl->vtbl->update_node(g_impl, node_name, new_name);
 }
 
+int neu_persister_update_node_tags(const char *node_name, const char *tags)
+{
+    return g_impl->vtbl->update_node_tags(g_impl, node_name, tags);
+}
+
 int neu_persister_update_node_state(const char *node_name, int state)
 {
     return g_impl->vtbl->update_node_state(g_impl, node_name, state);

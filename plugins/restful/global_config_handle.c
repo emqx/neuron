@@ -950,6 +950,7 @@ static int get_drivers_resp(context_t *ctx, neu_resp_get_node_t *resp)
         neu_resp_node_info_t *info     = utarray_eltptr(nodes, i);
         drivers.drivers[i].node.name   = info->node;
         drivers.drivers[i].node.plugin = info->plugin;
+        drivers.drivers[i].node.tags   = info->tags;
     }
 
 end:
@@ -1654,6 +1655,7 @@ static int get_apps_resp(context_t *ctx, neu_resp_get_node_t *resp)
         neu_resp_node_info_t *info = utarray_eltptr(nodes, i);
         apps.apps[i].node.name     = info->node;
         apps.apps[i].node.plugin   = info->plugin;
+        apps.apps[i].node.tags     = info->tags;
     }
 
 end:
@@ -1767,7 +1769,9 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
     strcpy(cmd.node, app->node.name);
     strcpy(cmd.plugin, app->node.plugin);
     cmd.setting       = app->node.setting;
+    cmd.tags          = app->node.tags;
     app->node.setting = NULL;
+    app->node.tags    = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;

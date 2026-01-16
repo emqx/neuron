@@ -187,7 +187,11 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
         break;
     case NEU_JSON_STR:
-        json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
+        if (ele.v.val_str != NULL) {
+            json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
+        } else {
+            json_object_set_new(ob, ele.name, json_string(""));
+        }
         break;
     case NEU_JSON_FLOAT: {
         double t = ele.v.val_float;

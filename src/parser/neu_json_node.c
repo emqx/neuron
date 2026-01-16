@@ -36,16 +36,24 @@ int neu_json_encode_add_node_req(void *json_object, void *param)
     int                      ret = 0;
     neu_json_add_node_req_t *req = param;
 
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "plugin",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->plugin,
-                                    },
-                                    {
-                                        .name      = "name",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->name,
-                                    } };
+    neu_json_elem_t req_elems[] = {
+        {
+            .name      = "plugin",
+            .t         = NEU_JSON_STR,
+            .v.val_str = req->plugin,
+        },
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .v.val_str = req->name,
+        },
+        {
+            .name      = "tags",
+            .t         = NEU_JSON_STR,
+            .v.val_str = req->tags,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
 
     ret = neu_json_encode_field(json_object, req_elems,
                                 NEU_JSON_ELEM_SIZE(req_elems));
@@ -66,14 +74,22 @@ int neu_json_decode_add_node_req_json(void *                   json_obj,
 {
     int ret = 0;
 
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "plugin",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "name",
-                                        .t    = NEU_JSON_STR,
-                                    } };
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "plugin",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "tags",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            .v.val_str = NULL,
+        },
+    };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
@@ -82,6 +98,9 @@ int neu_json_decode_add_node_req_json(void *                   json_obj,
 
     req->plugin = req_elems[0].v.val_str;
     req->name   = req_elems[1].v.val_str;
+    if (req_elems[2].v.val_str != NULL) {
+        req->tags = req_elems[2].v.val_str;
+    }
 
     ret = neu_json_dump_key(json_obj, "params", &req->setting, false);
     if (0 != ret) {
@@ -126,6 +145,8 @@ void neu_json_decode_add_node_req_fini(neu_json_add_node_req_t *req)
 {
     free(req->plugin);
     free(req->name);
+    if (req->tags)
+        free(req->tags);
     free(req->setting);
 }
 
@@ -329,6 +350,11 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
                 .name       = "support_import_tags",
                 .t          = NEU_JSON_BOOL,
                 .v.val_bool = p_node->support_import_tags,
+            },
+            {
+                .name      = "tags",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_node->tags,
             },
         };
         node_array = neu_json_encode_array(node_array, node_elems,
@@ -662,4 +688,64 @@ int neu_json_encode_get_node_setting_resp(void *json_object, void *param)
     }
 
     return ret;
+}
+
+int neu_json_decode_update_node_tag_req(char *                           buf,
+                                        neu_json_update_node_tag_req_t **result)
+{
+    int                             ret      = 0;
+    void *                          json_obj = NULL;
+    neu_json_update_node_tag_req_t *req =
+        calloc(1, sizeof(neu_json_update_node_tag_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "tags",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            .v.val_str = NULL,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        free(req);
+        neu_json_decode_free(json_obj);
+        return -1;
+    }
+
+    req->name = req_elems[0].v.val_str;
+    if (req_elems[1].v.val_str != NULL) {
+        req->tags = req_elems[1].v.val_str;
+    }
+
+    *result = req;
+
+    neu_json_decode_free(json_obj);
+    return 0;
+}
+
+void neu_json_decode_update_node_tag_req_free(
+    neu_json_update_node_tag_req_t *req)
+{
+    if (req) {
+        free(req->name);
+        if (req->tags)
+            free(req->tags);
+        free(req);
+    }
 }

@@ -36,6 +36,7 @@ typedef struct {
     int   type;
     char *plugin_name;
     int   state;
+    char *tags;
 } neu_persist_node_info_t;
 
 typedef struct {
@@ -125,6 +126,9 @@ static inline void neu_persist_node_info_fini(neu_persist_node_info_t *info)
 {
     free(info->name);
     free(info->plugin_name);
+    if (info->tags) {
+        free(info->tags);
+    }
 }
 
 static inline void neu_persist_group_info_fini(neu_persist_group_info_t *info)
@@ -250,6 +254,7 @@ int neu_persister_delete_node(const char *node_name);
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_update_node(const char *node_name, const char *new_name);
+int neu_persister_update_node_tags(const char *node_name, const char *tags);
 
 /**
  * Update node state.

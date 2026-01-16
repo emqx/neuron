@@ -41,5 +41,6 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
                                  neu_resp_get_nodes_state_t *states);
 
 void handle_put_drivers(nng_aio *aio);
+void handle_put_node_tag(nng_aio *aio);
 
 #endif
