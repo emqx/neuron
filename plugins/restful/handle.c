@@ -756,6 +756,12 @@ static struct neu_http_handler rest_handlers[] = {
         .url           = "/api/v2/simulator/export",
         .value.handler = handle_simulator_export,
     },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/tag",
+        .value.handler = handle_put_node_tag,
+    },
 };
 
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)

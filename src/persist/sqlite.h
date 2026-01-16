@@ -45,6 +45,9 @@ int neu_sqlite_persister_delete_node(neu_persister_t *self,
 int neu_sqlite_persister_update_node(neu_persister_t *self,
                                      const char *     node_name,
                                      const char *     new_name);
+int neu_sqlite_persister_update_node_tags(neu_persister_t *self,
+                                          const char *     node_name,
+                                          const char *     tags);
 int neu_sqlite_persister_update_node_state(neu_persister_t *self,
                                            const char *node_name, int state);
 int neu_sqlite_persister_store_tag(neu_persister_t *    self,

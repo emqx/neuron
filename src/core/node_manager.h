@@ -33,7 +33,10 @@ typedef struct neu_node_manager neu_node_manager_t;
 neu_node_manager_t *neu_node_manager_create();
 void                neu_node_manager_destroy(neu_node_manager_t *mgr);
 
-int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter);
+int neu_node_manager_update_tags(neu_node_manager_t *mgr, const char *name,
+                                 const char *tags);
+int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter,
+                         const char *tags);
 int neu_node_manager_add_static(neu_node_manager_t *mgr,
                                 neu_adapter_t *     adapter);
 int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,

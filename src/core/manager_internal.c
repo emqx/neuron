@@ -48,7 +48,8 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager)
 
 int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
                          const char *plugin_name, const char *setting,
-                         neu_node_running_state_e state, bool load)
+                         const char *tags, neu_node_running_state_e state,
+                         bool load)
 {
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
@@ -84,7 +85,7 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     if (adapter == NULL) {
         return neu_adapter_error();
     }
-    neu_node_manager_add(manager->node_manager, adapter);
+    neu_node_manager_add(manager->node_manager, adapter, tags);
     neu_adapter_init(adapter, state);
 
     if (NULL != setting &&
@@ -511,7 +512,7 @@ static inline int add_driver(neu_manager_t *manager, neu_req_driver_t *driver)
     }
 
     ret = neu_manager_add_node(manager, driver->node, driver->plugin,
-                               driver->setting, false, false);
+                               driver->setting, driver->tags, false, false);
     if (0 != ret) {
         return ret;
     }

@@ -36,6 +36,7 @@ typedef struct {
     char *name;
     char *plugin;
     char *setting;
+    char *tags;
 } neu_json_add_node_req_t;
 
 int  neu_json_encode_add_node_req(void *json_object, void *param);
@@ -44,6 +45,16 @@ int  neu_json_decode_add_node_req_json(void *                   json_obj,
 int  neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result);
 void neu_json_decode_add_node_req_fini(neu_json_add_node_req_t *req);
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req);
+
+typedef struct {
+    char *name;
+    char *tags;
+} neu_json_update_node_tag_req_t;
+
+int neu_json_decode_update_node_tag_req(
+    char *buf, neu_json_update_node_tag_req_t **result);
+void neu_json_decode_update_node_tag_req_free(
+    neu_json_update_node_tag_req_t *req);
 
 typedef struct {
     char *name;
@@ -87,6 +98,7 @@ typedef struct {
     char *name;
     char *plugin;
     bool  support_import_tags;
+    char *tags;
 } neu_json_get_nodes_resp_node_t;
 
 typedef struct {

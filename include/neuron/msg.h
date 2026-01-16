@@ -78,6 +78,7 @@ typedef enum neu_reqresp_type {
     NEU_RESP_NODE_UNINIT,
     NEU_REQ_ADD_NODE,
     NEU_REQ_UPDATE_NODE,
+    NEU_REQ_UPDATE_NODE_TAG,
     NEU_REQ_DEL_NODE,
     NEU_REQ_GET_NODE,
     NEU_RESP_GET_NODE,
@@ -242,6 +243,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_NODE_UNINIT]      = "NEU_RESP_NODE_UNINIT",
     [NEU_REQ_ADD_NODE]          = "NEU_REQ_ADD_NODE",
     [NEU_REQ_UPDATE_NODE]       = "NEU_REQ_UPDATE_NODE",
+    [NEU_REQ_UPDATE_NODE_TAG]   = "NEU_REQ_UPDATE_NODE_TAG",
     [NEU_REQ_DEL_NODE]          = "NEU_REQ_DEL_NODE",
     [NEU_REQ_GET_NODE]          = "NEU_REQ_GET_NODE",
     [NEU_RESP_GET_NODE]         = "NEU_RESP_GET_NODE",
@@ -522,17 +524,25 @@ typedef struct neu_req_add_node {
     char  node[NEU_NODE_NAME_LEN];
     char  plugin[NEU_PLUGIN_NAME_LEN];
     char *setting;
+    char *tags;
 } neu_req_add_node_t;
 
 static inline void neu_req_add_node_fini(neu_req_add_node_t *req)
 {
     free(req->setting);
+    if (req->tags)
+        free(req->tags);
 }
 
 typedef struct neu_req_update_node {
     char node[NEU_NODE_NAME_LEN];
     char new_name[NEU_NODE_NAME_LEN];
 } neu_req_update_node_t;
+
+typedef struct neu_req_update_node_tag {
+    char node[NEU_NODE_NAME_LEN];
+    char tags[NEU_NODE_TAGS_LEN];
+} neu_req_update_node_tag_t;
 
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
@@ -557,6 +567,7 @@ typedef struct neu_resp_node_info {
     int64_t delay;
     char    node[NEU_NODE_NAME_LEN];
     char    plugin[NEU_PLUGIN_NAME_LEN];
+    char    tags[NEU_NODE_TAGS_LEN];
 } neu_resp_node_info_t;
 
 typedef struct neu_resp_get_node {
@@ -1148,6 +1159,7 @@ typedef struct {
     char *          node;
     char *          plugin;
     char *          setting;
+    char *          tags;
     uint16_t        n_group;
     neu_gdatatag_t *groups;
 } neu_req_driver_t;

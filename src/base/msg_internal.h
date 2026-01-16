@@ -57,6 +57,7 @@ extern "C" {
     XX(NEU_RESP_NODE_UNINIT, neu_resp_node_uninit_t)                           \
     XX(NEU_REQ_ADD_NODE, neu_req_add_node_t)                                   \
     XX(NEU_REQ_UPDATE_NODE, neu_req_update_node_t)                             \
+    XX(NEU_REQ_UPDATE_NODE_TAG, neu_req_update_node_tag_t)                     \
     XX(NEU_REQ_DEL_NODE, neu_req_del_node_t)                                   \
     XX(NEU_REQ_GET_NODE, neu_req_get_node_t)                                   \
     XX(NEU_RESP_GET_NODE, neu_resp_get_node_t)                                 \

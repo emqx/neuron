@@ -458,6 +458,7 @@ static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
     .load_auth_user           = neu_sqlite_persister_load_auth_user,
     .load_auth_users_by_app   = neu_sqlite_persister_load_auth_users_by_app,
     .delete_auth_user         = neu_sqlite_persister_delete_auth_user,
+    .update_node_tags         = neu_sqlite_persister_update_node_tags,
 };
 
 neu_persister_t *neu_sqlite_persister_create(const char *schema_dir)
@@ -496,9 +497,10 @@ int neu_sqlite_persister_store_node(neu_persister_t *        self,
 {
     int rv = 0;
     rv     = execute_sql(((neu_sqlite_persister_t *) self)->db,
-                     "INSERT INTO nodes (name, type, state, plugin_name) "
-                     "VALUES (%Q, %i, %i, %Q)",
-                     info->name, info->type, info->state, info->plugin_name);
+                     "INSERT INTO nodes (name, type, state, plugin_name, tags) "
+                     "VALUES (%Q, %i, %i, %Q, %Q)",
+                     info->name, info->type, info->state, info->plugin_name,
+                     info->tags);
     return rv;
 }
 
@@ -514,9 +516,10 @@ int neu_sqlite_persister_load_nodes(neu_persister_t *self,
 {
     neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
 
-    int           rv    = 0;
-    sqlite3_stmt *stmt  = NULL;
-    const char *  query = "SELECT name, type, state, plugin_name FROM nodes;";
+    int           rv   = 0;
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "SELECT name, type, state, plugin_name, tags FROM nodes;";
 
     utarray_new(*node_infos, &node_info_icd);
 
@@ -543,10 +546,18 @@ int neu_sqlite_persister_load_nodes(neu_persister_t *self,
             break;
         }
 
+        char *tags = (char *) sqlite3_column_text(stmt, 4);
+
         info.name        = name;
         info.type        = sqlite3_column_int(stmt, 1);
         info.state       = sqlite3_column_int(stmt, 2);
         info.plugin_name = plugin_name;
+        if (tags) {
+            info.tags = strdup(tags);
+        } else {
+            info.tags = NULL;
+        }
+
         utarray_push_back(*node_infos, &info);
 
         step = sqlite3_step(stmt);
@@ -577,6 +588,15 @@ int neu_sqlite_persister_update_node(neu_persister_t *self,
 {
     return execute_sql(((neu_sqlite_persister_t *) self)->db,
                        "UPDATE nodes SET name=%Q WHERE name=%Q;", new_name,
+                       node_name);
+}
+
+int neu_sqlite_persister_update_node_tags(neu_persister_t *self,
+                                          const char *     node_name,
+                                          const char *     tags)
+{
+    return execute_sql(((neu_sqlite_persister_t *) self)->db,
+                       "UPDATE nodes SET tags=%Q WHERE name=%Q;", tags,
                        node_name);
 }
 

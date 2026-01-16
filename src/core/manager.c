@@ -276,6 +276,26 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_msg_free(msg);
         break;
     }
+    case NEU_REQ_UPDATE_NODE_TAG: {
+        neu_req_update_node_tag_t *cmd =
+            (neu_req_update_node_tag_t *) &header[1];
+        int ret = neu_node_manager_update_tags(manager->node_manager, cmd->node,
+                                               cmd->tags);
+        if (ret == 0) {
+            nlog_info("update node %s tags to %s", cmd->node, cmd->tags);
+            manager_storage_update_node_tags(manager, cmd->node, cmd->tags);
+            neu_resp_error_t e = { .error = NEU_ERR_SUCCESS };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+        } else {
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+        }
+        break;
+    }
     case NEU_REQ_ADD_PLUGIN: {
         neu_req_add_plugin_t *cmd        = (neu_req_add_plugin_t *) &header[1];
         neu_resp_error_t      e          = { 0 };
@@ -742,12 +762,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         nlog_notice("add node name:%s plugin:%s", cmd->node, cmd->plugin);
         int error =
             neu_manager_add_node(manager, cmd->node, cmd->plugin, cmd->setting,
-                                 NEU_NODE_RUNNING_STATE_INIT, false);
+                                 cmd->tags, NEU_NODE_RUNNING_STATE_INIT, false);
 
         neu_resp_error_t e = { .error = error };
 
         if (error == NEU_ERR_SUCCESS) {
-            manager_storage_add_node(manager, cmd->node);
+            manager_storage_add_node(manager, cmd->node, cmd->tags);
             if (cmd->setting) {
                 adapter_storage_setting(cmd->node, cmd->setting);
             }
@@ -1600,7 +1620,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (NEU_ERR_SUCCESS == e.error) {
             for (uint16_t i = 0; i < cmd->n_driver; ++i) {
                 neu_req_driver_t *driver = &cmd->drivers[i];
-                manager_storage_add_node(manager, driver->node);
+                manager_storage_add_node(manager, driver->node, driver->tags);
                 adapter_storage_setting(driver->node, driver->setting);
                 for (uint16_t j = 0; j < driver->n_group; j++) {
                     adapter_storage_add_group(driver->node,
@@ -1787,7 +1807,7 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
     if (display) {
-        manager_storage_add_node(manager, name);
+        manager_storage_add_node(manager, name, "");
     }
 
     neu_adapter_init(adapter, false);
