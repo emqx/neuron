@@ -1234,6 +1234,8 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     group_t *g = find_group(driver, cmd->group);
 
     if (g == NULL) {
+        nlog_warn("driver write tags group not exist, driver: %s, group: %s",
+                  driver->adapter.name, cmd->group);
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_GROUP_NOT_EXIST);
         return NEU_ERR_GROUP_NOT_EXIST;
@@ -1254,6 +1256,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                   cmd->tags[i].value.value.d64,
                                   cmd->tags[i].value.type, tag->decimal);
         } else {
+            nlog_warn("driver write tags not exist, driver: %s, group: %s, "
+                      "tag: %s",
+                      driver->adapter.name, cmd->group, cmd->tags[i].tag);
             value_check = NEU_ERR_TAG_NOT_EXIST;
         }
 
@@ -1288,6 +1293,8 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     }
 
     if (value_err != NEU_ERR_SUCCESS) {
+        nlog_warn("driver write tags value error(%d), driver: %s, group: %s",
+                  value_err, driver->adapter.name, cmd->group);
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       value_err);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
@@ -1301,6 +1308,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     }
 
     if (utarray_len(tags) != (unsigned int) cmd->n_tag) {
+        nlog_warn("driver write tags some tag not exist, driver: %s, group: "
+                  "%s",
+                  driver->adapter.name, cmd->group);
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
@@ -1461,6 +1471,8 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     group_t *            g   = find_group(driver, cmd->group);
 
     if (g == NULL) {
+        nlog_warn("driver write tag group not exist, driver: %s, group: %s",
+                  driver->adapter.name, cmd->group);
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_GROUP_NOT_EXIST);
         return NEU_ERR_GROUP_NOT_EXIST;
@@ -1468,11 +1480,16 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
 
     if (tag == NULL) {
+        nlog_warn("driver write tag not exist, driver: %s, group: %s, tag: %s",
+                  driver->adapter.name, cmd->group, cmd->tag);
         driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                       NEU_ERR_TAG_NOT_EXIST);
         return NEU_ERR_TAG_NOT_EXIST;
     } else {
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
+            nlog_warn("driver write tag not allow write, driver: %s, group: "
+                      "%s, tag: %s",
+                      driver->adapter.name, cmd->group, cmd->tag);
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
             neu_tag_free(tag);
@@ -1484,6 +1501,9 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                             cmd->value.type, tag->decimal);
 
         if (value_check != NEU_ERR_SUCCESS) {
+            nlog_warn("driver write tag value error(%d), driver: %s, group: "
+                      "%s, tag: %s",
+                      value_check, driver->adapter.name, cmd->group, cmd->tag);
             driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                           value_check);
             neu_tag_free(tag);
