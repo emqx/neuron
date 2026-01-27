@@ -219,14 +219,15 @@ void *neu_driver_cache_get_trace(neu_driver_cache_t *cache, const char *group)
     return trace;
 }
 
-void neu_driver_cache_update_change(neu_driver_cache_t *cache,
+bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                                     const char *group, const char *tag,
                                     int64_t timestamp, neu_dvalue_t value,
                                     neu_tag_meta_t *metas, int n_meta,
                                     bool change)
 {
-    struct elem *elem = NULL;
-    tkey_t       key  = to_key(group, tag);
+    struct elem *elem        = NULL;
+    tkey_t       key         = to_key(group, tag);
+    bool         tag_changed = false;
 
     pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
@@ -241,6 +242,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             (sub_filter_err && elem->value.type != value.type &&
              elem->value.type != NEU_TYPE_ERROR)) {
             elem->changed = true;
+            tag_changed   = true;
         } else if (sub_filter_err && elem->value.type != value.type &&
                    elem->value.type == NEU_TYPE_ERROR) {
             switch (value.type) {
@@ -264,17 +266,20 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (memcmp(&elem->value_old.value, &value.value,
                            sizeof(value.value)) != 0) {
                     elem->changed = true;
+                    tag_changed   = true;
                 }
                 break;
             case NEU_TYPE_BYTES:
                 if (elem->value_old.value.bytes.length !=
                     value.value.bytes.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcpy(elem->value_old.value.bytes.bytes,
                                value.value.bytes.bytes,
                                value.value.bytes.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -282,11 +287,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.bools.length !=
                     value.value.bools.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.bools.bools,
                                value.value.bools.bools,
                                value.value.bools.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -294,11 +301,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.i8s.length !=
                     value.value.i8s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.i8s.i8s,
                                value.value.i8s.i8s,
                                value.value.i8s.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -306,11 +315,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.u8s.length !=
                     value.value.u8s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.u8s.u8s,
                                value.value.u8s.u8s,
                                value.value.u8s.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -318,12 +329,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.i16s.length !=
                     value.value.i16s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.i16s.i16s,
                                value.value.i16s.i16s,
                                value.value.i16s.length * sizeof(int16_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -331,12 +344,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.u16s.length !=
                     value.value.u16s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.u16s.u16s,
                                value.value.u16s.u16s,
                                value.value.u16s.length * sizeof(uint16_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -344,12 +359,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.i32s.length !=
                     value.value.i32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.i32s.i32s,
                                value.value.i32s.i32s,
                                value.value.i32s.length * sizeof(int32_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -357,12 +374,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.u32s.length !=
                     value.value.u32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.u32s.u32s,
                                value.value.u32s.u32s,
                                value.value.u32s.length * sizeof(uint32_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -370,12 +389,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.i64s.length !=
                     value.value.i64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.i64s.i64s,
                                value.value.i64s.i64s,
                                value.value.i64s.length * sizeof(int64_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -383,12 +404,14 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.u64s.length !=
                     value.value.u64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.u64s.u64s,
                                value.value.u64s.u64s,
                                value.value.u64s.length * sizeof(uint64_t)) !=
                         0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -396,11 +419,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.f32s.length !=
                     value.value.f32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.f32s.f32s,
                                value.value.f32s.f32s,
                                value.value.f32s.length * sizeof(float)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -408,11 +433,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.f64s.length !=
                     value.value.f64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.f64s.f64s,
                                value.value.f64s.f64s,
                                value.value.f64s.length * sizeof(double)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -420,11 +447,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.strs.length !=
                     value.value.strs.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.strs.strs,
                                value.value.strs.strs,
                                value.value.strs.length * sizeof(char *)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -432,6 +461,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (json_equal(elem->value_old.value.json, value.value.json) !=
                     0) {
                     elem->changed = true;
+                    tag_changed   = true;
                 }
                 break;
             }
@@ -439,11 +469,13 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.value.ptr.length !=
                     value.value.ptr.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value_old.value.ptr.ptr,
                                value.value.ptr.ptr,
                                value.value.ptr.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
 
@@ -453,10 +485,12 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.precision == 0) {
                     elem->changed =
                         elem->value_old.value.f32 != value.value.f32;
+                    tag_changed = elem->changed;
                 } else {
                     if (fabs(elem->value_old.value.f32 - value.value.f32) >
                         pow(0.1, elem->value_old.precision)) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -464,10 +498,12 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value_old.precision == 0) {
                     elem->changed =
                         elem->value_old.value.d64 != value.value.d64;
+                    tag_changed = elem->changed;
                 } else {
                     if (fabs(elem->value_old.value.d64 - value.value.d64) >
                         pow(0.1, elem->value_old.precision)) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
 
@@ -497,17 +533,20 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (memcmp(&elem->value.value, &value.value,
                            sizeof(value.value)) != 0) {
                     elem->changed = true;
+                    tag_changed   = true;
                 }
                 break;
             case NEU_TYPE_BYTES:
                 if (elem->value.value.bytes.length !=
                     value.value.bytes.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcpy(elem->value.value.bytes.bytes,
                                value.value.bytes.bytes,
                                value.value.bytes.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
@@ -515,140 +554,166 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 if (elem->value.value.bools.length !=
                     value.value.bools.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.bools.bools,
                                value.value.bools.bools,
                                value.value.bools.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_INT8:
                 if (elem->value.value.i8s.length != value.value.i8s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.i8s.i8s, value.value.i8s.i8s,
                                value.value.i8s.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_UINT8:
                 if (elem->value.value.u8s.length != value.value.u8s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.u8s.u8s, value.value.u8s.u8s,
                                value.value.u8s.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_INT16:
                 if (elem->value.value.i16s.length != value.value.i16s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.i16s.i16s, value.value.i16s.i16s,
                             value.value.i16s.length * sizeof(int16_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_UINT16:
                 if (elem->value.value.u16s.length != value.value.u16s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.u16s.u16s, value.value.u16s.u16s,
                             value.value.u16s.length * sizeof(uint16_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_INT32:
                 if (elem->value.value.i32s.length != value.value.i32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.i32s.i32s, value.value.i32s.i32s,
                             value.value.i32s.length * sizeof(int32_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_UINT32:
                 if (elem->value.value.u32s.length != value.value.u32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.u32s.u32s, value.value.u32s.u32s,
                             value.value.u32s.length * sizeof(uint32_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_INT64:
                 if (elem->value.value.i64s.length != value.value.i64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.i64s.i64s, value.value.i64s.i64s,
                             value.value.i64s.length * sizeof(int64_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_UINT64:
                 if (elem->value.value.u64s.length != value.value.u64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(
                             elem->value.value.u64s.u64s, value.value.u64s.u64s,
                             value.value.u64s.length * sizeof(uint64_t)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_FLOAT:
                 if (elem->value.value.f32s.length != value.value.f32s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.f32s.f32s,
                                value.value.f32s.f32s,
                                value.value.f32s.length * sizeof(float)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_DOUBLE:
                 if (elem->value.value.f64s.length != value.value.f64s.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.f64s.f64s,
                                value.value.f64s.f64s,
                                value.value.f64s.length * sizeof(double)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_ARRAY_STRING:
                 if (elem->value.value.strs.length != value.value.strs.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.strs.strs,
                                value.value.strs.strs,
                                value.value.strs.length * sizeof(char *)) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_PTR: {
                 if (elem->value.value.ptr.length != value.value.ptr.length) {
                     elem->changed = true;
+                    tag_changed   = true;
                 } else {
                     if (memcmp(elem->value.value.ptr.ptr, value.value.ptr.ptr,
                                value.value.ptr.length) != 0) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
 
@@ -657,32 +722,38 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             case NEU_TYPE_CUSTOM: {
                 if (json_equal(elem->value.value.json, value.value.json) != 0) {
                     elem->changed = true;
+                    tag_changed   = true;
                 }
                 break;
             }
             case NEU_TYPE_FLOAT:
                 if (elem->value.precision == 0) {
                     elem->changed = elem->value.value.f32 != value.value.f32;
+                    tag_changed   = elem->changed;
                 } else {
                     if (fabs(elem->value.value.f32 - value.value.f32) >
                         pow(0.1, elem->value.precision)) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
                 break;
             case NEU_TYPE_DOUBLE:
                 if (elem->value.precision == 0) {
                     elem->changed = elem->value.value.d64 != value.value.d64;
+                    tag_changed   = elem->changed;
                 } else {
                     if (fabs(elem->value.value.d64 - value.value.d64) >
                         pow(0.1, elem->value.precision)) {
                         elem->changed = true;
+                        tag_changed   = true;
                     }
                 }
 
                 break;
             case NEU_TYPE_ERROR:
                 elem->changed = true;
+                tag_changed   = true;
                 break;
             }
         }
@@ -786,6 +857,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
     }
 
     pthread_mutex_unlock(&cache->mtx);
+    return tag_changed;
 }
 
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,

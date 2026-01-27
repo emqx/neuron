@@ -113,6 +113,9 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
 static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta);
+static void update_im_f_m(neu_adapter_t *adapter, const char *group,
+                          const char *tag, neu_dvalue_t value,
+                          neu_tag_meta_t *metas, int n_meta);
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
@@ -439,6 +442,107 @@ static void update_with_trace(neu_adapter_t *adapter, const char *group,
     }
 }
 
+static void update_im_f_m(neu_adapter_t *adapter, const char *group,
+                          const char *tag, neu_dvalue_t value,
+                          neu_tag_meta_t *metas, int n_meta)
+{
+    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
+
+    if (tag == NULL) {
+        nlog_warn("update_im_f_m tag is null");
+        return;
+    }
+
+    group_t *find = NULL;
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find == NULL) {
+        nlog_error(
+            "update_im_f_m group not found, driver: %s, group: %s, tag: %s",
+            driver->adapter.name, group, tag);
+        return;
+    }
+
+    bool changed = neu_driver_cache_update_change(driver->cache, group, tag,
+                                                  global_timestamp, value,
+                                                  metas, n_meta, false);
+    driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                          NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
+    if (value.type == NEU_TYPE_ERROR) {
+        return;
+    }
+
+    if (!changed) {
+        return;
+    }
+
+    UT_array *tags = neu_adapter_driver_get_ptag(driver, group, tag);
+    if (tags == NULL) {
+        return;
+    }
+    neu_datatag_t *first = utarray_front(tags);
+
+    if (first == NULL) {
+        utarray_free(tags);
+        nlog_debug("update immediately, driver: %s, "
+                   "group: %s, tag: %s, type: %s, "
+                   "timestamp: %" PRId64,
+                   driver->adapter.name, group, tag,
+                   neu_type_string(value.type), global_timestamp);
+        return;
+    }
+
+    nlog_debug("update and report immediately, driver: %s, "
+               "group: %s, tag: %s, type: %s, "
+               "timestamp: %" PRId64,
+               driver->adapter.name, group, tag, neu_type_string(value.type),
+               global_timestamp);
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQRESP_TRANS_DATA,
+    };
+    neu_reqresp_trans_data_t *data =
+        calloc(1, sizeof(neu_reqresp_trans_data_t));
+
+    data->driver = strdup(driver->adapter.name);
+    data->group  = strdup(group);
+    utarray_new(data->tags, neu_resp_tag_value_meta_icd());
+
+    read_report_group(global_timestamp, 0,
+                      neu_adapter_get_tag_cache_type(&driver->adapter),
+                      driver->cache, group, tags, data->tags);
+
+    if (utarray_len(data->tags) > 0) {
+
+        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+        data->ctx->index = utarray_len(find->apps);
+        pthread_mutex_init(&data->ctx->mtx, NULL);
+
+        if (utarray_len(find->apps) > 0) {
+            pthread_mutex_lock(&find->apps_mtx);
+
+            utarray_foreach(find->apps, sub_app_t *, app)
+            {
+                if (driver->adapter.cb_funs.responseto(
+                        &driver->adapter, &header, data, app->addr) != 0) {
+                    neu_trans_data_free(data);
+                }
+            }
+
+            pthread_mutex_unlock(&find->apps_mtx);
+        } else {
+            neu_trans_data_free(data);
+        }
+    } else {
+        utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
+    }
+
+    utarray_free(tags);
+    free(data);
+}
+
 static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta)
@@ -604,6 +708,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->adapter.cb_funs.driver.fdown_open_response = fdown_open_response;
     driver->adapter.cb_funs.driver.fup_data_response   = fup_data_response;
     driver->adapter.cb_funs.driver.update_im           = update_im;
+    driver->adapter.cb_funs.driver.update_im_f_m       = update_im_f_m;
     driver->adapter.cb_funs.driver.update_with_trace   = update_with_trace;
     driver->adapter.cb_funs.driver.update_with_meta    = update_with_meta;
     driver->adapter.cb_funs.driver.scan_tags_response  = scan_tags_response;
