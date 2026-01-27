@@ -86,6 +86,9 @@ typedef struct adapter_callbacks {
             void (*update_im)(neu_adapter_t *adapter, const char *group,
                               const char *tag, neu_dvalue_t value,
                               neu_tag_meta_t *metas, int n_meta);
+            void (*update_im_f_m)(neu_adapter_t *adapter, const char *group,
+                                  const char *tag, neu_dvalue_t value,
+                                  neu_tag_meta_t *metas, int n_meta);
             void (*scan_tags_response)(neu_adapter_t *adapter, void *r,
                                        neu_resp_scan_tags_t *resp_scan);
             void (*test_read_tag_response)(neu_adapter_t *adapter, void *r,

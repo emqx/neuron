@@ -35,7 +35,7 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp,
                              neu_dvalue_t value, neu_tag_meta_t *metas,
                              int n_meta);
-void neu_driver_cache_update_change(neu_driver_cache_t *cache,
+bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                                     const char *group, const char *tag,
                                     int64_t timestamp, neu_dvalue_t value,
                                     neu_tag_meta_t *metas, int n_meta,
