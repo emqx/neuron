@@ -60,6 +60,7 @@ typedef enum {
     STATE_DEL_APP,
     STATE_DEL_DRIVER,
     STATE_ADD_NODE,
+    STATE_UPDATE_DEFAULT_APP_TAGS,
     STATE_ADD_GROUP,
     STATE_ADD_TAG,
     STATE_GET_APP_SUBS,
@@ -745,6 +746,28 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
         }
 
         // After adding nodes, get subscriptions for default apps to unsub
+        ctx->idx       = 0;
+        ctx->unsub_idx = 0;
+        ctx->state     = STATE_UPDATE_DEFAULT_APP_TAGS;
+    }
+        // fall through
+    case STATE_UPDATE_DEFAULT_APP_TAGS: {
+        neu_resp_error_t *   err  = data;
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
+            neu_json_app_t *app = &apps->apps[ctx->idx];
+            NEXT(ctx, add_app_tags, app);
+            ++ctx->idx;
+            goto done;
+        }
+
         ctx->idx       = 0;
         ctx->unsub_idx = 0;
         ctx->state     = STATE_GET_APP_SUBS;
@@ -1789,12 +1812,12 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
 
 static int add_app_tags(context_t *ctx, neu_json_app_t *app)
 {
-    int           ret    = 0;
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     neu_reqresp_head_t header = {
-        .type = NEU_REQ_UPDATE_NODE_TAG,
-        .ctx  = ctx->aio,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+        .type            = NEU_REQ_UPDATE_NODE_TAG,
+        .ctx             = ctx->aio,
     };
 
     neu_req_update_node_tag_t cmd = { 0 };
@@ -1807,7 +1830,7 @@ static int add_app_tags(context_t *ctx, neu_json_app_t *app)
         return NEU_ERR_IS_BUSY;
     }
 
-    return ret;
+    return 0;
 }
 
 static int add_app_setting(context_t *ctx, neu_json_app_t *app)
