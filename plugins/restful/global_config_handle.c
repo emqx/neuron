@@ -733,7 +733,6 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
         for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
             neu_json_app_t *app = &apps->apps[ctx->idx];
             if (is_default_app_node(app->node.name, app->node.plugin)) {
-                NEXT(ctx, add_app_tags, app);
                 if (NULL == app->node.setting) {
                     continue;
                 }
@@ -764,6 +763,7 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
         for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
             neu_json_app_t *app = &apps->apps[ctx->idx];
             NEXT(ctx, add_app_tags, app);
+
             ++ctx->idx;
             goto done;
         }
@@ -1799,9 +1799,8 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
     strcpy(cmd.node, app->node.name);
     strcpy(cmd.plugin, app->node.plugin);
     cmd.setting       = app->node.setting;
-    cmd.tags          = app->node.tags;
+    cmd.tags          = strdup(app->node.tags);
     app->node.setting = NULL;
-    app->node.tags    = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
