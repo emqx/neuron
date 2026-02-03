@@ -751,6 +751,7 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
             };
 
             fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int));
 
             ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
         } else if (is_ipv6(conn->param.params.tcp_server.ip)) {
@@ -761,7 +762,7 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
                       &local.sin6_addr);
 
             fd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int) { 1 }, sizeof(int));
             ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
         } else {
             zlog_error(conn->param.log, "invalid ip: %s",
