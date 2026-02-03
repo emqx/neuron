@@ -1798,8 +1798,10 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
     neu_req_add_node_t cmd = { 0 };
     strcpy(cmd.node, app->node.name);
     strcpy(cmd.plugin, app->node.plugin);
-    cmd.setting       = app->node.setting;
-    cmd.tags          = strdup(app->node.tags);
+    cmd.setting = app->node.setting;
+    if (app->node.tags != NULL) {
+        cmd.tags = strdup(app->node.tags);
+    }
     app->node.setting = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
