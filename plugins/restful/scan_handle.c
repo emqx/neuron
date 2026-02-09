@@ -73,6 +73,6 @@ void handle_scan_tags_resp(nng_aio *aio, neu_resp_scan_tags_t *resp)
 {
     char *result = NULL;
     neu_json_encode_by_fn(resp, neu_json_encode_scan_tags_resp, &result);
-    neu_http_ok(aio, result);
+    neu_http_response(aio, resp->error, result);
     free(result);
 }
