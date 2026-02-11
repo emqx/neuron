@@ -411,8 +411,8 @@ def get_nodes_disable_auth(type):
 
 
 @gen_check
-def scan_tags(node, id, ctx=""):
-    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx})
+def scan_tags(node, id, ctx="", load_index=0):
+    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx, "load_index": load_index})
 
 
 def otel_start(host, port):

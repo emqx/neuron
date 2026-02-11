@@ -54,6 +54,8 @@ void handle_scan_tags(nng_aio *aio)
                 strcpy(cmd.ctx, req->ctx);
             }
 
+            cmd.load_index = req->load_index;
+
             if (0 != neu_plugin_op(plugin, header, &cmd)) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);

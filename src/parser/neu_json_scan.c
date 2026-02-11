@@ -64,6 +64,13 @@ int neu_json_decode_scan_tags_req(char *buf, neu_json_scan_tags_req_t **result)
         },
     };
 
+    neu_json_elem_t req_load_index_elems[] = {
+        {
+            .name = "load_index",
+            .t    = NEU_JSON_INT,
+        },
+    };
+
     if (0 !=
         neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_node_elems),
                                 req_node_elems)) {
@@ -78,10 +85,14 @@ int neu_json_decode_scan_tags_req(char *buf, neu_json_scan_tags_req_t **result)
     neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_ctx_elems),
                             req_ctx_elems);
 
-    req->node = req_node_elems[0].v.val_str;
-    req->id   = req_id_elems[0].v.val_str;
-    req->ctx  = req_ctx_elems[0].v.val_str;
-    *result   = req;
+    neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_load_index_elems),
+                            req_load_index_elems);
+
+    req->node       = req_node_elems[0].v.val_str;
+    req->id         = req_id_elems[0].v.val_str;
+    req->ctx        = req_ctx_elems[0].v.val_str;
+    req->load_index = req_load_index_elems[0].v.val_int;
+    *result         = req;
 
     neu_json_decode_free(json_obj);
     return 0;
@@ -163,6 +174,16 @@ int neu_json_encode_scan_tags_resp(void *json_object, void *param)
                                          .name      = "ctx",
                                          .t         = NEU_JSON_STR,
                                          .v.val_str = resp->ctx,
+                                     },
+                                     {
+                                         .name      = "load_index",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->load_index,
+                                     },
+                                     {
+                                         .name      = "completed",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->c_flag,
                                      },
                                      {
                                          .name         = "tags",
