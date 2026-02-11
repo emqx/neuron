@@ -3394,8 +3394,8 @@ void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
     }
 
     neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) &req[1];
-    driver->adapter.module->intf_funs->driver.scan_tags(driver->adapter.plugin,
-                                                        req, cmd->id, cmd->ctx);
+    driver->adapter.module->intf_funs->driver.scan_tags(
+        driver->adapter.plugin, req, cmd->id, cmd->ctx, cmd->load_index);
 }
 
 void neu_adapter_driver_test_read_tag(neu_adapter_driver_t *driver,

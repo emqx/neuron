@@ -68,6 +68,7 @@ def add_node(node, plugin, params=None, jwt=config.default_jwt):
         body["params"] = params
     return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json=body)
 
+
 @gen_check
 def add_node_with_tags(node, plugin, tags=None, params=None, jwt=config.default_jwt):
     body = {"name": node, "plugin": plugin}
@@ -76,6 +77,7 @@ def add_node_with_tags(node, plugin, tags=None, params=None, jwt=config.default_
     if tags:
         body["tags"] = tags
     return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json=body)
+
 
 @gen_check
 def update_node_tags(node, tags, jwt=config.default_jwt):
@@ -97,6 +99,7 @@ def get_nodes(type, jwt=config.default_jwt, group=""):
         return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type})
     else:
         return requests.get(url=config.BASE_URL + '/api/v2/node?group=' + group, headers={"Authorization": jwt}, params={"type": type})
+
 
 def get_nodes_by_tags(type, tags, jwt=config.default_jwt):
     return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type, "node": tags})
@@ -427,8 +430,8 @@ def get_nodes_disable_auth(type):
 
 
 @gen_check
-def scan_tags(node, id, ctx=""):
-    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx})
+def scan_tags(node, id, ctx="", load_index=0):
+    return requests.post(url=config.BASE_URL + "/api/v2/scan/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "id": id, "ctx": ctx, "load_index": load_index})
 
 
 def otel_start(host, port):
