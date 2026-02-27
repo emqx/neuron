@@ -266,12 +266,13 @@ int datalayers_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 }
 
 const neu_plugin_intf_funs_t datalayers_plugin_intf_funs = {
-    .open    = datalayers_plugin_open,
-    .close   = datalayers_plugin_close,
-    .init    = datalayers_plugin_init,
-    .uninit  = datalayers_plugin_uninit,
-    .start   = datalayers_plugin_start,
-    .stop    = datalayers_plugin_stop,
-    .setting = datalayers_plugin_config,
-    .request = datalayers_plugin_request,
+    .open        = datalayers_plugin_open,
+    .close       = datalayers_plugin_close,
+    .init        = datalayers_plugin_init,
+    .uninit      = datalayers_plugin_uninit,
+    .start       = datalayers_plugin_start,
+    .stop        = datalayers_plugin_stop,
+    .setting     = datalayers_plugin_config,
+    .request     = datalayers_plugin_request,
+    .try_connect = NULL,
 };

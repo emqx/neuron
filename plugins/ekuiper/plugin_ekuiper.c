@@ -423,14 +423,15 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open    = ekuiper_plugin_open,
-    .close   = ekuiper_plugin_close,
-    .init    = ekuiper_plugin_init,
-    .uninit  = ekuiper_plugin_uninit,
-    .start   = ekuiper_plugin_start,
-    .stop    = ekuiper_plugin_stop,
-    .setting = ekuiper_plugin_config,
-    .request = ekuiper_plugin_request,
+    .open        = ekuiper_plugin_open,
+    .close       = ekuiper_plugin_close,
+    .init        = ekuiper_plugin_init,
+    .uninit      = ekuiper_plugin_uninit,
+    .start       = ekuiper_plugin_start,
+    .stop        = ekuiper_plugin_stop,
+    .setting     = ekuiper_plugin_config,
+    .request     = ekuiper_plugin_request,
+    .try_connect = NULL,
 };
 
 const neu_plugin_module_t neu_plugin_module = {

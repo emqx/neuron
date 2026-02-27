@@ -89,6 +89,7 @@ typedef struct neu_plugin_intf_funs {
     int (*start)(neu_plugin_t *plugin);
     int (*stop)(neu_plugin_t *plugin);
     int (*setting)(neu_plugin_t *plugin, const char *setting);
+    int (*try_connect)(neu_plugin_t *plugin);
 
     int (*request)(neu_plugin_t *plugin, neu_reqresp_head_t *head, void *data);
 

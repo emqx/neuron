@@ -44,14 +44,15 @@ static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
 static int driver_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open    = driver_open,
-    .close   = driver_close,
-    .init    = driver_init,
-    .uninit  = driver_uninit,
-    .start   = driver_start,
-    .stop    = driver_stop,
-    .setting = driver_config,
-    .request = driver_request,
+    .open        = driver_open,
+    .close       = driver_close,
+    .init        = driver_init,
+    .uninit      = driver_uninit,
+    .start       = driver_start,
+    .stop        = driver_stop,
+    .setting     = driver_config,
+    .request     = driver_request,
+    .try_connect = NULL,
 
     .driver.validate_tag  = driver_validate_tag,
     .driver.group_timer   = driver_group_timer,

@@ -2097,6 +2097,10 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     neu_event_del_io(adapter->events, adapter->control_io);
 
     if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+        if (adapter->timer_connect != NULL) {
+            neu_event_del_timer(adapter->events, adapter->timer_connect);
+            adapter->timer_connect = NULL;
+        }
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
@@ -2132,6 +2136,19 @@ int neu_adapter_start(neu_adapter_t *adapter)
         if (NEU_NA_TYPE_DRIVER == neu_adapter_get_type(adapter)) {
             neu_adapter_driver_start_group_timer(
                 (neu_adapter_driver_t *) adapter);
+        }
+
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            neu_event_timer_param_t param = {
+                .second      = 5,
+                .millisecond = 0,
+                .usr_data    = (void *) adapter,
+                .type        = NEU_EVENT_TIMER_BLOCK,
+            };
+
+            param.cb = neu_adapter_driver_try_connect;
+            adapter->timer_connect =
+                neu_event_add_timer(adapter->events, param);
         }
     }
 
@@ -2176,6 +2193,11 @@ int neu_adapter_stop(neu_adapter_t *adapter)
                 (neu_adapter_driver_t *) adapter);
         }
         neu_adapter_reset_metrics(adapter);
+
+        if (adapter->timer_connect != NULL) {
+            neu_event_del_timer(adapter->events, adapter->timer_connect);
+            adapter->timer_connect = NULL;
+        }
     }
 
     return error;

@@ -167,6 +167,7 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     mqtt_config_fini(&plugin->config);
     if (plugin->client) {
+        neu_mqtt_client_remove_cache_db(plugin->client);
         neu_mqtt_client_close(plugin->client);
         neu_mqtt_client_free(plugin->client);
         plugin->client = NULL;
@@ -395,6 +396,7 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
 
     if (plugin->client != NULL) {
+        neu_mqtt_client_remove_cache_db(plugin->client);
         neu_mqtt_client_close(plugin->client);
         neu_mqtt_client_free(plugin->client);
     }
@@ -620,12 +622,13 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 }
 
 const neu_plugin_intf_funs_t mqtt_plugin_intf_funs = {
-    .open    = mqtt_plugin_open,
-    .close   = mqtt_plugin_close,
-    .init    = mqtt_plugin_init,
-    .uninit  = mqtt_plugin_uninit,
-    .start   = mqtt_plugin_start,
-    .stop    = mqtt_plugin_stop,
-    .setting = mqtt_plugin_config,
-    .request = mqtt_plugin_request,
+    .open        = mqtt_plugin_open,
+    .close       = mqtt_plugin_close,
+    .init        = mqtt_plugin_init,
+    .uninit      = mqtt_plugin_uninit,
+    .start       = mqtt_plugin_start,
+    .stop        = mqtt_plugin_stop,
+    .setting     = mqtt_plugin_config,
+    .request     = mqtt_plugin_request,
+    .try_connect = NULL,
 };

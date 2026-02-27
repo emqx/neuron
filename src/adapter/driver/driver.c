@@ -741,6 +741,31 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     return 0;
 }
 
+int neu_adapter_driver_try_connect(void *param)
+{
+    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) param;
+    if (driver->tag_cnt > 0) {
+        return 0;
+    }
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return 0;
+    }
+
+    neu_plugin_common_t *common =
+        neu_plugin_to_plugin_common(driver->adapter.plugin);
+    if (common->link_state == NEU_NODE_LINK_STATE_CONNECTED) {
+        return 0;
+    }
+
+    if (driver->adapter.module->intf_funs->try_connect == NULL) {
+        return 0;
+    }
+
+    return driver->adapter.module->intf_funs->try_connect(
+        driver->adapter.plugin);
+}
+
 static inline void start_group_timer(neu_adapter_driver_t *driver, group_t *grp)
 {
     uint32_t interval = neu_group_get_interval(grp->group);

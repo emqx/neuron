@@ -397,14 +397,15 @@ static int monitor_plugin_stop(neu_plugin_t *plugin)
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open    = monitor_plugin_open,
-    .close   = monitor_plugin_close,
-    .init    = monitor_plugin_init,
-    .uninit  = monitor_plugin_uninit,
-    .start   = monitor_plugin_start,
-    .stop    = monitor_plugin_stop,
-    .setting = monitor_plugin_config,
-    .request = monitor_plugin_request,
+    .open        = monitor_plugin_open,
+    .close       = monitor_plugin_close,
+    .init        = monitor_plugin_init,
+    .uninit      = monitor_plugin_uninit,
+    .start       = monitor_plugin_start,
+    .stop        = monitor_plugin_stop,
+    .setting     = monitor_plugin_config,
+    .request     = monitor_plugin_request,
+    .try_connect = NULL,
 };
 
 #define DEFAULT_MONITOR_PLUGIN_DESCR \

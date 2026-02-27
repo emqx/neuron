@@ -36,6 +36,7 @@ static int driver_stop(neu_plugin_t *plugin);
 static int driver_config(neu_plugin_t *plugin, const char *config);
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
+static int driver_connect(neu_plugin_t *plugin);
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
@@ -46,14 +47,15 @@ static int driver_test_read_tag(neu_plugin_t *plugin, void *req,
                                 neu_datatag_t tag);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open    = driver_open,
-    .close   = driver_close,
-    .init    = driver_init,
-    .uninit  = driver_uninit,
-    .start   = driver_start,
-    .stop    = driver_stop,
-    .setting = driver_config,
-    .request = driver_request,
+    .open        = driver_open,
+    .close       = driver_close,
+    .init        = driver_init,
+    .uninit      = driver_uninit,
+    .start       = driver_start,
+    .stop        = driver_stop,
+    .setting     = driver_config,
+    .request     = driver_request,
+    .try_connect = driver_connect,
 
     .driver.validate_tag  = driver_validate_tag,
     .driver.group_timer   = driver_group_timer,
@@ -385,6 +387,21 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         backup_ip.v.val_str = NULL;
     }
 
+    return 0;
+}
+
+static int driver_connect(neu_plugin_t *plugin)
+{
+    if (plugin->conn != NULL) {
+        if (neu_conn_is_connected(plugin->conn)) {
+            plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+        } else {
+            neu_conn_connect(plugin->conn);
+            if (neu_conn_is_connected(plugin->conn)) {
+                plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+            }
+        }
+    }
     return 0;
 }
 

@@ -55,6 +55,7 @@ struct neu_adapter {
 
     neu_event_timer_t *timer_lev;
     int64_t            timestamp_lev;
+    neu_event_timer_t *timer_connect;
 
     // metrics
     neu_node_metrics_t *metrics;
