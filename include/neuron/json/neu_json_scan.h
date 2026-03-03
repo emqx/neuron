@@ -37,6 +37,7 @@ typedef struct {
     char *node;
     char *id;
     char *ctx;
+    int   load_index;
 } neu_json_scan_tags_req_t;
 
 int neu_json_decode_scan_tags_req(char *buf, neu_json_scan_tags_req_t **result);

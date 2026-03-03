@@ -248,7 +248,6 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_SETTING_NOT_FOUND:
     case NEU_ERR_PLUGIN_READ_FAILURE:
     case NEU_ERR_PLUGIN_WRITE_FAILURE:
-    case NEU_ERR_PLUGIN_DISCONNECTED:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE:
     case NEU_ERR_LICENSE_EXPIRED:
@@ -343,6 +342,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_TAGS_TOO_MANY:
     case NEU_ERR_NODE_TAGS_INVALID:
     case NEU_ERR_NODE_TAGS_TOO_LONG:
+    case NEU_ERR_PLUGIN_DISCONNECTED:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_FILE_NOT_EXIST:
