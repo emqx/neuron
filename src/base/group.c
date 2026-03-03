@@ -372,8 +372,10 @@ void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn)
 {
     if (group->timestamp != timestamp) {
+        pthread_mutex_lock(&group->mtx);
         UT_array *tags = to_array(group->tags);
         fn(arg, group->timestamp, tags, group->interval);
+        pthread_mutex_unlock(&group->mtx);
     }
 }
 
