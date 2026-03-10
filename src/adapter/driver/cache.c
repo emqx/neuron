@@ -849,7 +849,12 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
             }
             elem->metas = calloc(n_meta, sizeof(neu_tag_meta_t));
             for (int i = 0; i < n_meta; i++) {
-                memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
+                if (!neu_dvalue_is_array(&metas[i].value)) {
+                    memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
+                } else {
+                    neu_free_dvalue(&metas[i].value);
+                    elem->metas[i].value.type = NEU_TYPE_INT8;
+                }
             }
 
             elem->n_meta = n_meta;

@@ -343,6 +343,11 @@ typedef struct {
     uint8_t     precision;
 } neu_dvalue_t;
 
+static inline bool neu_dvalue_is_array(const neu_dvalue_t *dvalue)
+{
+    return dvalue->type >= NEU_TYPE_ARRAY_CHAR;
+}
+
 static inline void neu_free_dvalue(neu_dvalue_t *dvalue)
 {
     if (dvalue->type > NEU_TYPE_ARRAY_CHAR &&
