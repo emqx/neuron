@@ -24,14 +24,14 @@ target_include_directories(jwt_test PRIVATE
     ${CMAKE_SOURCE_DIR}/src 
 	${CMAKE_SOURCE_DIR}/include
 	${CMAKE_SOURCE_DIR}/src/utils)
-target_link_libraries(jwt_test neuron-base gtest_main gtest jansson ssl crypto jwt libzlog.so)
+target_link_libraries(jwt_test neuron-base gtest_main gtest jansson OpenSSL::SSL OpenSSL::Crypto jwt libzlog.so)
 
 add_executable(base64_test base64_test.cc ${CMAKE_SOURCE_DIR}/src/utils/base64.c)
 target_include_directories(base64_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       
 )
-target_link_libraries(base64_test neuron-base gtest_main gtest crypto)
+target_link_libraries(base64_test neuron-base gtest_main gtest OpenSSL::Crypto)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/base/tag_sort.c SRC_SORT)
 add_executable(tag_sort_test tag_sort_test.cc ${SRC_SORT})
