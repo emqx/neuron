@@ -27,7 +27,7 @@ cd ../..
 
 # Install NanoSDK
 echo "Installing NanoSDK..."
-git clone -b neuron https://github.com/neugates/NanoSDK.git
+git clone https://github.com/neugates/NanoSDK.git
 cd NanoSDK && mkdir build && cd build
 cmake -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_SQLITE=ON -DNNG_ENABLE_TLS=ON .. && make && sudo make install
 cd ../..
