@@ -1987,7 +1987,7 @@ inline static void notify_monitor(neu_manager_t *    manager,
     // monitor not ready, ignore
     neu_node_manager_t *mgr  = manager->node_manager;
     struct sockaddr_un  addr = neu_node_manager_get_addr(mgr, "monitor");
-    if (0 == addr.sun_path[0]) {
+    if (0 == addr.sun_path[1]) {
         return;
     }
 
