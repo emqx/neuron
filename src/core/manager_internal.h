@@ -20,6 +20,8 @@
 #ifndef _NEU_MANAGER_INTERNAL_H_
 #define _NEU_MANAGER_INTERNAL_H_
 
+#include <errno.h>
+
 #include "event/event.h"
 #include "persist/persist.h"
 
@@ -110,9 +112,9 @@ inline static void forward_msg(neu_manager_t *     manager,
     if (0 == ret) {
         nlog_info("forward msg %s to %s", neu_reqresp_type_string(t), receiver);
     } else {
-        nlog_warn("forward msg %s to node (%s)%s %s %s fail",
+        nlog_warn("forward msg %s to node (%s)%s %s %s fail, errno: %s(%d)",
                   neu_reqresp_type_string(t), receiver, &addr.sun_path[1], node,
-                  header->sender);
+                  header->sender, strerror(errno), errno);
         neu_msg_free(msg);
     }
 }
