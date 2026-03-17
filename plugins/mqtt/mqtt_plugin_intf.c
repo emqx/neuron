@@ -167,6 +167,7 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     mqtt_config_fini(&plugin->config);
     if (plugin->client) {
+        neu_mqtt_client_remove_cache_db(plugin->client);
         neu_mqtt_client_close(plugin->client);
         neu_mqtt_client_free(plugin->client);
         plugin->client = NULL;
@@ -395,6 +396,7 @@ int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
 
     if (plugin->client != NULL) {
+        neu_mqtt_client_remove_cache_db(plugin->client);
         neu_mqtt_client_close(plugin->client);
         neu_mqtt_client_free(plugin->client);
     }
