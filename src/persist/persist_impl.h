@@ -175,6 +175,18 @@ struct neu_persister_vtbl_s {
                       const char *group_name, const char *tag_name);
 
     /**
+     * Rename node tag.
+     * @param driver_name               name of the driver who owns the tags
+     * @param group_name                name of the group
+     * @param old_name                  old name of the tag
+     * @param new_name                  new name of the tag
+     * @return 0 on success, non-zero otherwise
+     */
+    int (*rename_tag)(neu_persister_t *self, const char *driver_name,
+                      const char *group_name, const char *old_name,
+                      const char *new_name);
+
+    /**
      * Persist subscriptions.
      * @param app_name                  name of the app node
      * @param driver_name               name of the driver node

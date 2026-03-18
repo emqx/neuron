@@ -398,6 +398,72 @@ void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp)
     handle_add_tags_resp(aio, resp);
 }
 
+void handle_rename_tag(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_rename_tag_req_t, neu_json_decode_rename_tag_req, {
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_rename_tag_t cmd    = { 0 };
+            int                  err_type;
+
+            header.ctx             = aio;
+            header.type            = NEU_REQ_RENAME_TAG;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->old_name) == 0 || strlen(req->new_name) == 0) {
+                err_type = NEU_ERR_PARAM_IS_WRONG;
+                goto error;
+            }
+
+            if (strlen(req->old_name) >= NEU_TAG_NAME_LEN) {
+                err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->new_name) >= NEU_TAG_NAME_LEN) {
+                err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                goto error;
+            }
+
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            strcpy(cmd.old_name, req->old_name);
+            strcpy(cmd.new_name, req->new_name);
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+        success:;
+        })
+}
+
+void handle_rename_tag_resp(nng_aio *aio, neu_resp_rename_tag_t *resp)
+{
+    NEU_JSON_RESPONSE_ERROR(
+        resp->error, { neu_http_response(aio, resp->error, result_error); });
+}
+
 void handle_get_tags(nng_aio *aio)
 {
     neu_plugin_t *     plugin                     = neu_rest_get_plugin();

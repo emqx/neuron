@@ -71,8 +71,8 @@ inline static tkey_t to_key(const char *group, const char *tag)
 {
     tkey_t key = { 0 };
 
-    strcpy(key.group, group);
-    strcpy(key.tag, tag);
+    strncpy(key.group, group, sizeof(key.group) - 1);
+    strncpy(key.tag, tag, sizeof(key.tag) - 1);
 
     return key;
 }
@@ -1262,6 +1262,24 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
             free(elem->metas);
         }
         free(elem);
+    }
+
+    pthread_mutex_unlock(&cache->mtx);
+}
+
+void neu_driver_cache_rename(neu_driver_cache_t *cache, const char *group,
+                             const char *old_tag, const char *new_tag)
+{
+    struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, old_tag);
+
+    pthread_mutex_lock(&cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+
+    if (elem != NULL) {
+        HASH_DEL(cache->table, elem);
+        elem->key = to_key(group, new_tag);
+        HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
     }
 
     pthread_mutex_unlock(&cache->mtx);

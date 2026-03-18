@@ -548,6 +548,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_RENAME_TAG: {
+        neu_req_rename_tag_t *cmd = (neu_req_rename_tag_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
     case NEU_REQ_IMPORT_TAGS: {
         neu_req_import_tags_t *cmd = (neu_req_import_tags_t *) data;
         strcpy(pheader->receiver, cmd->node);
@@ -887,6 +892,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_ADD_GTAG:
     case NEU_RESP_IMPORT_TAGS:
     case NEU_RESP_UPDATE_TAG:
+    case NEU_RESP_RENAME_TAG:
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_NODE:
     case NEU_RESP_GET_PLUGIN:
@@ -912,6 +918,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_TAG_EVENT:
     case NEU_REQ_DEL_TAG_EVENT:
     case NEU_REQ_UPDATE_TAG_EVENT:
+    case NEU_REQ_RENAME_TAG_EVENT:
     case NEU_REQ_ADD_GTAG_EVENT:
     case NEU_REQ_ADD_PLUGIN_EVENT:
     case NEU_REQ_DEL_PLUGIN_EVENT:
@@ -1769,6 +1776,40 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_UPDATE_TAG;
+        reply(adapter, header, &resp);
+        break;
+    }
+    case NEU_REQ_RENAME_TAG: {
+        neu_req_rename_tag_t *cmd  = (neu_req_rename_tag_t *) &header[1];
+        neu_resp_rename_tag_t resp = { 0 };
+
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            resp.error = neu_adapter_driver_rename_tag(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->old_name,
+                cmd->new_name);
+            if (resp.error == 0) {
+                rv = adapter_storage_rename_tag(cmd->driver, cmd->group,
+                                                cmd->old_name, cmd->new_name);
+                if (rv != 0) {
+                    // rollback in-memory rename on persistence failure
+                    nlog_error("persist rename failed, rolling back "
+                               "tag:%s->%s node:%s grp:%s",
+                               cmd->old_name, cmd->new_name, cmd->driver,
+                               cmd->group);
+                    neu_adapter_driver_rename_tag(
+                        (neu_adapter_driver_t *) adapter, cmd->group,
+                        cmd->new_name, cmd->old_name);
+                    resp.error = NEU_ERR_EINTERNAL;
+                } else if (header->monitor) {
+                    notify_monitor(adapter, NEU_REQ_RENAME_TAG_EVENT, cmd);
+                }
+            }
+        } else {
+            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
+        }
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_RENAME_TAG;
         reply(adapter, header, &resp);
         break;
     }

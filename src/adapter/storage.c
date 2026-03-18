@@ -127,6 +127,17 @@ void adapter_storage_del_tag(const char *node, const char *group,
     }
 }
 
+int adapter_storage_rename_tag(const char *node, const char *group,
+                               const char *old_name, const char *new_name)
+{
+    int rv = neu_persister_rename_tag(node, group, old_name, new_name);
+    if (0 != rv) {
+        nlog_error("fail rename tag:%s->%s adapter:%s grp:%s", old_name,
+                   new_name, node, group);
+    }
+    return rv;
+}
+
 int adapter_load_setting(const char *node, char **setting)
 {
     int rv = neu_persister_load_node_setting(node, (const char **) setting);

@@ -33,6 +33,8 @@ void handle_import_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp);
 void handle_del_tags(nng_aio *aio);
 void handle_update_tags(nng_aio *aio);
 void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp);
+void handle_rename_tag(nng_aio *aio);
+void handle_rename_tag_resp(nng_aio *aio, neu_resp_rename_tag_t *resp);
 void handle_get_tags(nng_aio *aio);
 void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags);
 

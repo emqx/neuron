@@ -212,6 +212,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/simulator/export",
     },
+    {
+        .url = "/api/v2/tag/rename",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -293,6 +296,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
         .value.handler = handle_del_tags,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/tag/rename",
+        .value.handler = handle_rename_tag,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

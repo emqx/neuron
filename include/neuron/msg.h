@@ -114,6 +114,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_UPDATE_TAG,
     NEU_REQ_GET_TAG,
     NEU_RESP_GET_TAG,
+    NEU_REQ_RENAME_TAG,
+    NEU_RESP_RENAME_TAG,
 
     NEU_REQ_ADD_PLUGIN,
     NEU_REQ_DEL_PLUGIN,
@@ -169,6 +171,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_TAG_EVENT,
     NEU_REQ_DEL_TAG_EVENT,
     NEU_REQ_UPDATE_TAG_EVENT,
+    NEU_REQ_RENAME_TAG_EVENT,
     NEU_REQ_IMPORT_TAGS_EVENT,
 
     NEU_REQ_ADD_GTAG_EVENT,
@@ -279,6 +282,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_UPDATE_TAG]  = "NEU_RESP_UPDATE_TAG",
     [NEU_REQ_GET_TAG]      = "NEU_REQ_GET_TAG",
     [NEU_RESP_GET_TAG]     = "NEU_RESP_GET_TAG",
+    [NEU_REQ_RENAME_TAG]   = "NEU_REQ_RENAME_TAG",
+    [NEU_RESP_RENAME_TAG]  = "NEU_RESP_RENAME_TAG",
 
     [NEU_REQ_ADD_PLUGIN]    = "NEU_REQ_ADD_PLUGIN",
     [NEU_REQ_DEL_PLUGIN]    = "NEU_REQ_DEL_PLUGIN",
@@ -333,6 +338,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_ADD_TAG_EVENT]           = "NEU_REQ_ADD_TAG_EVENT",
     [NEU_REQ_DEL_TAG_EVENT]           = "NEU_REQ_DEL_TAG_EVENT",
     [NEU_REQ_UPDATE_TAG_EVENT]        = "NEU_REQ_UPDATE_TAG_EVENT",
+    [NEU_REQ_RENAME_TAG_EVENT]        = "NEU_REQ_RENAME_TAG_EVENT",
     [NEU_REQ_IMPORT_TAGS_EVENT]       = "NEU_REQ_IMPORT_TAGS_EVENT",
     [NEU_REQ_ADD_GTAG_EVENT]          = "NEU_REQ_ADD_GTAG_EVENT",
     [NEU_REQ_ADD_PLUGIN_EVENT]        = "NEU_REQ_ADD_PLUGIN_EVENT",
@@ -729,6 +735,17 @@ typedef struct neu_req_get_tag {
 typedef struct neu_resp_get_tag {
     UT_array *tags; // array neu_datatag_t
 } neu_resp_get_tag_t;
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+    char old_name[NEU_TAG_NAME_LEN];
+    char new_name[NEU_TAG_NAME_LEN];
+} neu_req_rename_tag_t;
+
+typedef struct {
+    int error;
+} neu_resp_rename_tag_t;
 
 typedef struct {
     char     app[NEU_NODE_NAME_LEN];

@@ -917,3 +917,99 @@ class TestTag:
         assert 400 == response.status_code
         assert NEU_ERR_TAG_DECIMAL_INVALID == response.json()['error']
         assert 1 == response.json()['index']
+
+    @description(given="an existing tag", when="renaming to a new name", then="successfully renamed")
+    def test_rename_tag_success(self):
+        tag = [{"name": "rename_test_tag", "address": "1!400001",
+                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag)
+
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="rename_test_tag", new_name="renamed_tag")
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_tags(node="modbus-tcp", group="group1")
+        assert 200 == response.status_code
+        tag_names = [t['name'] for t in response.json()['tags']]
+        assert "renamed_tag" in tag_names
+        assert "rename_test_tag" not in tag_names
+
+        api.del_tags(node="modbus-tcp", group="group1", tags=["renamed_tag"])
+
+    @description(given="an existing tag", when="renaming to a name that already exists", then="fail with conflict error")
+    def test_rename_tag_conflict(self):
+        tag1 = [{"name": "rename_tag_a", "address": "1!400001",
+                 "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        tag2 = [{"name": "rename_tag_b", "address": "1!400002",
+                 "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag1)
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag2)
+
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="rename_tag_a", new_name="rename_tag_b")
+        assert 409 == response.status_code
+        assert NEU_ERR_TAG_NAME_CONFLICT == response.json()['error']
+
+        api.del_tags(node="modbus-tcp", group="group1", tags=["rename_tag_a", "rename_tag_b"])
+
+    @description(given="a non-existing tag", when="renaming", then="fail with not exist error")
+    def test_rename_tag_not_exist(self):
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="non_exist_tag", new_name="new_name")
+        assert 404 == response.status_code
+        assert NEU_ERR_TAG_NOT_EXIST == response.json()['error']
+
+    @description(given="an existing tag", when="renaming to the same name", then="success as no-op")
+    def test_rename_tag_same_name(self):
+        tag = [{"name": "rename_same_tag", "address": "1!400001",
+                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag)
+
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="rename_same_tag", new_name="rename_same_tag")
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json()['error']
+
+        api.del_tags(node="modbus-tcp", group="group1", tags=["rename_same_tag"])
+
+    @description(given="an empty new_name", when="renaming", then="fail with name too long error")
+    def test_rename_tag_empty_new_name(self):
+        tag = [{"name": "rename_empty_tag", "address": "1!400001",
+                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag)
+
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="rename_empty_tag", new_name="")
+        assert 400 == response.status_code
+        assert NEU_ERR_PARAM_IS_WRONG == response.json()['error']
+
+        api.del_tags(node="modbus-tcp", group="group1", tags=["rename_empty_tag"])
+
+    @description(given="a new_name exceeding max length", when="renaming", then="fail with name too long error")
+    def test_rename_tag_name_too_long(self):
+        tag = [{"name": "rename_long_tag", "address": "1!400001",
+                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tag)
+
+        long_name = "a" * 128
+        response = api.rename_tag(node="modbus-tcp", group="group1",
+                                  old_name="rename_long_tag", new_name=long_name)
+        assert 400 == response.status_code
+        assert NEU_ERR_TAG_NAME_TOO_LONG == response.json()['error']
+
+        api.del_tags(node="modbus-tcp", group="group1", tags=["rename_long_tag"])
+
+    @description(given="a non-existing group", when="renaming tag", then="fail with group not exist")
+    def test_rename_tag_group_not_exist(self):
+        response = api.rename_tag(node="modbus-tcp", group="no_such_group",
+                                  old_name="some_tag", new_name="new_tag")
+        assert 404 == response.status_code
+        assert NEU_ERR_GROUP_NOT_EXIST == response.json()['error']
+
+    @description(given="a non-existing node", when="renaming tag", then="fail with node not exist")
+    def test_rename_tag_node_not_exist(self):
+        response = api.rename_tag(node="no_such_node", group="group1",
+                                  old_name="some_tag", new_name="new_tag")
+        assert 404 == response.status_code
+        assert NEU_ERR_NODE_NOT_EXIST == response.json()['error']
