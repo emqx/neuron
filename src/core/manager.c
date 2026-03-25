@@ -1515,6 +1515,19 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_RENAME_TAG: {
+        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
+            NULL) {
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+        } else {
+            forward_msg(manager, header, header->receiver);
+        }
+
+        break;
+    }
     case NEU_REQ_ADD_GTAG: {
         neu_req_add_gtag_t *cmd = (neu_req_add_gtag_t *) &header[1];
 
@@ -1593,6 +1606,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_SERVER_SECURITY_POLICY_STATUS:
     case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
     case NEU_RESP_SERVER_AUTH_USER_INFO:
+    case NEU_RESP_RENAME_TAG:
         forward_msg(manager, header, header->receiver);
         break;
 
@@ -1739,6 +1753,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_TAG_EVENT:
     case NEU_REQ_DEL_TAG_EVENT:
     case NEU_REQ_UPDATE_TAG_EVENT:
+    case NEU_REQ_RENAME_TAG_EVENT:
     case NEU_REQ_ADD_GTAG_EVENT:
     case NEU_REQ_ADD_PLUGIN_EVENT:
     case NEU_REQ_DEL_PLUGIN_EVENT:

@@ -422,6 +422,7 @@ static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
     .update_tag               = neu_sqlite_persister_update_tag,
     .update_tag_value         = neu_sqlite_persister_update_tag_value,
     .delete_tag               = neu_sqlite_persister_delete_tag,
+    .rename_tag               = neu_sqlite_persister_rename_tag,
     .store_subscription       = neu_sqlite_persister_store_subscription,
     .update_subscription      = neu_sqlite_persister_update_subscription,
     .load_subscriptions       = neu_sqlite_persister_load_subscriptions,
@@ -887,6 +888,23 @@ int neu_sqlite_persister_delete_tag(neu_persister_t *self,
         ((neu_sqlite_persister_t *) self)->db,
         "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
         driver_name, group_name, tag_name);
+    return rv;
+}
+
+int neu_sqlite_persister_rename_tag(neu_persister_t *self,
+                                    const char *     driver_name,
+                                    const char *     group_name,
+                                    const char *old_name, const char *new_name)
+{
+    sqlite3 *db = ((neu_sqlite_persister_t *) self)->db;
+    int      rv = execute_sql(db,
+                         "UPDATE tags SET name=%Q "
+                         "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+                         new_name, driver_name, group_name, old_name);
+    if (0 == rv && 0 == sqlite3_changes(db)) {
+        nlog_warn("rename tag affected 0 rows: %s/%s %s->%s", driver_name,
+                  group_name, old_name, new_name);
+    }
     return rv;
 }
 

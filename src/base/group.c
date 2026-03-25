@@ -157,6 +157,56 @@ int neu_group_update_tag(neu_group_t *group, const neu_datatag_t *tag)
     return ret;
 }
 
+int neu_group_rename_tag(neu_group_t *group, const char *old_name,
+                         const char *new_name)
+{
+    tag_elem_t *el       = NULL;
+    tag_elem_t *conflict = NULL;
+    int         ret      = NEU_ERR_TAG_NOT_EXIST;
+
+    pthread_mutex_lock(&group->mtx);
+    HASH_FIND_STR(group->tags, old_name, el);
+    if (el == NULL) {
+        pthread_mutex_unlock(&group->mtx);
+        return ret;
+    }
+
+    // short-circuit: renaming to the same name is a no-op
+    if (strcmp(old_name, new_name) == 0) {
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_SUCCESS;
+    }
+
+    HASH_FIND_STR(group->tags, new_name, conflict);
+    if (conflict != NULL) {
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_TAG_NAME_CONFLICT;
+    }
+
+    // allocate new names before freeing old ones to ensure atomicity on OOM
+    char *new_el_name  = strdup(new_name);
+    char *new_tag_name = strdup(new_name);
+    if (new_el_name == NULL || new_tag_name == NULL) {
+        free(new_el_name);
+        free(new_tag_name);
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    HASH_DEL(group->tags, el);
+    free(el->name);
+    el->name = new_el_name;
+    free(el->tag->name);
+    el->tag->name = new_tag_name;
+    HASH_ADD_STR(group->tags, name, el);
+
+    update_timestamp(group);
+    ret = NEU_ERR_SUCCESS;
+    pthread_mutex_unlock(&group->mtx);
+
+    return ret;
+}
+
 int neu_group_del_tag(neu_group_t *group, const char *tag_name)
 {
     tag_elem_t *el  = NULL;

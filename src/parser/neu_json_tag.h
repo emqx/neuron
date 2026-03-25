@@ -159,6 +159,17 @@ typedef struct {
 
 int neu_json_encode_import_tags_resp(void *json_object, void *param);
 
+typedef struct {
+    char *node;
+    char *group;
+    char *old_name;
+    char *new_name;
+} neu_json_rename_tag_req_t;
+
+int  neu_json_decode_rename_tag_req(char *                      buf,
+                                    neu_json_rename_tag_req_t **result);
+void neu_json_decode_rename_tag_req_free(neu_json_rename_tag_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

@@ -37,6 +37,8 @@ void         neu_group_destroy(neu_group_t *group);
 int          neu_group_update(neu_group_t *group, uint32_t interval);
 int          neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag);
 int          neu_group_update_tag(neu_group_t *group, const neu_datatag_t *tag);
+int          neu_group_rename_tag(neu_group_t *group, const char *old_name,
+                                  const char *new_name);
 int          neu_group_del_tag(neu_group_t *group, const char *tag_name);
 UT_array *   neu_group_get_tag(neu_group_t *group);
 UT_array *   neu_group_query_tag(neu_group_t *group, const char *name);

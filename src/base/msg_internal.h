@@ -132,6 +132,7 @@ extern "C" {
     XX(NEU_REQ_ADD_TAG_EVENT, neu_req_add_tag_t)                               \
     XX(NEU_REQ_DEL_TAG_EVENT, neu_req_del_tag_t)                               \
     XX(NEU_REQ_UPDATE_TAG_EVENT, neu_req_update_tag_t)                         \
+    XX(NEU_REQ_RENAME_TAG_EVENT, neu_req_rename_tag_t)                         \
     XX(NEU_REQ_ADD_GTAG_EVENT, neu_req_add_gtag_t)                             \
     XX(NEU_REQ_IMPORT_TAGS_EVENT, neu_req_import_tags_t)                       \
     XX(NEU_REQ_ADD_PLUGIN_EVENT, neu_req_add_plugin_t)                         \
@@ -171,7 +172,9 @@ extern "C" {
     XX(NEU_REQ_SERVER_AUTH_USER_DELETE, neu_req_server_auth_user_del_t)        \
     XX(NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD, neu_req_server_auth_user_update_t) \
     XX(NEU_REQ_SERVER_AUTH_USER_INFO, neu_req_server_auth_users_info_t)        \
-    XX(NEU_RESP_SERVER_AUTH_USER_INFO, neu_resp_server_auth_users_info_t)
+    XX(NEU_RESP_SERVER_AUTH_USER_INFO, neu_resp_server_auth_users_info_t)      \
+    XX(NEU_REQ_RENAME_TAG, neu_req_rename_tag_t)                               \
+    XX(NEU_RESP_RENAME_TAG, neu_resp_rename_tag_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

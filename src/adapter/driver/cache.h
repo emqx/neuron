@@ -43,6 +43,8 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
 
 void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
                           const char *tag);
+void neu_driver_cache_rename(neu_driver_cache_t *cache, const char *group,
+                             const char *old_tag, const char *new_tag);
 
 void neu_driver_cache_update_trace(neu_driver_cache_t *cache, const char *group,
                                    void *trace_ctx);

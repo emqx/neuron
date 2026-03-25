@@ -2320,6 +2320,30 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
     return ret;
 }
 
+int neu_adapter_driver_rename_tag(neu_adapter_driver_t *driver,
+                                  const char *group, const char *old_name,
+                                  const char *new_name)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    if (strlen(new_name) >= NEU_TAG_NAME_LEN) {
+        return NEU_ERR_TAG_NAME_TOO_LONG;
+    }
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        ret = neu_group_rename_tag(find->group, old_name, new_name);
+        if (ret == NEU_ERR_SUCCESS) {
+            neu_driver_cache_rename(driver->cache, group, old_name, new_name);
+        }
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    return ret;
+}
+
 int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
                                UT_array **tags)
 {

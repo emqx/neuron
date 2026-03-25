@@ -393,6 +393,13 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
     return g_impl->vtbl->delete_tag(g_impl, driver_name, group_name, tag_name);
 }
 
+int neu_persister_rename_tag(const char *driver_name, const char *group_name,
+                             const char *old_name, const char *new_name)
+{
+    return g_impl->vtbl->rename_tag(g_impl, driver_name, group_name, old_name,
+                                    new_name);
+}
+
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
                                      const char *group_name, const char *params,

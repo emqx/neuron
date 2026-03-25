@@ -1018,3 +1018,79 @@ int neu_json_encode_import_tags_resp(void *json_object, void *param)
 
     return ret;
 }
+
+int neu_json_decode_rename_tag_req(char *                      buf,
+                                   neu_json_rename_tag_req_t **result)
+{
+    int                        ret      = 0;
+    void *                     json_obj = NULL;
+    neu_json_rename_tag_req_t *req =
+        calloc(1, sizeof(neu_json_rename_tag_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "old_name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "new_name",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    req->node     = req_elems[0].v.val_str;
+    req->group    = req_elems[1].v.val_str;
+    req->old_name = req_elems[2].v.val_str;
+    req->new_name = req_elems[3].v.val_str;
+    *result       = req;
+    goto decode_exit;
+
+decode_fail:
+    free(req);
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    free(req_elems[2].v.val_str);
+    free(req_elems[3].v.val_str);
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_rename_tag_req_free(neu_json_rename_tag_req_t *req)
+{
+    if (NULL == req) {
+        return;
+    }
+
+    free(req->node);
+    free(req->group);
+    free(req->old_name);
+    free(req->new_name);
+    free(req);
+}

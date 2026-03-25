@@ -177,6 +177,10 @@ def get_tags(node, group):
     return requests.get(url=config.BASE_URL + "/api/v2/tags", headers={"Authorization": config.default_jwt}, params={"node": node, "group": group})
 
 
+def rename_tag(node, group, old_name, new_name):
+    return requests.put(url=config.BASE_URL + '/api/v2/tag/rename', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "old_name": old_name, "new_name": new_name})
+
+
 def read_tags(node, group, sync=False, query=None):
     body = {"node": node, "group": group, "sync": sync}
     if query:

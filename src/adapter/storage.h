@@ -41,6 +41,8 @@ void adapter_storage_update_tag_value(const char *node, const char *group,
                                       const neu_datatag_t *tag);
 void adapter_storage_del_tag(const char *node, const char *group,
                              const char *name);
+int  adapter_storage_rename_tag(const char *node, const char *group,
+                                const char *old_name, const char *new_name);
 
 int adapter_load_setting(const char *node, char **setting);
 int adapter_load_group_and_tag(neu_adapter_driver_t *driver);

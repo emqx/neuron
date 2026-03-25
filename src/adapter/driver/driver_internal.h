@@ -78,6 +78,9 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
                                const char *tag);
 int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
                                   const char *group, neu_datatag_t *tag);
+int neu_adapter_driver_rename_tag(neu_adapter_driver_t *driver,
+                                  const char *group, const char *old_name,
+                                  const char *new_name);
 int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
                                UT_array **tags);
 UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
