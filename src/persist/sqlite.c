@@ -623,11 +623,11 @@ int neu_sqlite_persister_store_tag(neu_persister_t *    self,
         ((neu_sqlite_persister_t *) self)->db,
         "INSERT INTO tags ("
         " driver_name, group_name, name, address, attribute,"
-        " precision, type, decimal, bias, description, value, format"
-        ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q, %Q)",
+        " precision, type, decimal, bias, description, value, format, unit"
+        ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q, %Q, %Q)",
         driver_name, group_name, tag->name, tag->address, tag->attribute,
         tag->precision, tag->type, tag->decimal, tag->bias, tag->description,
-        "", format_buf);
+        "", format_buf, tag->unit);
 
     return rv;
 }
@@ -706,6 +706,12 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
             return -1;
         }
 
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 13, tag->unit, -1, NULL)) {
+            nlog_error("bind `%s` with unit=`%s` fail: %s", query, tag->unit,
+                       sqlite3_errmsg(db));
+            return -1;
+        }
+
         if (SQLITE_DONE != sqlite3_step(stmt)) {
             nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(db));
             return -1;
@@ -726,8 +732,8 @@ int neu_sqlite_persister_store_tags(neu_persister_t *    self,
     const char *  query =
         "INSERT INTO tags ("
         " driver_name, group_name, name, address, attribute,"
-        " precision, type, decimal, bias, description, value, format"
-        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)";
+        " precision, type, decimal, bias, description, value, format, unit"
+        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)";
 
     if (SQLITE_OK != sqlite3_exec(persister->db, "BEGIN", NULL, NULL, NULL)) {
         nlog_error("begin transaction fail: %s", sqlite3_errmsg(persister->db));
@@ -788,6 +794,7 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
             .decimal     = sqlite3_column_double(stmt, 5),
             .bias        = sqlite3_column_double(stmt, 6),
             .description = (char *) sqlite3_column_text(stmt, 7),
+            .unit        = (char *) sqlite3_column_text(stmt, 10),
         };
 
         tag.n_format = neu_format_from_str(format, tag.format);
@@ -812,7 +819,7 @@ int neu_sqlite_persister_load_tags(neu_persister_t *self,
 
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
-                        "decimal, bias, description, value, format "
+                        "decimal, bias, description, value, format, unit "
                         "FROM tags WHERE driver_name=? AND group_name=? "
                         "ORDER BY rowid ASC";
 
@@ -856,14 +863,15 @@ int neu_sqlite_persister_update_tag(neu_persister_t *    self,
                                     const char *         group_name,
                                     const neu_datatag_t *tag)
 {
-    int rv = execute_sql(((neu_sqlite_persister_t *) self)->db,
-                         "UPDATE tags SET"
-                         " address=%Q, attribute=%i, precision=%i, type=%i,"
-                         " decimal=%lf, bias=%lf, description=%Q, value=%Q "
-                         "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
-                         tag->address, tag->attribute, tag->precision,
-                         tag->type, tag->decimal, tag->bias, tag->description,
-                         "", driver_name, group_name, tag->name);
+    int rv =
+        execute_sql(((neu_sqlite_persister_t *) self)->db,
+                    "UPDATE tags SET"
+                    " address=%Q, attribute=%i, precision=%i, type=%i,"
+                    " decimal=%lf, bias=%lf, description=%Q, value=%Q, unit=%Q "
+                    "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+                    tag->address, tag->attribute, tag->precision, tag->type,
+                    tag->decimal, tag->bias, tag->description, "", tag->unit,
+                    driver_name, group_name, tag->name);
     return rv;
 }
 

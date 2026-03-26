@@ -40,6 +40,11 @@ static void tag_array_copy(void *_dst, const void *_src)
     dst->address     = strdup(src->address);
     dst->name        = strdup(src->name);
     dst->description = strdup(src->description);
+    if (src->unit == NULL) {
+        dst->unit = strdup("");
+    } else {
+        dst->unit = strdup(src->unit);
+    }
 
     memcpy(dst->format, src->format, sizeof(src->format));
     dst->n_format = src->n_format;
@@ -53,6 +58,9 @@ static void tag_array_free(void *_elt)
     free(elt->name);
     free(elt->address);
     free(elt->description);
+    if (elt->unit) {
+        free(elt->unit);
+    }
 }
 
 void neu_tag_format_str(const neu_datatag_t *tag, char *buf, int len)

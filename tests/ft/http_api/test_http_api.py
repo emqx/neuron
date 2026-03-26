@@ -156,7 +156,8 @@ driver_1 = {
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400001",
-                    "description": ""
+                    "description": "",
+                    "unit": ""
                 },
                 {
                     "type": 3,
@@ -166,7 +167,8 @@ driver_1 = {
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400002",
-                    "description": ""
+                    "description": "",
+                    "unit": ""
                 }
             ],
         },
@@ -204,7 +206,8 @@ driver_2 = {
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400001",
-                    "description": ""
+                    "description": "",
+                    "unit": ""
                 },
                 {
                     "type": 3,
@@ -214,7 +217,8 @@ driver_2 = {
                     "decimal": 0.0,
                     "bias": 1.0,
                     "address": "1!400002",
-                    "description": ""
+                    "description": "",
+                    "unit": ""
                 }
             ],
         }

@@ -14,6 +14,8 @@ hold_int16_bit = [{"name": "hold_int16_type", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_BIT}]
 hold_int16_description = [{"name": "hold_int16_description", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "description": "description info"}]
+hold_int16_unit = [{"name": "hold_int16_unit", "address": "1!400001",
+               "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "unit": "unit_info"}]
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_bias = [{"name": "hold_int16_bias", "address": "1!400001",
@@ -1013,3 +1015,44 @@ class TestTag:
                                   old_name="some_tag", new_name="new_tag")
         assert 404 == response.status_code
         assert NEU_ERR_NODE_NOT_EXIST == response.json()['error']
+    
+    @description(given="a node and group", when="add a tag with unit", then="add success")
+    def test_add_tag_with_unit(self):
+        response = api.add_tags(node="modbus-tcp", group="group1", tags=hold_int16_unit)
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_tags(node="modbus-tcp", group="group1")
+        assert 200 == response.status_code
+        assert "hold_int16_unit" == response.json()["tags"][0]["name"]
+        assert "1!400001" == response.json()["tags"][0]["address"]
+        assert NEU_TAG_ATTRIBUTE_RW == response.json()["tags"][0]["attribute"]
+        assert NEU_TYPE_INT16 == response.json()["tags"][0]["type"]
+        assert "unit_info" == response.json()["tags"][0]["unit"]
+
+        response = api.del_tags(node="modbus-tcp", group="group1", tags=["hold_int16_unit"])
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json()['error']
+
+    @description(given="a node and group", when="add a tag and update with unit", then="update success")
+    def test_update_tag_with_unit(self):
+        api.add_tags_check(node="modbus-tcp", group="group1", tags=hold_int16)
+
+        tag = {
+            **hold_int16[0],
+            "unit": "unit_info",
+        }
+        try:
+            response = api.update_tags(node="modbus-tcp", group="group1", tags=[tag])
+            assert 200 == response.status_code
+            assert NEU_ERR_SUCCESS == response.json()['error']
+
+            response = api.get_tags(node="modbus-tcp", group="group1")
+            assert 200 == response.status_code
+            assert tag["name"] == response.json()["tags"][0]["name"]
+            assert tag["address"] == response.json()["tags"][0]["address"]
+            assert tag["attribute"] == response.json()["tags"][0]["attribute"]
+            assert tag["type"] == response.json()["tags"][0]["type"]
+            assert tag["unit"] == response.json()["tags"][0]["unit"]
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])

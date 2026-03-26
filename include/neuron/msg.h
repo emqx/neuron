@@ -1470,6 +1470,11 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
     tag_json->datatag.bias        = tag_value->datatag.bias;
     tag_json->datatag.description = strdup(tag_value->datatag.description);
     tag_json->datatag.option      = tag_value->datatag.option;
+    if (tag_value->datatag.unit) {
+        tag_json->datatag.unit = strdup(tag_value->datatag.unit);
+    } else {
+        tag_json->datatag.unit = strdup("");
+    }
     memcpy(tag_json->datatag.meta, tag_value->datatag.meta,
            NEU_TAG_META_LENGTH);
 

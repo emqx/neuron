@@ -894,6 +894,12 @@ void handle_read_paginate_resp(nng_aio *                       aio,
                     strdup(tag_value->datatag.address);
                 new_tag_value.datatag.description =
                     strdup(tag_value->datatag.description);
+                if (tag_value->datatag.unit) {
+                    new_tag_value.datatag.unit =
+                        strdup(tag_value->datatag.unit);
+                } else {
+                    new_tag_value.datatag.unit = strdup("");
+                }
 
                 utarray_push_back(filtered_tags, &new_tag_value);
             }
@@ -908,6 +914,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
                 free(orig_tag_value->datatag.name);
                 free(orig_tag_value->datatag.address);
                 free(orig_tag_value->datatag.description);
+                free(orig_tag_value->datatag.unit);
             }
         }
 
@@ -997,6 +1004,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
             free(final_tag_value->datatag.name);
             free(final_tag_value->datatag.address);
             free(final_tag_value->datatag.description);
+            free(final_tag_value->datatag.unit);
         }
     }
 
