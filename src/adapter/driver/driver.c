@@ -959,6 +959,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
             tag_value.datatag.bias        = tag->bias;
             tag_value.datatag.description = strdup(tag->description);
             tag_value.datatag.option      = tag->option;
+            tag_value.datatag.unit        = strdup(tag->unit);
             memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
 
             utarray_push_back(resp.tags, &tag_value);
@@ -983,6 +984,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
                 tag_value.datatag.bias        = tag->bias;
                 tag_value.datatag.description = strdup(tag->description);
                 tag_value.datatag.option      = tag->option;
+                tag_value.datatag.unit        = strdup(tag->unit);
                 memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
 
                 utarray_push_back(resp.tags, &tag_value);
