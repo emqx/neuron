@@ -93,6 +93,7 @@ typedef struct {
     double                    decimal;
     double                    bias;
     char *                    description;
+    char *                    unit;
     neu_datatag_addr_option_u option;
     uint8_t                   meta[NEU_TAG_META_LENGTH];
     uint8_t                   format[NEU_TAG_FORMAT_LENGTH];

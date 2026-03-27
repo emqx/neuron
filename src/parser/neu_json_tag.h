@@ -42,6 +42,7 @@ typedef struct {
     double           bias;
     neu_json_type_e  t;
     neu_json_value_u value;
+    char *           unit;
 } neu_json_tag_t;
 
 int  neu_json_encode_tag(void *json_obj, void *param);

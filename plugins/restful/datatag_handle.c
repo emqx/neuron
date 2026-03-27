@@ -95,6 +95,11 @@ void handle_add_tags(nng_aio *aio)
                         } else {
                             cmd.tags[i].description = strdup("");
                         }
+                        if (req->tags[i].unit == NULL) {
+                            cmd.tags[i].unit = strdup("");
+                        } else {
+                            cmd.tags[i].unit = strdup(req->tags[i].unit);
+                        }
                     }
 
                     int ret = neu_plugin_op(plugin, header, &cmd);
@@ -215,6 +220,12 @@ void handle_add_gtags(nng_aio *aio)
                                 strdup(req->groups[i].tags[j].description);
                         } else {
                             cmd.groups[i].tags[j].description = strdup("");
+                        }
+                        if (req->groups[i].tags[j].unit == NULL) {
+                            cmd.groups[i].tags[j].unit = strdup("");
+                        } else {
+                            cmd.groups[i].tags[j].unit =
+                                strdup(req->groups[i].tags[j].unit);
                         }
                     }
                 }
@@ -382,6 +393,11 @@ void handle_update_tags(nng_aio *aio)
                 } else {
                     cmd.tags[i].description = strdup("");
                 }
+                if (req->tags[i].unit == NULL) {
+                    cmd.tags[i].unit = strdup("");
+                } else {
+                    cmd.tags[i].unit = strdup(req->tags[i].unit);
+                }
             }
 
             ret = neu_plugin_op(plugin, header, &cmd);
@@ -529,6 +545,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].decimal     = tag->decimal;
         tags_res.tags[index].bias        = tag->bias;
         tags_res.tags[index].t           = NEU_JSON_UNDEFINE;
+        tags_res.tags[index].unit        = tag->unit;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);

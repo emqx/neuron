@@ -137,22 +137,26 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
         tag_elems[7].t            = NEU_JSON_DOUBLE;
         tag_elems[7].v.val_double = p_tag->datatag.bias;
 
+        tag_elems[8].name      = "unit";
+        tag_elems[8].t         = NEU_JSON_STR;
+        tag_elems[8].v.val_str = p_tag->datatag.unit;
+
         if (p_tag->error != 0) {
-            tag_elems[8].name      = "error";
-            tag_elems[8].t         = NEU_JSON_INT;
-            tag_elems[8].v.val_int = p_tag->error;
+            tag_elems[9].name      = "error";
+            tag_elems[9].t         = NEU_JSON_INT;
+            tag_elems[9].v.val_int = p_tag->error;
         } else {
-            tag_elems[8].name      = "value";
-            tag_elems[8].t         = p_tag->t;
-            tag_elems[8].v         = p_tag->value;
-            tag_elems[8].precision = p_tag->precision;
-            tag_elems[8].bias      = p_tag->datatag.bias;
+            tag_elems[9].name      = "value";
+            tag_elems[9].t         = p_tag->t;
+            tag_elems[9].v         = p_tag->value;
+            tag_elems[9].precision = p_tag->precision;
+            tag_elems[9].bias      = p_tag->datatag.bias;
 
             if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
-                if_precision      = 1;
-                tag_elems[9].name = "transferPrecision";
-                tag_elems[9].t    = NEU_JSON_INT;
-                tag_elems[9].v.val_int =
+                if_precision       = 1;
+                tag_elems[10].name = "transferPrecision";
+                tag_elems[10].t    = NEU_JSON_INT;
+                tag_elems[10].v.val_int =
                     p_tag->precision > 0 ? p_tag->precision : 1;
             }
         }
@@ -166,16 +170,17 @@ int neu_json_encode_read_paginate_resp(void *json_object, void *param)
             neu_json_encode_field(attributes_object, &meta_elem, 1);
         }
 
-        tag_elems[if_precision + 9].name         = "attributes";
-        tag_elems[if_precision + 9].t            = NEU_JSON_OBJECT;
-        tag_elems[if_precision + 9].v.val_object = attributes_object;
+        tag_elems[if_precision + 10].name         = "attributes";
+        tag_elems[if_precision + 10].t            = NEU_JSON_OBJECT;
+        tag_elems[if_precision + 10].v.val_object = attributes_object;
 
         tag_array =
-            neu_json_encode_array(tag_array, tag_elems, 10 + if_precision);
+            neu_json_encode_array(tag_array, tag_elems, 11 + if_precision);
 
         free(p_tag->datatag.name);
         free(p_tag->datatag.address);
         free(p_tag->datatag.description);
+        free(p_tag->datatag.unit);
 
         p_tag++;
     }
