@@ -3180,6 +3180,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         tag_value.datatag.bias        = tag->bias;
         tag_value.datatag.description = strdup(tag->description);
         tag_value.datatag.option      = tag->option;
+        tag_value.datatag.unit        = strdup(tag->unit);
         memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
 
         if (tag->attribute == NEU_ATTRIBUTE_WRITE) {
