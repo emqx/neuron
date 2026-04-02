@@ -59,6 +59,7 @@ cp build/plugins/schema/ekuiper.json \
     build/plugins/schema/mqtt.json \
     build/plugins/schema/modbus-tcp.json \
     build/plugins/schema/file.json \
+    build/plugins/schema/kafka.json \
     ${package_name}/plugins/schema/
 
 cp build/plugins/libplugin-ekuiper.so \
@@ -66,7 +67,10 @@ cp build/plugins/libplugin-ekuiper.so \
     build/plugins/libplugin-mqtt.so \
     build/plugins/libplugin-modbus-tcp.so \
     build/plugins/libplugin-file.so \
+    build/plugins/libplugin-kafka.so \
     ${package_name}/plugins/
+
+cp /usr/local/lib/librdkafka.so.1 ${package_name}/lib
 
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}

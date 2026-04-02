@@ -135,6 +135,7 @@ jobs:
               --ignore=tests/ft/app/test_ekuiper.py          \
               --ignore=tests/ft/app/test_mqtt.py             \
               --ignore=tests/ft/app/test_azure.py            \
+              --ignore=tests/ft/app/test_kafka.py            \
               --ignore=tests/ft/driver/test_modbus.py        \
               --ignore=tests/ft/metrics/test_metrics.py      \
               --ignore=tests/ft/login/test_launch.py         \
@@ -165,3 +166,72 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./cov_report/
           files: ./cov_report/cov-${{ matrix.plugin }}.info
+
+  pft_kafka:
+    runs-on: ubuntu-24.04
+    container: ghcr.io/neugates/build:x86_64-main
+    needs: [build]
+    services:
+      kafka:
+        image: apache/kafka:3.7.0
+        env:
+          KAFKA_NODE_ID: "1"
+          KAFKA_PROCESS_ROLES: broker,controller
+          KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+          KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+          KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+          CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "bash -c 'echo > /dev/tcp/localhost/9092'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: setup dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -U pytest requests confluent-kafka==2.3.0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: neuron-build
+          path: ./build
+
+      - name: function test
+        env:
+          KAFKA_BROKER: kafka:9092
+        run: |
+          chmod -R +x ./build/
+          cd build
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cd ..
+          ldconfig
+          pytest -s -v tests/ft/app/test_kafka.py
+
+      - name: create cov report
+        run: |
+            sudo apt-get update
+            sudo apt-get -y install lcov
+            mkdir -p cov_report
+            ./create_cov_report.sh kafka
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          verbose: true
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./cov_report/
+          files: ./cov_report/cov-kafka.info

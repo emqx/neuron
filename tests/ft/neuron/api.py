@@ -429,6 +429,10 @@ def mqtt_node_setting(node, client_id="neuron_aBcDeF", host="broker.emqx.io", po
                                     "offline-cache": False, "cache-sync-interval": 100, "host": host, "port": port, "username": "", "password": "", "ssl": False})
 
 
+def kafka_node_setting(node, broker="127.0.0.1:9092", topic="neuron-data", fmt=0):
+    return node_setting(node, json={"broker": broker, "topic": topic, "format": fmt})
+
+
 def get_nodes_disable_auth(type):
     return requests.get(url=config.BASE_URL + '/api/v2/node', params={"type": type})
 
