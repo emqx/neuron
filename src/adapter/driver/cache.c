@@ -459,7 +459,7 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 break;
             case NEU_TYPE_CUSTOM: {
                 if (json_equal(elem->value_old.value.json, value.value.json) !=
-                    0) {
+                    1) {
                     elem->changed = true;
                     tag_changed   = true;
                 }
@@ -720,7 +720,7 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 break;
             }
             case NEU_TYPE_CUSTOM: {
-                if (json_equal(elem->value.value.json, value.value.json) != 0) {
+                if (json_equal(elem->value.value.json, value.value.json) != 1) {
                     elem->changed = true;
                     tag_changed   = true;
                 }
