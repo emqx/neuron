@@ -1485,7 +1485,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                         neu_msg_get_header(msg_copy);
                     neu_req_del_tag_t *cmd_copy =
                         (neu_req_del_tag_t *) &header_copy[1];
-                    neu_req_del_tag_copy(cmd, cmd_copy);
+                    neu_req_del_tag_copy(cmd_copy, cmd);
                     forward_msg(manager, header_copy, app->app_name);
                 }
 
