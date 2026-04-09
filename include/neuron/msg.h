@@ -704,6 +704,7 @@ static inline int neu_req_del_tag_copy(neu_req_del_tag_t *dst,
                 free(dst->tags[i]);
             }
             free(dst->tags);
+            return -1;
         }
     }
     return 0;
