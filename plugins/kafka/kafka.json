@@ -1,0 +1,295 @@
+{
+	"broker": {
+		"name": "Broker Address",
+		"name_zh": "Broker 地址",
+		"description": "Kafka bootstrap server address, e.g. 127.0.0.1:9092. Multiple brokers separated by commas.",
+		"description_zh": "Kafka bootstrap server 地址，如 127.0.0.1:9092。多个 broker 用逗号分隔。",
+		"attribute": "required",
+		"type": "string",
+		"default": "127.0.0.1:9092",
+		"valid": {
+			"length": 1024
+		}
+	},
+	"topic": {
+		"name": "Default Topic",
+		"name_zh": "默认主题",
+		"description": "Default Kafka topic for publishing data.",
+		"description_zh": "发布数据的默认 Kafka 主题。",
+		"attribute": "required",
+		"type": "string",
+		"default": "neuron-data",
+		"valid": {
+			"length": 255
+		}
+	},
+	"format": {
+		"name": "Upload Format",
+		"name_zh": "上报数据格式",
+		"description": "JSON format of reported data. Values-format splits data into values and errors. Tags-format puts tags in a single array.",
+		"description_zh": "上报数据的 JSON 格式。Values-format 下数据分为 values 和 errors。Tags-format 下数据放在一个数组中。",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "values-format",
+					"value": 0
+				},
+				{
+					"key": "tags-format",
+					"value": 1
+				}
+			]
+		}
+	},
+	"upload_err": {
+		"name": "Upload Tag Error Code",
+		"name_zh": "上报点位错误码",
+		"description": "When data tag collection reports an error, report the tag error code.",
+		"description_zh": "点位采集报错时，上报点位错误码。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": true,
+		"valid": {}
+	},
+	"compression": {
+		"name": "Compression",
+		"name_zh": "压缩算法",
+		"description": "Compression codec for message batches.",
+		"description_zh": "消息批次的压缩编码。",
+		"attribute": "optional",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "none",
+					"value": 0
+				},
+				{
+					"key": "gzip",
+					"value": 1
+				},
+			{
+				"key": "snappy",
+				"value": 2
+			},
+			{
+				"key": "lz4",
+				"value": 3
+			},
+			{
+				"key": "zstd",
+				"value": 4
+			}
+		]
+	}
+},
+	"batch-max-messages": {
+		"name": "Batch Max Messages",
+		"name_zh": "批量最大消息数",
+		"description": "Maximum number of messages batched in one produce request.",
+		"description_zh": "一次发送请求中的最大消息数量。",
+		"attribute": "optional",
+		"type": "int",
+		"default": 10000,
+		"valid": {
+			"min": 1,
+			"max": 1000000
+		}
+	},
+	"linger-ms": {
+		"name": "Linger (ms)",
+		"name_zh": "发送等待时间（ms）",
+		"description": "Delay to wait for more messages before sending a batch. Larger values increase throughput at the cost of latency.",
+		"description_zh": "发送前等待更多消息的延迟。更大的值可提高吞吐量但增加延迟。",
+		"attribute": "optional",
+		"type": "int",
+		"default": 5,
+		"valid": {
+			"min": 0,
+			"max": 60000
+		}
+	},
+	"security-protocol": {
+		"name": "Security Protocol",
+		"name_zh": "安全协议",
+		"description": "Protocol used to communicate with Kafka brokers.",
+		"description_zh": "与 Kafka Broker 通信时使用的安全协议。",
+		"attribute": "optional",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "PLAINTEXT",
+					"value": 0
+				},
+				{
+					"key": "SASL_PLAINTEXT",
+					"value": 1
+				},
+				{
+					"key": "SSL",
+					"value": 2
+				},
+				{
+					"key": "SASL_SSL",
+					"value": 3
+				}
+			]
+		}
+	},
+	"sasl-mechanism": {
+		"name": "SASL Mechanism",
+		"name_zh": "SASL 机制",
+		"attribute": "optional",
+		"type": "map",
+		"default": 0,
+		"condition": {
+			"field": "security-protocol",
+			"values": [1, 3]
+		},
+		"valid": {
+			"map": [
+				{
+					"key": "PLAIN",
+					"value": 0
+				},
+				{
+					"key": "SCRAM-SHA-256",
+					"value": 1
+				},
+				{
+					"key": "SCRAM-SHA-512",
+					"value": 2
+				}
+			]
+		}
+	},
+	"sasl-username": {
+		"name": "SASL Username",
+		"name_zh": "SASL 用户名",
+		"attribute": "optional",
+		"type": "string",
+		"condition": {
+			"field": "security-protocol",
+			"values": [1, 3]
+		},
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"sasl-password": {
+		"name": "SASL Password",
+		"name_zh": "SASL 密码",
+		"attribute": "optional",
+		"type": "string",
+		"condition": {
+			"field": "security-protocol",
+			"values": [1, 3]
+		},
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"ssl-ca": {
+		"name": "CA Certificate",
+		"name_zh": "CA 证书",
+		"description": "CA certificate for verifying the broker's certificate.",
+		"description_zh": "用于验证 Broker 证书的 CA 证书。",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "security-protocol",
+			"values": [2, 3]
+		},
+		"valid": {
+			"length": 81960
+		}
+	},
+	"ssl-cert": {
+		"name": "Client Certificate",
+		"name_zh": "客户端证书",
+		"description": "Client certificate for mutual TLS authentication.",
+		"description_zh": "用于双向 TLS 认证的客户端证书。",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "security-protocol",
+			"values": [2, 3]
+		},
+		"valid": {
+			"length": 81960
+		}
+	},
+	"ssl-key": {
+		"name": "Client Private Key",
+		"name_zh": "客户端私钥",
+		"description": "Client private key for mutual TLS authentication.",
+		"description_zh": "用于双向 TLS 认证的客户端私钥。",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "security-protocol",
+			"values": [2, 3]
+		},
+		"valid": {
+			"length": 81960
+		}
+	},
+	"message-timeout-ms": {
+		"name": "Message Timeout (ms)",
+		"name_zh": "消息超时时间（ms）",
+		"description": "Local message timeout. This is the maximum time librdkafka may use to deliver a message (including retries).",
+		"description_zh": "本地消息超时时间。librdkafka 用于投递消息（含重试）的最大时间。",
+		"attribute": "optional",
+		"type": "int",
+		"default": 5000,
+		"valid": {
+			"min": 1000,
+			"max": 300000
+		}
+	},
+	"acks": {
+		"name": "Acknowledgements",
+		"name_zh": "确认级别",
+		"description": "Number of broker acknowledgements required. -1 = all in-sync replicas, 0 = no ack, 1 = leader only.",
+		"description_zh": "要求的 broker 确认数。-1 = 所有同步副本，0 = 无需确认，1 = 仅 leader。",
+		"attribute": "optional",
+		"type": "map",
+		"default": -1,
+		"valid": {
+			"map": [
+				{
+					"key": "all",
+					"value": -1
+				},
+				{
+					"key": "none",
+					"value": 0
+				},
+				{
+					"key": "leader",
+					"value": 1
+				}
+			]
+		}
+	},
+	"client-id": {
+		"name": "Client ID",
+		"name_zh": "客户端标识",
+		"description": "Client identifier string passed to Kafka broker for logging and monitoring.",
+		"description_zh": "传递给 Kafka broker 的客户端标识，用于日志和监控。",
+		"attribute": "optional",
+		"type": "string",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	}
+}

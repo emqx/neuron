@@ -74,6 +74,13 @@ $ ./configure  --disable-protoc --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
 $ make && sudo make install
 ```
 
+[librdkafka](https://github.com/confluentinc/librdkafka.git)
+```shell
+$ git clone -b v2.6.1 https://github.com/confluentinc/librdkafka.git
+$ cd librdkafka && mkdir build && cd build
+$ cmake -DRDKAFKA_BUILD_STATIC=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF -DRDKAFKA_BUILD_TESTS=OFF -DWITH_SASL=OFF -DWITH_ZSTD=OFF -DWITH_CURL=OFF -DCMAKE_BUILD_TYPE=Release .. && make && sudo make install
+```
+
 [libxml2](https://github.com/GNOME/libxml2.git)
 ```shell
 $ git clone -b v2.9.14 https://github.com/GNOME/libxml2.git

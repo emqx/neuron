@@ -22,3 +22,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 link_directories(${CMAKE_STAGING_PREFIX})
 
 file(COPY ${CMAKE_STAGING_PREFIX}/lib/libzlog.so.1.2 DESTINATION /usr/local/lib)
+file(COPY ${CMAKE_STAGING_PREFIX}/lib/librdkafka.so.1 DESTINATION /usr/local/lib)
