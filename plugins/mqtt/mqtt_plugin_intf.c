@@ -98,6 +98,10 @@ static void connect_cb(void *data)
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
     plog_notice(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
+
+    if (plugin->heartbeat_timer) {
+        heartbeat_timer_cb(plugin);
+    }
 }
 
 static void disconnect_cb(void *data)
