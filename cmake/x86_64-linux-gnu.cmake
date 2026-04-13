@@ -28,3 +28,7 @@ link_directories(${CMAKE_STAGING_PREFIX})
 
 file(COPY ${CMAKE_STAGING_PREFIX}/lib/libzlog.so.1.2 DESTINATION /usr/local/lib)
 file(COPY ${CMAKE_STAGING_PREFIX}/lib/librdkafka.so.1 DESTINATION /usr/local/lib)
+file(GLOB ZSTD_LIBS "${CMAKE_STAGING_PREFIX}/lib/libzstd.so*")
+file(COPY ${ZSTD_LIBS} DESTINATION /usr/local/lib)
+file(GLOB SASL_LIBS "${CMAKE_STAGING_PREFIX}/lib/libsasl2.so*")
+file(COPY ${SASL_LIBS} DESTINATION /usr/local/lib)
