@@ -355,6 +355,14 @@ hold_uint64_B = [{"name": "hold_uint64_B", "address": "1!400437#B",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
 hold_uint64_L = [{"name": "hold_uint64_L", "address": "1!400441#L",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_uint64_WS_default = [{"name": "hold_uint64_WS_default", "address": "1!400453",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_uint64_WS_suffix = [{"name": "hold_uint64_WS_suffix", "address": "1!400453#WS",
+                          "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_uint64_WR_default = [{"name": "hold_uint64_WR_default", "address": "1!400457",
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_uint64_WR_suffix = [{"name": "hold_uint64_WR_suffix", "address": "1!400457#WR",
+                          "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
 hold_double_B = [{"name": "hold_double_B", "address": "1!400445#B",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
 hold_double_L = [{"name": "hold_double_L", "address": "1!400449#L",
@@ -1703,6 +1711,115 @@ class TestModbus:
             node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
         assert 12345678 == api.read_tag(
             node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+
+    @description(given="default 64-bit endianness in node configuration and WS/WR suffix in tag address", when="read and test-read tag", then="tag suffix should override node default")
+    def test_write_read_endianness_tag_64_override(self, param):
+        if param[0] != 'modbus-tcp':
+            pytest.skip("test modbus tcp only")
+
+        writer_node = param[0] + "_64_writer"
+        reader_node = param[0] + "_64_reader"
+        created_nodes = []
+        group = 'group'
+
+        writer_params = {
+            "connection_mode": 0,
+            "transport_mode": 0,
+            "interval": 1,
+            "host": "127.0.0.1",
+            "port": tcp_port,
+            "timeout": 3000,
+            "max_retries": 2,
+            "retry_interval": 1,
+            "endianess_64": 5,
+        }
+        reader_params = {
+            "connection_mode": 0,
+            "transport_mode": 0,
+            "interval": 1,
+            "host": "127.0.0.1",
+            "port": tcp_port,
+            "timeout": 3000,
+            "max_retries": 2,
+            "retry_interval": 1,
+            "endianess_64": 1,
+        }
+
+        ws_value = 0x0102030405060708
+        wr_value = 0x1112131415161718
+
+        try:
+            api.add_node_check(node=writer_node, plugin=param[1])
+            created_nodes.append(writer_node)
+            api.add_group_check(node=writer_node, group=group, interval=100)
+            api.node_setting_check(node=writer_node, json=writer_params)
+
+            api.add_node_check(node=reader_node, plugin=param[1])
+            created_nodes.append(reader_node)
+            api.add_group_check(node=reader_node, group=group, interval=100)
+            api.node_setting_check(node=reader_node, json=reader_params)
+
+            api.add_tags_check(node=writer_node, group=group,
+                               tags=hold_uint64_WS_default)
+            api.add_tags_check(node=writer_node, group=group,
+                               tags=hold_uint64_WR_default)
+            api.add_tags_check(node=reader_node, group=group,
+                               tags=hold_uint64_WS_suffix)
+            api.add_tags_check(node=reader_node, group=group,
+                               tags=hold_uint64_WR_suffix)
+
+            api.write_tag_check(node=writer_node, group=group,
+                                tag=hold_uint64_WS_default[0]['name'],
+                                value=ws_value)
+
+            writer_params["endianess_64"] = 6
+            api.node_setting_check(node=writer_node, json=writer_params)
+            time.sleep(0.3)
+
+            api.write_tag_check(node=writer_node, group=group,
+                                tag=hold_uint64_WR_default[0]['name'],
+                                value=wr_value)
+
+            time.sleep(0.3)
+
+            assert ws_value == api.read_tag(
+                node=reader_node, group=group, tag=hold_uint64_WS_suffix[0]['name'])
+            assert wr_value == api.read_tag(
+                node=reader_node, group=group, tag=hold_uint64_WR_suffix[0]['name'])
+
+            test_hold_uint64_ws = {
+                "driver": reader_node,
+                "group": group,
+                "tag": "hold_uint64_ws_test",
+                "address": hold_uint64_WS_suffix[0]["address"],
+                "attribute": hold_uint64_WS_suffix[0]["attribute"],
+                "type": hold_uint64_WS_suffix[0]["type"],
+                "precision": 0,
+                "decimal": 0,
+                "bias": 0.0,
+            }
+            test_hold_uint64_wr = {
+                "driver": reader_node,
+                "group": group,
+                "tag": "hold_uint64_wr_test",
+                "address": hold_uint64_WR_suffix[0]["address"],
+                "attribute": hold_uint64_WR_suffix[0]["attribute"],
+                "type": hold_uint64_WR_suffix[0]["type"],
+                "precision": 0,
+                "decimal": 0,
+                "bias": 0.0,
+            }
+
+            response = api.test_read_tag(json=test_hold_uint64_ws)
+            assert ws_value == response.json()["value"]
+            response = api.test_read_tag(json=test_hold_uint64_wr)
+            assert wr_value == response.json()["value"]
+        finally:
+            for node in reversed(created_nodes):
+                try:
+                    api.del_node_check(node=node)
+                except Exception:
+                    pass
 
     @description(given="created modbus node", when="set modbus start base to 0", then="set success and read/write success")
     def test_set_modbus_start_base(self, param):

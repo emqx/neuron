@@ -290,6 +290,12 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
                 } else if (e1 == 'L' && e2 == 'B') {
                     option->value64.endian     = NEU_DATATAG_ENDIAN_LB64;
                     option->value64.is_default = false;
+                } else if (e1 == 'W' && e2 == 'S') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_WS64;
+                    option->value64.is_default = false;
+                } else if (e1 == 'W' && e2 == 'R') {
+                    option->value64.endian     = NEU_DATATAG_ENDIAN_WR64;
+                    option->value64.is_default = false;
                 }
             } else if (n == 1) {
                 if (e1 == 'B') {

@@ -47,6 +47,8 @@ typedef enum {
     NEU_DATATAG_ENDIAN_LB64 = 9,
     NEU_DATATAG_ENDIAN_BB64 = 10,
     NEU_DATATAG_ENDIAN_BL64 = 11,
+    NEU_DATATAG_ENDIAN_WS64 = 12, // #WS 3,4,1,2,7,8,5,6
+    NEU_DATATAG_ENDIAN_WR64 = 13, // #WR 5,6,7,8,1,2,3,4
 } neu_datatag_endian_e;
 
 typedef enum {

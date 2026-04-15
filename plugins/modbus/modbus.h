@@ -78,6 +78,8 @@ typedef enum modbus_endianess_64 {
     MODBUS_LB = 2, // 21 43 65 87
     MODBUS_BB = 3, // 87 65 43 21
     MODBUS_BL = 4, // 78 56 34 12
+    MODBUS_WS = 5, // 34 12 78 56
+    MODBUS_WR = 6, // 56 78 12 34
 } modbus_endianess_64;
 
 typedef enum modbus_address_base {

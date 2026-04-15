@@ -585,6 +585,12 @@ void modbus_convert_endianess_64(neu_value_u *       value,
     case MODBUS_BL:
         value->u64 = neu_htonbl(value->u64);
         break;
+    case MODBUS_WS:
+        value->u64 = neu_htonws(value->u64);
+        break;
+    case MODBUS_WR:
+        value->u64 = neu_htonwr(value->u64);
+        break;
     default:
         break;
     }

@@ -47,6 +47,41 @@ static int  process_protocol_buf_test(neu_plugin_t *plugin, void *req,
                                       modbus_point_t *point,
                                       uint16_t        response_size);
 
+static void
+convert_point_endianess_64_for_test(neu_value_u *value, modbus_point_t *point,
+                                    modbus_endianess_64 default_endianess)
+{
+    modbus_endianess_64 endianess = default_endianess;
+
+    if (!point->option.value64.is_default) {
+        switch (point->option.value64.endian) {
+        case NEU_DATATAG_ENDIAN_B64:
+        case NEU_DATATAG_ENDIAN_BB64:
+            endianess = MODBUS_BB;
+            break;
+        case NEU_DATATAG_ENDIAN_LB64:
+            endianess = MODBUS_LB;
+            break;
+        case NEU_DATATAG_ENDIAN_BL64:
+            endianess = MODBUS_BL;
+            break;
+        case NEU_DATATAG_ENDIAN_WS64:
+            endianess = MODBUS_WS;
+            break;
+        case NEU_DATATAG_ENDIAN_WR64:
+            endianess = MODBUS_WR;
+            break;
+        case NEU_DATATAG_ENDIAN_L64:
+        case NEU_DATATAG_ENDIAN_LL64:
+        default:
+            endianess = MODBUS_LL;
+            break;
+        }
+    }
+
+    modbus_convert_endianess_64(value, endianess);
+}
+
 void modbus_conn_connected(void *data, int fd)
 {
     struct neu_plugin *plugin = (struct neu_plugin *) data;
@@ -595,6 +630,11 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
     case NEU_TYPE_DOUBLE: {
         uint64_t tmp_vald;
         memcpy(&tmp_vald, recv_bytes, sizeof(uint64_t));
+        neu_value_u value = { 0 };
+        value.u64         = tmp_vald;
+        convert_point_endianess_64_for_test(&value, point,
+                                            plugin->endianess_64);
+        tmp_vald       = value.u64;
         jtype          = NEU_JSON_DOUBLE;
         jvalue.val_int = neu_ntohll(tmp_vald);
         break;
@@ -603,6 +643,11 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         jtype = NEU_JSON_INT;
         int64_t tmp_val64;
         memcpy(&tmp_val64, recv_bytes, sizeof(int64_t));
+        neu_value_u value = { 0 };
+        value.u64         = (uint64_t) tmp_val64;
+        convert_point_endianess_64_for_test(&value, point,
+                                            plugin->endianess_64);
+        tmp_val64      = (int64_t) value.u64;
         jvalue.val_int = (int64_t) neu_ntohll(tmp_val64);
         break;
     }
@@ -610,6 +655,11 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         jtype = NEU_JSON_INT;
         uint64_t tmp_val64;
         memcpy(&tmp_val64, recv_bytes, sizeof(uint64_t));
+        neu_value_u value = { 0 };
+        value.u64         = tmp_val64;
+        convert_point_endianess_64_for_test(&value, point,
+                                            plugin->endianess_64);
+        tmp_val64      = value.u64;
         jvalue.val_int = neu_ntohll(tmp_val64);
         break;
     }
