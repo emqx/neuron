@@ -1121,6 +1121,12 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         case NEU_DATATAG_ENDIAN_BL64:
             value->value.u64 = neu_htonbl(value->value.u64);
             break;
+        case NEU_DATATAG_ENDIAN_WS64:
+            value->value.u64 = neu_htonws(value->value.u64);
+            break;
+        case NEU_DATATAG_ENDIAN_WR64:
+            value->value.u64 = neu_htonwr(value->value.u64);
+            break;
         case NEU_DATATAG_ENDIAN_L64:
         case NEU_DATATAG_ENDIAN_LL64:
         default:
@@ -2896,6 +2902,12 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             case NEU_DATATAG_ENDIAN_BL64:
                 value.value.value.u64 = neu_htonbl(value.value.value.u64);
                 break;
+            case NEU_DATATAG_ENDIAN_WS64:
+                value.value.value.u64 = neu_htonws(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_WR64:
+                value.value.value.u64 = neu_htonwr(value.value.value.u64);
+                break;
             case NEU_DATATAG_ENDIAN_L64:
             case NEU_DATATAG_ENDIAN_LL64:
             default:
@@ -3070,6 +3082,12 @@ static void read_group(int64_t timestamp, int64_t timeout,
                 break;
             case NEU_DATATAG_ENDIAN_BL64:
                 value.value.value.u64 = neu_htonbl(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_WS64:
+                value.value.value.u64 = neu_htonws(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_WR64:
+                value.value.value.u64 = neu_htonwr(value.value.value.u64);
                 break;
             case NEU_DATATAG_ENDIAN_L64:
             case NEU_DATATAG_ENDIAN_LL64:
@@ -3259,6 +3277,12 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
                 break;
             case NEU_DATATAG_ENDIAN_BL64:
                 value.value.value.u64 = neu_htonbl(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_WS64:
+                value.value.value.u64 = neu_htonws(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_WR64:
+                value.value.value.u64 = neu_htonwr(value.value.value.u64);
                 break;
             case NEU_DATATAG_ENDIAN_L64:
             case NEU_DATATAG_ENDIAN_LL64:
