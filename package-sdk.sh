@@ -71,6 +71,8 @@ cp build/plugins/libplugin-ekuiper.so \
     ${package_name}/plugins/
 
 cp /usr/local/lib/librdkafka.so.1 ${package_name}/lib
+cp /usr/local/lib/libzstd.so.1 ${package_name}/lib
+cp /usr/local/lib/libsasl2.so.3 ${package_name}/lib
 
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}

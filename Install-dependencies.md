@@ -74,11 +74,31 @@ $ ./configure  --disable-protoc --enable-shared=no CFLAGS=-fPIC CXXFLAGS=-fPIC
 $ make && sudo make install
 ```
 
+[cyrus-sasl](https://github.com/cyrusimap/cyrus-sasl.git)
+```shell
+$ git clone -b cyrus-sasl-2.1.28 https://github.com/cyrusimap/cyrus-sasl.git
+$ cd cyrus-sasl
+$ autoreconf -fi
+$ ./configure --enable-shared --disable-static --disable-sample \
+    --disable-checkapop --disable-cram --disable-digest --disable-otp \
+    --disable-srp --disable-gssapi --disable-sql \
+    --enable-plain --enable-scram --enable-login \
+    --with-dblib=none --without-saslauthd --without-authdaemond
+$ make && sudo make install
+```
+
+[zstd](https://github.com/facebook/zstd.git)
+```shell
+$ git clone -b v1.5.6 https://github.com/facebook/zstd.git
+$ cd zstd/build/cmake && mkdir builddir && cd builddir
+$ cmake -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DZSTD_BUILD_SHARED=ON -DZSTD_BUILD_STATIC=OFF -DCMAKE_BUILD_TYPE=Release .. && make && sudo make install
+```
+
 [librdkafka](https://github.com/confluentinc/librdkafka.git)
 ```shell
 $ git clone -b v2.6.1 https://github.com/confluentinc/librdkafka.git
 $ cd librdkafka && mkdir build && cd build
-$ cmake -DRDKAFKA_BUILD_STATIC=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF -DRDKAFKA_BUILD_TESTS=OFF -DWITH_SASL=OFF -DWITH_ZSTD=OFF -DWITH_CURL=OFF -DCMAKE_BUILD_TYPE=Release .. && make && sudo make install
+$ cmake -DRDKAFKA_BUILD_STATIC=OFF -DRDKAFKA_BUILD_EXAMPLES=OFF -DRDKAFKA_BUILD_TESTS=OFF -DWITH_SSL=ON -DWITH_ZLIB=ON -DWITH_SASL=ON -DWITH_ZSTD=ON -DWITH_CURL=OFF -DCMAKE_BUILD_TYPE=Release .. && make && sudo make install
 ```
 
 [libxml2](https://github.com/GNOME/libxml2.git)
