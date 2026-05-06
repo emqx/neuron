@@ -27,7 +27,7 @@ jobs:
 
   cppcheck:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.15
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
 
   build:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.15
 
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.15
     needs: [build]
 
     steps:
@@ -103,7 +103,7 @@ jobs:
 
   pft:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.15
     needs: [build]
     strategy:
       matrix:
@@ -169,7 +169,7 @@ jobs:
 
   pft_kafka:
     runs-on: ubuntu-24.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.15
     needs: [build]
     services:
       kafka:
@@ -212,13 +212,13 @@ jobs:
       - name: debug kafka plugin deps
         run: |
           echo "=== libs in staging prefix ==="
-          ls -la /home/neuron/main/libs/x86_64-linux-gnu/lib/librdkafka* || echo "no librdkafka"
-          ls -la /home/neuron/main/libs/x86_64-linux-gnu/lib/libzstd* || echo "no libzstd"
-          ls -la /home/neuron/main/libs/x86_64-linux-gnu/lib/libsasl2* || echo "no libsasl2"
+          ls -la /home/neuron/v2.15/libs/x86_64-linux-gnu/lib/librdkafka* || echo "no librdkafka"
+          ls -la /home/neuron/v2.15/libs/x86_64-linux-gnu/lib/libzstd* || echo "no libzstd"
+          ls -la /home/neuron/v2.15/libs/x86_64-linux-gnu/lib/libsasl2* || echo "no libsasl2"
           echo "=== libs in /usr/local/lib ==="
           ls -la /usr/local/lib/librdkafka* /usr/local/lib/libzstd* /usr/local/lib/libsasl2* 2>/dev/null || echo "none yet"
           echo "=== ldd librdkafka from staging ==="
-          ldd /home/neuron/main/libs/x86_64-linux-gnu/lib/librdkafka.so.1 || true
+          ldd /home/neuron/v2.15/libs/x86_64-linux-gnu/lib/librdkafka.so.1 || true
           echo "=== ldd plugin-kafka from build ==="
           chmod -R +x ./build/ 2>/dev/null || true
           ldd ./build/plugins/libplugin-kafka.so || true
