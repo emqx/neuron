@@ -140,7 +140,7 @@ static int pdu_read_holding(const uint8_t *pdu, int pdu_len,
     struct modbus_address *addr  = (struct modbus_address *) pdu;
     uint16_t               start = ntohs(addr->start_address);
     uint16_t               nreg  = ntohs(addr->n_reg);
-    if (nreg == 0 || (start + nreg) > SIM_MAX_REGS) {
+    if (nreg == 0 || nreg > SIM_MAX_REGS || (start + nreg) > SIM_MAX_REGS) {
         rc->function = MODBUS_READ_HOLD_REG_ERR;
         if (*res_len + 1 > res_mlen)
             return -1;
@@ -174,7 +174,7 @@ static int pdu_read_input_regs(const uint8_t *pdu, int pdu_len,
     struct modbus_address *addr  = (struct modbus_address *) pdu;
     uint16_t               start = ntohs(addr->start_address);
     uint16_t               nreg  = ntohs(addr->n_reg);
-    if (nreg == 0 || (start + nreg) > SIM_MAX_REGS) {
+    if (nreg == 0 || nreg > SIM_MAX_REGS || (start + nreg) > SIM_MAX_REGS) {
         rc->function = MODBUS_READ_INPUT_REG_ERR;
         if (*res_len + 1 > res_mlen)
             return -1;
@@ -857,7 +857,7 @@ int neu_modbus_simulator_init(const char *config_dir)
     memset(&g_sim, 0, sizeof(g_sim));
     pthread_mutex_init(&g_sim.lock, NULL);
     memset(g_sim.ip, 0, sizeof(g_sim.ip));
-    strncpy(g_sim.ip, SIM_DEFAULT_IP, sizeof(g_sim.ip) - 1);
+    snprintf(g_sim.ip, sizeof(g_sim.ip), "%s", SIM_DEFAULT_IP);
     g_sim.port = SIM_DEFAULT_PORT;
     sim_reset_regs_unlocked();
 
@@ -903,10 +903,11 @@ int neu_modbus_simulator_init(const char *config_dir)
                             memset(g_sim.ip, 0, sizeof(g_sim.ip));
                             if (cfg_ip && cfg_ip[0] != '\0' &&
                                 (is_ipv4(cfg_ip) || is_ipv6(cfg_ip))) {
-                                strncpy(g_sim.ip, cfg_ip, sizeof(g_sim.ip) - 1);
+                                snprintf(g_sim.ip, sizeof(g_sim.ip), "%s",
+                                         cfg_ip);
                             } else {
-                                strncpy(g_sim.ip, SIM_DEFAULT_IP,
-                                        sizeof(g_sim.ip) - 1);
+                                snprintf(g_sim.ip, sizeof(g_sim.ip), "%s",
+                                         SIM_DEFAULT_IP);
                             }
                         }
                         if (port && json_is_integer(port)) {
@@ -972,16 +973,16 @@ int neu_modbus_simulator_start(const char *ip, uint16_t port)
     if (ip && *ip) {
         if ((void *) g_sim.ip != (void *) ip) {
             memset(g_sim.ip, 0, sizeof(g_sim.ip));
-            strncpy(g_sim.ip, ip, sizeof(g_sim.ip) - 1);
+            snprintf(g_sim.ip, sizeof(g_sim.ip), "%s", ip);
         }
     } else {
         memset(g_sim.ip, 0, sizeof(g_sim.ip));
-        strncpy(g_sim.ip, SIM_DEFAULT_IP, sizeof(g_sim.ip) - 1);
+        snprintf(g_sim.ip, sizeof(g_sim.ip), "%s", SIM_DEFAULT_IP);
     }
 
     if (!(is_ipv4(g_sim.ip) || is_ipv6(g_sim.ip))) {
         memset(g_sim.ip, 0, sizeof(g_sim.ip));
-        strncpy(g_sim.ip, SIM_DEFAULT_IP, sizeof(g_sim.ip) - 1);
+        snprintf(g_sim.ip, sizeof(g_sim.ip), "%s", SIM_DEFAULT_IP);
     }
     if (port > 0) {
         g_sim.port = port;
@@ -1054,7 +1055,7 @@ void neu_modbus_simulator_get_status(neu_modbus_simulator_status_t *out)
     memset(out, 0, sizeof(*out));
     out->running = g_sim.running;
     memset(out->ip, 0, sizeof(out->ip));
-    strncpy(out->ip, g_sim.ip, sizeof(out->ip) - 1);
+    snprintf(out->ip, sizeof(out->ip), "%s", g_sim.ip);
     out->port      = g_sim.port;
     out->tag_count = g_sim.tag_count;
     out->error     = g_sim.last_error_code;
