@@ -574,6 +574,31 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
             return;
         }
 
+        if (strlen(wr->node) >= NEU_NODE_NAME_LEN ||
+            strlen(wr->group) >= NEU_GROUP_NAME_LEN) {
+            plog_error(plugin, "node or group name too long");
+            model__write_request__free_unpacked(wr, NULL);
+            return;
+        }
+
+        for (size_t i = 0; i < wr->n_tags; i++) {
+            if (strlen(wr->tags[i]->name) >= NEU_TAG_NAME_LEN) {
+                plog_error(plugin, "tag name too long");
+                model__write_request__free_unpacked(wr, NULL);
+                return;
+            }
+
+            if (wr->tags[i]->value->value_case ==
+                MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE) {
+                if (strlen(wr->tags[i]->value->string_value) >=
+                    NEU_VALUE_SIZE) {
+                    plog_error(plugin, "string tag value too long");
+                    model__write_request__free_unpacked(wr, NULL);
+                    return;
+                }
+            }
+        }
+
         mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
         mqtt->uuid        = strdup(wr->uuid);
         mqtt->payload     = NULL;
