@@ -25,6 +25,18 @@ jobs:
           style: file
           clangFormatVersion: 10
 
+  flawfinder:
+    name: Flawfinder Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: flawfinder_scan
+        uses: david-a-wheeler/flawfinder@2.0.20
+        with:
+          arguments: '--minlevel=4 --error-level=5 .'
+
   cppcheck:
     runs-on: ubuntu-24.04
     container: ghcr.io/neugates/build:x86_64-main
