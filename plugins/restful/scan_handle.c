@@ -43,15 +43,15 @@ void handle_scan_tags(nng_aio *aio)
             }
 
             if (NULL != req->node) {
-                strcpy(cmd.driver, req->node);
+                strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
             }
 
             if (NULL != req->id) {
-                strcpy(cmd.id, req->id);
+                strncpy(cmd.id, req->id, NEU_TAG_ADDRESS_LEN - 1);
             }
 
             if (NULL != req->ctx) {
-                strcpy(cmd.ctx, req->ctx);
+                strncpy(cmd.ctx, req->ctx, NEU_VALUE_SIZE);
             }
 
             if (0 != neu_plugin_op(plugin, header, &cmd)) {
