@@ -171,10 +171,10 @@ void handle_test_read_tag(nng_aio *aio)
                 goto error;
             }
 
-            strcpy(cmd.driver, req->driver);
-            strcpy(cmd.group, req->group);
-            strcpy(cmd.tag, req->tag);
-            strcpy(cmd.address, req->address);
+            strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
+            strncpy(cmd.tag, req->tag, NEU_TAG_NAME_LEN - 1);
+            strncpy(cmd.address, req->address, NEU_TAG_ADDRESS_LEN - 1);
             cmd.attribute = req->attribute;
             cmd.type      = req->type;
             cmd.precision = req->precision;
@@ -316,7 +316,8 @@ void handle_write(nng_aio *aio)
                 break;
             case NEU_JSON_STR:
                 cmd.value.type = NEU_TYPE_STRING;
-                strcpy(cmd.value.value.str, req->value.val_str);
+                strncpy(cmd.value.value.str, req->value.val_str,
+                        NEU_VALUE_SIZE);
                 break;
             case NEU_JSON_DOUBLE:
                 cmd.value.type      = NEU_TYPE_DOUBLE;
@@ -522,7 +523,8 @@ void handle_write_tags(nng_aio *aio)
             req->group = NULL; // ownership moved
 
             for (int i = 0; i < cmd.n_tag; i++) {
-                strcpy(cmd.tags[i].tag, req->tags[i].tag);
+                strncpy(cmd.tags[i].tag, req->tags[i].tag,
+                        NEU_TAG_NAME_LEN - 1);
                 switch (req->tags[i].t) {
                 case NEU_JSON_INT:
                     cmd.tags[i].value.type      = NEU_TYPE_INT64;
@@ -530,8 +532,8 @@ void handle_write_tags(nng_aio *aio)
                     break;
                 case NEU_JSON_STR:
                     cmd.tags[i].value.type = NEU_TYPE_STRING;
-                    strcpy(cmd.tags[i].value.value.str,
-                           req->tags[i].value.val_str);
+                    strncpy(cmd.tags[i].value.value.str,
+                            req->tags[i].value.val_str, NEU_VALUE_SIZE);
                     break;
                 case NEU_JSON_DOUBLE:
                     cmd.tags[i].value.type      = NEU_TYPE_DOUBLE;
@@ -650,7 +652,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
             calloc(cmd->groups[i].n_tag, sizeof(neu_resp_tag_value_t));
 
         for (int k = 0; k < cmd->groups[i].n_tag; k++) {
-            strcpy(cmd->groups[i].tags[k].tag, req->groups[i].tags[k].tag);
+            strncpy(cmd->groups[i].tags[k].tag, req->groups[i].tags[k].tag,
+                    NEU_TAG_NAME_LEN - 1);
 
             switch (req->groups[i].tags[k].t) {
             case NEU_JSON_INT:
@@ -660,8 +663,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                 break;
             case NEU_JSON_STR:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_STRING;
-                strcpy(cmd->groups[i].tags[k].value.value.str,
-                       req->groups[i].tags[k].value.val_str);
+                strncpy(cmd->groups[i].tags[k].value.value.str,
+                        req->groups[i].tags[k].value.val_str, NEU_VALUE_SIZE);
                 break;
             case NEU_JSON_DOUBLE:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_DOUBLE;

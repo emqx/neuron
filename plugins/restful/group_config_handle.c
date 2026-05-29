@@ -48,8 +48,8 @@ void handle_add_group_config(nng_aio *aio)
                 header.ctx                 = aio;
                 header.type                = NEU_REQ_ADD_GROUP;
                 header.otel_trace_type     = NEU_OTEL_TRACE_TYPE_REST_COMM;
-                strcpy(cmd.driver, req->node);
-                strcpy(cmd.group, req->group);
+                strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+                strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
                 cmd.interval = req->interval;
                 ret          = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
@@ -92,14 +92,14 @@ static inline int send_update_group(nng_aio *                           aio,
         } else if (len >= NEU_GROUP_NAME_LEN) {
             return NEU_ERR_GROUP_NAME_TOO_LONG;
         }
-        strcpy(cmd.new_name, req->new_name);
+        strncpy(cmd.new_name, req->new_name, NEU_GROUP_NAME_LEN - 1);
     } else {
         // if `new_name` is omitted, then keep the node name
-        strcpy(cmd.new_name, req->group);
+        strncpy(cmd.new_name, req->group, NEU_GROUP_NAME_LEN - 1);
     }
 
-    strcpy(cmd.driver, req->node);
-    strcpy(cmd.group, req->group);
+    strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
     cmd.interval = req->set_interval ? req->interval : 0;
 
     neu_reqresp_head_t header = {
@@ -146,8 +146,8 @@ void handle_del_group_config(nng_aio *aio)
                 header.ctx             = aio;
                 header.type            = NEU_REQ_DEL_GROUP;
                 header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
-                strcpy(cmd.driver, req->node);
-                strcpy(cmd.group, req->group);
+                strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+                strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
                 ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
@@ -174,14 +174,14 @@ void handle_get_group_config(nng_aio *aio)
     NEU_VALIDATE_JWT(aio);
 
     neu_http_get_param_str(aio, "node", node_name, sizeof(node_name));
-    strcpy(cmd.driver, node_name);
+    strncpy(cmd.driver, node_name, NEU_NODE_NAME_LEN - 1);
     if (strlen(cmd.driver) == 0) {
         header.type = NEU_REQ_GET_DRIVER_GROUP;
     }
 
     if (neu_http_get_param_str(aio, "group", group_name, sizeof(group_name)) >
         0) {
-        strcpy(cmd.q_group, group_name);
+        strncpy(cmd.q_group, group_name, NEU_GROUP_NAME_LEN - 1);
     }
 
     ret = neu_plugin_op(plugin, header, &cmd);
@@ -273,9 +273,9 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     }
 
     neu_req_subscribe_t cmd = { 0 };
-    strcpy(cmd.app, req->app);
-    strcpy(cmd.driver, req->driver);
-    strcpy(cmd.group, req->group);
+    strncpy(cmd.app, req->app, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
     cmd.params       = req->params;      // ownership moved
     cmd.static_tags  = req->static_tags; // ownership moved
     req->params      = NULL;
@@ -340,9 +340,9 @@ void handle_grp_unsubscribe(nng_aio *aio)
                 goto error;
             }
 
-            strcpy(cmd.app, req->app);
-            strcpy(cmd.driver, req->driver);
-            strcpy(cmd.group, req->group);
+            strncpy(cmd.app, req->app, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {

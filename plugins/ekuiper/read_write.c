@@ -327,7 +327,7 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_write_req_t *req,
         header.ctx             = calloc(1, 48 + strlen(playload) + 1);
         binary_to_hex(trace_id, 16, header.ctx);
         binary_to_hex(span_id, 8, header.ctx + 32);
-        strcpy(header.ctx + 48, playload);
+        strncpy(header.ctx + 48, playload, strlen(playload));
     }
 
     neu_req_write_tag_t cmd = {
@@ -374,7 +374,7 @@ static int send_write_tags_req(neu_plugin_t *             plugin,
         header.ctx             = calloc(1, 48 + strlen(playload) + 1);
         binary_to_hex(trace_id, 16, header.ctx);
         binary_to_hex(span_id, 8, header.ctx + 32);
-        strcpy(header.ctx + 48, playload);
+        strncpy(header.ctx + 48, playload, strlen(playload));
     }
 
     neu_req_write_tags_t cmd = { 0 };
@@ -387,7 +387,7 @@ static int send_write_tags_req(neu_plugin_t *             plugin,
     }
 
     for (int i = 0; i < cmd.n_tag; i++) {
-        strcpy(cmd.tags[i].tag, req->tags[i].tag);
+        strncpy(cmd.tags[i].tag, req->tags[i].tag, NEU_TAG_NAME_LEN - 1);
         if (0 !=
             json_value_to_tag_value(&req->tags[i].value, req->tags[i].t,
                                     &cmd.tags[i].value)) {
