@@ -91,7 +91,7 @@ void handle_del_plugin(nng_aio *aio)
             header.type            = NEU_REQ_DEL_PLUGIN;
             header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
             if (strlen(req->plugin) <= sizeof(cmd.plugin)) {
-                strcpy(cmd.plugin, req->plugin);
+                strncpy(cmd.plugin, req->plugin, NEU_PLUGIN_NAME_LEN - 1);
                 int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {

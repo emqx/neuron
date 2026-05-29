@@ -76,8 +76,8 @@ void handle_add_tags(nng_aio *aio)
                 } else {
                     header.ctx  = aio;
                     header.type = NEU_REQ_ADD_TAG;
-                    strcpy(cmd.driver, req->node);
-                    strcpy(cmd.group, req->group);
+                    strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+                    strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
                     cmd.n_tag = req->n_tag;
                     cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
 
@@ -189,12 +189,13 @@ void handle_add_gtags(nng_aio *aio)
             if (add_resp.error > 0) {
                 handle_add_tags_resp(aio, &add_resp);
             } else {
-                strcpy(cmd.driver, req->node);
+                strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
                 cmd.n_group = req->n_group;
                 cmd.groups  = calloc(req->n_group, sizeof(neu_gdatatag_t));
 
                 for (int i = 0; i < req->n_group; i++) {
-                    strcpy(cmd.groups[i].group, req->groups[i].group);
+                    strncpy(cmd.groups[i].group, req->groups[i].group,
+                            NEU_GROUP_NAME_LEN - 1);
                     cmd.groups[i].n_tag    = req->groups[i].n_tag;
                     cmd.groups[i].interval = req->groups[i].interval;
                     cmd.groups[i].tags =
@@ -278,7 +279,7 @@ void handle_import_tags(nng_aio *aio)
                 header.type            = NEU_REQ_IMPORT_TAGS;
                 header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
-                strcpy(cmd.node, req->node);
+                strncpy(cmd.node, req->node, NEU_NODE_NAME_LEN - 1);
 
                 int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
@@ -329,8 +330,8 @@ void handle_del_tags(nng_aio *aio)
                 goto error;
             }
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
+            strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
             cmd.n_tag = req->n_tags;
 
             for (int i = 0; i < req->n_tags; i++) {
@@ -375,8 +376,8 @@ void handle_update_tags(nng_aio *aio)
             header.type            = NEU_REQ_UPDATE_TAG;
             header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
+            strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
             cmd.n_tag = req->n_tag;
             cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
 
@@ -454,10 +455,10 @@ void handle_rename_tag(nng_aio *aio)
                 goto error;
             }
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            strcpy(cmd.old_name, req->old_name);
-            strcpy(cmd.new_name, req->new_name);
+            strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+            strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
+            strncpy(cmd.old_name, req->old_name, NEU_TAG_NAME_LEN - 1);
+            strncpy(cmd.new_name, req->new_name, NEU_TAG_NAME_LEN - 1);
 
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
@@ -510,11 +511,11 @@ void handle_get_tags(nng_aio *aio)
     }
 
     if (neu_http_get_param_str(aio, "name", tag_name, sizeof(tag_name)) >= 0) {
-        strcpy(cmd.name, tag_name);
+        strncpy(cmd.name, tag_name, NEU_TAG_NAME_LEN - 1);
     }
 
-    strcpy(cmd.driver, node);
-    strcpy(cmd.group, group);
+    strncpy(cmd.driver, node, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, group, NEU_GROUP_NAME_LEN - 1);
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {

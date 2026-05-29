@@ -98,6 +98,9 @@
 #define NEU_CID_LEN32 32
 #define NEU_CID_LEN64 64
 
+#define NEU_TRACE_ID_LEN 64
+#define NEU_SPAN_ID_LEN 32
+
 #define CHECK_NODE_NAME_LENGTH_ERR                                            \
     do {                                                                      \
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {                 \

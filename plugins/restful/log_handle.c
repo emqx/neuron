@@ -90,7 +90,8 @@ void handle_log_level(nng_aio *aio)
                     cmd.core               = req->core;
                     cmd.log_level          = log_level;
                     if (req->node_name != NULL) {
-                        strcpy(cmd.node, req->node_name);
+                        strncpy(cmd.node, req->node_name,
+                                NEU_NODE_NAME_LEN - 1);
                     }
 
                     int ret = neu_plugin_op(plugin, header, &cmd);

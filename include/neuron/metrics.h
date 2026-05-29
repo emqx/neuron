@@ -286,8 +286,8 @@ typedef struct {
 
 typedef struct {
     char                distro[32];
-    char                kernel[32];
-    char                machine[32];
+    char                kernel[80];
+    char                machine[80];
     char                clib[32];
     char                clib_version[32];
     unsigned            cpu_percent;
