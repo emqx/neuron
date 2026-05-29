@@ -17,7 +17,7 @@ void handle_cid(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
     (void) plugin;
 
-    NEU_PROCESS_HTTP_REQUEST(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_upload_cid_t, neu_json_decode_upload_cid_req, {
             cid_t cid      = { 0 };
             int   parse_re = neu_cid_parse(req->path, &cid);
