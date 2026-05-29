@@ -114,7 +114,7 @@ void handle_get_user(nng_aio *aio)
     utarray_foreach(user_infos, neu_persist_user_info_t *, p_info)
     {
         neu_json_user_resp_t resp = { 0 };
-        strcpy(resp.name, p_info->name);
+        strncpy(resp.name, p_info->name, NEU_USER_NAME_MAX_LEN);
         utarray_push_back(user_list, &resp);
     }
     utarray_free(user_infos);
@@ -547,7 +547,7 @@ void handle_get_plugin_schema(nng_aio *aio)
 
     header.ctx  = aio;
     header.type = NEU_REQ_CHECK_SCHEMA;
-    strcpy(cmd.schema, schema_name);
+    strncpy(cmd.schema, schema_name, NEU_PLUGIN_NAME_LEN - 1);
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
@@ -809,6 +809,7 @@ done:
 
 void handle_export_db(nng_aio *aio)
 {
+    NEU_VALIDATE_JWT(aio);
     write_csv_header();
 
     UT_array *nodes = NULL;
