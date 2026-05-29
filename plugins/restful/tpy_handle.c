@@ -17,7 +17,7 @@ void handle_tpy(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
     (void) plugin;
 
-    NEU_PROCESS_HTTP_REQUEST(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_upload_cid_t, neu_json_decode_upload_cid_req, {
             tpy_t tpy      = { 0 };
             int   parse_re = neu_tpy_parse(req->path, &tpy);
