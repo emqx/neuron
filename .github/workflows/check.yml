@@ -13,7 +13,7 @@ jobs:
 
     steps:
       # checkout
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -39,6 +39,18 @@ jobs:
           sudo apt install -y cppcheck
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=*:src/otel/trace.pb-c.c --suppress=*:src/otel/common.pb-c.c --suppress=*:src/otel/resource.pb-c.c  ./plugins ./src
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
+
+  flawfinder:
+    name: Flawfinder Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: flawfinder_scan
+        uses: david-a-wheeler/flawfinder@2.0.20
+        with:
+          arguments: '--minlevel=3 .'
 
   build:
     runs-on: ubuntu-24.04
