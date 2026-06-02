@@ -24,7 +24,7 @@ static int mqtt_schema_parse(json_t *root, mqtt_schema_vt_t **vts,
             mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
 
             memset(vt, 0, sizeof(mqtt_schema_vt_t));
-            strcpy(vt->name, key);
+            strncpy(vt->name, key, sizeof(vt->name) - 1);
 
             if (strcmp(str_val, "${timestamp}") == 0) {
                 vt->vt = MQTT_SCHEMA_TIMESTAMP;
@@ -50,7 +50,7 @@ static int mqtt_schema_parse(json_t *root, mqtt_schema_vt_t **vts,
                     return -1;
                 } else {
                     vt->vt = MQTT_SCHEMA_UD;
-                    strcpy(vt->ud, str_val);
+                    strncpy(vt->ud, str_val, sizeof(vt->ud) - 1);
                 }
             }
         } else if (json_is_object(value)) {
@@ -63,7 +63,7 @@ static int mqtt_schema_parse(json_t *root, mqtt_schema_vt_t **vts,
             mqtt_schema_vt_t *vt = &(*vts)[*vts_len - 1];
 
             memset(vt, 0, sizeof(mqtt_schema_vt_t));
-            strcpy(vt->name, key);
+            strncpy(vt->name, key, sizeof(vt->name) - 1);
 
             vt->vt = MQTT_SCHEMA_OBJECT;
             return mqtt_schema_parse(value, &vt->sub_vts, &vt->n_sub_vts,
@@ -338,7 +338,7 @@ int mqtt_static_validate(const char *static_tags, mqtt_static_vt_t **vts,
         mqtt_static_vt_t *vt = &(*vts)[*vts_len - 1];
 
         memset(vt, 0, sizeof(mqtt_static_vt_t));
-        strcpy(vt->name, key);
+        strncpy(vt->name, key, sizeof(vt->name) - 1);
 
         if (json_is_string(value)) {
             vt->jtype          = NEU_JSON_STR;

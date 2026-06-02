@@ -513,7 +513,7 @@ do {                                                                            
  */
 #ifdef HASH_DEBUG
 #include <stdio.h>   /* fprintf, stderr */
-#define HASH_OOPS(...) do { fprintf(stderr, __VA_ARGS__); exit(-1); } while (0)
+#define HASH_OOPS(...) do { fprintf(stderr, "%s", __VA_ARGS__); exit(-1); } while (0)
 #define HASH_FSCK(hh,head,where)                                                 \
 do {                                                                             \
   struct UT_hash_handle *_thh;                                                   \
