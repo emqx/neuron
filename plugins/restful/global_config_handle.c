@@ -1093,8 +1093,8 @@ static int get_tags(context_t *ctx, neu_resp_driver_group_info_t *info)
     };
 
     neu_req_get_tag_t cmd = { 0 };
-    strcpy(cmd.driver, info->driver);
-    strcpy(cmd.group, info->group);
+    strncpy(cmd.driver, info->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, info->group, NEU_GROUP_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         rv = NEU_ERR_IS_BUSY;
@@ -1247,7 +1247,7 @@ static int get_subscriptions(context_t *ctx, neu_resp_node_info_t *info)
     };
 
     neu_req_get_subscribe_group_t cmd = { 0 };
-    strcpy(cmd.app, info->node);
+    strncpy(cmd.app, info->node, NEU_NODE_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1331,7 +1331,7 @@ static int get_setting(context_t *ctx, neu_resp_node_info_t *info)
     };
 
     neu_req_get_node_setting_t cmd = { 0 };
-    strcpy(cmd.node, info->node);
+    strncpy(cmd.node, info->node, NEU_NODE_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1411,7 +1411,7 @@ static int del_node(context_t *ctx, neu_resp_node_info_t *info)
     };
 
     neu_req_del_node_t cmd = { 0 };
-    strcpy(cmd.node, info->node);
+    strncpy(cmd.node, info->node, NEU_NODE_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1431,8 +1431,8 @@ static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req)
     };
 
     neu_req_add_node_t cmd = { 0 };
-    strcpy(cmd.node, req->name);
-    strcpy(cmd.plugin, req->plugin);
+    strncpy(cmd.node, req->name, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.plugin, req->plugin, NEU_PLUGIN_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1453,8 +1453,8 @@ static int add_group(context_t *                             ctx,
     };
 
     neu_req_add_group_t cmd = { 0 };
-    strcpy(cmd.driver, data->driver);
-    strcpy(cmd.group, data->group);
+    strncpy(cmd.driver, data->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, data->group, NEU_GROUP_NAME_LEN - 1);
     cmd.interval = data->interval;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
@@ -1476,8 +1476,8 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
     };
 
     neu_req_add_tag_t cmd = { 0 };
-    strcpy(cmd.driver, data->node);
-    strcpy(cmd.group, data->group);
+    strncpy(cmd.driver, data->node, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, data->group, NEU_GROUP_NAME_LEN - 1);
     cmd.n_tag = data->n_tag;
     cmd.tags  = calloc(data->n_tag, sizeof(neu_datatag_t));
     if (NULL == cmd.tags) {
@@ -1529,9 +1529,9 @@ static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data)
     };
 
     neu_req_subscribe_t cmd = { 0 };
-    strcpy(cmd.app, data->app);
-    strcpy(cmd.driver, data->driver);
-    strcpy(cmd.group, data->group);
+    strncpy(cmd.app, data->app, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.driver, data->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, data->group, NEU_GROUP_NAME_LEN - 1);
     cmd.params   = data->params; // ownership moved
     data->params = NULL;
 
@@ -1553,7 +1553,7 @@ static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data)
     };
 
     neu_req_node_setting_t cmd = { 0 };
-    strcpy(cmd.node, data->node);
+    strncpy(cmd.node, data->node, NEU_NODE_NAME_LEN - 1);
     cmd.setting   = data->setting; // ownership moved
     data->setting = NULL;
 
@@ -1776,7 +1776,7 @@ static int del_app_node(context_t *ctx, neu_json_app_t *app)
     };
 
     neu_req_del_node_t cmd = { 0 };
-    strcpy(cmd.node, app->node.name);
+    strncpy(cmd.node, app->node.name, NEU_NODE_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1796,8 +1796,8 @@ static int add_app_node(context_t *ctx, neu_json_app_t *app)
     };
 
     neu_req_add_node_t cmd = { 0 };
-    strcpy(cmd.node, app->node.name);
-    strcpy(cmd.plugin, app->node.plugin);
+    strncpy(cmd.node, app->node.name, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.plugin, app->node.plugin, NEU_PLUGIN_NAME_LEN - 1);
     cmd.setting = app->node.setting;
     if (app->node.tags != NULL) {
         cmd.tags = strdup(app->node.tags);
@@ -1822,9 +1822,9 @@ static int add_app_tags(context_t *ctx, neu_json_app_t *app)
     };
 
     neu_req_update_node_tag_t cmd = { 0 };
-    strcpy(cmd.node, app->node.name);
+    strncpy(cmd.node, app->node.name, NEU_NODE_NAME_LEN - 1);
     if (app->node.tags != NULL) {
-        strcpy(cmd.tags, app->node.tags);
+        strncpy(cmd.tags, app->node.tags, NEU_TAG_NAME_LEN - 1);
     }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
@@ -1845,7 +1845,7 @@ static int add_app_setting(context_t *ctx, neu_json_app_t *app)
     };
 
     neu_req_node_setting_t cmd = { 0 };
-    strcpy(cmd.node, app->node.name);
+    strncpy(cmd.node, app->node.name, NEU_NODE_NAME_LEN - 1);
     cmd.setting       = app->node.setting;
     app->node.setting = NULL;
 
@@ -1868,9 +1868,9 @@ static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
     };
 
     neu_req_subscribe_t cmd = { 0 };
-    strcpy(cmd.app, app->node.name);
-    strcpy(cmd.driver, grp->driver);
-    strcpy(cmd.group, grp->group);
+    strncpy(cmd.app, app->node.name, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.driver, grp->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, grp->group, NEU_GROUP_NAME_LEN - 1);
     cmd.params       = grp->params;
     cmd.static_tags  = grp->static_tags;
     grp->params      = NULL;
@@ -1894,7 +1894,7 @@ static int get_default_app_subs(context_t *ctx, neu_json_app_t *app)
     };
 
     neu_req_get_subscribe_group_t cmd = { 0 };
-    strcpy(cmd.app, app->node.name);
+    strncpy(cmd.app, app->node.name, NEU_NODE_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -1923,9 +1923,9 @@ static int get_default_app_subs_resp(context_t *                     ctx,
         utarray_foreach(resp->groups, neu_resp_subscribe_info_t *, info)
         {
             neu_resp_subscribe_info_t copy = { 0 };
-            strcpy(copy.app, info->app);
-            strcpy(copy.driver, info->driver);
-            strcpy(copy.group, info->group);
+            strncpy(copy.app, info->app, NEU_NODE_NAME_LEN - 1);
+            strncpy(copy.driver, info->driver, NEU_NODE_NAME_LEN - 1);
+            strncpy(copy.group, info->group, NEU_GROUP_NAME_LEN - 1);
             utarray_push_back(ctx->default_app_subs, &copy);
         }
     }
@@ -1950,9 +1950,9 @@ static int unsub_app(context_t *ctx, neu_resp_subscribe_info_t *info)
     };
 
     neu_req_unsubscribe_t cmd = { 0 };
-    strcpy(cmd.app, info->app);
-    strcpy(cmd.driver, info->driver);
-    strcpy(cmd.group, info->group);
+    strncpy(cmd.app, info->app, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.driver, info->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.group, info->group, NEU_GROUP_NAME_LEN - 1);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
