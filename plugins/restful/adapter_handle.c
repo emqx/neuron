@@ -56,8 +56,8 @@ void handle_add_adapter(nng_aio *aio)
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_ADD_NODE;
-                strcpy(cmd.node, req->name);
-                strcpy(cmd.plugin, req->plugin);
+                strncpy(cmd.node, req->name, NEU_NODE_NAME_LEN - 1);
+                strncpy(cmd.plugin, req->plugin, NEU_PLUGIN_NAME_LEN - 1);
                 cmd.setting  = req->setting;
                 req->setting = NULL; // moved
                 ret          = neu_plugin_op(plugin, header, &cmd);
@@ -96,8 +96,8 @@ static inline int send_node_update_req(nng_aio *                   aio,
     }
 
     neu_req_update_node_t cmd = { 0 };
-    strcpy(cmd.node, req->name);
-    strcpy(cmd.new_name, req->new_name);
+    strncpy(cmd.node, req->name, NEU_NODE_NAME_LEN - 1);
+    strncpy(cmd.new_name, req->new_name, NEU_NODE_NAME_LEN - 1);
 
     neu_reqresp_head_t header = {
         .ctx             = aio,
@@ -140,7 +140,7 @@ void handle_del_adapter(nng_aio *aio)
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_DEL_NODE;
-                strcpy(cmd.node, req->name);
+                strncpy(cmd.node, req->name, NEU_NODE_NAME_LEN - 1);
                 ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
@@ -178,16 +178,16 @@ void handle_get_adapter(nng_aio *aio)
 
     if (neu_http_get_param_str(aio, "plugin", plugin_name,
                                sizeof(plugin_name)) > 0) {
-        strcpy(cmd.plugin, plugin_name);
+        strncpy(cmd.plugin, plugin_name, NEU_PLUGIN_NAME_LEN - 1);
     }
 
     if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {
-        strcpy(cmd.node, node_name);
+        strncpy(cmd.node, node_name, NEU_NODE_NAME_LEN - 1);
     }
 
     if (neu_http_get_param_str(aio, "group", group_name, sizeof(group_name)) >
         0) {
-        strcpy(cmd.query.q_group_name, group_name);
+        strncpy(cmd.query.q_group_name, group_name, NEU_GROUP_NAME_LEN - 1);
     }
 
     uintmax_t query_state = 0;
@@ -265,7 +265,7 @@ void handle_set_node_setting(nng_aio *aio)
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_NODE_SETTING;
-                strcpy(cmd.node, req->node);
+                strncpy(cmd.node, req->node, NEU_NODE_NAME_LEN - 1);
                 cmd.setting  = req->setting;
                 req->setting = NULL; // ownership moved
                 ret          = neu_plugin_op(plugin, header, &cmd);
@@ -299,7 +299,7 @@ void handle_get_node_setting(nng_aio *aio)
     header.ctx             = aio;
     header.type            = NEU_REQ_GET_NODE_SETTING;
     header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
-    strcpy(cmd.node, node_name);
+    strncpy(cmd.node, node_name, NEU_NODE_NAME_LEN - 1);
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
@@ -348,7 +348,7 @@ void handle_node_ctl(nng_aio *aio)
 
                 header.ctx  = aio;
                 header.type = NEU_REQ_NODE_CTL;
-                strcpy(cmd.node, req->node);
+                strncpy(cmd.node, req->node, NEU_NODE_NAME_LEN - 1);
                 cmd.ctl = req->cmd;
 
                 ret = neu_plugin_op(plugin, header, &cmd);
@@ -379,7 +379,7 @@ void handle_get_node_state(nng_aio *aio)
         header.type = NEU_REQ_GET_NODES_STATE;
     } else {
         header.type = NEU_REQ_GET_NODE_STATE;
-        strcpy(cmd.node, node_name);
+        strncpy(cmd.node, node_name, NEU_NODE_NAME_LEN - 1);
     }
 
     ret = neu_plugin_op(plugin, header, &cmd);
@@ -453,7 +453,8 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
     }
 
     for (int i = 0; i < gtag_array->len; i++) {
-        strcpy(gdatatags[i].group, gtag_array->gtags[i].group);
+        strncpy(gdatatags[i].group, gtag_array->gtags[i].group,
+                NEU_GROUP_NAME_LEN - 1);
         gdatatags[i].n_tag    = gtag_array->gtags[i].n_tag;
         gdatatags[i].interval = gtag_array->gtags[i].interval;
         gdatatags[i].tags =
