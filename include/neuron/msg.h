@@ -665,8 +665,8 @@ static inline void neu_req_add_tag_fini(neu_req_add_tag_t *req)
 static inline int neu_req_add_tag_copy(neu_req_add_tag_t *dst,
                                        neu_req_add_tag_t *src)
 {
-    strcpy(dst->driver, src->driver);
-    strcpy(dst->group, src->group);
+    strncpy(dst->driver, src->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(dst->group, src->group, NEU_GROUP_NAME_LEN - 1);
     dst->tags = (neu_datatag_t *) calloc(src->n_tag, sizeof(src->tags[0]));
     if (NULL == dst->tags) {
         return -1;
@@ -701,8 +701,8 @@ static inline void neu_req_del_tag_fini(neu_req_del_tag_t *req)
 static inline int neu_req_del_tag_copy(neu_req_del_tag_t *dst,
                                        neu_req_del_tag_t *src)
 {
-    strcpy(dst->driver, src->driver);
-    strcpy(dst->group, src->group);
+    strncpy(dst->driver, src->driver, NEU_NODE_NAME_LEN - 1);
+    strncpy(dst->group, src->group, NEU_GROUP_NAME_LEN - 1);
     dst->tags = (char **) calloc(src->n_tag, sizeof(src->tags[0]));
     if (NULL == dst->tags) {
         return -1;
@@ -846,7 +846,7 @@ static inline void neu_req_node_setting_fini(neu_req_node_setting_t *req)
 static inline int neu_req_node_setting_copy(neu_req_node_setting_t *dst,
                                             neu_req_node_setting_t *src)
 {
-    strcpy(dst->node, src->node);
+    strncpy(dst->node, src->node, NEU_NODE_NAME_LEN - 1);
     dst->setting = strdup(src->setting);
     return dst->setting ? 0 : -1;
 }
@@ -1674,13 +1674,13 @@ inline static void neu_msg_exchange(neu_reqresp_head_t *header)
 {
     char tmp[NEU_NODE_NAME_LEN] = { 0 };
 
-    strcpy(tmp, header->sender);
+    strncpy(tmp, header->sender, sizeof(tmp) - 1);
 
     memset(header->sender, 0, sizeof(header->sender));
-    strcpy(header->sender, header->receiver);
+    strncpy(header->sender, header->receiver, sizeof(header->sender) - 1);
 
     memset(header->receiver, 0, sizeof(header->receiver));
-    strcpy(header->receiver, tmp);
+    strncpy(header->receiver, tmp, sizeof(header->receiver) - 1);
 }
 
 typedef struct {
