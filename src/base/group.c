@@ -93,6 +93,20 @@ int neu_group_set_name(neu_group_t *group, const char *name)
     return 0;
 }
 
+int neu_group_check_name(neu_group_t *group, const char *name)
+{
+    tag_elem_t *el = NULL;
+
+    pthread_mutex_lock(&group->mtx);
+    HASH_FIND_STR(group->tags, name, el);
+    if (el != NULL) {
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_TAG_NAME_CONFLICT;
+    }
+    pthread_mutex_unlock(&group->mtx);
+    return NEU_ERR_SUCCESS;
+}
+
 uint32_t neu_group_get_interval(const neu_group_t *group)
 {
     uint32_t interval = 0;

@@ -1581,30 +1581,61 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     resp.index += 1;
                 } else {
                     resp.error = ret;
-                    break;
                 }
             }
         } else {
             resp.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
-        if (resp.index > 0) {
-            int ret = neu_adapter_driver_try_add_tag(
-                (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags,
-                resp.index);
-            if (ret != 0) {
-                resp.index = 0;
-                resp.error = ret;
+        if (resp.error != 0) {
+            for (uint16_t i = 0; i < cmd->n_tag; i++) {
+                neu_tag_fini(&cmd->tags[i]);
             }
+            neu_msg_exchange(header);
+            header->type = NEU_RESP_ADD_TAG;
+            reply(adapter, header, &resp);
+            free(cmd->tags);
+            break;
         }
 
-        for (int i = 0; i < resp.index; i++) {
+        resp.error =
+            neu_adapter_driver_check_tags((neu_adapter_driver_t *) adapter,
+                                          cmd->group, cmd->tags, cmd->n_tag);
+        if (resp.error != 0) {
+            for (uint16_t i = 0; i < cmd->n_tag; i++) {
+                neu_tag_fini(&cmd->tags[i]);
+            }
+            neu_msg_exchange(header);
+            resp.index   = resp.error - 1;
+            resp.error   = NEU_ERR_TAG_NAME_CONFLICT;
+            header->type = NEU_RESP_ADD_TAG;
+            reply(adapter, header, &resp);
+            free(cmd->tags);
+            break;
+        }
+
+        resp.error =
+            neu_adapter_driver_try_add_tag((neu_adapter_driver_t *) adapter,
+                                           cmd->group, cmd->tags, cmd->n_tag);
+        if (resp.error != 0) {
+            for (uint16_t i = 0; i < cmd->n_tag; i++) {
+                neu_tag_fini(&cmd->tags[i]);
+            }
+            resp.index = 0;
+            neu_msg_exchange(header);
+            header->type = NEU_RESP_ADD_TAG;
+            reply(adapter, header, &resp);
+            free(cmd->tags);
+            break;
+        }
+
+        for (int i = 0; i < cmd->n_tag; i++) {
             int ret = neu_adapter_driver_add_tag(
                 (neu_adapter_driver_t *) adapter, cmd->group, &cmd->tags[i],
                 NEU_DEFAULT_GROUP_INTERVAL);
             if (ret != 0) {
                 neu_adapter_driver_try_del_tag((neu_adapter_driver_t *) adapter,
-                                               resp.index - i);
+                                               cmd->n_tag - i);
                 resp.index = i;
                 resp.error = ret;
                 break;
