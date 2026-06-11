@@ -1599,8 +1599,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
             neu_msg_exchange(header);
             header->type = NEU_RESP_ADD_TAG;
-            reply(adapter, header, &resp);
             free(cmd->tags);
+            reply(adapter, header, &resp);
             break;
         }
 
@@ -1616,8 +1616,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             resp.error = NEU_ERR_TAG_NAME_CONFLICT;
             neu_resp_add_tag_result(&resp, resp.index, resp.error);
             header->type = NEU_RESP_ADD_TAG;
-            reply(adapter, header, &resp);
             free(cmd->tags);
+            reply(adapter, header, &resp);
             break;
         }
 
@@ -1632,8 +1632,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_resp_add_tag_result(&resp, 0, resp.error);
             neu_msg_exchange(header);
             header->type = NEU_RESP_ADD_TAG;
-            reply(adapter, header, &resp);
             free(cmd->tags);
+            reply(adapter, header, &resp);
             break;
         }
 
