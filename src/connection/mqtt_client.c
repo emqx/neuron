@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,6 +120,9 @@ struct neu_mqtt_client_s {
     nng_dialer                      dialer;
     bool                            open;
     bool                            connected;
+    bool                            ever_connected;
+    nng_time                        opened_at_ms;
+    nng_time                        last_warn_ms;
     neu_mqtt_client_connection_cb_t connect_cb;
     void *                          connect_cb_data;
     neu_mqtt_client_connection_cb_t disconnect_cb;
@@ -619,10 +623,310 @@ static int resub_cb(void *data)
                 log(error, "client_send_sub_msg fail");
             }
         }
+    } else if (!client->connected && client->open) {
+        // Watchdog for connection establishment: nng_dialer_start was
+        // called with NNG_FLAG_NONBLOCK, so DNS/TCP/TLS failures are
+        // retried silently. Emit a periodic log so operators can see
+        // that the broker is unreachable instead of guessing.
+        nng_time now = nng_clock();
+        // Grace period before the first warning. Floor at 5s so a
+        // normal remote broker (DNS + TCP + TLS + MQTT handshake) has
+        // enough time to come up without tripping a false alarm; cap
+        // at 30s so a configuration mistake is still surfaced quickly.
+        nng_time grace = (nng_time) client->retry * 3;
+        if (grace < 5000) {
+            grace = 5000;
+        }
+        if (grace > 30000) {
+            grace = 30000;
+        }
+        const nng_time warn_interval = 30000;
+        if (now >= client->opened_at_ms + grace &&
+            (client->last_warn_ms == 0 ||
+             now >= client->last_warn_ms + warn_interval)) {
+            const char *url = client->url ? client->url : "(unset)";
+            if (client->ever_connected) {
+                log(warn, "mqtt client still disconnected from %s, retrying",
+                    url);
+            } else {
+                log(error,
+                    "mqtt client cannot connect to %s "
+                    "(check address/network/credentials/TLS)",
+                    url);
+            }
+            client->last_warn_ms = now;
+        }
     }
     nng_mtx_unlock(client->mtx);
 
     return 0;
+}
+
+// Bridge nng's internal logs (TLS handshake, TCP refused, DNS, ...) into
+// zlog. nng_log_set_logger is process-global, so we install once and
+// dispatch each log line back to the right plugin's zlog category by
+// parsing the "socket<N>" token that nng embeds in its messages. Logs
+// without a socket id (e.g. generic init/TLS-engine messages) fall back
+// to a shared "nng" category.
+#define NEU_MQTT_SOCK_LOG_MAX 64
+typedef struct {
+    int              sock_id;
+    zlog_category_t *cat;
+} sock_log_entry_t;
+
+static zlog_category_t *s_nng_log_cat  = NULL;
+static pthread_once_t   s_nng_log_once = PTHREAD_ONCE_INIT;
+static nng_mtx *        s_sock_log_mtx = NULL;
+static sock_log_entry_t s_sock_log_table[NEU_MQTT_SOCK_LOG_MAX];
+
+static const char *mqtt_reason_code_str(int reason);
+
+static void sock_log_register(int sock_id, zlog_category_t *cat)
+{
+    if (sock_id < 0 || NULL == cat || NULL == s_sock_log_mtx) {
+        return;
+    }
+    nng_mtx_lock(s_sock_log_mtx);
+    int free_slot = -1;
+    for (int i = 0; i < NEU_MQTT_SOCK_LOG_MAX; ++i) {
+        if (s_sock_log_table[i].cat != NULL &&
+            s_sock_log_table[i].sock_id == sock_id) {
+            s_sock_log_table[i].cat = cat;
+            nng_mtx_unlock(s_sock_log_mtx);
+            return;
+        }
+        if (free_slot < 0 && s_sock_log_table[i].cat == NULL) {
+            free_slot = i;
+        }
+    }
+    if (free_slot >= 0) {
+        s_sock_log_table[free_slot].sock_id = sock_id;
+        s_sock_log_table[free_slot].cat     = cat;
+    }
+    nng_mtx_unlock(s_sock_log_mtx);
+}
+
+static void sock_log_unregister(int sock_id)
+{
+    if (sock_id < 0 || NULL == s_sock_log_mtx) {
+        return;
+    }
+    nng_mtx_lock(s_sock_log_mtx);
+    for (int i = 0; i < NEU_MQTT_SOCK_LOG_MAX; ++i) {
+        if (s_sock_log_table[i].cat != NULL &&
+            s_sock_log_table[i].sock_id == sock_id) {
+            s_sock_log_table[i].cat     = NULL;
+            s_sock_log_table[i].sock_id = 0;
+            break;
+        }
+    }
+    nng_mtx_unlock(s_sock_log_mtx);
+}
+
+static zlog_category_t *sock_log_lookup(const char *msg)
+{
+    if (NULL == msg || NULL == s_sock_log_mtx) {
+        return NULL;
+    }
+    const char *p = strstr(msg, "socket<");
+    if (NULL == p) {
+        return NULL;
+    }
+    p += strlen("socket<");
+    char *end = NULL;
+    long  id  = strtol(p, &end, 10);
+    if (end == p) {
+        return NULL;
+    }
+    zlog_category_t *cat = NULL;
+    nng_mtx_lock(s_sock_log_mtx);
+    for (int i = 0; i < NEU_MQTT_SOCK_LOG_MAX; ++i) {
+        if (s_sock_log_table[i].cat != NULL &&
+            s_sock_log_table[i].sock_id == (int) id) {
+            cat = s_sock_log_table[i].cat;
+            break;
+        }
+    }
+    nng_mtx_unlock(s_sock_log_mtx);
+    return cat;
+}
+
+// NanoSDK's MQTT transport sometimes returns MQTT v5 reason codes (128-162)
+// directly as nng rv values, which nng_strerror prints as "Unknown error #N".
+// Rewrite such messages so the actual MQTT meaning is visible in the log.
+static const char *nng_log_rewrite(const char *msg, char *buf, size_t cap)
+{
+    if (NULL == msg) {
+        return "";
+    }
+    const char *needle = "Unknown error #";
+    const char *p      = strstr(msg, needle);
+    if (NULL == p) {
+        return msg;
+    }
+    const char *num = p + strlen(needle);
+    char *      end = NULL;
+    long        n   = strtol(num, &end, 10);
+    if (end == num) {
+        return msg;
+    }
+    const char *desc = mqtt_reason_code_str((int) n);
+    if (NULL == desc) {
+        return msg;
+    }
+    size_t prefix = (size_t)(p - msg);
+    int rc = snprintf(buf, cap, "%.*s%s (mqtt reason code %ld)%s", (int) prefix,
+                      msg, desc, n, end);
+    if (rc < 0 || (size_t) rc >= cap) {
+        return msg;
+    }
+    return buf;
+}
+
+static void nng_log_to_zlog(nng_log_level level, nng_log_facility facility,
+                            const char *msgid, const char *msg)
+{
+    (void) facility;
+    zlog_category_t *cat = sock_log_lookup(msg);
+    if (NULL == cat) {
+        // Generic messages (TLS engine init, etc.) carry no socket id;
+        // park them in the shared "nng" category as a fallback.
+        cat = s_nng_log_cat;
+    }
+    if (NULL == cat) {
+        return;
+    }
+    const char *id = msgid ? msgid : "NNG";
+    char        buf[512];
+    const char *m = nng_log_rewrite(msg, buf, sizeof(buf));
+    switch (level) {
+    case NNG_LOG_ERR:
+        zlog_error(cat, "[%s] %s", id, m);
+        break;
+    case NNG_LOG_WARN:
+        zlog_warn(cat, "[%s] %s", id, m);
+        break;
+    case NNG_LOG_NOTICE:
+        zlog_notice(cat, "[%s] %s", id, m);
+        break;
+    case NNG_LOG_INFO:
+        zlog_info(cat, "[%s] %s", id, m);
+        break;
+    case NNG_LOG_DEBUG:
+        zlog_debug(cat, "[%s] %s", id, m);
+        break;
+    default:
+        break;
+    }
+}
+
+static void nng_log_bridge_init(void)
+{
+    if (0 != nng_mtx_alloc(&s_sock_log_mtx)) {
+        s_sock_log_mtx = NULL;
+        return;
+    }
+    memset(s_sock_log_table, 0, sizeof(s_sock_log_table));
+    s_nng_log_cat = zlog_get_category("nng");
+    // Surface warnings and errors (TLS/TCP/DNS failures live here); skip
+    // info/debug to keep the log file lean.
+    nng_log_set_level(NNG_LOG_WARN);
+    nng_log_set_logger(nng_log_to_zlog);
+}
+
+// Returns a human-readable description for an MQTT v3.1.1 CONNACK return
+// code or an MQTT v5 reason code. Returns NULL when the value is not a
+// recognized reason code so callers can fall back to the numeric value.
+static const char *mqtt_reason_code_str(int reason)
+{
+    switch (reason) {
+    // MQTT v3.1.1 CONNACK codes (0-5)
+    case 0:
+        return "success";
+    case 1:
+        return "unacceptable protocol version";
+    case 2:
+        return "identifier rejected";
+    case 3:
+        return "server unavailable";
+    case 4:
+        return "bad user name or password";
+    case 5:
+        return "not authorized";
+    // MQTT v5 reason codes (128-162)
+    case 128:
+        return "unspecified error";
+    case 129:
+        return "malformed packet";
+    case 130:
+        return "protocol error";
+    case 131:
+        return "implementation specific error";
+    case 132:
+        return "unsupported protocol version";
+    case 133:
+        return "client identifier not valid";
+    case 134:
+        return "bad user name or password";
+    case 135:
+        return "not authorized";
+    case 136:
+        return "server unavailable";
+    case 137:
+        return "server busy";
+    case 138:
+        return "banned";
+    case 139:
+        return "server shutting down";
+    case 140:
+        return "bad authentication method";
+    case 141:
+        return "keep alive timeout";
+    case 142:
+        return "session taken over";
+    case 143:
+        return "topic filter invalid";
+    case 144:
+        return "topic name invalid";
+    case 145:
+        return "packet identifier in use";
+    case 146:
+        return "packet identifier not found";
+    case 147:
+        return "receive maximum exceeded";
+    case 148:
+        return "topic alias invalid";
+    case 149:
+        return "packet too large";
+    case 150:
+        return "message rate too high";
+    case 151:
+        return "quota exceeded";
+    case 152:
+        return "administrative action";
+    case 153:
+        return "payload format invalid";
+    case 154:
+        return "retain not supported";
+    case 155:
+        return "qos not supported";
+    case 156:
+        return "use another server";
+    case 157:
+        return "server moved";
+    case 158:
+        return "shared subscriptions not supported";
+    case 159:
+        return "connection rate exceeded";
+    case 160:
+        return "maximum connect time";
+    case 161:
+        return "subscription identifiers not supported";
+    case 162:
+        return "wildcard subscriptions not supported";
+    default:
+        return NULL;
+    }
 }
 
 static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
@@ -635,16 +939,26 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_CONNECT_REASON, &reason);
-    log(notice, "mqtt client connected, reason: %d", reason);
+    if (0 == reason) {
+        log(notice, "mqtt client connected to %s",
+            client->url ? client->url : "(unset)");
+    } else {
+        const char *desc = mqtt_reason_code_str(reason);
+        log(error, "mqtt client connect refused by broker %s, reason: %d (%s)",
+            client->url ? client->url : "(unset)", reason,
+            desc ? desc : "unknown");
+    }
 
     nng_mtx_lock(client->mtx);
     // start receiving
     client_start_recv(client);
 
     // mark as connected
-    client->connected = true;
-    cb                = client->connect_cb;
-    data              = client->connect_cb_data;
+    client->connected      = true;
+    client->ever_connected = true;
+    client->last_warn_ms   = 0;
+    cb                     = client->connect_cb;
+    data                   = client->connect_cb_data;
     nng_mtx_unlock(client->mtx);
 
     if (cb) {
@@ -663,7 +977,15 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     int                             reason = 0;
 
     nng_pipe_get_int(p, NNG_OPT_MQTT_DISCONNECT_REASON, &reason);
-    log(notice, "mqtt client disconnected, reason: %d", reason);
+    if (0 == reason) {
+        log(notice, "mqtt client disconnected from %s",
+            client->url ? client->url : "(unset)");
+    } else {
+        const char *desc = mqtt_reason_code_str(reason);
+        log(error, "mqtt client disconnected from %s, reason: %d (%s)",
+            client->url ? client->url : "(unset)", reason,
+            desc ? desc : "unknown");
+    }
 
     nng_mtx_lock(client->mtx);
     client->connected = false;
@@ -1014,6 +1336,8 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
 
 neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
 {
+    pthread_once(&s_nng_log_once, nng_log_bridge_init);
+
     neu_mqtt_client_t *client = calloc(1, sizeof(*client));
     if (NULL == client) {
         return NULL;
@@ -1490,6 +1814,10 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         }
     }
 
+    // Route nng's internal logs for this socket back to the plugin's
+    // own zlog category instead of the shared "nng" fallback.
+    sock_log_register(nng_socket_id(client->sock), client->log);
+
     if (0 != client_make_url(client)) {
         log(error, "client_make_url fail");
         goto error;
@@ -1544,8 +1872,11 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         goto error;
     }
 
-    client->open   = true;
-    client->dialer = dialer;
+    client->open           = true;
+    client->dialer         = dialer;
+    client->ever_connected = false;
+    client->opened_at_ms   = nng_clock();
+    client->last_warn_ms   = 0;
     nng_mtx_unlock(client->mtx);
 
     return 0;
@@ -1558,6 +1889,7 @@ error:
         client->events = NULL;
         client->timer  = NULL;
     }
+    sock_log_unregister(nng_socket_id(client->sock));
     nng_close(client->sock);
     return -1;
 }
@@ -1597,6 +1929,7 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     // nng_aio_stop(client->recv_aio);
 
     nng_dialer_close(client->dialer);
+    sock_log_unregister(nng_socket_id(client->sock));
     rv = nng_close(client->sock);
     if (0 != rv) {
         log(error, "nng_close: %s", nng_strerror(rv));

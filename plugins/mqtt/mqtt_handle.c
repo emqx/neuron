@@ -39,7 +39,7 @@ static void to_traceparent(uint8_t *trace_id, char *span_id, char *out)
         size += sprintf(out + size, "%02x", trace_id[i]);
     }
 
-    sprintf(out + size, "-%s-01", span_id);
+    snprintf(out + size, strlen(span_id) + 5, "-%s-01", span_id);
 }
 
 static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
@@ -281,7 +281,7 @@ static inline int send_driver_action(neu_plugin_t *            plugin,
     header.ctx                = NULL;
 
     neu_req_driver_action_t action = { 0 };
-    strncpy(action.driver, req->driver, NEU_NODE_NAME_LEN);
+    strncpy(action.driver, req->driver, NEU_NODE_NAME_LEN - 1);
     action.action = strdup(req->action);
 
     if (0 != neu_plugin_op(plugin, header, &action)) {
@@ -465,7 +465,7 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     for (int i = 0; i < cmd.n_tag; i++) {
-        strcpy(cmd.tags[i].tag, req->tags[i].tag);
+        strncpy(cmd.tags[i].tag, req->tags[i].tag, NEU_TAG_NAME_LEN - 1);
         if (0 !=
             json_value_to_tag_value(&req->tags[i].value, req->tags[i].t,
                                     &cmd.tags[i].value)) {
@@ -574,6 +574,31 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
             return;
         }
 
+        if (strlen(wr->node) >= NEU_NODE_NAME_LEN ||
+            strlen(wr->group) >= NEU_GROUP_NAME_LEN) {
+            plog_error(plugin, "node or group name too long");
+            model__write_request__free_unpacked(wr, NULL);
+            return;
+        }
+
+        for (size_t i = 0; i < wr->n_tags; i++) {
+            if (strlen(wr->tags[i]->name) >= NEU_TAG_NAME_LEN) {
+                plog_error(plugin, "tag name too long");
+                model__write_request__free_unpacked(wr, NULL);
+                return;
+            }
+
+            if (wr->tags[i]->value->value_case ==
+                MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE) {
+                if (strlen(wr->tags[i]->value->string_value) >=
+                    NEU_VALUE_SIZE) {
+                    plog_error(plugin, "string tag value too long");
+                    model__write_request__free_unpacked(wr, NULL);
+                    return;
+                }
+            }
+        }
+
         mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
         mqtt->uuid        = strdup(wr->uuid);
         mqtt->payload     = NULL;
@@ -593,7 +618,7 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         }
 
         for (int i = 0; i < cmd.n_tag; i++) {
-            strcpy(cmd.tags[i].tag, wr->tags[i]->name);
+            strncpy(cmd.tags[i].tag, wr->tags[i]->name, NEU_TAG_NAME_LEN - 1);
             switch (wr->tags[i]->value->value_case) {
             case MODEL__DATA_ITEM_VALUE__VALUE_INT_VALUE:
                 cmd.tags[i].value.type      = NEU_TYPE_INT64;
@@ -610,8 +635,8 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                 break;
             case MODEL__DATA_ITEM_VALUE__VALUE_STRING_VALUE:
                 cmd.tags[i].value.type = NEU_TYPE_STRING;
-                strcpy(cmd.tags[i].value.value.str,
-                       wr->tags[i]->value->string_value);
+                strncpy(cmd.tags[i].value.value.str,
+                        wr->tags[i]->value->string_value, NEU_VALUE_SIZE - 1);
                 break;
             default:
                 break;
@@ -907,7 +932,7 @@ void handle_driver_action_req(neu_mqtt_qos_e qos, const char *topic,
         mqtt->tracestate  = NULL;
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, dar->node);
+        strncpy(cmd.driver, dar->node, NEU_NODE_NAME_LEN - 1);
         cmd.action = strdup(dar->action);
 
         model__driver_action_request__free_unpacked(dar, NULL);
@@ -930,7 +955,7 @@ void handle_driver_action_req(neu_mqtt_qos_e qos, const char *topic,
         }
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, req->driver);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
         cmd.action = strdup(req->action);
         neu_json_decode_driver_action_req_free(req);
         free(json_str);
@@ -1768,8 +1793,8 @@ void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
         mqtt->tracestate  = NULL;
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, flr->node);
-        strcpy(cmd.path, flr->path);
+        strncpy(cmd.driver, flr->node, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, flr->path, NEU_PATH_LEN - 1);
 
         model__file_list_request__free_unpacked(flr, NULL);
     } else {
@@ -1792,8 +1817,8 @@ void handle_driver_directory_req(neu_mqtt_qos_e qos, const char *topic,
 
         header.ctx = mqtt;
 
-        strcpy(cmd.driver, req->driver);
-        strcpy(cmd.path, req->path);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, req->path, NEU_PATH_LEN - 1);
 
         neu_json_decode_driver_directory_req_free(req);
         free(json_str);
@@ -1957,8 +1982,8 @@ void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,
         mqtt->tracestate  = NULL;
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, fur->node);
-        strcpy(cmd.path, fur->path);
+        strncpy(cmd.driver, fur->node, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, fur->path, NEU_PATH_LEN - 1);
 
         model__file_upload_request__free_unpacked(fur, NULL);
     } else {
@@ -1979,8 +2004,8 @@ void handle_driver_fup_open_req(neu_mqtt_qos_e qos, const char *topic,
             return;
         }
         header.ctx = mqtt;
-        strcpy(cmd.driver, req->driver);
-        strcpy(cmd.path, req->path);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, req->path, NEU_PATH_LEN - 1);
 
         neu_json_decode_driver_fup_open_req_free(req);
         free(json_str);
@@ -2084,8 +2109,8 @@ void handle_driver_fup_data_req(neu_mqtt_qos_e qos, const char *topic,
 
         header.ctx = mqtt;
 
-        strcpy(cmd.driver, fudr->node);
-        strcpy(cmd.path, fudr->path);
+        strncpy(cmd.driver, fudr->node, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, fudr->path, NEU_PATH_LEN - 1);
 
         model__file_upload_data_request__free_unpacked(fudr, NULL);
     } else {
@@ -2108,8 +2133,8 @@ void handle_driver_fup_data_req(neu_mqtt_qos_e qos, const char *topic,
 
         header.ctx = mqtt;
 
-        strcpy(cmd.driver, req->driver);
-        strcpy(cmd.path, req->path);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.path, req->path, NEU_PATH_LEN - 1);
 
         neu_json_decode_driver_fup_data_req_free(req);
         free(json_str);
@@ -2218,9 +2243,9 @@ void handle_driver_fdown_open_req(neu_mqtt_qos_e qos, const char *topic,
         mqtt->tracestate  = NULL;
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, fdr->node);
-        strcpy(cmd.src_path, fdr->src_path);
-        strcpy(cmd.dst_path, fdr->dst_path);
+        strncpy(cmd.driver, fdr->node, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.src_path, fdr->src_path, NEU_PATH_LEN - 1);
+        strncpy(cmd.dst_path, fdr->dst_path, NEU_PATH_LEN - 1);
         cmd.size = fdr->size;
 
         model__file_download_request__free_unpacked(fdr, NULL);
@@ -2242,9 +2267,9 @@ void handle_driver_fdown_open_req(neu_mqtt_qos_e qos, const char *topic,
             return;
         }
         header.ctx = mqtt;
-        strcpy(cmd.driver, req->driver);
-        strcpy(cmd.src_path, req->src_path);
-        strcpy(cmd.dst_path, req->dst_path);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.src_path, req->src_path, NEU_PATH_LEN - 1);
+        strncpy(cmd.dst_path, req->dst_path, NEU_PATH_LEN - 1);
         cmd.size = req->size;
 
         neu_json_decode_driver_fdown_open_req_free(req);
@@ -2346,8 +2371,8 @@ void handle_driver_fdown_data_req(neu_mqtt_qos_e qos, const char *topic,
         mqtt->tracestate  = NULL;
 
         header.ctx = mqtt;
-        strcpy(cmd.driver, fddr->node);
-        strcpy(cmd.src_path, fddr->path);
+        strncpy(cmd.driver, fddr->node, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.src_path, fddr->path, NEU_PATH_LEN - 1);
         cmd.more = fddr->more;
         cmd.len  = fddr->data.len;
         cmd.data = calloc(fddr->data.len, sizeof(uint8_t));
@@ -2373,8 +2398,8 @@ void handle_driver_fdown_data_req(neu_mqtt_qos_e qos, const char *topic,
         }
         header.ctx = mqtt;
 
-        strcpy(cmd.driver, req->driver);
-        strcpy(cmd.src_path, req->src_path);
+        strncpy(cmd.driver, req->driver, NEU_NODE_NAME_LEN - 1);
+        strncpy(cmd.src_path, req->src_path, NEU_PATH_LEN - 1);
         cmd.more = req->more;
         cmd.len  = req->len;
         cmd.data = calloc(req->len, sizeof(uint8_t));
