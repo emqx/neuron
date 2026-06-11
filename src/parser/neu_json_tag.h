@@ -73,6 +73,13 @@ void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req);
 typedef struct {
     uint16_t index;
     int      error;
+} neu_json_tag_op_res_item_t;
+
+typedef struct {
+    uint16_t                    index;
+    int                         error;
+    int                         n_result;
+    neu_json_tag_op_res_item_t *results;
 } neu_json_add_tag_res_t, neu_json_update_tag_res_t;
 
 int neu_json_encode_au_tags_resp(void *json_object, void *param);
