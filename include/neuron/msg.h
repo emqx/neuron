@@ -687,7 +687,48 @@ static inline int neu_req_add_tag_copy(neu_req_add_tag_t *dst,
 typedef struct {
     uint16_t index;
     int      error;
+} neu_resp_tag_op_result_t;
+
+inline static UT_icd *neu_resp_tag_op_result_icd()
+{
+    static UT_icd icd = { sizeof(neu_resp_tag_op_result_t), NULL, NULL, NULL };
+    return &icd;
+}
+
+typedef struct {
+    uint16_t  index;
+    int       error;
+    UT_array *results; // array of neu_resp_tag_op_result_t
 } neu_resp_add_tag_t, neu_resp_update_tag_t;
+
+static inline int neu_resp_add_tag_result(neu_resp_add_tag_t *resp,
+                                          uint16_t index, int error)
+{
+    neu_resp_tag_op_result_t result = {
+        .index = index,
+        .error = error,
+    };
+
+    if (resp->results == NULL) {
+        utarray_new(resp->results, neu_resp_tag_op_result_icd());
+        if (resp->results == NULL) {
+            return -1;
+        }
+    }
+
+    utarray_push_back(resp->results, &result);
+    resp->index = index;
+    resp->error = error;
+    return 0;
+}
+
+static inline void neu_resp_add_tag_result_fini(neu_resp_add_tag_t *resp)
+{
+    if (resp->results != NULL) {
+        utarray_free(resp->results);
+        resp->results = NULL;
+    }
+}
 
 typedef struct neu_req_del_tag {
     char     driver[NEU_NODE_NAME_LEN];

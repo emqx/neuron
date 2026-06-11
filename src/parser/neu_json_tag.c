@@ -392,27 +392,54 @@ void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req)
     free(req);
 }
 
-int neu_json_encode_au_tags_resp(void *json_object, void *param)
+int neu_json_encode_au_tags_resp(void *jo, void *param)
 {
     int                     ret          = 0;
     neu_json_add_tag_res_t *resp         = (neu_json_add_tag_res_t *) param;
-    neu_json_elem_t         resp_elems[] = {
+    json_t *                result_array = NULL;
+    int                     index        = resp->index;
+    int                     error        = resp->error;
+
+    if (resp->n_result > 0) {
+        result_array = json_array();
+        if (result_array == NULL) {
+            return -1;
+        }
+
+        for (int i = 0; i < resp->n_result; i++) {
+            json_t *result = json_object();
+            if (result == NULL) {
+                json_decref(result_array);
+                return -1;
+            }
+
+            json_object_set_new(result, "index",
+                                json_integer(resp->results[i].index));
+            json_object_set_new(result, "error",
+                                json_integer(resp->results[i].error));
+            json_array_append_new(result_array, result);
+        }
+    }
+
+    neu_json_elem_t resp_elems[] = {
         {
             .name      = "index",
             .t         = NEU_JSON_INT,
-            .v.val_int = resp->index,
+            .v.val_int = index,
         },
         {
             .name      = "error",
             .t         = NEU_JSON_INT,
-            .v.val_int = resp->error,
-
+            .v.val_int = error,
+        },
+        {
+            .name         = "results",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = result_array,
         },
     };
 
-    ret = neu_json_encode_field(json_object, resp_elems,
-                                NEU_JSON_ELEM_SIZE(resp_elems));
-
+    ret = neu_json_encode_field(jo, resp_elems, NEU_JSON_ELEM_SIZE(resp_elems));
     return ret;
 }
 

@@ -49,78 +49,78 @@ void handle_add_tags(nng_aio *aio)
                 for (int i = 0; i < req->n_tag; i++) {
                     for (int k = 0; k < i; k++) {
                         if (strcmp(req->tags[i].name, req->tags[k].name) == 0) {
-                            add_resp.index = i;
-                            add_resp.error = NEU_ERR_TAG_NAME_CONFLICT;
+                            neu_resp_add_tag_result(&add_resp, i,
+                                                    NEU_ERR_TAG_NAME_CONFLICT);
                             break;
                         }
                     }
                 }
-                if (add_resp.error > 0) {
+
+                for (int i = 0; i < req->n_tag; i++) {
+                    if (req->tags[i].type == NEU_TYPE_STRING ||
+                        req->tags[i].type == NEU_TYPE_BOOL ||
+                        req->tags[i].type == NEU_TYPE_BIT ||
+                        req->tags[i].type == NEU_TYPE_TIME ||
+                        req->tags[i].type == NEU_TYPE_DATA_AND_TIME ||
+                        req->tags[i].type == NEU_TYPE_CUSTOM) {
+                        if (req->tags[i].precision > 0) {
+                            neu_resp_add_tag_result(
+                                &add_resp, i, NEU_ERR_TAG_PRECISION_INVALID);
+                        }
+                        if (req->tags[i].decimal > 0) {
+                            neu_resp_add_tag_result(
+                                &add_resp, i, NEU_ERR_TAG_DECIMAL_INVALID);
+                        }
+                        if (req->tags[i].bias > 0) {
+                            neu_resp_add_tag_result(&add_resp, i,
+                                                    NEU_ERR_TAG_BIAS_INVALID);
+                        }
+                    }
+                }
+
+                if (add_resp.results != NULL &&
+                    utarray_len(add_resp.results) > 0) {
+                    neu_resp_tag_op_result_t *first =
+                        (neu_resp_tag_op_result_t *) utarray_eltptr(
+                            add_resp.results, 0);
+                    add_resp.index = first->index;
+                    add_resp.error = first->error;
                     handle_add_tags_resp(aio, &add_resp);
                 } else {
+                    header.ctx  = aio;
+                    header.type = NEU_REQ_ADD_TAG;
+                    strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
+                    strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
+                    cmd.n_tag = req->n_tag;
+                    cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
+
                     for (int i = 0; i < req->n_tag; i++) {
-                        if (req->tags[i].type == NEU_TYPE_STRING ||
-                            req->tags[i].type == NEU_TYPE_BOOL ||
-                            req->tags[i].type == NEU_TYPE_BIT ||
-                            req->tags[i].type == NEU_TYPE_TIME ||
-                            req->tags[i].type == NEU_TYPE_DATA_AND_TIME ||
-                            req->tags[i].type == NEU_TYPE_CUSTOM) {
-                            if (req->tags[i].precision > 0) {
-                                add_resp.index = i;
-                                add_resp.error = NEU_ERR_TAG_PRECISION_INVALID;
-                                break;
-                            }
-                            if (req->tags[i].decimal > 0) {
-                                add_resp.index = i;
-                                add_resp.error = NEU_ERR_TAG_DECIMAL_INVALID;
-                                break;
-                            }
-                            if (req->tags[i].bias > 0) {
-                                add_resp.index = i;
-                                add_resp.error = NEU_ERR_TAG_BIAS_INVALID;
-                                break;
-                            }
+                        cmd.tags[i].attribute = req->tags[i].attribute;
+                        cmd.tags[i].type      = req->tags[i].type;
+                        cmd.tags[i].precision = req->tags[i].precision;
+                        cmd.tags[i].decimal   = req->tags[i].decimal;
+                        cmd.tags[i].bias      = req->tags[i].bias;
+                        cmd.tags[i].address   = strdup(req->tags[i].address);
+                        cmd.tags[i].name      = strdup(req->tags[i].name);
+                        if (req->tags[i].description != NULL) {
+                            cmd.tags[i].description =
+                                strdup(req->tags[i].description);
+                        } else {
+                            cmd.tags[i].description = strdup("");
+                        }
+                        if (req->tags[i].unit == NULL) {
+                            cmd.tags[i].unit = strdup("");
+                        } else {
+                            cmd.tags[i].unit = strdup(req->tags[i].unit);
                         }
                     }
 
-                    if (add_resp.error > 0) {
-                        handle_add_tags_resp(aio, &add_resp);
-                    } else {
-                        header.ctx  = aio;
-                        header.type = NEU_REQ_ADD_TAG;
-                        strncpy(cmd.driver, req->node, NEU_NODE_NAME_LEN - 1);
-                        strncpy(cmd.group, req->group, NEU_GROUP_NAME_LEN - 1);
-                        cmd.n_tag = req->n_tag;
-                        cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
-
-                        for (int i = 0; i < req->n_tag; i++) {
-                            cmd.tags[i].attribute = req->tags[i].attribute;
-                            cmd.tags[i].type      = req->tags[i].type;
-                            cmd.tags[i].precision = req->tags[i].precision;
-                            cmd.tags[i].decimal   = req->tags[i].decimal;
-                            cmd.tags[i].bias      = req->tags[i].bias;
-                            cmd.tags[i].address = strdup(req->tags[i].address);
-                            cmd.tags[i].name    = strdup(req->tags[i].name);
-                            if (req->tags[i].description != NULL) {
-                                cmd.tags[i].description =
-                                    strdup(req->tags[i].description);
-                            } else {
-                                cmd.tags[i].description = strdup("");
-                            }
-                            if (req->tags[i].unit == NULL) {
-                                cmd.tags[i].unit = strdup("");
-                            } else {
-                                cmd.tags[i].unit = strdup(req->tags[i].unit);
-                            }
-                        }
-
-                        int ret = neu_plugin_op(plugin, header, &cmd);
-                        if (ret != 0) {
-                            NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                                neu_http_response(aio, NEU_ERR_IS_BUSY,
-                                                  result_error);
-                            });
-                        }
+                    int ret = neu_plugin_op(plugin, header, &cmd);
+                    if (ret != 0) {
+                        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                            neu_http_response(aio, NEU_ERR_IS_BUSY,
+                                              result_error);
+                        });
                     }
                 }
             }
@@ -129,16 +129,29 @@ void handle_add_tags(nng_aio *aio)
 
 void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
 {
-    neu_json_add_tag_res_t res    = { 0 };
-    char *                 result = NULL;
+    neu_json_add_tag_res_t     res = { 0 };
+    neu_json_tag_op_res_item_t fallback_result;
+    char *                     result = NULL;
 
-    res.error = resp->error;
     res.index = resp->index;
+    res.error = resp->error;
+
+    if (resp->results != NULL && utarray_len(resp->results) > 0) {
+        res.n_result = utarray_len(resp->results);
+        res.results =
+            (neu_json_tag_op_res_item_t *) utarray_front(resp->results);
+    } else if (resp->error != 0) {
+        fallback_result.index = resp->index;
+        fallback_result.error = resp->error;
+        res.n_result          = 1;
+        res.results           = &fallback_result;
+    }
 
     neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
 
     NEU_JSON_RESPONSE_ERROR(resp->error,
                             { neu_http_response(aio, resp->error, result); });
+    neu_resp_add_tag_result_fini(resp);
     free(result);
 }
 
@@ -270,6 +283,7 @@ void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     neu_json_encode_by_fn(&res, neu_json_encode_au_gtags_resp, &result);
     NEU_JSON_RESPONSE_ERROR(resp->error,
                             { neu_http_response(aio, resp->error, result); });
+    neu_resp_add_tag_result_fini(resp);
     free(result);
 }
 
@@ -315,6 +329,7 @@ void handle_import_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     neu_json_encode_by_fn(&res, neu_json_encode_import_tags_resp, &result);
     NEU_JSON_RESPONSE_ERROR(resp->error,
                             { neu_http_response(aio, resp->error, result); });
+    neu_resp_add_tag_result_fini(resp);
     free(result);
 }
 
