@@ -2232,6 +2232,27 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
     return NEU_ERR_SUCCESS;
 }
 
+int neu_adapter_driver_check_tags(neu_adapter_driver_t *driver,
+                                  const char *group, neu_datatag_t *tags,
+                                  int n_tag)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find == NULL) {
+        return ret;
+    }
+
+    for (int i = 0; i < n_tag; i++) {
+        ret = neu_group_check_name(find->group, tags[i].name);
+        if (ret != NEU_ERR_SUCCESS) {
+            return i + 1;
+        }
+    }
+
+    return ret;
+}
+
 int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
                                neu_datatag_t *tag, uint16_t interval)
 {
