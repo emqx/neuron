@@ -51,7 +51,6 @@ void handle_add_tags(nng_aio *aio)
                         if (strcmp(req->tags[i].name, req->tags[k].name) == 0) {
                             neu_resp_add_tag_result(&add_resp, i,
                                                     NEU_ERR_TAG_NAME_CONFLICT);
-                            break;
                         }
                     }
                 }
