@@ -2401,6 +2401,9 @@ static const struct {
     { "KND CNC", "plugins/tags/knd_cnc.json" },
     { "knd", "plugins/tags/knd_cnc.json" },
 
+    { "Brother CNC", "plugins/tags/brother_cnc.json" },
+    { "brother", "plugins/tags/brother_cnc.json" },
+
     // neuhub SYNTEC CNC
     // neuhub MITSUBISHI CNC
 
