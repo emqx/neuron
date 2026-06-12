@@ -1598,14 +1598,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_resp_add_tag_result(&resp, 0, NEU_ERR_GROUP_NOT_ALLOW);
         }
 
-        resp.error =
+        int ret =
             neu_adapter_driver_try_add_tag((neu_adapter_driver_t *) adapter,
                                            cmd->group, cmd->tags, cmd->n_tag);
-        if (resp.error != 0 || utarray_len(resp.results) > 0) {
+        if (ret != 0) {
+            resp.error = ret;
+        }
+        if (resp.error != 0 || resp.results != NULL || resp.index != 0) {
             for (uint16_t i = 0; i < cmd->n_tag; i++) {
                 neu_tag_fini(&cmd->tags[i]);
             }
-            resp.index = 0;
             neu_msg_exchange(header);
             header->type = NEU_RESP_ADD_TAG;
             free(cmd->tags);
@@ -1619,22 +1621,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                        NEU_DEFAULT_GROUP_INTERVAL);
         }
 
-        for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
-            neu_tag_fini(&cmd->tags[i]);
-        }
-
-        if (resp.index) {
-            // we have added some tags, try to persist
-            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
-                                     resp.index);
-            cmd->n_tag = resp.index;
-            if (header->monitor) {
-                notify_monitor(adapter, NEU_REQ_ADD_TAG_EVENT, cmd);
-            } else {
-                neu_req_add_tag_fini(cmd);
-            }
+        adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
+                                 cmd->n_tag);
+        if (header->monitor) {
+            notify_monitor(adapter, NEU_REQ_ADD_TAG_EVENT, cmd);
         } else {
-            free(cmd->tags);
+            neu_req_add_tag_fini(cmd);
         }
 
         neu_msg_exchange(header);
