@@ -47,15 +47,6 @@ void handle_add_tags(nng_aio *aio)
                 neu_resp_add_tag_t add_resp = { 0 };
 
                 for (int i = 0; i < req->n_tag; i++) {
-                    for (int k = 0; k < i; k++) {
-                        if (strcmp(req->tags[i].name, req->tags[k].name) == 0) {
-                            neu_resp_add_tag_result(&add_resp, i,
-                                                    NEU_ERR_TAG_NAME_CONFLICT);
-                        }
-                    }
-                }
-
-                for (int i = 0; i < req->n_tag; i++) {
                     if (req->tags[i].type == NEU_TYPE_STRING ||
                         req->tags[i].type == NEU_TYPE_BOOL ||
                         req->tags[i].type == NEU_TYPE_BIT ||
