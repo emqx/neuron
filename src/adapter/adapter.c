@@ -68,6 +68,37 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data);
 
+static void dedup_add_tag_results_by_index(neu_resp_add_tag_t *resp)
+{
+    if (resp == NULL || resp->results == NULL) {
+        return;
+    }
+
+    size_t n_results = utarray_len(resp->results);
+    if (n_results < 2) {
+        return;
+    }
+
+    for (size_t i = 0; i < n_results; i++) {
+        neu_resp_tag_op_result_t *current =
+            (neu_resp_tag_op_result_t *) utarray_eltptr(resp->results, i);
+        if (current == NULL) {
+            continue;
+        }
+
+        for (size_t j = i + 1; j < n_results;) {
+            neu_resp_tag_op_result_t *candidate =
+                (neu_resp_tag_op_result_t *) utarray_eltptr(resp->results, j);
+            if (candidate != NULL && candidate->index == current->index) {
+                utarray_erase(resp->results, j, 1);
+                n_results--;
+                continue;
+            }
+            j++;
+        }
+    }
+}
+
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
     .response        = adapter_response,
@@ -1611,6 +1642,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             header->type = NEU_RESP_ADD_TAG;
             free(cmd->tags);
+            dedup_add_tag_results_by_index(&resp);
             reply(adapter, header, &resp);
             break;
         }
@@ -1631,6 +1663,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_ADD_TAG;
+        dedup_add_tag_results_by_index(&resp);
         reply(adapter, header, &resp);
         break;
     }
