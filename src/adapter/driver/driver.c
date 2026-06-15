@@ -2232,9 +2232,8 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
     return NEU_ERR_SUCCESS;
 }
 
-int neu_adapter_driver_check_tags(neu_adapter_driver_t *driver,
-                                  const char *group, neu_datatag_t *tags,
-                                  int n_tag)
+int neu_adapter_driver_check_tag(neu_adapter_driver_t *driver,
+                                 const char *group, neu_datatag_t *tag)
 {
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
@@ -2243,11 +2242,9 @@ int neu_adapter_driver_check_tags(neu_adapter_driver_t *driver,
         return ret;
     }
 
-    for (int i = 0; i < n_tag; i++) {
-        ret = neu_group_check_name(find->group, tags[i].name);
-        if (ret != NEU_ERR_SUCCESS) {
-            return i + 1;
-        }
+    ret = neu_group_check_name(find->group, tag->name);
+    if (ret != NEU_ERR_SUCCESS) {
+        return NEU_ERR_TAG_NAME_CONFLICT;
     }
 
     return ret;

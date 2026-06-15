@@ -68,6 +68,37 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data);
 
+static void dedup_add_tag_results_by_index(neu_resp_add_tag_t *resp)
+{
+    if (resp == NULL || resp->results == NULL) {
+        return;
+    }
+
+    size_t n_results = utarray_len(resp->results);
+    if (n_results < 2) {
+        return;
+    }
+
+    for (size_t i = 0; i < n_results; i++) {
+        neu_resp_tag_op_result_t *current =
+            (neu_resp_tag_op_result_t *) utarray_eltptr(resp->results, i);
+        if (current == NULL) {
+            continue;
+        }
+
+        for (size_t j = i + 1; j < n_results;) {
+            neu_resp_tag_op_result_t *candidate =
+                (neu_resp_tag_op_result_t *) utarray_eltptr(resp->results, j);
+            if (candidate != NULL && candidate->index == current->index) {
+                utarray_erase(resp->results, j, 1);
+                n_results--;
+                continue;
+            }
+            j++;
+        }
+    }
+}
+
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
     .response        = adapter_response,
@@ -1569,18 +1600,27 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_ADD_TAG: {
-        neu_req_add_tag_t *cmd         = (neu_req_add_tag_t *) &header[1];
-        neu_resp_add_tag_t resp        = { 0 };
-        uint16_t           added_count = 0;
+        neu_req_add_tag_t *cmd  = (neu_req_add_tag_t *) &header[1];
+        neu_resp_add_tag_t resp = { 0 };
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
+                for (int k = 0; k < i; k++) {
+                    if (strcmp(cmd->tags[i].name, cmd->tags[k].name) == 0) {
+                        neu_resp_add_tag_result(&resp, i,
+                                                NEU_ERR_TAG_NAME_CONFLICT);
+                    }
+                }
                 int ret = neu_adapter_driver_validate_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     &cmd->tags[i]);
-                if (ret == 0) {
-                    added_count += 1;
-                } else {
+                if (ret != 0) {
+                    neu_resp_add_tag_result(&resp, i, ret);
+                }
+                ret = neu_adapter_driver_check_tag(
+                    (neu_adapter_driver_t *) adapter, cmd->group,
+                    &cmd->tags[i]);
+                if (ret != 0) {
                     neu_resp_add_tag_result(&resp, i, ret);
                 }
             }
@@ -1589,92 +1629,41 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_resp_add_tag_result(&resp, 0, NEU_ERR_GROUP_NOT_ALLOW);
         }
 
-        resp.index = added_count;
-        if (resp.results != NULL && utarray_len(resp.results) > 0) {
-            neu_resp_tag_op_result_t *first =
-                (neu_resp_tag_op_result_t *) utarray_eltptr(resp.results, 0);
-            resp.error = first->error;
-            for (uint16_t i = 0; i < cmd->n_tag; i++) {
-                neu_tag_fini(&cmd->tags[i]);
-            }
-            neu_msg_exchange(header);
-            header->type = NEU_RESP_ADD_TAG;
-            free(cmd->tags);
-            reply(adapter, header, &resp);
-            break;
-        }
-
-        resp.error =
-            neu_adapter_driver_check_tags((neu_adapter_driver_t *) adapter,
-                                          cmd->group, cmd->tags, cmd->n_tag);
-        if (resp.error != 0) {
-            for (uint16_t i = 0; i < cmd->n_tag; i++) {
-                neu_tag_fini(&cmd->tags[i]);
-            }
-            neu_msg_exchange(header);
-            resp.index = resp.error - 1;
-            resp.error = NEU_ERR_TAG_NAME_CONFLICT;
-            neu_resp_add_tag_result(&resp, resp.index, resp.error);
-            header->type = NEU_RESP_ADD_TAG;
-            free(cmd->tags);
-            reply(adapter, header, &resp);
-            break;
-        }
-
-        resp.error =
+        int ret =
             neu_adapter_driver_try_add_tag((neu_adapter_driver_t *) adapter,
                                            cmd->group, cmd->tags, cmd->n_tag);
-        if (resp.error != 0) {
+        if (ret != 0) {
+            resp.error = ret;
+        }
+        if (resp.error != 0 || resp.results != NULL || resp.index != 0) {
             for (uint16_t i = 0; i < cmd->n_tag; i++) {
                 neu_tag_fini(&cmd->tags[i]);
             }
-            resp.index = 0;
-            neu_resp_add_tag_result(&resp, 0, resp.error);
             neu_msg_exchange(header);
             header->type = NEU_RESP_ADD_TAG;
             free(cmd->tags);
+            dedup_add_tag_results_by_index(&resp);
             reply(adapter, header, &resp);
             break;
         }
 
-        added_count = 0;
         for (int i = 0; i < cmd->n_tag; i++) {
-            int ret = neu_adapter_driver_add_tag(
-                (neu_adapter_driver_t *) adapter, cmd->group, &cmd->tags[i],
-                NEU_DEFAULT_GROUP_INTERVAL);
-            if (ret != 0) {
-                neu_adapter_driver_try_del_tag((neu_adapter_driver_t *) adapter,
-                                               cmd->n_tag - i);
-                added_count = i;
-                resp.error  = ret;
-                neu_resp_add_tag_result(&resp, i, ret);
-                break;
-            }
-            added_count += 1;
+            neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
+                                       cmd->group, &cmd->tags[i],
+                                       NEU_DEFAULT_GROUP_INTERVAL);
         }
 
-        resp.index = added_count;
-
-        for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
-            neu_tag_fini(&cmd->tags[i]);
-        }
-
-        if (resp.index) {
-            // we have added some tags, try to persist
-            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
-                                     resp.index);
-            cmd->n_tag = resp.index;
-            if (header->monitor) {
-                notify_monitor(adapter, NEU_REQ_ADD_TAG_EVENT, cmd);
-            } else {
-                neu_req_add_tag_fini(cmd);
-            }
+        adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
+                                 cmd->n_tag);
+        if (header->monitor) {
+            notify_monitor(adapter, NEU_REQ_ADD_TAG_EVENT, cmd);
         } else {
-            free(cmd->tags);
+            neu_req_add_tag_fini(cmd);
         }
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_ADD_TAG;
+        dedup_add_tag_results_by_index(&resp);
         reply(adapter, header, &resp);
         break;
     }
