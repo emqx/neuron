@@ -96,6 +96,7 @@ set(NEURON_BASE_SOURCES
     src/utils/async_queue.c
     src/utils/log.c
     src/utils/cid.c
+    src/utils/ede.c
     src/utils/tpy.c
     ${PERSIST_SOURCES})
   
@@ -165,6 +166,7 @@ set(NEURON_SOURCES
     plugins/restful/scan_handle.c
     plugins/restful/otel_handle.c
     plugins/restful/cid_handle.c
+    plugins/restful/ede_handle.c
     plugins/restful/tpy_handle.c
     plugins/restful/system_handle.c
     plugins/restful/datalayers_handle.c

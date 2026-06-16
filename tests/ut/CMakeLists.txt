@@ -93,6 +93,16 @@ target_include_directories(mqtt_schema_test PRIVATE
 )
 target_link_libraries(mqtt_schema_test neuron-base gtest_main gtest)
 
+add_executable(ede_test ede_test.cc ${CMAKE_SOURCE_DIR}/src/utils/ede.c)
+target_include_directories(ede_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_compile_definitions(ede_test PRIVATE
+	EDE_TEST_FILE_PATH="${CMAKE_SOURCE_DIR}/tests/EDE_test.csv"
+)
+target_link_libraries(ede_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -106,3 +116,4 @@ gtest_discover_tests(mqtt_client_test)
 gtest_discover_tests(common_test)
 gtest_discover_tests(cid_test)
 gtest_discover_tests(mqtt_schema_test)
+gtest_discover_tests(ede_test)
