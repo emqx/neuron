@@ -36,7 +36,7 @@
 #define NEU_TAG_DESCRIPTION_LEN 256
 #define NEU_GROUP_MAX_PER_NODE 512
 #define NEU_GROUP_NAME_LEN 128
-#define NEU_GROUP_INTERVAL_LIMIT 100
+#define NEU_GROUP_INTERVAL_LIMIT 30
 #define NEU_DEFAULT_GROUP_INTERVAL 100
 #define NEU_NODE_NAME_LEN 128
 #define NEU_PLUGIN_NAME_LEN 32
@@ -97,6 +97,9 @@
 #define NEU_CID_LEN16 16
 #define NEU_CID_LEN32 32
 #define NEU_CID_LEN64 64
+
+#define NEU_TRACE_ID_LEN 64
+#define NEU_SPAN_ID_LEN 32
 
 #define CHECK_NODE_NAME_LENGTH_ERR                                            \
     do {                                                                      \
