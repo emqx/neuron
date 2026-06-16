@@ -2404,6 +2404,9 @@ static const struct {
     { "Brother CNC", "plugins/tags/brother_cnc.json" },
     { "brother", "plugins/tags/brother_cnc.json" },
 
+    { "Mazak CNC", "plugins/tags/mazak_cnc.json" },
+    { "mazak", "plugins/tags/mazak_cnc.json" },
+
     // neuhub SYNTEC CNC
     // neuhub MITSUBISHI CNC
 
