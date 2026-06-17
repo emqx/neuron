@@ -52,6 +52,16 @@ void handle_ping(nng_aio *aio)
 
 void handle_login(nng_aio *aio)
 {
+    if (disable_jwt) {
+        neu_json_login_resp_t login_resp = { .token = "" };
+        char *                result     = NULL;
+
+        neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp, &result);
+        neu_http_ok(aio, result);
+        free(result);
+        return;
+    }
+
     NEU_PROCESS_HTTP_REQUEST(
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
             neu_json_login_resp_t login_resp = { 0 };
