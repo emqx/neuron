@@ -86,10 +86,6 @@ $ cd neuron && mkdir build && cd build
 $ cmake .. && make
 ```
 
-> **Security Notice**
-> To simplify open-source testing, Neuron includes a built-in public/private key pair for HTTP JWT by default.
-> **Before compiling source code for production or external delivery, replace the built-in key pair with your own secure keys.**
-
 3. Download and Unzip Dashboard
 ```bash
 $ wget https://github.com/emqx/neuron-dashboard/releases/download/2.6.3/neuron-dashboard.zip
@@ -101,6 +97,14 @@ $ unzip neuron-dashboard.zip
 4. Run Neuron
 ```bash
 $ ./neuron --log
+```
+
+On the first startup, Neuron will automatically generate `neuron.key` and `neuron.key.pub` in the config directory if they do not exist yet.
+
+If you want to pre-generate the key pair manually, you can still run:
+
+```bash
+$ bash ./generate_rsa_keypair.sh ./build/config
 ```
 
 5. Open a browser and navigate to `http://localhost:7000` to access the Neuron web interface.
