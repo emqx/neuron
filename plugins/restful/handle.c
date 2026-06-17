@@ -29,6 +29,7 @@
 #include "cid_handle.h"
 #include "datalayers_handle.h"
 #include "datatag_handle.h"
+#include "ede_handle.h"
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "log_handle.h"
@@ -147,6 +148,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/tpy",
     },
     {
+        .url = "/api/v2/ede",
+    },
+    {
         .url = "/api/v2/system/ctl",
     },
     {
@@ -235,6 +239,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tpy",
         .value.handler = handle_tpy,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/ede",
+        .value.handler = handle_ede,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

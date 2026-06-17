@@ -39,7 +39,6 @@
 static bool      exit_flag         = false;
 neu_manager_t *  g_manager         = NULL;
 zlog_category_t *neuron            = NULL;
-bool             disable_jwt       = false;
 bool             sub_filter_err    = false;
 int              default_log_level = ZLOG_LEVEL_NOTICE;
 char             host_port[32]     = { 0 };

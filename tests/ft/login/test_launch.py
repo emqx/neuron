@@ -215,6 +215,19 @@ class TestLaunch:
         os.remove(dst_file)
         os.rename(dst_backup, dst_file)
 
+    @description(given="disable_auth enabled", when="call login", then="login should still succeed")
+    def test_login_with_disable_auth(self):
+        process.remove_persistence()
+
+        p = process.NeuronProcess()
+        p.start_disable_auth()
+
+        response = api.login()
+        assert 200 == response.status_code
+        assert "" == response.json()["token"]
+
+        p.stop()
+
     @description(given="encironment variables 1, command line 0",
                  when="start neuron",
                  then="log level set right")
