@@ -1,8 +1,20 @@
 import jwt  # pip install pyjwt
 import time
+from pathlib import Path
 
-with open("neuron.key", "r") as f:
-    private_key = f.read()
+key_candidates = [
+    Path("config") / "neuron.key",
+    Path("neuron.key"),
+]
+
+private_key = None
+for key_path in key_candidates:
+    if key_path.is_file():
+        private_key = key_path.read_text()
+        break
+
+if private_key is None:
+    raise FileNotFoundError("Cannot find neuron.key in ./config or the current directory")
 
 current_time = int(time.time())
 two_years = 60 * 60 * 24 * 365 * 2
