@@ -99,6 +99,14 @@ $ unzip neuron-dashboard.zip
 $ ./neuron --log
 ```
 
+On the first startup, Neuron will automatically generate `neuron.key` and `neuron.key.pub` in the config directory if they do not exist yet.
+
+If you want to pre-generate the key pair manually, you can still run:
+
+```bash
+$ bash ./generate_rsa_keypair.sh ./build/config
+```
+
 5. Open a browser and navigate to `http://localhost:7000` to access the Neuron web interface.
 
 ## Configuration
