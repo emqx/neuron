@@ -20,10 +20,16 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <unistd.h>
+
+#include <openssl/evp.h>
+#include <openssl/pem.h>
 
 #include <jwt.h>
 
@@ -39,49 +45,11 @@ struct public_key_store {
     int size;
 };
 
+bool disable_jwt = false;
+
 static struct public_key_store key_store;
 static char                    neuron_private_key[2048] = { 0 };
 static char                    neuron_public_key[2048]  = { 0 };
-
-static const char *private_key_content =
-    "-----BEGIN RSA PRIVATE KEY-----\n"
-    "MIIEpAIBAAKCAQEAzrO7FUz4GGKl4nP5lwKMh5uageJAAHnLZpVxTR1wXA9E870s\n"
-    "U03gHnPWsh2bXCCx85ymYaiu/5VlptgnU0rQB1I3xGRG8eHmHPrhHNWDRKpY6oY8\n"
-    "AnTPqXvfa/Z4u+njJzDSqi4qM8Gwfqlgpjlg8DUF+sheLx8hL+x9XFzovTxafrmy\n"
-    "JRRAVQTkhB7esKKqRF8BMjdOdYZxJEv9jxa0BwXcjprPDlj5TV6k3wJqbq4UtnEE\n"
-    "VbjEQKqFVkfY4FuJ5NSPHpGEix94PGQGRsiWkGX0vx5udHJ0SlXM6qpMLny18FhW\n"
-    "bwKNX3urc3mImn/j3zcJ5x1d+FlXAXs1NBSeTQIDAQABAoIBAQDJOT8PZXbAhohn\n"
-    "A/AeimS0P08S0mbsD6VroGBEajxP4q2FeswD7PQZsTt4+kmcTlfuiLmQqN50AcSL\n"
-    "wDHIbDRIbEnN7rECGKAj5jfwEgtQdWVKKpOQ8JaYr/a466BtjyuLo4PyGC8NY6mm\n"
-    "JM3qBEHSlkvT7+uAhBWSye7gU7JfRPoCeFRpaMMC3Ad0DaIt/Pdt9CddNwj56+9j\n"
-    "gl//blNnBImjvA7/kh9gL69SYVrQoG9vm/UgFbdIwd+w2hhhpx6kuHjRJ21xIV/y\n"
-    "Yh9k4QhPr7zIkhQ8yn11ZhyZkMC8XAMy7NKCmAFIPNJ8jwvgBkunPEk2aYBeDUaq\n"
-    "a30VwlIhAoGBAOnm8DW5DROcfSj4Q8zsvgmvhGM0zzF5zmA+4E+tEbf4t6sDUjSs\n"
-    "ADo2EaiJZz75vLsD7UZHKzFEV/wnuT7SiNCbrJafx8Tp2UgijTkW8gEhAWREJDn5\n"
-    "FS375RKFdEcpmVHWgsuz4z/0L3BGxmyYWQxx5pD2NL49ZpTIHAHm/XETAoGBAOI6\n"
-    "8Y08TmM2bnXbL/MggYMJlqOyv27ueVYz9of3FYFAMIe7ebSgrlSCOwsoDZYmegBM\n"
-    "OrowR3AAnoP4fjGNbIPjNYbiv1qLOdtnvPxYotEz+ZaUBSn9V/gUEVFlgrKxgTKr\n"
-    "sqi/QMyyJplBTUkUuqYRDuv6TZ3OWKiDUoXTdv8fAoGBAIbbyf+PlESMY3Vtvtm2\n"
-    "XdODyRbR6ewiyKShW/9UT/T8iBknrwwDZ5YoeoHrxwV+RBynpPRyMCsVto0B8kKQ\n"
-    "bKWqPBYURb/4/Hgkw7v4yMtx1jWTPDfYryd2JptJKsOk7mtK/Nqp+wpypa9cfyc5\n"
-    "p44PVdqauco96Jk7zzohjlrVAoGAfjQDrJaH5DDpTjYIeckYdtFSh9+fi3LdnYk/\n"
-    "bnoYNRJqAE5Fhs5ccih0Z7TgX3L3fFMKL/Pe5kxyIYzuWRZcAvctVSIJPamNjShB\n"
-    "9UQ9EBe+lJHej54VBP+s6YuHbcg4GtxNvnVy4L5Bah1T0AEQXrQFbv8jbXU/YEJi\n"
-    "NuXQ7GECgYA0UNvuZxVSDn8fBxARcX3ub5aok5owdLL3SOCPMpNrmOBQj8iJGT+5\n"
-    "nv7fH1TWVh9yUdRwhd81s5H/PO3/myLmgq0TcPvewtEEwY+++QpsYZwHTDXgxbbw\n"
-    "++lmJali4fzmd/72JqocGABYhZFt0jbcQ1QEcqUYcD380+cNVZPO+w==\n"
-    "-----END RSA PRIVATE KEY-----\n";
-
-const char *public_key_content =
-    "-----BEGIN PUBLIC KEY-----\n"
-    "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzrO7FUz4GGKl4nP5lwKM\n"
-    "h5uageJAAHnLZpVxTR1wXA9E870sU03gHnPWsh2bXCCx85ymYaiu/5VlptgnU0rQ\n"
-    "B1I3xGRG8eHmHPrhHNWDRKpY6oY8AnTPqXvfa/Z4u+njJzDSqi4qM8Gwfqlgpjlg\n"
-    "8DUF+sheLx8hL+x9XFzovTxafrmyJRRAVQTkhB7esKKqRF8BMjdOdYZxJEv9jxa0\n"
-    "BwXcjprPDlj5TV6k3wJqbq4UtnEEVbjEQKqFVkfY4FuJ5NSPHpGEix94PGQGRsiW\n"
-    "kGX0vx5udHJ0SlXM6qpMLny18FhWbwKNX3urc3mImn/j3zcJ5x1d+FlXAXs1NBSe\n"
-    "TQIDAQAB\n"
-    "-----END PUBLIC KEY-----\n";
 
 static int find_key(const char *name)
 {
@@ -105,7 +73,8 @@ static void add_key(char *name, char *value)
             sizeof(key_store.key[key_store.size - 1].key) - 1);
 }
 
-static char *load_key(const char *dir, char *name)
+static bool load_key_file(const char *dir, const char *name, char *dst,
+                          size_t dst_len)
 {
     FILE *      f             = NULL;
     int         len           = 0;
@@ -117,31 +86,146 @@ static char *load_key(const char *dir, char *name)
 
     f = fopen(path, "r");
     if (f == NULL) {
-        zlog_error(neuron, "Failed to open file: %s, errno: %d", name, errno);
-        return NULL;
+        return false;
     }
 
     len = fread(content, 1, sizeof(content), f);
     if (len <= 0) {
-        zlog_error(neuron, "Failed to read  file: %s, errno: %d", name, errno);
-
         fclose(f);
-        return NULL;
+        return false;
     }
 
     fclose(f);
-    return content;
+
+    strncpy(dst, content, dst_len - 1);
+    dst[dst_len - 1] = '\0';
+    return true;
+}
+
+static bool write_private_key(FILE *file, EVP_PKEY *pkey)
+{
+    if (fchmod(fileno(file), S_IRUSR | S_IWUSR) != 0) {
+        return false;
+    }
+
+    return PEM_write_PrivateKey(file, pkey, NULL, NULL, 0, NULL, NULL) == 1;
+}
+
+static bool write_public_key(FILE *file, EVP_PKEY *pkey)
+{
+    if (fchmod(fileno(file), S_IRUSR | S_IWUSR) != 0) {
+        return false;
+    }
+
+    return PEM_write_PUBKEY(file, pkey) == 1;
+}
+
+static bool generate_key_pair(const char *dir_path)
+{
+    EVP_PKEY_CTX *ctx               = NULL;
+    EVP_PKEY *    pkey              = NULL;
+    FILE *        private_file      = NULL;
+    FILE *        public_file       = NULL;
+    char          private_path[256] = { 0 };
+    char          public_path[256]  = { 0 };
+    bool          ok                = false;
+
+    snprintf(private_path, sizeof(private_path), "%s/%s", dir_path,
+             "neuron.key");
+    snprintf(public_path, sizeof(public_path), "%s/%s", dir_path,
+             "neuron.key.pub");
+
+    ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+    if (ctx == NULL) {
+        return false;
+    }
+
+    if (EVP_PKEY_keygen_init(ctx) <= 0 ||
+        EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 2048) <= 0 ||
+        EVP_PKEY_keygen(ctx, &pkey) <= 0) {
+        goto done;
+    }
+
+    private_file = fopen(private_path, "w");
+    if (private_file == NULL) {
+        goto done;
+    }
+
+    public_file = fopen(public_path, "w");
+    if (public_file == NULL) {
+        goto done;
+    }
+
+    ok = write_private_key(private_file, pkey) &&
+        write_public_key(public_file, pkey);
+
+done:
+    if (private_file != NULL) {
+        fclose(private_file);
+    }
+    if (public_file != NULL) {
+        fclose(public_file);
+    }
+    EVP_PKEY_free(pkey);
+    EVP_PKEY_CTX_free(ctx);
+
+    if (!ok) {
+        unlink(private_path);
+        unlink(public_path);
+    }
+
+    return ok;
 }
 
 static void load_neuron_key(const char *dir_path)
 {
+    char private_path[256] = { 0 };
+    char public_path[256]  = { 0 };
 
-    (void) dir_path;
-    strncpy(neuron_private_key, private_key_content,
-            sizeof(neuron_private_key) - 1);
+    if (dir_path == NULL || *dir_path == '\0') {
+        zlog_error(neuron, "JWT config directory is empty");
+        return;
+    }
 
-    strncpy(neuron_public_key, public_key_content,
-            sizeof(neuron_public_key) - 1);
+    snprintf(private_path, sizeof(private_path), "%s/%s", dir_path,
+             "neuron.key");
+    snprintf(public_path, sizeof(public_path), "%s/%s", dir_path,
+             "neuron.key.pub");
+
+    if (!load_key_file(dir_path, "neuron.key", neuron_private_key,
+                       sizeof(neuron_private_key)) ||
+        !load_key_file(dir_path, "neuron.key.pub", neuron_public_key,
+                       sizeof(neuron_public_key))) {
+        zlog_warn(neuron, "Missing JWT RSA key pair in %s, generating new keys",
+                  dir_path);
+        if (!generate_key_pair(dir_path)) {
+            zlog_error(neuron, "Failed to generate JWT RSA key pair in %s",
+                       dir_path);
+            neuron_private_key[0] = '\0';
+            neuron_public_key[0]  = '\0';
+            return;
+        }
+
+        zlog_notice(neuron,
+                    "Generated JWT RSA key pair in config directory: %s",
+                    dir_path);
+
+        if (!load_key_file(dir_path, "neuron.key", neuron_private_key,
+                           sizeof(neuron_private_key)) ||
+            !load_key_file(dir_path, "neuron.key.pub", neuron_public_key,
+                           sizeof(neuron_public_key))) {
+            zlog_error(neuron,
+                       "Failed to load generated JWT RSA key pair from %s",
+                       dir_path);
+            neuron_private_key[0] = '\0';
+            neuron_public_key[0]  = '\0';
+            return;
+        }
+    } else {
+        zlog_notice(neuron,
+                    "Load external RSA key pair from config directory: %s",
+                    dir_path);
+    }
 }
 
 static void scanf_key(const char *dir_path)
@@ -158,8 +242,6 @@ static void scanf_key(const char *dir_path)
     }
 
     while (NULL != (ptr = readdir(dir))) {
-        char *content = NULL;
-
         if (!strcmp((char *) ptr->d_name, ".") ||
             !strcmp((char *) ptr->d_name, "..")) {
             continue;
@@ -167,8 +249,9 @@ static void scanf_key(const char *dir_path)
 
         if (strstr((char *) ptr->d_name, ".pem") != NULL ||
             strstr((char *) ptr->d_name, ".pub") != NULL) {
-            content = load_key(dir_path, (char *) ptr->d_name);
-            assert(content != NULL);
+            char content[2047] = { 0 };
+            assert(load_key_file(dir_path, (char *) ptr->d_name, content,
+                                 sizeof(content)));
             add_key((char *) ptr->d_name, content);
         }
     }
@@ -178,9 +261,16 @@ static void scanf_key(const char *dir_path)
 
 int neu_jwt_init(const char *dir_path)
 {
+    if (disable_jwt) {
+        zlog_notice(neuron,
+                    "HTTP auth is disabled, skip JWT RSA key generation");
+        return 0;
+    }
+
     load_neuron_key(dir_path);
     scanf_key("certs");
-    return 0;
+    return neuron_private_key[0] == '\0' || neuron_public_key[0] == '\0' ? -1
+                                                                         : 0;
 }
 
 int neu_jwt_new(char **token, const char *user)
