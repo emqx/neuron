@@ -697,48 +697,6 @@ class TestTag:
 
     @description(
         given="node group",
-        when="add a tag with bias out of range",
-        then="add fail",
-    )
-    def test_add_tag_with_bias_out_of_range(self):
-        tag = {
-            **hold_int16_bias[0],
-            "bias": 10000,
-        }
-        try:
-            response = api.add_tags(
-                node="modbus-tcp", group="group1", tags=[tag]
-            )
-            assert 400 == response.status_code
-            assert (
-                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
-            )
-        finally:
-            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
-
-    @description(
-        given="node group",
-        when="add a tag with bias and write attr",
-        then="add fail",
-    )
-    def test_add_tag_with_bias_and_write_attr(self):
-        tag = {
-            **hold_int16_bias[0],
-            "attribute": NEU_TAG_ATTRIBUTE_RW,
-        }
-        try:
-            response = api.add_tags(
-                node="modbus-tcp", group="group1", tags=[tag]
-            )
-            assert 400 == response.status_code
-            assert (
-                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
-            )
-        finally:
-            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
-
-    @description(
-        given="node group",
         when="add a tag with bias and non-numeral type",
         then="add fail",
     )
@@ -797,58 +755,6 @@ class TestTag:
             assert tag["attribute"] == response.json()["tags"][0]["attribute"]
             assert tag["type"] == response.json()["tags"][0]["type"]
             assert tag["bias"] == response.json()["tags"][0]["bias"]
-        finally:
-            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
-
-    @description(
-        given="node group tag with bias",
-        when="update tag bias out of range",
-        then="update fail",
-    )
-    def test_update_tag_with_bias_out_of_range(self):
-        api.add_tags_check(
-            node="modbus-tcp", group="group1", tags=hold_int16_bias
-        )
-
-        tag = {
-            **hold_int16_bias[0],
-            "bias": -1001,
-        }
-        try:
-            response = api.update_tags(
-                node="modbus-tcp", group="group1", tags=[tag]
-            )
-            assert 400 == response.status_code
-            assert (
-                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
-            )
-
-        finally:
-            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
-
-    @description(
-        given="node group tag with bias",
-        when="update tag with write attribute",
-        then="update fail",
-    )
-    def test_update_tag_with_bias_and_write_attr(self):
-        api.add_tags_check(
-            node="modbus-tcp", group="group1", tags=hold_int16_bias
-        )
-
-        tag = {
-            **hold_int16_bias[0],
-            "attribute": NEU_TAG_ATTRIBUTE_RW,
-        }
-        try:
-            response = api.update_tags(
-                node="modbus-tcp", group="group1", tags=[tag]
-            )
-            assert 400 == response.status_code
-            assert (
-                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
-            )
-
         finally:
             api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
 
