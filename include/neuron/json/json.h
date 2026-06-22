@@ -61,58 +61,58 @@ typedef enum neu_json_type {
 } neu_json_type_e;
 
 typedef struct {
-    int8_t *i8s;
-    uint8_t length;
+    int8_t * i8s;
+    uint16_t length;
 } neu_json_value_array_int8_t;
 
 typedef struct {
     uint8_t *u8s;
-    uint8_t  length;
+    uint16_t length;
 } neu_json_value_array_uint8_t;
 
 typedef struct {
     int16_t *i16s;
-    uint8_t  length;
+    uint16_t length;
 } neu_json_value_array_int16_t;
 
 typedef struct {
     uint16_t *u16s;
-    uint8_t   length;
+    uint16_t  length;
 } neu_json_value_array_uint16_t;
 
 typedef struct {
     int32_t *i32s;
-    uint8_t  length;
+    uint16_t length;
 } neu_json_value_array_int32_t;
 
 typedef struct {
     uint32_t *u32s;
-    uint8_t   length;
+    uint16_t  length;
 } neu_json_value_array_uint32_t;
 
 typedef struct {
     int64_t *i64s;
-    uint8_t  length;
+    uint16_t length;
 } neu_json_value_array_int64_t;
 
 typedef struct {
     uint64_t *u64s;
-    uint8_t   length;
+    uint16_t  length;
 } neu_json_value_array_uint64_t;
 
 typedef struct {
-    float * f32s;
-    uint8_t length;
+    float *  f32s;
+    uint16_t length;
 } neu_json_value_array_float_t;
 
 typedef struct {
-    double *f64s;
-    uint8_t length;
+    double * f64s;
+    uint16_t length;
 } neu_json_value_array_double_t;
 
 typedef struct {
-    bool *  bools;
-    uint8_t length;
+    bool *   bools;
+    uint16_t length;
 } neu_json_value_array_bool_t;
 
 typedef struct {
