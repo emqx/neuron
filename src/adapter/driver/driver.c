@@ -2211,10 +2211,6 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
         case NEU_TYPE_UINT64:
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_DOUBLE:
-            if (tag->bias < -1000 || 1000 < tag->bias ||
-                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE)) {
-                return NEU_ERR_TAG_BIAS_INVALID;
-            }
             break;
         default:
             return NEU_ERR_TAG_BIAS_INVALID;
