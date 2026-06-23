@@ -1526,6 +1526,15 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
+    if (neu_plugin_to_plugin_common(driver->adapter.plugin)->link_state !=
+        NEU_NODE_LINK_STATE_CONNECTED) {
+        nlog_warn("driver write tags but disconnected, driver: %s, group: %s",
+                  driver->adapter.name, cmd->group);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
+        return NEU_ERR_PLUGIN_WRITE_FAILURE;
+    }
+
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
@@ -1660,6 +1669,15 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+
+    if (neu_plugin_to_plugin_common(driver->adapter.plugin)->link_state !=
+        NEU_NODE_LINK_STATE_CONNECTED) {
+        nlog_warn("driver write gtags but disconnected, driver: %s",
+                  driver->adapter.name);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
+        return NEU_ERR_PLUGIN_WRITE_FAILURE;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
@@ -1804,6 +1822,15 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+
+    if (neu_plugin_to_plugin_common(driver->adapter.plugin)->link_state !=
+        NEU_NODE_LINK_STATE_CONNECTED) {
+        nlog_warn("driver write tag but disconnected, driver: %s",
+                  driver->adapter.name);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
+        return NEU_ERR_PLUGIN_WRITE_FAILURE;
     }
 
     neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
