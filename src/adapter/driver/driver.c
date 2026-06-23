@@ -1530,6 +1530,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         NEU_NODE_LINK_STATE_CONNECTED) {
         nlog_warn("driver write tags but disconnected, driver: %s, group: %s",
                   driver->adapter.name, cmd->group);
+        for (int i = 0; i < cmd->n_tag; i++) {
+            neu_free_dvalue(&cmd->tags[i].value);
+        }
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
         return NEU_ERR_PLUGIN_WRITE_FAILURE;
@@ -1675,6 +1678,11 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         NEU_NODE_LINK_STATE_CONNECTED) {
         nlog_warn("driver write gtags but disconnected, driver: %s",
                   driver->adapter.name);
+        for (int i = 0; i < cmd->n_group; i++) {
+            for (int k = 0; k < cmd->groups[i].n_tag; k++) {
+                neu_free_dvalue(&cmd->groups[i].tags[k].value);
+            }
+        }
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
         return NEU_ERR_PLUGIN_WRITE_FAILURE;
@@ -1824,17 +1832,19 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
+    neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
+
     if (neu_plugin_to_plugin_common(driver->adapter.plugin)->link_state !=
         NEU_NODE_LINK_STATE_CONNECTED) {
         nlog_warn("driver write tag but disconnected, driver: %s",
                   driver->adapter.name);
+        neu_free_dvalue(&cmd->value);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
         return NEU_ERR_PLUGIN_WRITE_FAILURE;
     }
 
-    neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
-    group_t *            g   = find_group(driver, cmd->group);
+    group_t *g = find_group(driver, cmd->group);
 
     if (g == NULL) {
         nlog_warn("driver write tag group not exist, driver: %s, group: %s",
