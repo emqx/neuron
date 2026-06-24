@@ -1629,6 +1629,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_resp_add_tag_result(&resp, 0, NEU_ERR_GROUP_NOT_ALLOW);
         }
 
+        if (resp.error != 0 || resp.results != NULL || resp.index != 0) {
+            for (uint16_t i = 0; i < cmd->n_tag; i++) {
+                neu_tag_fini(&cmd->tags[i]);
+            }
+            neu_msg_exchange(header);
+            header->type = NEU_RESP_ADD_TAG;
+            free(cmd->tags);
+            dedup_add_tag_results_by_index(&resp);
+            reply(adapter, header, &resp);
+            break;
+        }
+
         int ret =
             neu_adapter_driver_try_add_tag((neu_adapter_driver_t *) adapter,
                                            cmd->group, cmd->tags, cmd->n_tag);
