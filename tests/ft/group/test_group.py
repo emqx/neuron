@@ -46,9 +46,9 @@ class TestGroup:
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
 
-    @description(given="existent node", when="add group with interval < 100 under existent node", then="add failed")
+    @description(given="existent node", when="add group with interval < 30 under existent node", then="add failed")
     def test_add_group_wrong_interval(self):
-        response = api.add_group(node="modbus-tcp", group='group', interval=99)
+        response = api.add_group(node="modbus-tcp", group='group-bad-interval', interval=29)
         assert 400 == response.status_code
         assert NEU_ERR_GROUP_PARAMETER_INVALID == response.json()['error']
 
