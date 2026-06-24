@@ -1263,20 +1263,19 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         goto end;
     }
 
-    if (ca && (rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
+    if (NULL == ca || '\0' == ca[0]) {
+        log(error, "tls enabled but no ca");
+        rv = -1;
+        goto end;
+    }
+
+    if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
         log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
         rv = -1;
         goto end;
     }
 
     if (cert != NULL && key != NULL) {
-        if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_REQUIRED)) !=
-            0) {
-            log(error, "nng_tls_config_auth_mode fail: %s", nng_strerror(rv));
-            rv = -1;
-            goto end;
-        }
-
         if (keypass) {
             pass[0] = write_string_to_random_file(((char **) keypass)[0]);
             pass[1] = write_string_to_random_file(((char **) keypass)[1]);
@@ -1288,12 +1287,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
             rv = -1;
             goto end;
         }
-    } else {
-        if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_NONE)) != 0) {
-            log(error, "nng_tls_config_auth_mode fail: %s", nng_strerror(rv));
-            rv = -1;
-            goto end;
-        }
+    }
+
+    if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_REQUIRED)) != 0) {
+        log(error, "nng_tls_config_auth_mode fail: %s", nng_strerror(rv));
+        rv = -1;
+        goto end;
     }
 
 end:
