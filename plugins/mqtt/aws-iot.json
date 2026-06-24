@@ -206,7 +206,7 @@
     "name_zh": "根 CA 证书",
     "description": "AWS IoT data endpoint root CA certificate",
     "description_zh": "AWS IoT 设备数据终端节点根 CA 证书",
-    "attribute": "optional",
+    "attribute": "required",
     "type": "file",
     "condition": {
       "field": "ssl",
