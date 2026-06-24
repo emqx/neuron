@@ -81,11 +81,11 @@ static int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
         return 0;
     }
 
-    // ca, optional
+    // ca, required when ssl enabled
     ret = neu_parse_param(setting, NULL, 1, ca);
     if (0 != ret) {
-        plog_notice(plugin, "setting no ca");
-        return 0;
+        plog_error(plugin, "setting no ca, required when ssl enabled");
+        return -1;
     }
 
     if (0 != decode_b64_param(plugin, ca)) {
@@ -103,7 +103,7 @@ static int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    // key, required if cert enable
+    // key, required if cert is set
     ret = parse_b64_param(plugin, setting, key);
     if (0 != ret) {
         return -1;

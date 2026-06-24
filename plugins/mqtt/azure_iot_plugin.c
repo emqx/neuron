@@ -103,41 +103,6 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
-static int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
-                            neu_json_elem_t *ca, neu_json_elem_t *cert,
-                            neu_json_elem_t *key)
-{
-    // ca, required
-    int ret = neu_parse_param(setting, NULL, 1, ca);
-    if (0 != ret) {
-        plog_notice(plugin, "setting no ca");
-        return -1;
-    }
-
-    if (0 != decode_b64_param(plugin, ca)) {
-        return -1;
-    }
-
-    // cert, required
-    ret = neu_parse_param(setting, NULL, 1, cert);
-    if (0 != ret) {
-        plog_notice(plugin, "setting no cert");
-        return -1;
-    }
-
-    if (0 != decode_b64_param(plugin, cert)) {
-        return -1;
-    }
-
-    // key, required
-    ret = parse_b64_param(plugin, setting, key);
-    if (0 != ret) {
-        return -1;
-    }
-
-    return 0;
-}
-
 static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
                               mqtt_config_t *config)
 {
@@ -212,10 +177,28 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
         password.v.val_str = strdup("");
     }
 
+    // ca, required for TLS (SSL is always enabled)
+    ret = neu_parse_param(setting, NULL, 1, &ca);
+    if (0 != ret) {
+        plog_error(plugin, "setting no ca");
+        goto error;
+    }
+    if (0 != decode_b64_param(plugin, &ca)) {
+        goto error;
+    }
+
     if (AUTH_CERT == auth.v.val_int) {
-        ret = parse_ssl_params(plugin, setting, &ca, &cert, &key);
+        ret = neu_parse_param(setting, NULL, 1, &cert);
         if (0 != ret) {
-            plog_error(plugin, "setting certificates fail");
+            plog_error(plugin, "setting no cert");
+            goto error;
+        }
+        if (0 != decode_b64_param(plugin, &cert)) {
+            goto error;
+        }
+        ret = parse_b64_param(plugin, setting, &key);
+        if (0 != ret) {
+            plog_error(plugin, "setting no key");
             goto error;
         }
     }
