@@ -123,6 +123,7 @@ def conf_base(mocker):
         "host": HUB,
         "auth": 0,
         "sas": SAS,
+        "ca": mocker.ca_base64,
     }
 
 
@@ -172,6 +173,13 @@ def conf_bad_fmt(conf_base):
         **conf_base,
         "format": -1,
     }
+
+
+@pytest.fixture(scope="function")
+def conf_no_ca(conf_base):
+    conf = {**conf_base}
+    del conf["ca"]
+    return conf
 
 
 @pytest.fixture(scope="function")
@@ -230,6 +238,7 @@ class TestAzure:
             "conf_bad_id",
             "conf_bad_qos",
             "conf_bad_fmt",
+            "conf_no_ca",
             "conf_ssl_bad_ca",
             "conf_ssl_no_cert",
             "conf_ssl_bad_cert",
