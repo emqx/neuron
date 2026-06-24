@@ -2681,7 +2681,12 @@ static int write_callback(void *usr_data)
     }
 
     pthread_mutex_lock(&group->wt_mtx);
-    utarray_foreach(group->wt_tags, to_be_write_tag_t *, wtag)
+    UT_array *pending = group->wt_tags;
+    UT_icd    wt_icd  = { sizeof(to_be_write_tag_t), NULL, NULL, NULL };
+    utarray_new(group->wt_tags, &wt_icd);
+    pthread_mutex_unlock(&group->wt_mtx);
+
+    utarray_foreach(pending, to_be_write_tag_t *, wtag)
     {
 
         int64_t s_time = 0;
@@ -2777,8 +2782,7 @@ static int write_callback(void *usr_data)
             neu_otel_scope_set_span_end_time(scope, e_time);
         }
     }
-    utarray_clear(group->wt_tags);
-    pthread_mutex_unlock(&group->wt_mtx);
+    utarray_free(pending);
 
     return 0;
 }
