@@ -165,10 +165,6 @@
     "description_zh": "签发服务器证书的 CA 证书",
     "attribute": "required",
     "type": "file",
-    "condition": {
-      "field": "auth",
-      "value": 1
-    },
     "valid": {
       "length": 81960
     }
