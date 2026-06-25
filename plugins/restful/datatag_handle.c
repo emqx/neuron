@@ -171,7 +171,7 @@ void handle_add_gtags(nng_aio *aio)
                     err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
                     goto error;
                 }
-                if (req->groups[i].interval < NEU_DEFAULT_GROUP_INTERVAL) {
+                if (req->groups[i].interval < NEU_GROUP_INTERVAL_LIMIT) {
                     err_type = NEU_ERR_GROUP_PARAMETER_INVALID;
                     goto error;
                 }
