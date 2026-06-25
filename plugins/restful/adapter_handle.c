@@ -577,7 +577,7 @@ static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
                 ret = NEU_ERR_GROUP_NAME_TOO_LONG;
                 goto check_end;
             }
-            if (driver->gtags.gtags[j].interval < NEU_DEFAULT_GROUP_INTERVAL) {
+            if (driver->gtags.gtags[j].interval < NEU_GROUP_INTERVAL_LIMIT) {
                 ret = NEU_ERR_GROUP_PARAMETER_INVALID;
                 goto check_end;
             }
