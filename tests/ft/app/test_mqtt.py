@@ -71,7 +71,7 @@ UPLOAD_DRV_STATE_TOPIC = f"neuron/{NODE}/state/update"
 
 
 @pytest.fixture(autouse=True, scope="class")
-def mqtt_node():
+def mqtt_node(class_setup_and_teardown):
     otel_p = subprocess.Popen(
         ["python3", "otel_server.py", f'{otel_port}'], stderr=subprocess.PIPE, cwd="simulator")
     api.add_node_check(NODE, "MQTT")
@@ -184,6 +184,7 @@ def conf_emqx_ssl(conf_base, mocker):
         "host": "broker.emqx.io",
         "port": 8883,
         "ssl": True,
+        "ca": mocker.ca_base64,
     }
 
 
@@ -259,6 +260,15 @@ def conf_bad_fmt(conf_base):
     return {
         **conf_base,
         "format": -1,
+    }
+
+
+@pytest.fixture(scope="function")
+def conf_ssl_no_ca(conf_base, mocker):
+    return {
+        **conf_base,
+        "port": mocker.ssl_port,
+        "ssl": True,
     }
 
 
@@ -374,6 +384,7 @@ class TestMQTT:
             "conf_bad_id",
             "conf_bad_qos",
             "conf_bad_fmt",
+            "conf_ssl_no_ca",
             "conf_ssl_bad_ca",
             "conf_ssl_bad_cert",
             "conf_ssl_no_key",
