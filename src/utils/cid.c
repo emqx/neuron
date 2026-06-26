@@ -540,7 +540,7 @@ static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied)
             memset(ap, 0, sizeof(cid_access_point_t));
 
             if (name != NULL) {
-                strcpy(ap->name, name);
+                snprintf(ap->name, sizeof(ap->name), "%s", name);
                 xmlFree(name);
             }
 
@@ -581,7 +581,7 @@ static int parse_ldevice(xmlNode *xml_server, cid_access_point_t *ap)
             memset(ldev, 0, sizeof(cid_ldevice_t));
             char *inst = (char *) xmlGetProp(ldevice, (const xmlChar *) "inst");
             if (inst != NULL) {
-                strcpy(ldev->inst, inst);
+                snprintf(ldev->inst, sizeof(ldev->inst), "%s", inst);
                 xmlFree(inst);
             }
             int ret = parse_lnode(ldevice, ldev);
@@ -903,8 +903,9 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                     &template->lnotypes[template->n_lnotypes - 1];
                 memset(tm_lno, 0, sizeof(cid_tm_lno_type_t));
 
-                strcpy(tm_lno->id, id);
-                strcpy(tm_lno->ln_class, ln_class);
+                snprintf(tm_lno->id, sizeof(tm_lno->id), "%s", id);
+                snprintf(tm_lno->ln_class, sizeof(tm_lno->ln_class), "%s",
+                         ln_class);
 
                 xmlNode *xdo = child->children;
                 while (xdo != NULL) {
@@ -926,8 +927,9 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                             &tm_lno->dos[tm_lno->n_dos - 1];
                         memset(tm_do, 0, sizeof(cid_tm_lno_do_t));
 
-                        strcpy(tm_do->name, name);
-                        strcpy(tm_do->ref_type, ref_type);
+                        snprintf(tm_do->name, sizeof(tm_do->name), "%s", name);
+                        snprintf(tm_do->ref_type, sizeof(tm_do->ref_type), "%s",
+                                 ref_type);
                     }
 
                     if (name != NULL) {
@@ -982,8 +984,10 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                                 &tm_do->sdos[tm_do->n_sdos - 1];
                             memset(tm_sdo, 0, sizeof(cid_tm_sdo_t));
 
-                            strcpy(tm_sdo->name, sdo_name);
-                            strcpy(tm_sdo->ref_type, sdo_ref_type);
+                            snprintf(tm_sdo->name, sizeof(tm_sdo->name), "%s",
+                                     sdo_name);
+                            snprintf(tm_sdo->ref_type, sizeof(tm_sdo->ref_type),
+                                     "%s", sdo_ref_type);
                         }
 
                         if (sdo_name != NULL) {
@@ -1015,9 +1019,12 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                                 &tm_do->das[tm_do->n_das - 1];
                             memset(tm_da, 0, sizeof(cid_tm_do_da_t));
 
-                            strcpy(tm_da->name, name);
+                            snprintf(tm_da->name, sizeof(tm_da->name), "%s",
+                                     name);
                             if (ref_type != NULL) {
-                                strcpy(tm_da->ref_type, ref_type);
+                                snprintf(tm_da->ref_type,
+                                         sizeof(tm_da->ref_type), "%s",
+                                         ref_type);
                             }
                             tm_da->btype = T_UNKNOWN;
                             tm_da->btype =
@@ -1101,9 +1108,11 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                         cid_tm_bda_type_t *tm_bda =
                             &tm_dat->bdas[tm_dat->n_bdas - 1];
                         memset(tm_bda, 0, sizeof(cid_tm_bda_type_t));
-                        strcpy(tm_bda->name, name);
+                        snprintf(tm_bda->name, sizeof(tm_bda->name), "%s",
+                                 name);
                         if (ref_type != NULL) {
-                            strcpy(tm_bda->ref_type, ref_type);
+                            snprintf(tm_bda->ref_type, sizeof(tm_bda->ref_type),
+                                     "%s", ref_type);
                         }
                         tm_bda->btype = T_UNKNOWN;
                         tm_bda->btype = decode_basictype((const char *) btype);
