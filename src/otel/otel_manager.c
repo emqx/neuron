@@ -1033,29 +1033,32 @@ void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
     char *      copy        = strdup(in);
     char        t_flags[32] = { 0 };
 
+    const size_t trace_id_cap = 64;
+    const size_t span_id_cap  = 32;
+
     token = strtok_r(copy, delimiter, &saveptr);
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(trace_id, token);
+        snprintf(trace_id, trace_id_cap, "%s", token);
     } else {
-        strcpy(trace_id, "");
+        trace_id[0] = '\0';
     }
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(span_id, token);
+        snprintf(span_id, span_id_cap, "%s", token);
     } else {
-        strcpy(span_id, "");
+        span_id[0] = '\0';
     }
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(t_flags, token);
+        snprintf(t_flags, sizeof(t_flags), "%s", token);
         sscanf(t_flags, "%x", flags);
     } else {
-        strcpy(t_flags, "");
-        *flags = 0;
+        t_flags[0] = '\0';
+        *flags     = 0;
     }
 
     free(copy);

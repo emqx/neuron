@@ -586,8 +586,10 @@ int modbus_value_handle_test(neu_plugin_t *plugin, void *req,
         break;
     case MODBUS_AREA_COIL:
     case MODBUS_AREA_INPUT: {
-        neu_value8_u u8 = { .value = bytes[0] };
-        jvalue.val_bit  = neu_value8_get_bit(u8, 0);
+        if (n_byte >= 1) {
+            neu_value8_u u8 = { .value = bytes[0] };
+            jvalue.val_bit  = neu_value8_get_bit(u8, 0);
+        }
     } break;
     }
 
