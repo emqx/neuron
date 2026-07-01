@@ -590,6 +590,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_str.length > 0) {
             ele->v.val_array_str.p_strs =
                 calloc(ele->v.val_array_str.length, sizeof(char *));
+            if (NULL == ele->v.val_array_str.p_strs) {
+                ele->v.val_array_str.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_str.length; i++) {
                 json_t *    value   = json_array_get(ob, i);
                 const char *str_val = json_string_value(value);
@@ -606,6 +610,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_bool.length > 0) {
             ele->v.val_array_bool.bools =
                 calloc(ele->v.val_array_bool.length, sizeof(bool));
+            if (NULL == ele->v.val_array_bool.bools) {
+                ele->v.val_array_bool.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_bool.length; i++) {
                 json_t *value                  = json_array_get(ob, i);
                 ele->v.val_array_bool.bools[i] = json_boolean_value(value);
@@ -618,6 +626,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_uint8.length > 0) {
             ele->v.val_array_uint8.u8s =
                 calloc(ele->v.val_array_uint8.length, sizeof(int8_t));
+            if (NULL == ele->v.val_array_uint8.u8s) {
+                ele->v.val_array_uint8.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_uint8.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -635,6 +647,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_int8.length > 0) {
             ele->v.val_array_int8.i8s =
                 calloc(ele->v.val_array_int8.length, sizeof(int8_t));
+            if (NULL == ele->v.val_array_int8.i8s) {
+                ele->v.val_array_int8.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_int8.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -652,6 +668,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_uint16.length > 0) {
             ele->v.val_array_uint16.u16s =
                 calloc(ele->v.val_array_uint16.length, sizeof(int16_t));
+            if (NULL == ele->v.val_array_uint16.u16s) {
+                ele->v.val_array_uint16.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_uint16.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -669,6 +689,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_int16.length > 0) {
             ele->v.val_array_int16.i16s =
                 calloc(ele->v.val_array_int16.length, sizeof(int16_t));
+            if (NULL == ele->v.val_array_int16.i16s) {
+                ele->v.val_array_int16.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_int16.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -686,6 +710,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_uint32.length > 0) {
             ele->v.val_array_uint32.u32s =
                 calloc(ele->v.val_array_uint32.length, sizeof(int32_t));
+            if (NULL == ele->v.val_array_uint32.u32s) {
+                ele->v.val_array_uint32.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_uint32.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -703,6 +731,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_int32.length > 0) {
             ele->v.val_array_int32.i32s =
                 calloc(ele->v.val_array_int32.length, sizeof(int32_t));
+            if (NULL == ele->v.val_array_int32.i32s) {
+                ele->v.val_array_int32.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_int32.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -720,6 +752,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_uint64.length > 0) {
             ele->v.val_array_uint64.u64s =
                 calloc(ele->v.val_array_uint64.length, sizeof(int64_t));
+            if (NULL == ele->v.val_array_uint64.u64s) {
+                ele->v.val_array_uint64.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_uint64.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -737,6 +773,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_int64.length > 0) {
             ele->v.val_array_int64.i64s =
                 calloc(ele->v.val_array_int64.length, sizeof(int64_t));
+            if (NULL == ele->v.val_array_int64.i64s) {
+                ele->v.val_array_int64.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_int64.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
@@ -754,6 +794,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_float.length > 0) {
             ele->v.val_array_float.f32s =
                 calloc(ele->v.val_array_float.length, sizeof(float));
+            if (NULL == ele->v.val_array_float.f32s) {
+                ele->v.val_array_float.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_float.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_integer(value)) {
@@ -771,6 +815,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         if (ele->v.val_array_double.length > 0) {
             ele->v.val_array_double.f64s =
                 calloc(ele->v.val_array_double.length, sizeof(double));
+            if (NULL == ele->v.val_array_double.f64s) {
+                ele->v.val_array_double.length = 0;
+                break;
+            }
             for (int i = 0; i < ele->v.val_array_double.length; i++) {
                 json_t *value = json_array_get(ob, i);
                 if (json_is_integer(value)) {
