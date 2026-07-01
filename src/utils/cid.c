@@ -531,6 +531,10 @@ static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied)
 {
     int   ret      = -1;
     char *ied_name = (char *) xmlGetProp(xml_ied, (const xmlChar *) "name");
+    if (ied_name == NULL) {
+        nlog_warn("IED has no name attribute");
+        return -1;
+    }
     if (strlen(ied_name) >= NEU_CID_IED_NAME_LEN) {
         xmlFree(ied_name);
         nlog_warn("IED name is too long");
