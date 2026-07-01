@@ -590,19 +590,15 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_bool = json_boolean_value(ob);
         break;
     case NEU_JSON_ARRAY_STR: {
-        json_t *value = NULL;
-
-        ele->v.val_array_str.length = json_array_size(ob);
+        ele->v.val_array_str.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_str.length > 0) {
-            int index = 0;
-
             ele->v.val_array_str.p_strs =
                 calloc(ele->v.val_array_str.length, sizeof(char *));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_str.length; i++) {
+                json_t *    value   = json_array_get(ob, i);
                 const char *str_val = json_string_value(value);
                 if (str_val != NULL) {
-                    ele->v.val_array_str.p_strs[index] = strdup(str_val);
+                    ele->v.val_array_str.p_strs[i] = strdup(str_val);
                 }
             }
         }
@@ -610,235 +606,182 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         break;
     }
     case NEU_JSON_ARRAY_BOOL: {
-        json_t *value = NULL;
-
-        ele->v.val_array_bool.length = json_array_size(ob);
+        ele->v.val_array_bool.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_bool.length > 0) {
-            int index = 0;
-
             ele->v.val_array_bool.bools =
                 calloc(ele->v.val_array_bool.length, sizeof(bool));
-            json_array_foreach(ob, index, value)
-            {
-                ele->v.val_array_bool.bools[index] = json_boolean_value(value);
+            for (int i = 0; i < ele->v.val_array_bool.length; i++) {
+                json_t *value                  = json_array_get(ob, i);
+                ele->v.val_array_bool.bools[i] = json_boolean_value(value);
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_UINT8: {
-        json_t *value = NULL;
-
-        ele->v.val_array_uint8.length = json_array_size(ob);
+        ele->v.val_array_uint8.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_uint8.length > 0) {
-            int index = 0;
-
             ele->v.val_array_uint8.u8s =
                 calloc(ele->v.val_array_uint8.length, sizeof(int8_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_uint8.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_uint8.u8s[index] =
+                    ele->v.val_array_uint8.u8s[i] =
                         (uint8_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_uint8.u8s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_uint8.u8s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_INT8: {
-        json_t *value = NULL;
-
-        ele->v.val_array_int8.length = json_array_size(ob);
+        ele->v.val_array_int8.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_int8.length > 0) {
-            int index = 0;
-
             ele->v.val_array_int8.i8s =
                 calloc(ele->v.val_array_int8.length, sizeof(int8_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_int8.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_int8.i8s[index] =
+                    ele->v.val_array_int8.i8s[i] =
                         (int8_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_int8.i8s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_int8.i8s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_UINT16: {
-        json_t *value = NULL;
-
-        ele->v.val_array_uint16.length = json_array_size(ob);
+        ele->v.val_array_uint16.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_uint16.length > 0) {
-            int index = 0;
-
             ele->v.val_array_uint16.u16s =
                 calloc(ele->v.val_array_uint16.length, sizeof(int16_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_uint16.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_uint16.u16s[index] =
+                    ele->v.val_array_uint16.u16s[i] =
                         (uint16_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_uint16.u16s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_uint16.u16s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_INT16: {
-        json_t *value = NULL;
-
-        ele->v.val_array_int16.length = json_array_size(ob);
+        ele->v.val_array_int16.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_int16.length > 0) {
-            int index = 0;
-
             ele->v.val_array_int16.i16s =
                 calloc(ele->v.val_array_int16.length, sizeof(int16_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_int16.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_int16.i16s[index] =
+                    ele->v.val_array_int16.i16s[i] =
                         (int16_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_int16.i16s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_int16.i16s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_UINT32: {
-        json_t *value = NULL;
-
-        ele->v.val_array_uint32.length = json_array_size(ob);
+        ele->v.val_array_uint32.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_uint32.length > 0) {
-            int index = 0;
-
             ele->v.val_array_uint32.u32s =
                 calloc(ele->v.val_array_uint32.length, sizeof(int32_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_uint32.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_uint32.u32s[index] =
+                    ele->v.val_array_uint32.u32s[i] =
                         (uint32_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_uint32.u32s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_uint32.u32s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_INT32: {
-        json_t *value = NULL;
-
-        ele->v.val_array_int32.length = json_array_size(ob);
+        ele->v.val_array_int32.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_int32.length > 0) {
-            int index = 0;
-
             ele->v.val_array_int32.i32s =
                 calloc(ele->v.val_array_int32.length, sizeof(int32_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_int32.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_int32.i32s[index] =
+                    ele->v.val_array_int32.i32s[i] =
                         (int32_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_int32.i32s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_int32.i32s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_UINT64: {
-        json_t *value = NULL;
-
-        ele->v.val_array_uint64.length = json_array_size(ob);
+        ele->v.val_array_uint64.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_uint64.length > 0) {
-            int index = 0;
-
             ele->v.val_array_uint64.u64s =
                 calloc(ele->v.val_array_uint64.length, sizeof(int64_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_uint64.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_uint64.u64s[index] =
+                    ele->v.val_array_uint64.u64s[i] =
                         (uint64_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_uint64.u64s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_uint64.u64s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_INT64: {
-        json_t *value = NULL;
-
-        ele->v.val_array_int64.length = json_array_size(ob);
+        ele->v.val_array_int64.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_int64.length > 0) {
-            int index = 0;
-
             ele->v.val_array_int64.i64s =
                 calloc(ele->v.val_array_int64.length, sizeof(int64_t));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_int64.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_real(value)) {
-                    ele->v.val_array_int64.i64s[index] =
+                    ele->v.val_array_int64.i64s[i] =
                         (int64_t) json_real_value(value);
                 } else {
-                    ele->v.val_array_int64.i64s[index] =
-                        json_integer_value(value);
+                    ele->v.val_array_int64.i64s[i] = json_integer_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_FLOAT: {
-        json_t *value = NULL;
-
-        ele->v.val_array_float.length = json_array_size(ob);
+        ele->v.val_array_float.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_float.length > 0) {
-            int index = 0;
-
             ele->v.val_array_float.f32s =
                 calloc(ele->v.val_array_float.length, sizeof(float));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_float.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_integer(value)) {
-                    ele->v.val_array_float.f32s[index] =
+                    ele->v.val_array_float.f32s[i] =
                         (float) json_integer_value(value);
                 } else {
-                    ele->v.val_array_float.f32s[index] = json_real_value(value);
+                    ele->v.val_array_float.f32s[i] = json_real_value(value);
                 }
             }
         }
         break;
     }
     case NEU_JSON_ARRAY_DOUBLE: {
-        json_t *value = NULL;
-
-        ele->v.val_array_double.length = json_array_size(ob);
+        ele->v.val_array_double.length = (uint16_t) json_array_size(ob);
         if (ele->v.val_array_double.length > 0) {
-            int index = 0;
-
             ele->v.val_array_double.f64s =
                 calloc(ele->v.val_array_double.length, sizeof(double));
-            json_array_foreach(ob, index, value)
-            {
+            for (int i = 0; i < ele->v.val_array_double.length; i++) {
+                json_t *value = json_array_get(ob, i);
                 if (json_is_integer(value)) {
-                    ele->v.val_array_double.f64s[index] =
+                    ele->v.val_array_double.f64s[i] =
                         (double) json_integer_value(value);
                 } else {
-                    ele->v.val_array_double.f64s[index] =
-                        json_real_value(value);
+                    ele->v.val_array_double.f64s[i] = json_real_value(value);
                 }
             }
         }
