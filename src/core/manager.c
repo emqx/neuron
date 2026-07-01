@@ -190,7 +190,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     {
         neu_msg_t *msg = neu_msg_new(NEU_REQ_NODE_UNINIT, NULL, &uninit);
         neu_reqresp_head_t *header = neu_msg_get_header(msg);
-        strcpy(header->sender, "manager");
+        snprintf(header->sender, sizeof(header->sender), "%s", "manager");
         if (0 != neu_send_msg_to(manager->server_fd, addr, msg)) {
             nlog_error("manager -> %s uninit msg send fail",
                        &addr->sun_path[1]);
@@ -309,7 +309,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_NAME_NOT_CONFORM;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -320,7 +321,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_NAME_CONFLICT;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -333,7 +335,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_BODY_IS_WRONG;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -364,7 +367,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -378,7 +382,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_MODULE_ALREADY_EXIST;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -390,7 +395,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = error;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -402,7 +408,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_MODULE_KIND_NOT_SUPPORT;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -416,7 +423,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_BODY_IS_WRONG;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -429,7 +437,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_ADD_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -442,7 +451,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_ADD_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -460,7 +470,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         free(schema_tmp_path);
         header->type = NEU_RESP_ERROR;
         e.error      = error;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &e);
         break;
     }
@@ -477,7 +488,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 utarray_free(nodes);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_IN_USE;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -493,7 +505,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &e);
         break;
     }
@@ -511,7 +524,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_NAME_NOT_CONFORM;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -522,7 +536,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_NOT_FOUND;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -535,7 +550,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->schema_file);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_BODY_IS_WRONG;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -565,7 +581,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -578,7 +595,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -592,7 +610,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -608,7 +627,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(so_tmp_path);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_MODULE_NOT_EXISTS;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -620,7 +640,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = error;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -632,7 +653,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_MODULE_KIND_NOT_SUPPORT;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -646,7 +668,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_BODY_IS_WRONG;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -665,7 +688,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 nlog_warn("library %s is using", cmd->library);
                 header->type = NEU_RESP_ERROR;
                 e.error      = NEU_ERR_LIBRARY_IN_USE;
-                strcpy(header->receiver, header->sender);
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         header->sender);
                 reply(manager, header, &e);
                 break;
             }
@@ -681,7 +705,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -694,7 +719,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -707,7 +733,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -721,7 +748,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
             e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
-            strcpy(header->receiver, header->sender);
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
             reply(manager, header, &e);
             break;
         }
@@ -732,7 +760,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         free(schema_tmp_path);
         header->type = NEU_RESP_ERROR;
         e.error      = NEU_ERR_SUCCESS;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &e);
 
         break;
@@ -742,18 +771,20 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_get_plugin_t resp    = { .plugins = plugins };
 
         header->type = NEU_RESP_GET_PLUGIN;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &resp);
         break;
     }
     case NEU_REQ_CHECK_SCHEMA: {
         neu_req_check_schema_t *cmd  = (neu_req_check_schema_t *) &header[1];
         neu_resp_check_schema_t resp = { 0 };
-        strcpy(resp.schema, cmd->schema);
+        snprintf(resp.schema, sizeof(resp.schema), "%s", cmd->schema);
         resp.exist   = neu_plugin_manager_schema_exist(manager->plugin_manager,
                                                      cmd->schema);
         header->type = NEU_RESP_CHECK_SCHEMA;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &resp);
         break;
     }
@@ -776,7 +807,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_req_add_node_fini(cmd);
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &e);
         break;
     }
@@ -814,7 +846,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         bool single =
             neu_node_manager_is_single(manager->node_manager, cmd->node);
 
-        strcpy(header->receiver, cmd->node);
+        snprintf(header->receiver, sizeof(header->receiver), "%s", cmd->node);
         if (adapter == NULL) {
             error.error  = NEU_ERR_NODE_NOT_EXIST;
             header->type = NEU_RESP_ERROR;
@@ -847,8 +879,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     break;
                 }
                 neu_reqresp_head_t *hd = neu_msg_get_header(msg);
-                strcpy(hd->receiver, sub->driver);
-                strcpy(hd->sender, "manager");
+                snprintf(hd->receiver, sizeof(hd->receiver), "%s", sub->driver);
+                snprintf(hd->sender, sizeof(hd->sender), "%s", "manager");
                 forward_msg(manager, hd, hd->receiver);
             }
             utarray_free(subscriptions);
@@ -856,14 +888,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         notify_monitor(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
         neu_reqresp_node_deleted_t resp = { 0 };
-        strcpy(resp.node, header->receiver);
+        snprintf(resp.node, sizeof(resp.node), "%s", header->receiver);
         // notify MQTT about node removal
         if (0 == strcmp(adapter->module->module_name, "MQTT")) {
             msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
             if (NULL != msg) {
                 neu_reqresp_head_t *hd = neu_msg_get_header(msg);
-                strcpy(hd->receiver, cmd->node);
-                strcpy(hd->sender, "manager");
+                snprintf(hd->receiver, sizeof(hd->receiver), "%s", cmd->node);
+                snprintf(hd->sender, sizeof(hd->sender), "%s", "manager");
                 reply(manager, hd, &resp);
             }
         }
@@ -881,8 +913,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     break;
                 }
                 header = neu_msg_get_header(msg);
-                strcpy(header->receiver, app->app_name);
-                strcpy(header->sender, "manager");
+                snprintf(header->receiver, sizeof(header->receiver), "%s",
+                         app->app_name);
+                snprintf(header->sender, sizeof(header->sender), "%s",
+                         "manager");
                 reply(manager, header, &resp);
             }
             utarray_free(apps);
@@ -913,7 +947,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_get_node_t resp = { .nodes = nodes };
 
         header->type = NEU_RESP_GET_NODE;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &resp);
         break;
     }
@@ -942,7 +977,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &error);
         break;
     }
@@ -977,7 +1013,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_req_subscribe_groups_fini(cmd);
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &error);
         break;
     }
@@ -1002,7 +1039,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &error);
         break;
     }
@@ -1023,7 +1061,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &error);
         break;
     }
@@ -1034,7 +1073,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             manager, cmd->app, cmd->driver, cmd->group);
         neu_resp_get_subscribe_group_t resp = { .groups = groups };
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_SUBSCRIBE_GROUP;
         reply(manager, header, &resp);
         break;
@@ -1046,7 +1086,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_get_driver_groups(manager, cmd->app, cmd->name);
         neu_resp_get_subscribe_group_t resp = { .groups = groups };
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP;
         reply(manager, header, &resp);
         break;
@@ -1065,8 +1106,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_node_manager_find(manager->node_manager, info->driver);
             assert(driver != NULL);
 
-            strcpy(in.driver, info->driver);
-            strcpy(in.group, info->group);
+            snprintf(in.driver, sizeof(in.driver), "%s", info->driver);
+            snprintf(in.group, sizeof(in.group), "%s", info->group);
             neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
                                              info->group, &in.tags);
 
@@ -1074,7 +1115,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         utarray_free(groups);
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_SUB_DRIVER_TAGS;
         reply(manager, header, &resp);
 
@@ -1087,7 +1129,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             manager, cmd->app, cmd->driver, cmd->group);
         neu_resp_get_subscribe_group_t resp = { .groups = groups };
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_DATALAYERS_GROUPS;
         reply(manager, header, &resp);
         break;
@@ -1114,8 +1157,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_node_manager_find(manager->node_manager, info->driver);
             assert(driver != NULL);
 
-            strcpy(in.driver, info->driver);
-            strcpy(in.group, info->group);
+            snprintf(in.driver, sizeof(in.driver), "%s", info->driver);
+            snprintf(in.group, sizeof(in.group), "%s", info->group);
             neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
                                              info->group, &in.tags);
 
@@ -1132,7 +1175,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_DATALAYERS_TAGS;
         reply(manager, header, &resp);
 
@@ -1171,8 +1215,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 utarray_free(in.tags);
 
                 if (utarray_len(filtered_tags) > 0) {
-                    strcpy(in.driver, info->driver);
-                    strcpy(in.group, info->group);
+                    snprintf(in.driver, sizeof(in.driver), "%s", info->driver);
+                    snprintf(in.group, sizeof(in.group), "%s", info->group);
                     in.tags = filtered_tags;
                     utarray_push_back(resp.infos, &in);
                     found = true;
@@ -1193,7 +1237,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         header->type = NEU_RESP_GET_DATALAYERS_TAG;
         reply(manager, header, &resp);
 
@@ -1211,8 +1256,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         resp.states     = utarray_clone(states);
         resp.core_level = manager->log_level;
 
-        strcpy(header->receiver, header->sender);
-        strcpy(header->sender, "manager");
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
+        snprintf(header->sender, sizeof(header->sender), "%s", "manager");
         header->type = NEU_RESP_GET_NODES_STATE;
         reply(manager, header, &resp);
 
@@ -1224,8 +1270,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         resp.groups = neu_manager_get_driver_group(manager);
 
-        strcpy(header->receiver, header->sender);
-        strcpy(header->sender, "manager");
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
+        snprintf(header->sender, sizeof(header->sender), "%s", "manager");
         header->type = NEU_RESP_GET_DRIVER_GROUP;
         reply(manager, header, &resp);
 
@@ -1649,7 +1696,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         neu_req_driver_array_fini(cmd);
         header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
         reply(manager, header, &e);
         break;
     }
@@ -1711,8 +1759,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 node_header.ctx             = NULL;
                 node_header.otel_trace_type = header->otel_trace_type;
                 node_header.monitor         = false;
-                strcpy(node_header.sender, "manager");
-                strcpy(node_header.receiver, node_info->node);
+                snprintf(node_header.sender, sizeof(node_header.sender), "%s",
+                         "manager");
+                snprintf(node_header.receiver, sizeof(node_header.receiver),
+                         "%s", node_info->node);
 
                 node_cmd.log_level = cmd->log_level;
 
@@ -2032,8 +2082,8 @@ inline static void notify_monitor(neu_manager_t *    manager,
         return;
     }
     neu_reqresp_head_t *header = neu_msg_get_header(msg);
-    strcpy(header->sender, "manager");
-    strcpy(header->receiver, "monitor");
+    snprintf(header->sender, sizeof(header->sender), "%s", "manager");
+    snprintf(header->receiver, sizeof(header->receiver), "%s", "monitor");
 
     int ret = neu_send_msg_to(manager->server_fd, &addr, msg);
     if (0 != ret) {
