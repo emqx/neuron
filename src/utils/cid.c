@@ -293,7 +293,8 @@ static int find_da_basic_type(cid_template_t *template, const char *datype_id,
                         template, template->datypes[i].bdas[j].ref_type, name,
                         da_types + index);
                 } else {
-                    strcpy(da_types[index].all_name, name);
+                    snprintf(da_types[index].all_name,
+                             sizeof(da_types[index].all_name), "%s", name);
                     da_types[index].btype = template->datypes[i].bdas[j].btype;
                     index += 1;
                 }
@@ -457,7 +458,8 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
 
                     ctl->btype = da->btype;
                     ctl->fc    = da->fc;
-                    strcpy(ctl->da_name, da->name);
+                    snprintf(ctl->da_name, sizeof(ctl->da_name), "%s",
+                             da->name);
                 }
             }
 
@@ -475,7 +477,8 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
 
                     ctl->btype = da_types[j].btype;
                     ctl->fc    = da->fc;
-                    strcpy(ctl->da_name, da_types[j].all_name);
+                    snprintf(ctl->da_name, sizeof(ctl->da_name), "%s",
+                             da_types[j].all_name);
                 }
             }
 
@@ -488,7 +491,7 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
 
                 ctl->btype = da_types[0].btype;
                 ctl->fc    = da->fc;
-                strcpy(ctl->da_name, da->name);
+                snprintf(ctl->da_name, sizeof(ctl->da_name), "%s", da->name);
                 ctl->n_co_types = n_da_types;
                 for (int j = 0; j < n_da_types; j++) {
                     ctl->co_types[j] = da_types[j].btype;
@@ -522,7 +525,7 @@ static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied)
         nlog_warn("IED name is too long");
         return -1;
     } else {
-        strcpy(ied->name, ied_name);
+        snprintf(ied->name, sizeof(ied->name), "%s", ied_name);
         xmlFree(ied_name);
     }
     xmlNode *access_point = xml_ied->children;
@@ -962,7 +965,7 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                     &template->dotypes[template->n_dotypes - 1];
                 memset(tm_do, 0, sizeof(cid_tm_do_type_t));
 
-                strcpy(tm_do->id, id);
+                snprintf(tm_do->id, sizeof(tm_do->id), "%s", id);
                 xmlNode *da = child->children;
                 while (da != NULL) {
                     if (da->type != XML_ELEMENT_NODE) {
@@ -1086,7 +1089,7 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                     &template->datypes[template->n_datypes - 1];
                 memset(tm_dat, 0, sizeof(cid_tm_da_type_t));
 
-                strcpy(tm_dat->id, id);
+                snprintf(tm_dat->id, sizeof(tm_dat->id), "%s", id);
                 xmlNode *bda = child->children;
                 while (bda != NULL) {
                     if (bda->type != XML_ELEMENT_NODE) {
@@ -1248,12 +1251,18 @@ cid_dataset_info_t *neu_cid_info_from_string(const char *str)
         cid_dataset_info_t *info = calloc(1, sizeof(cid_dataset_info_t));
         info->control            = elems[0].v.val_bool;
         info->buffered           = elems[1].v.val_bool;
-        strcpy(info->ied_name, elems[2].v.val_str);
-        strcpy(info->ldevice_inst, elems[3].v.val_str);
-        strcpy(info->ln_class, elems[4].v.val_str);
-        strcpy(info->report_name, elems[5].v.val_str);
-        strcpy(info->report_id, elems[6].v.val_str);
-        strcpy(info->dataset_name, elems[7].v.val_str);
+        snprintf(info->ied_name, sizeof(info->ied_name), "%s",
+                 elems[2].v.val_str);
+        snprintf(info->ldevice_inst, sizeof(info->ldevice_inst), "%s",
+                 elems[3].v.val_str);
+        snprintf(info->ln_class, sizeof(info->ln_class), "%s",
+                 elems[4].v.val_str);
+        snprintf(info->report_name, sizeof(info->report_name), "%s",
+                 elems[5].v.val_str);
+        snprintf(info->report_id, sizeof(info->report_id), "%s",
+                 elems[6].v.val_str);
+        snprintf(info->dataset_name, sizeof(info->dataset_name), "%s",
+                 elems[7].v.val_str);
 
         free(elems[2].v.val_str);
         free(elems[3].v.val_str);
@@ -1292,8 +1301,9 @@ static void ld_ctrl_do_to_group(const char *ied_name, const char *ap_name,
     cid_dataset_info_t *g_info = calloc(1, sizeof(cid_dataset_info_t));
 
     g_info->control = true;
-    strcpy(g_info->ied_name, ied_name);
-    strcpy(g_info->ldevice_inst, ld->inst);
+    snprintf(g_info->ied_name, sizeof(g_info->ied_name), "%s", ied_name);
+    snprintf(g_info->ldevice_inst, sizeof(g_info->ldevice_inst), "%s",
+             ld->inst);
 
     group->context = g_info;
     snprintf(group->group, NEU_GROUP_NAME_LEN, "%s/%s$Control", ap_name,
@@ -1456,13 +1466,19 @@ static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
                     calloc(1, sizeof(cid_dataset_info_t));
 
                 g_info->control = false;
-                strcpy(g_info->ied_name, ied_name);
-                strcpy(g_info->ldevice_inst, ld_inst);
-                strcpy(g_info->ln_class, ln->lnclass);
+                snprintf(g_info->ied_name, sizeof(g_info->ied_name), "%s",
+                         ied_name);
+                snprintf(g_info->ldevice_inst, sizeof(g_info->ldevice_inst),
+                         "%s", ld_inst);
+                snprintf(g_info->ln_class, sizeof(g_info->ln_class), "%s",
+                         ln->lnclass);
                 g_info->buffered = ln->reports[i].buffered;
-                strcpy(g_info->report_name, ln->reports[i].name);
-                strcpy(g_info->report_id, ln->reports[i].id);
-                strcpy(g_info->dataset_name, ln->datasets[j].name);
+                snprintf(g_info->report_name, sizeof(g_info->report_name), "%s",
+                         ln->reports[i].name);
+                snprintf(g_info->report_id, sizeof(g_info->report_id), "%s",
+                         ln->reports[i].id);
+                snprintf(g_info->dataset_name, sizeof(g_info->dataset_name),
+                         "%s", ln->datasets[j].name);
 
                 group->context = g_info;
 
@@ -1615,7 +1631,7 @@ static void ln_dataset_to_group(const char *ied_name, const char *ap_name,
 
 void neu_cid_to_msg(char *driver, cid_t *cid, neu_req_add_gtag_t *cmd)
 {
-    strcpy(cmd->driver, driver);
+    snprintf(cmd->driver, sizeof(cmd->driver), "%s", driver);
     cmd->n_group = 0;
     cmd->groups  = NULL;
 
