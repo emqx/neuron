@@ -716,7 +716,8 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
         }
         if (req->tags[i].t == NEU_JSON_ARRAY_STR &&
             req->tags[i].value.val_array_str.p_strs != NULL) {
-            for (int j = 0; j < req->tags[i].value.val_array_str.length; j++) {
+            for (size_t j = 0; j < req->tags[i].value.val_array_str.length;
+                 j++) {
                 free(req->tags[i].value.val_array_str.p_strs[j]);
             }
             free(req->tags[i].value.val_array_str.p_strs);
@@ -1448,7 +1449,7 @@ void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
             }
             if (req->groups[i].tags[k].t == NEU_JSON_ARRAY_STR &&
                 req->groups[i].tags[k].value.val_array_str.p_strs != NULL) {
-                for (int j = 0;
+                for (size_t j = 0;
                      j < req->groups[i].tags[k].value.val_array_str.length;
                      j++) {
                     free(req->groups[i].tags[k].value.val_array_str.p_strs[j]);
