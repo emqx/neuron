@@ -227,8 +227,9 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, int type)
         if (!el->is_static && el->display) {
             if (el->adapter->module->type & type) {
                 neu_resp_node_info_t info = { 0 };
-                strcpy(info.node, el->adapter->name);
-                strcpy(info.plugin, el->adapter->module->module_name);
+                snprintf(info.node, sizeof(info.node), "%s", el->adapter->name);
+                snprintf(info.plugin, sizeof(info.plugin), "%s",
+                         el->adapter->module->module_name);
                 utarray_push_back(array, &info);
             }
         }
@@ -304,7 +305,9 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                         char   tag_split_array[10][NEU_NODE_TAGS_LEN] = { 0 };
                         char * token = strtok(node_tmp, ",");
                         while (token != NULL && index < 10) {
-                            strcpy(tag_split_array[index], token);
+                            snprintf(tag_split_array[index],
+                                     sizeof(tag_split_array[index]), "%s",
+                                     token);
                             index++;
                             token = strtok(NULL, ",");
                         }
@@ -353,9 +356,11 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                 }
 
                 neu_resp_node_info_t info = { 0 };
-                strcpy(info.node, el->adapter->name);
-                strcpy(info.tags, el->tags ? el->tags : "");
-                strcpy(info.plugin, el->adapter->module->module_name);
+                snprintf(info.node, sizeof(info.node), "%s", el->adapter->name);
+                snprintf(info.tags, sizeof(info.tags), "%s",
+                         el->tags ? el->tags : "");
+                snprintf(info.plugin, sizeof(info.plugin), "%s",
+                         el->adapter->module->module_name);
                 if (sort_delay) {
                     neu_metric_entry_t *e = NULL;
                     if (NULL != el->adapter->metrics) {
@@ -389,8 +394,9 @@ UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr)
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         neu_resp_node_info_t info = { 0 };
-        strcpy(info.node, el->adapter->name);
-        strcpy(info.plugin, el->adapter->module->module_name);
+        snprintf(info.node, sizeof(info.node), "%s", el->adapter->name);
+        snprintf(info.plugin, sizeof(info.plugin), "%s",
+                 el->adapter->module->module_name);
         utarray_push_back(array, &info);
     }
 
@@ -537,7 +543,7 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
         neu_nodes_state_t state = { 0 };
 
         if (!el->is_static && el->display) {
-            strcpy(state.node, el->adapter->name);
+            snprintf(state.node, sizeof(state.node), "%s", el->adapter->name);
             state.state.running = el->adapter->state;
             state.state.link =
                 neu_plugin_to_plugin_common(el->adapter->plugin)->link_state;

@@ -286,7 +286,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     common->adapter_callbacks   = &adapter->cb_funs;
     common->link_state          = NEU_NODE_LINK_STATE_DISCONNECTED;
     common->log                 = get_log_category(adapter->name);
-    strcpy(common->name, adapter->name);
+    snprintf(common->name, sizeof(common->name), "%s", adapter->name);
 
     zlog_level_switch(common->log, default_log_level);
 
@@ -371,7 +371,7 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
     // fix log
     neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
     common->log                 = log;
-    strcpy(common->name, adapter->name);
+    snprintf(common->name, sizeof(common->name), "%s", adapter->name);
     zlog_level_switch(common->log, default_log_level);
 
     if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
@@ -388,7 +388,7 @@ void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
 {
     neu_req_node_init_t init = { 0 };
     init.state               = state;
-    strcpy(init.node, adapter->name);
+    snprintf(init.node, sizeof(init.node), "%s", adapter->name);
 
     neu_msg_t *msg = neu_msg_new(NEU_REQ_NODE_INIT, NULL, &init);
     if (NULL == msg) {
@@ -396,8 +396,8 @@ void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
         return;
     }
     neu_reqresp_head_t *header = neu_msg_get_header(msg);
-    strcpy(header->sender, adapter->name);
-    strcpy(header->receiver, "manager");
+    snprintf(header->sender, sizeof(header->sender), "%s", adapter->name);
+    snprintf(header->receiver, sizeof(header->receiver), "%s", "manager");
 
     int ret = neu_send_msg(adapter->control_fd, msg);
     if (0 != ret) {
@@ -460,76 +460,89 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     }
     neu_reqresp_head_t *pheader = neu_msg_get_header(msg);
 
-    strcpy(pheader->sender, adapter->name);
+    snprintf(pheader->sender, sizeof(pheader->sender), "%s", adapter->name);
     switch (pheader->type) {
     case NEU_REQ_DRIVER_DIRECTORY: {
         neu_req_driver_directory_t *cmd = (neu_req_driver_directory_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_FUP_OPEN: {
         neu_req_fup_open_t *cmd = (neu_req_fup_open_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_FUP_DATA: {
         neu_req_fup_data_t *cmd = (neu_req_fup_data_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_FDOWN_OPEN: {
         neu_req_fdown_open_t *cmd = (neu_req_fdown_open_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_FDOWN_DATA: {
-        strcpy(pheader->receiver, header.receiver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 header.receiver);
         break;
     }
     case NEU_RESP_FDOWN_DATA: {
         neu_resp_fdown_data_t *cmd = (neu_resp_fdown_data_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_DRIVER_ACTION: {
         neu_req_driver_action_t *cmd = (neu_req_driver_action_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_READ_GROUP: {
         neu_req_read_group_t *cmd = (neu_req_read_group_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_READ_GROUP_PAGINATE: {
         neu_req_read_group_paginate_t *cmd =
             (neu_req_read_group_paginate_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_TEST_READ_TAG: {
         neu_req_test_read_tag_t *cmd = (neu_req_test_read_tag_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_WRITE_TAG: {
         neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_WRITE_TAGS: {
         neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_WRITE_GTAGS: {
         neu_req_write_gtags_t *cmd = (neu_req_write_gtags_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_DEL_NODE: {
         neu_req_del_node_t *cmd = (neu_req_del_node_t *) data;
-        strcpy(pheader->receiver, cmd->node);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
     case NEU_REQ_UPDATE_GROUP:
@@ -537,7 +550,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_DEL_GROUP:
     case NEU_REQ_ADD_GROUP: {
         neu_req_add_group_t *cmd = (neu_req_add_group_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_GET_TAG:
@@ -545,17 +559,19 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_DEL_TAG:
     case NEU_REQ_ADD_TAG: {
         neu_req_add_tag_t *cmd = (neu_req_add_tag_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_IMPORT_TAGS: {
         neu_req_import_tags_t *cmd = (neu_req_import_tags_t *) data;
-        strcpy(pheader->receiver, cmd->node);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
     case NEU_REQ_ADD_GTAG: {
         neu_req_add_gtag_t *cmd = (neu_req_add_gtag_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_UPDATE_NODE:
@@ -564,134 +580,154 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) data;
-        strcpy(pheader->receiver, cmd->node);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
     case NEU_REQ_CHECK_SCHEMA:
     case NEU_REQ_GET_DRIVER_GROUP:
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
-        strcpy(pheader->receiver, "manager");
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", "manager");
         break;
     }
     case NEU_REQRESP_NODE_DELETED: {
         neu_reqresp_node_deleted_t *cmd = (neu_reqresp_node_deleted_t *) data;
-        strcpy(pheader->receiver, cmd->node);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
         neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
-        strcpy(pheader->receiver, cmd->node);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
     case NEU_REQ_PRGFILE_UPLOAD: {
         neu_req_prgfile_upload_t *cmd = (neu_req_prgfile_upload_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_PRGFILE_PROCESS: {
         neu_req_prgfile_process_t *cmd = (neu_req_prgfile_process_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_RESP_PRGFILE_PROCESS: {
-        strcpy(pheader->receiver, header.sender);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 header.sender);
         break;
     }
     case NEU_REQ_SCAN_TAGS: {
         neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) data;
-        strcpy(pheader->receiver, cmd->driver);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->driver);
         break;
     }
     case NEU_REQ_SERVER_CERT_SELF_SIGN: {
         neu_req_server_cert_self_sign_t *cmd =
             (neu_req_server_cert_self_sign_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_CERT_UPLOAD: {
         neu_req_server_cert_upload_t *cmd =
             (neu_req_server_cert_upload_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_CLIENT_CERT_DELETE: {
         neu_req_client_cert_del_t *cmd = (neu_req_client_cert_del_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_CLIENT_CERT_TRUST: {
         neu_req_client_cert_trust_t *cmd = (neu_req_client_cert_trust_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_CERT_INFO: {
         neu_req_server_cert_data_t *cmd = (neu_req_server_cert_data_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_CLIENT_CERT_INFO: {
         neu_req_client_cert_data_t *cmd = (neu_req_client_cert_data_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_SWITCH: {
         neu_req_server_auth_switch_t *cmd =
             (neu_req_server_auth_switch_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_SWITCH_STATUS: {
         neu_req_server_auth_switch_status_t *cmd =
             (neu_req_server_auth_switch_status_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_USER_ADD: {
         neu_req_server_auth_user_add_t *cmd =
             (neu_req_server_auth_user_add_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_USER_DELETE: {
         neu_req_server_auth_user_del_t *cmd =
             (neu_req_server_auth_user_del_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD: {
         neu_req_server_auth_user_update_t *cmd =
             (neu_req_server_auth_user_update_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_AUTH_USER_INFO: {
         neu_req_server_auth_users_info_t *cmd =
             (neu_req_server_auth_users_info_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_SECURITY_POLICY: {
         neu_req_server_security_policy_t *cmd =
             (neu_req_server_security_policy_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_SECURITY_POLICY_STATUS: {
         neu_req_server_security_policy_status_t *cmd =
             (neu_req_server_security_policy_status_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_SERVER_CERT_EXPORT: {
         neu_req_server_cert_export_t *cmd =
             (neu_req_server_cert_export_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_REQ_CLIENT_CERT_UPLOAD: {
         neu_req_client_cert_upload_t *cmd =
             (neu_req_client_cert_upload_t *) data;
-        strcpy(pheader->receiver, cmd->app_name);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 cmd->app_name);
         break;
     }
     case NEU_RESP_ERROR:
@@ -701,7 +737,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_RESP_SERVER_CERT_EXPORT:
     case NEU_RESP_CLIENT_CERT_INFO:
     case NEU_RESP_SERVER_CERT_INFO: {
-        strcpy(pheader->receiver, header.sender);
+        snprintf(pheader->receiver, sizeof(pheader->receiver), "%s",
+                 header.sender);
         break;
     }
     default:
@@ -752,7 +789,7 @@ static int adapter_responseto(neu_adapter_t *     adapter,
         return NEU_ERR_EINTERNAL;
     }
     neu_reqresp_head_t *pheader = neu_msg_get_header(msg);
-    strcpy(pheader->sender, adapter->name);
+    snprintf(pheader->sender, sizeof(pheader->sender), "%s", adapter->name);
 
     int ret = neu_send_msg_to(adapter->control_fd, &dst, msg);
     if (0 != ret) {
@@ -1334,7 +1371,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             reply(adapter, header, &error);
         } else {
             header->type = NEU_RESP_GET_NODE_SETTING;
-            strcpy(resp.node, adapter->name);
+            snprintf(resp.node, sizeof(resp.node), "%s", adapter->name);
             reply(adapter, header, &resp);
         }
         break;
@@ -1453,9 +1490,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
         }
 
-        strcpy(resp.driver, cmd->driver);
-        strcpy(resp.group, cmd->group);
-        strcpy(resp.new_name, cmd->new_name);
+        snprintf(resp.driver, sizeof(resp.driver), "%s", cmd->driver);
+        snprintf(resp.group, sizeof(resp.group), "%s", cmd->group);
+        snprintf(resp.new_name, sizeof(resp.new_name), "%s", cmd->new_name);
         header->type = NEU_RESP_UPDATE_DRIVER_GROUP;
         neu_msg_exchange(header);
         reply(adapter, header, &resp);
@@ -1513,10 +1550,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_node_rename_t *cmd  = (neu_req_node_rename_t *) &header[1];
         neu_resp_node_rename_t resp = { 0 };
         resp.error = neu_adapter_rename(adapter, cmd->new_name);
-        strcpy(header->receiver, header->sender);
-        strcpy(header->sender, cmd->new_name);
-        strcpy(resp.node, cmd->node);
-        strcpy(resp.new_name, cmd->new_name);
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
+        snprintf(header->sender, sizeof(header->sender), "%s", cmd->new_name);
+        snprintf(resp.node, sizeof(resp.node), "%s", cmd->node);
+        snprintf(resp.new_name, sizeof(resp.new_name), "%s", cmd->new_name);
         header->type = NEU_RESP_NODE_RENAME;
         reply(adapter, header, &resp);
         break;
@@ -1683,7 +1721,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     resp.error = NEU_ERR_LIBRARY_NOT_FOUND;
                 } else {
                     neu_req_add_gtag_t gtag_cmd = { 0 };
-                    strcpy(gtag_cmd.driver, cmd->node);
+                    snprintf(gtag_cmd.driver, sizeof(gtag_cmd.driver), "%s",
+                             cmd->node);
 
                     if (neu_adapter_parse_json_to_gtags(json_file_path,
                                                         &gtag_cmd) == 0) {
@@ -1781,13 +1820,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         header->type = NEU_RESP_NODE_UNINIT;
         neu_msg_exchange(header);
-        strcpy(header->sender, adapter->name);
-        strcpy(cmd->node, adapter->name);
+        snprintf(header->sender, sizeof(header->sender), "%s", adapter->name);
+        snprintf(cmd->node, sizeof(cmd->node), "%s", adapter->name);
 
         neu_msg_gen(header, cmd);
 
-        strcpy(name, adapter->name);
-        strcpy(receiver, header->receiver);
+        snprintf(name, sizeof(name), "%s", adapter->name);
+        snprintf(receiver, sizeof(receiver), "%s", header->receiver);
 
         int ret = neu_send_msg(adapter->control_fd, msg);
         if (0 != ret) {
@@ -2314,7 +2353,7 @@ inline static void notify_monitor(neu_adapter_t *    adapter,
         return;
     }
     neu_reqresp_head_t *header = neu_msg_get_header(msg);
-    strcpy(header->receiver, "monitor");
+    snprintf(header->receiver, sizeof(header->receiver), "%s", "monitor");
     strncpy(header->sender, adapter->name, NEU_NODE_NAME_LEN);
     int ret = neu_send_msg(adapter->control_fd, msg);
     if (0 != ret) {
