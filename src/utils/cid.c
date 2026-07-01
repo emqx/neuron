@@ -274,13 +274,17 @@ typedef struct {
 } da_basic_type_t;
 
 static int find_da_basic_type(cid_template_t *template, const char *datype_id,
-                              const char *seg_name, da_basic_type_t *da_types)
+                              const char *seg_name, da_basic_type_t *da_types,
+                              int max)
 {
     char name[NEU_CID_LEN64] = { 0 };
     int  index               = 0;
     for (int i = 0; i < template->n_datypes; i++) {
         if (strcmp(template->datypes[i].id, datype_id) == 0) {
             for (int j = 0; j < template->datypes[i].n_bdas; j++) {
+                if (index >= max) {
+                    break;
+                }
                 if (strlen(seg_name) > 0) {
                     snprintf(name, sizeof(name), "%s.%s", seg_name,
                              template->datypes[i].bdas[j].name);
@@ -291,7 +295,7 @@ static int find_da_basic_type(cid_template_t *template, const char *datype_id,
                 if (template->datypes[i].bdas[j].btype == Struct) {
                     index += find_da_basic_type(
                         template, template->datypes[i].bdas[j].ref_type, name,
-                        da_types + index);
+                        da_types + index, max - index);
                 } else {
                     snprintf(da_types[index].all_name,
                              sizeof(da_types[index].all_name), "%s", name);
@@ -336,8 +340,9 @@ static int find_basic_type(cid_template_t *template, const char *type_id,
         *array_size = dotype->das[i].array_size;
 
         da_basic_type_t da_types[32] = { 0 };
-        int n_da_types = find_da_basic_type(template, dotype->das[i].ref_type,
-                                            dotype->das[i].name, da_types);
+        int             n_da_types   = find_da_basic_type(
+            template, dotype->das[i].ref_type, dotype->das[i].name, da_types,
+            (int) (sizeof(da_types) / sizeof(da_types[0])));
         for (int j = 0; j < n_da_types; j++) {
             if (strlen(da_name) > 0) {
                 if (strcmp(da_types[j].all_name, da_name) == 0) {
@@ -465,7 +470,8 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
 
             da_basic_type_t da_types[32] = { 0 };
             int             n_da_types   = find_da_basic_type(
-                template, tm_do->das[k].ref_type, tm_do->das[k].name, da_types);
+                template, tm_do->das[k].ref_type, tm_do->das[k].name, da_types,
+                (int) (sizeof(da_types) / sizeof(da_types[0])));
 
             if (da->fc == SP || da->fc == SG) {
                 for (int j = 0; j < n_da_types; j++) {
@@ -492,8 +498,13 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
                 ctl->btype = da_types[0].btype;
                 ctl->fc    = da->fc;
                 snprintf(ctl->da_name, sizeof(ctl->da_name), "%s", da->name);
-                ctl->n_co_types = n_da_types;
-                for (int j = 0; j < n_da_types; j++) {
+                int n_co = n_da_types;
+                if (n_co >
+                    (int) (sizeof(ctl->co_types) / sizeof(ctl->co_types[0]))) {
+                    n_co = sizeof(ctl->co_types) / sizeof(ctl->co_types[0]);
+                }
+                ctl->n_co_types = n_co;
+                for (int j = 0; j < n_co; j++) {
                     ctl->co_types[j] = da_types[j].btype;
                 }
             }
