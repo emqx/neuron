@@ -357,7 +357,8 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
         info->kind    = plugin->kind;
 
         if (plugin->single_name != NULL) {
-            strcpy(info->single_name, plugin->single_name);
+            snprintf(info->single_name, sizeof(info->single_name), "%s",
+                     plugin->single_name);
         }
         strncpy(info->name, plugin->name, sizeof(info->name));
         strncpy(info->library, plugin->lib_name, sizeof(info->library));

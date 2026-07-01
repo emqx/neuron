@@ -210,7 +210,7 @@ int neu_conn_eth_check_interface(const char *interface)
         return -1;
     }
 
-    strcpy(ifr.ifr_name, interface);
+    snprintf(ifr.ifr_name, IFNAMSIZ, "%s", interface);
     ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
     if (ret != 0) {
         return -1;
@@ -302,7 +302,7 @@ static int get_mac(neu_conn_eth_t *conn, const char *interface)
     int          fd  = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     int          ret = -1;
 
-    strcpy(ifr.ifr_name, interface);
+    snprintf(ifr.ifr_name, IFNAMSIZ, "%s", interface);
     if (ioctl(fd, SIOCGIFHWADDR, &ifr) == 0) {
         memcpy(conn->ic->mac, ifr.ifr_hwaddr.sa_data, ETH_ALEN);
         ret = 0;
@@ -328,7 +328,7 @@ static int init_socket(const char *interface, uint16_t protocol, uint8_t mac[6])
     (void) mac;
     (void) pn_mcast_addr;
 
-    strcpy(ifr.ifr_name, interface);
+    snprintf(ifr.ifr_name, IFNAMSIZ, "%s", interface);
     if (ioctl(fd, SIOCGIFINDEX, &ifr) != 0) {
         close(fd);
         return -1;

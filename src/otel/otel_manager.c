@@ -37,7 +37,7 @@
 
 #define SPAN_ID_LENGTH 16
 #define ID_CHARSET "0123456789abcdef"
-#define TRACE_TIME_OUT (3 * 60 * 1000)
+#define TRACE_TIME_OUT (60 * 1000)
 
 bool   otel_flag               = false;
 char   otel_collector_url[128] = { 0 };
@@ -1033,29 +1033,32 @@ void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
     char *      copy        = strdup(in);
     char        t_flags[32] = { 0 };
 
+    const size_t trace_id_cap = 64;
+    const size_t span_id_cap  = 32;
+
     token = strtok_r(copy, delimiter, &saveptr);
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(trace_id, token);
+        snprintf(trace_id, trace_id_cap, "%s", token);
     } else {
-        strcpy(trace_id, "");
+        trace_id[0] = '\0';
     }
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(span_id, token);
+        snprintf(span_id, span_id_cap, "%s", token);
     } else {
-        strcpy(span_id, "");
+        span_id[0] = '\0';
     }
 
     token = strtok_r(NULL, delimiter, &saveptr);
     if (token != NULL) {
-        strcpy(t_flags, token);
+        snprintf(t_flags, sizeof(t_flags), "%s", token);
         sscanf(t_flags, "%x", flags);
     } else {
-        strcpy(t_flags, "");
-        *flags = 0;
+        t_flags[0] = '\0';
+        *flags     = 0;
     }
 
     free(copy);
@@ -1072,25 +1075,33 @@ static int otel_timer_cb(void *data)
 
     HASH_ITER(hh, traces_table, el, tmp)
     {
+        bool should_send = false;
+        bool is_timeout  = false;
+
         if (neu_time_ms() - el->ctx->ts >= TRACE_TIME_OUT) {
-            nlog_debug("trace:%s time out", (char *) el->ctx->trace_id);
-            HASH_DEL(traces_table, el);
-            neu_otel_free_trace(el->ctx);
-            free(el);
+            should_send = true;
+            is_timeout  = true;
+            nlog_debug("trace:%s time out, reporting incomplete trace",
+                       (char *) el->ctx->trace_id);
         } else if (el->ctx->final &&
                    el->ctx->span_num ==
                        el->ctx->trace_data.resource_spans[0]
                            ->scope_spans[0]
                            ->n_spans &&
                    el->ctx->expected_span_num <= 0) {
-            int data_size = neu_otel_trace_pack_size(el->ctx);
+            should_send = true;
+        }
 
-            uint8_t *data_buf = calloc(1, data_size);
+        if (should_send) {
+            int      data_size = neu_otel_trace_pack_size(el->ctx);
+            uint8_t *data_buf  = calloc(1, data_size);
             neu_otel_trace_pack(el->ctx, data_buf);
             int status = neu_http_post_otel_trace(data_buf, data_size);
             free(data_buf);
-            nlog_debug("send trace:%s status:%d", (char *) el->ctx->trace_id,
+            nlog_debug("send %strace:%s status:%d",
+                       is_timeout ? "timeout " : "", (char *) el->ctx->trace_id,
                        status);
+
             if (status == 200 || status == 400) {
                 HASH_DEL(traces_table, el);
                 neu_otel_free_trace(el->ctx);
@@ -1175,10 +1186,12 @@ void neu_otel_set_config(void *config)
     otel_control_flag = req->control_flag;
     otel_data_flag    = req->data_flag;
     if (req->collector_url) {
-        strcpy(otel_collector_url, req->collector_url);
+        snprintf(otel_collector_url, sizeof(otel_collector_url), "%s",
+                 req->collector_url);
     }
     if (req->service_name) {
-        strcpy(otel_service_name, req->service_name);
+        snprintf(otel_service_name, sizeof(otel_service_name), "%s",
+                 req->service_name);
     }
     otel_data_sample_rate = req->data_sample_rate;
 
