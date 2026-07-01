@@ -193,7 +193,7 @@ static char *write_string_to_random_file(const char *str)
 
     char *path = calloc(1, strlen(filename) + 1);
     if (path) {
-        strcpy(path, filename);
+        memcpy(path, filename, strlen(filename) + 1);
     }
 
     return path;

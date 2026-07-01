@@ -194,12 +194,13 @@ static neu_type_e to_neu_type(char *type)
 
 void neu_tpy_to_msg(char *driver, tpy_t *tpy, neu_req_add_gtag_t *cmd)
 {
-    strcpy(cmd->driver, driver);
+    snprintf(cmd->driver, sizeof(cmd->driver), "%s", driver);
     cmd->n_group = tpy->n_statics;
     cmd->groups  = calloc(cmd->n_group, sizeof(neu_gdatatag_t));
 
     for (int i = 0; i < cmd->n_group; i++) {
-        strcpy(cmd->groups[i].group, tpy->statics[i].name);
+        snprintf(cmd->groups[i].group, sizeof(cmd->groups[i].group), "%s",
+                 tpy->statics[i].name);
         cmd->groups[i].interval = 1000;
         cmd->groups[i].n_tag    = tpy->statics[i].n_vars;
         cmd->groups[i].tags =
