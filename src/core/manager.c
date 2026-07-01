@@ -1419,21 +1419,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             UT_array *apps = neu_subscribe_manager_find(
                 manager->subscribe_manager, cmd->driver, cmd->group);
 
-            forward_msg(manager, header, header->receiver);
             neu_subscribe_manager_remove(manager->subscribe_manager,
                                          cmd->driver, cmd->group);
 
-            if (NULL == apps) {
-                break;
+            if (NULL != apps) {
+                utarray_foreach(apps, neu_app_subscribe_t *, app)
+                {
+                    forward_msg_copy(manager, header, app->app_name);
+                }
+                utarray_free(apps);
             }
 
-            // notify app node about group deletion
-            utarray_foreach(apps, neu_app_subscribe_t *, app)
-            {
-                forward_msg_copy(manager, header, app->app_name);
-            }
-
-            utarray_free(apps);
+            forward_msg(manager, header, header->receiver);
         }
         break;
     }
@@ -1451,13 +1448,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(manager, header, &e);
         } else {
-            forward_msg(manager, header, header->receiver);
-
             UT_array *apps = neu_subscribe_manager_find(
                 manager->subscribe_manager, cmd->driver, cmd->group);
 
             if (NULL != apps) {
-                // notify app nodes about tag deletion
                 utarray_foreach(apps, neu_app_subscribe_t *, app)
                 {
                     neu_msg_t *msg_copy = neu_msg_copy((neu_msg_t *) header);
@@ -1471,6 +1465,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
                 utarray_free(apps);
             }
+
+            forward_msg(manager, header, header->receiver);
         }
 
         break;

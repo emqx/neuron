@@ -274,7 +274,8 @@ static int json_value_to_tag_value(union neu_json_value *req,
         break;
     case NEU_JSON_STR:
         value->type = NEU_TYPE_STRING;
-        strncpy(value->value.str, req->val_str, sizeof(value->value.str));
+        strncpy(value->value.str, req->val_str, sizeof(value->value.str) - 1);
+        value->value.str[sizeof(value->value.str) - 1] = '\0';
         break;
     case NEU_JSON_DOUBLE:
         value->type      = NEU_TYPE_DOUBLE;
