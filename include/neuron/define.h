@@ -93,7 +93,7 @@
 #define NEU_CID_LEN4 4
 #define NEU_CID_LEN8 8
 #define NEU_CID_LEN16 16
-#define NEU_CID_LEN32 32
+#define NEU_CID_LEN32 72
 #define NEU_CID_LEN64 64
 
 #define NEU_TRACE_ID_LEN 64

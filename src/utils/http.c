@@ -440,7 +440,8 @@ int neu_http_post_otel_trace(uint8_t *data, int len)
 
     char url_buf[128] = { 0 };
 
-    sprintf(url_buf, "http://%s/v1/traces", neu_otel_collector_url());
+    snprintf(url_buf, sizeof(url_buf), "http://%s/v1/traces",
+             neu_otel_collector_url());
 
     if (nng_url_parse(&url, url_buf) != 0) {
         nng_aio_free(aio);
