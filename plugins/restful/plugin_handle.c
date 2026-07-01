@@ -41,7 +41,7 @@ void handle_add_plugin(nng_aio *aio)
             header.ctx             = aio;
             header.type            = NEU_REQ_ADD_PLUGIN;
             header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
-            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN);
+            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN - 1);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
             ret             = neu_plugin_op(plugin, header, &cmd);
@@ -66,7 +66,7 @@ void handle_update_plugin(nng_aio *aio)
             header.ctx             = aio;
             header.type            = NEU_REQ_UPDATE_PLUGIN;
             header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
-            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN);
+            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN - 1);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
             ret             = neu_plugin_op(plugin, header, &cmd);
