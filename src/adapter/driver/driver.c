@@ -191,8 +191,8 @@ static void write_responses(neu_adapter_t *adapter, void *r,
         neu_driver_write_responses_t *resp = &response[i];
         neu_resp_write_tags_ele_t     ele  = { 0 };
 
-        strcpy(ele.group, resp->group);
-        strcpy(ele.tag, resp->name);
+        snprintf(ele.group, sizeof(ele.group), "%s", resp->group);
+        snprintf(ele.tag, sizeof(ele.tag), "%s", resp->name);
         ele.error = resp->error;
 
         nlog_notice(
@@ -371,7 +371,7 @@ static void directory_response(neu_adapter_t *adapter, void *r, int error,
             neu_driver_file_info_t *         info = &infos[i];
             neu_resp_driver_directory_file_t file = { 0 };
 
-            strcpy(file.name, info->path);
+            snprintf(file.name, sizeof(file.name), "%s", info->path);
             file.ftype     = info->ftype;
             file.size      = info->size;
             file.timestamp = info->mtime;
@@ -861,7 +861,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         utarray_foreach(tags, neu_datatag_t *, tag)
         {
             neu_resp_tag_value_meta_t tag_value = { 0 };
-            strcpy(tag_value.tag, tag->name);
+            snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
 
@@ -873,7 +873,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
             utarray_foreach(tags, neu_datatag_t *, tag)
             {
                 neu_resp_tag_value_meta_t tag_value = { 0 };
-                strcpy(tag_value.tag, tag->name);
+                snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
                 tag_value.value.type = NEU_TYPE_ERROR;
                 tag_value.value.value.i32 =
                     NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
@@ -946,7 +946,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
         utarray_foreach(tags, neu_datatag_t *, tag)
         {
             neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
-            strcpy(tag_value.tag, tag->name);
+            snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
 
@@ -970,7 +970,7 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
             utarray_foreach(tags, neu_datatag_t *, tag)
             {
                 neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
-                strcpy(tag_value.tag, tag->name);
+                snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
                 tag_value.value.type = NEU_TYPE_ERROR;
                 tag_value.value.value.i32 =
                     NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
@@ -2834,7 +2834,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
                                           &tag_value.metas,
                                           &tag_value.n_meta) != 0) {
-                strcpy(tag_value.tag, tag->name);
+                snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
                 tag_value.value.type      = NEU_TYPE_ERROR;
                 tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
 
@@ -2842,7 +2842,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                 continue;
             }
         }
-        strcpy(tag_value.tag, tag->name);
+        snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
         tag_value.datatag = *tag;
 
         tag_value.datatag.bias = tag->bias;
@@ -3022,7 +3022,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
         neu_resp_tag_value_meta_t tag_value = { 0 };
         neu_driver_cache_value_t  value     = { 0 };
 
-        strcpy(tag_value.tag, tag->name);
+        snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
         tag_value.datatag = *tag;
 
         tag_value.datatag.bias = tag->bias;
@@ -3201,7 +3201,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
         neu_driver_cache_value_t           value     = { 0 };
 
-        strcpy(tag_value.tag, tag->name);
+        snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
 
         tag_value.datatag.name        = strdup(tag->name);
         tag_value.datatag.address     = strdup(tag->address);
@@ -3417,7 +3417,7 @@ void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
         }
     }
 
-    strcpy(sub_app.app, req->app);
+    snprintf(sub_app.app, sizeof(sub_app.app), "%s", req->app);
     sub_app.addr.sun_family = AF_UNIX;
     snprintf(sub_app.addr.sun_path, sizeof(sub_app.addr.sun_path),
              "%cneuron-%" PRIu16, '\0', req->port);
