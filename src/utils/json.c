@@ -105,7 +105,7 @@ void neu_json_elem_free(neu_json_elem_t *elem)
         free(elem->v.val_array_double.f64s);
         break;
     case NEU_JSON_ARRAY_STR:
-        for (int i = 0; i < elem->v.val_array_str.length; ++i) {
+        for (size_t i = 0; i < elem->v.val_array_str.length; ++i) {
             free(elem->v.val_array_str.p_strs[i]);
         }
         free(elem->v.val_array_str.p_strs);
@@ -207,7 +207,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_BOOL: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_bool.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_bool.length; i++) {
             json_array_append_new(array,
                                   json_boolean(ele.v.val_array_bool.bools[i]));
         }
@@ -218,7 +218,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_INT8: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_int8.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_int8.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_int8.i8s[i]));
         }
@@ -229,7 +229,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_UINT8: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_uint8.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_uint8.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_uint8.u8s[i]));
         }
@@ -240,7 +240,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_INT16: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_int16.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_int16.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_int16.i16s[i]));
         }
@@ -251,7 +251,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_UINT16: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_uint16.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_uint16.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_uint16.u16s[i]));
         }
@@ -262,7 +262,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_INT32: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_int32.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_int32.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_int32.i32s[i]));
         }
@@ -273,7 +273,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_UINT32: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_uint32.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_uint32.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_uint32.u32s[i]));
         }
@@ -284,7 +284,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_INT64: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_int64.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_int64.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_int64.i64s[i]));
         }
@@ -295,7 +295,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_UINT64: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_uint64.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_uint64.length; i++) {
             json_array_append_new(array,
                                   json_integer(ele.v.val_array_uint64.u64s[i]));
         }
@@ -306,7 +306,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_FLOAT: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_float.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_float.length; i++) {
             json_array_append_new(array,
                                   json_real(ele.v.val_array_float.f32s[i]));
         }
@@ -317,7 +317,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_DOUBLE: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_double.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_double.length; i++) {
             json_array_append_new(array,
                                   json_real(ele.v.val_array_double.f64s[i]));
         }
@@ -328,7 +328,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_ARRAY_STR: {
         void *array = json_array();
 
-        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_str.length; i++) {
             json_array_append_new(array,
                                   json_string(ele.v.val_array_str.p_strs[i]));
         }
@@ -388,7 +388,7 @@ static json_t *encode_object_ecp(json_t *object, neu_json_elem_t ele)
 #define ENCODE_ARRAY_TO_STRING(TYPE, FIELD, DATA, FORMAT)                      \
     case TYPE: {                                                               \
         size_t buffer_size = 2;                                                \
-        for (int i = 0; i < ele.v.FIELD.length; i++) {                         \
+        for (size_t i = 0; i < ele.v.FIELD.length; i++) {                      \
             buffer_size += snprintf(NULL, 0, FORMAT, ele.v.FIELD.DATA[i]) + 2; \
         }                                                                      \
         char *array_str = (char *) malloc(buffer_size);                        \
@@ -397,7 +397,7 @@ static json_t *encode_object_ecp(json_t *object, neu_json_elem_t ele)
         }                                                                      \
         char *ptr = array_str;                                                 \
         *ptr++    = '[';                                                       \
-        for (int i = 0; i < ele.v.FIELD.length; i++) {                         \
+        for (size_t i = 0; i < ele.v.FIELD.length; i++) {                      \
             int len = sprintf(ptr, FORMAT, ele.v.FIELD.DATA[i]);               \
             ptr += len;                                                        \
             if (i < ele.v.FIELD.length - 1) {                                  \
@@ -438,7 +438,7 @@ static json_t *encode_object_ecp(json_t *object, neu_json_elem_t ele)
 
     case NEU_JSON_ARRAY_STR: {
         size_t buffer_size = 2;
-        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_str.length; i++) {
             buffer_size +=
                 snprintf(NULL, 0, "\"%s\"", ele.v.val_array_str.p_strs[i]) + 2;
         }
@@ -451,7 +451,7 @@ static json_t *encode_object_ecp(json_t *object, neu_json_elem_t ele)
         char *ptr = array_str;
         *ptr++    = '[';
 
-        for (int i = 0; i < ele.v.val_array_str.length; i++) {
+        for (size_t i = 0; i < ele.v.val_array_str.length; i++) {
             int len = sprintf(ptr, "\"%s\"", ele.v.val_array_str.p_strs[i]);
             ptr += len;
 

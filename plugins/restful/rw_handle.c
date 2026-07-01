@@ -679,8 +679,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                     req->groups[i].tags[k].value.val_array_int64.length;
 
                 cmd->groups[i].tags[k].value.value.i64s.i64s =
-                    calloc(sizeof(int64_t),
-                           req->groups[i].tags[k].value.val_array_int64.length);
+                    calloc(req->groups[i].tags[k].value.val_array_int64.length,
+                           sizeof(int64_t));
 
                 memcpy(cmd->groups[i].tags[k].value.value.i64s.i64s,
                        req->groups[i].tags[k].value.val_array_int64.i64s,
@@ -693,9 +693,9 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                 cmd->groups[i].tags[k].value.value.f64s.length =
                     req->groups[i].tags[k].value.val_array_double.length;
 
-                cmd->groups[i].tags[k].value.value.f64s.f64s = calloc(
-                    sizeof(double),
-                    req->groups[i].tags[k].value.val_array_double.length);
+                cmd->groups[i].tags[k].value.value.f64s.f64s =
+                    calloc(req->groups[i].tags[k].value.val_array_double.length,
+                           sizeof(double));
                 memcpy(
                     cmd->groups[i].tags[k].value.value.f64s.f64s,
                     req->groups[i].tags[k].value.val_array_double.f64s,
@@ -709,8 +709,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                     req->groups[i].tags[k].value.val_array_bool.length;
 
                 cmd->groups[i].tags[k].value.value.bools.bools =
-                    calloc(sizeof(bool),
-                           req->groups[i].tags[k].value.val_array_bool.length);
+                    calloc(req->groups[i].tags[k].value.val_array_bool.length,
+                           sizeof(bool));
                 memcpy(cmd->groups[i].tags[k].value.value.bools.bools,
                        req->groups[i].tags[k].value.val_array_bool.bools,
                        sizeof(bool) *
@@ -723,8 +723,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                     req->groups[i].tags[k].value.val_array_str.length;
 
                 cmd->groups[i].tags[k].value.value.strs.strs =
-                    calloc(sizeof(char *),
-                           req->groups[i].tags[k].value.val_array_str.length);
+                    calloc(req->groups[i].tags[k].value.val_array_str.length,
+                           sizeof(char *));
                 for (size_t j = 0;
                      j < req->groups[i].tags[k].value.val_array_str.length;
                      j++) {
@@ -865,7 +865,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         }
 
         if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
-            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
+            for (size_t j = 0; j < api_res.tags[i].value.val_array_str.length;
                  j++) {
                 free(api_res.tags[i].value.val_array_str.p_strs[j]);
             }
@@ -1013,7 +1013,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
         }
 
         if (api_res.tags[i].t == NEU_JSON_ARRAY_STR) {
-            for (int j = 0; j < api_res.tags[i].value.val_array_str.length;
+            for (size_t j = 0; j < api_res.tags[i].value.val_array_str.length;
                  j++) {
                 free(api_res.tags[i].value.val_array_str.p_strs[j]);
             }
