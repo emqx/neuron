@@ -713,8 +713,8 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                     req->groups[i].tags[k].value.val_array_bool.length;
 
                 cmd->groups[i].tags[k].value.value.bools.bools =
-                    calloc(sizeof(bool),
-                           req->groups[i].tags[k].value.val_array_bool.length);
+                    calloc(req->groups[i].tags[k].value.val_array_bool.length,
+                           sizeof(bool));
                 memcpy(cmd->groups[i].tags[k].value.value.bools.bools,
                        req->groups[i].tags[k].value.val_array_bool.bools,
                        sizeof(bool) *
