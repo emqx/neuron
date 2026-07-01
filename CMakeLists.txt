@@ -42,6 +42,8 @@ endif(USE_GCOV)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O0")
+add_compile_options(-fstack-protector-strong)
+add_link_options(-fstack-protector-strong)
 
 if(NOT DISABLE_ASAN)
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fsanitize=address")
