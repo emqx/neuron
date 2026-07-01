@@ -41,6 +41,7 @@ if(USE_GCOV)
 endif(USE_GCOV)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=format-truncation")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O0")
 add_compile_options(-fstack-protector-strong)
 add_link_options(-fstack-protector-strong)
