@@ -582,6 +582,11 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         }
 
         for (size_t i = 0; i < wr->n_tags; i++) {
+            if (wr->tags[i]->name == NULL || wr->tags[i]->value == NULL) {
+                plog_error(plugin, "write request tag missing name/value");
+                model__write_request__free_unpacked(wr, NULL);
+                return;
+            }
             if (strlen(wr->tags[i]->name) >= NEU_TAG_NAME_LEN) {
                 plog_error(plugin, "tag name too long");
                 model__write_request__free_unpacked(wr, NULL);

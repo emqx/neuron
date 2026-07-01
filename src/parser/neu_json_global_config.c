@@ -239,7 +239,12 @@ int neu_json_decode_global_config_req_subscriptions(
 
         json_t *grp_array = json_object_get(sub_obj, "groups");
         for (size_t j = 0; j < json_array_size(grp_array); ++j) {
-            p->app = strdup(json_string_value(app_obj));
+            const char *app_str = json_string_value(app_obj);
+            if (NULL == app_str) {
+                nlog_error("`app` field is not a string");
+                goto error;
+            }
+            p->app = strdup(app_str);
             if (NULL == p->app) {
                 nlog_error("strdup fail");
                 goto error;
@@ -318,7 +323,12 @@ int neu_json_decode_global_config_req_settings(
             goto error;
         }
 
-        p->node = strdup(json_string_value(node_obj));
+        const char *node_str = json_string_value(node_obj);
+        if (NULL == node_str) {
+            nlog_error("`node` field is not a string");
+            goto error;
+        }
+        p->node = strdup(node_str);
         if (NULL == p->node) {
             nlog_error("strdup fail");
             goto error;
