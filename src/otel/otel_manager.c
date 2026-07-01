@@ -1186,10 +1186,12 @@ void neu_otel_set_config(void *config)
     otel_control_flag = req->control_flag;
     otel_data_flag    = req->data_flag;
     if (req->collector_url) {
-        strcpy(otel_collector_url, req->collector_url);
+        snprintf(otel_collector_url, sizeof(otel_collector_url), "%s",
+                 req->collector_url);
     }
     if (req->service_name) {
-        strcpy(otel_service_name, req->service_name);
+        snprintf(otel_service_name, sizeof(otel_service_name), "%s",
+                 req->service_name);
     }
     otel_data_sample_rate = req->data_sample_rate;
 
