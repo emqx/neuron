@@ -40,7 +40,7 @@ size_t calcDecodeLength(const char *b64input)
 { // Calculates the length of a decoded string
     size_t len = strlen(b64input), padding = 0;
 
-    if (0 == len) {
+    if (len < 4) {
         return 0;
     }
 
@@ -57,8 +57,11 @@ int Base64Decode(const char *b64message, unsigned char **buffer, int *length)
 { // Decodes a base64 encoded string
     BIO *bio, *b64;
 
-    int decodeLen        = calcDecodeLength(b64message);
-    *buffer              = (unsigned char *) malloc(decodeLen + 1);
+    int decodeLen = calcDecodeLength(b64message);
+    *buffer       = (unsigned char *) malloc(decodeLen + 1);
+    if (NULL == *buffer) {
+        return -1;
+    }
     (*buffer)[decodeLen] = '\0';
 
     bio = BIO_new_mem_buf(b64message, -1);
