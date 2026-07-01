@@ -110,7 +110,6 @@ int neu_parse_param(const char *buf, char **err_param, int n,
     int             ret = 0;
 
     if (neu_json_decode_value(json, &params_ele) != 0) {
-        neu_json_decode_free(json);
         if (err_param) {
             *err_param = strdup("params");
         }
