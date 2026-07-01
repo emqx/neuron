@@ -20,6 +20,7 @@
 #include <libxml/tree.h>
 
 #include "utils/log.h"
+#include "utils/neu_path.h"
 #include "utils/tpy.h"
 
 static int parse_vars(xmlNode *xml_ied, tpy_t *tpy);
@@ -27,7 +28,14 @@ static int parse_vars(xmlNode *xml_ied, tpy_t *tpy);
 int neu_tpy_parse(const char *path, tpy_t *tpy)
 {
     memset(tpy, 0, sizeof(tpy_t));
-    xmlDoc *doc = xmlReadFile(path, NULL, 0);
+    char *safe_path = neu_path_confine(NULL, path);
+    if (safe_path == NULL) {
+        nlog_warn("reject tpy file path outside working dir: %s", path);
+        return -1;
+    }
+    // XML_PARSE_NONET blocks network access for external entities/DTDs (XXE).
+    xmlDoc *doc = xmlReadFile(safe_path, NULL, XML_PARSE_NONET);
+    free(safe_path);
     if (doc == NULL) {
         nlog_warn("Failed to read tpy file %s", path);
         return -1;
@@ -101,7 +109,8 @@ static int parse_vars(xmlNode *xml_ied, tpy_t *tpy)
                             attr, (const xmlChar *) "TaskPrio");
 
                         snprintf(static_name, sizeof(static_name), "%s_%s",
-                                 name_static, name_task);
+                                 name_static != NULL ? name_static : "",
+                                 name_task != NULL ? name_task : "");
                         strncpy(tpy_var.name, content,
                                 sizeof(tpy_var.name) - 1);
                         xmlFree(name_static);
