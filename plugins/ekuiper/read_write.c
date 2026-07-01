@@ -204,7 +204,8 @@ void recv_data_callback(void *arg)
     body_str = nng_msg_body(msg);
     body_len = nng_msg_len(msg);
 
-    if (*(uint8_t *) body_str == 0x0A && *(uint8_t *) (body_str + 1) == 0xCE) {
+    if (body_len >= 26 && *(uint8_t *) body_str == 0x0A &&
+        *(uint8_t *) (body_str + 1) == 0xCE) {
         // trace
         trace_id   = (uint8_t *) (body_str + 2);
         span_id    = (uint8_t *) (body_str + 18);
