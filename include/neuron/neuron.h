@@ -38,6 +38,7 @@ extern "C" {
 #include "utils/zlog.h"
 
 #include "utils/neu_jwt.h"
+#include "utils/neu_path.h"
 #include "utils/time.h"
 #include "utils/utarray.h"
 #include "utils/utextend.h"

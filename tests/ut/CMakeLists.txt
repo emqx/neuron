@@ -93,13 +93,11 @@ target_include_directories(mqtt_schema_test PRIVATE
 )
 target_link_libraries(mqtt_schema_test neuron-base gtest_main gtest)
 
+file(COPY ${CMAKE_SOURCE_DIR}/tests/ut/EDE_test.csv DESTINATION ${UT_DIRECTORY}/config)
 add_executable(ede_test ede_test.cc ${CMAKE_SOURCE_DIR}/src/utils/ede.c)
 target_include_directories(ede_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include
-)
-target_compile_definitions(ede_test PRIVATE
-	EDE_TEST_FILE_PATH="${CMAKE_SOURCE_DIR}/tests/EDE_test.csv"
 )
 target_link_libraries(ede_test neuron-base gtest_main gtest)
 

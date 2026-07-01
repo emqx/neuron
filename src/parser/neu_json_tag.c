@@ -259,7 +259,7 @@ int neu_json_decode_tag_array_json(void *json_obj, neu_json_tag_array_t *arr)
     return 0;
 
 decode_fail:
-    while (--i > 0) {
+    while (i-- > 0) {
         neu_json_decode_tag_fini(&tags[i]);
     }
     free(tags);
@@ -595,7 +595,7 @@ int neu_json_decode_gtag_array_json(void *json_obj, neu_json_gtag_array_t *arr)
     return 0;
 
 decode_fail:
-    while (--i > 0) {
+    while (i-- > 0) {
         neu_json_decode_gtag_fini(&gtags[i]);
     }
     free(gtags);
@@ -814,6 +814,10 @@ int neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result)
     }
 
     req->tags = calloc(req->n_tags, sizeof(neu_json_del_tags_req_name_t));
+    if (NULL == req->tags) {
+        req->n_tags = 0;
+        goto decode_fail;
+    }
     neu_json_del_tags_req_name_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tags; i++) {
         neu_json_elem_t id_elems[] = { {

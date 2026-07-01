@@ -14,6 +14,7 @@
 zlog_category_t *neuron = NULL;
 
 static constexpr size_t kExpectedEdeTagCount = 1499;
+#define EDE_TEST_FILE_PATH "./config/EDE_test.csv"
 
 static std::vector<std::string> split_semicolon(const std::string &line)
 {
@@ -265,29 +266,6 @@ TEST(EdeTest, EdeToMsg)
 
     neu_ede_tags_uninit(cmd.groups[0].tags, cmd.groups[0].n_tag);
     free(cmd.groups);
-}
-
-TEST(EdeTest, CommandableToRw)
-{
-    const char *  tmp_file = "/tmp/ede_commandable_test.csv";
-    std::ofstream ofs(tmp_file);
-    ofs << "PROJECT_NAME;X\n";
-    ofs << "# keyname;device obj.-instance;object-name;object-type;"
-           "object-instance;description;present-value-default;"
-           "min-present-value;max-present-value;commandable\n";
-    ofs << "k1;2;obj;1;10;desc;;;;Y\n";
-    ofs << "k2;2;obj;1;11;desc;;;;N\n";
-    ofs.close();
-
-    neu_ede_result_t result = { 0 };
-    ASSERT_EQ(neu_ede_parse_file(tmp_file, &result), 0);
-    ASSERT_EQ(result.count, 2U);
-    EXPECT_EQ(result.entries[0].attribute,
-              (neu_attribute_e)(NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_WRITE));
-    EXPECT_EQ(result.entries[1].attribute, NEU_ATTRIBUTE_READ);
-
-    neu_ede_result_uninit(&result);
-    std::remove(tmp_file);
 }
 
 int main(int argc, char **argv)

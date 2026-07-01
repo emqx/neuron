@@ -41,9 +41,11 @@ static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states)
     char *                 json_str = NULL;
 
     json.n_state = utarray_len(states);
-    json.states  = calloc(json.n_state, sizeof(neu_json_node_state_t));
-    if (NULL == json.states) {
-        return NULL;
+    if (json.n_state > 0) {
+        json.states = calloc(json.n_state, sizeof(neu_json_node_state_t));
+        if (NULL == json.states) {
+            return NULL;
+        }
     }
 
     utarray_foreach(states, neu_nodes_state_t *, state)
@@ -210,6 +212,10 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         json_req.add_gtag.n_group    = add_gtag->n_group;
         json_req.add_gtag.groups =
             calloc(add_gtag->n_group, sizeof(*json_req.add_gtag.groups));
+        if (NULL == json_req.add_gtag.groups) {
+            plog_error(plugin, "calloc fail");
+            break;
+        }
         for (u_int16_t i = 0; i < add_gtag->n_group; i++) {
             json_req.add_gtag.groups[i].group =
                 strdup(add_gtag->groups[i].group);
@@ -218,6 +224,10 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
             json_req.add_gtag.groups[i].tags =
                 calloc(add_gtag->groups[i].n_tag,
                        sizeof(*json_req.add_gtag.groups->tags));
+            if (NULL == json_req.add_gtag.groups[i].tags) {
+                plog_error(plugin, "calloc fail");
+                break;
+            }
             for (u_int16_t j = 0; j < add_gtag->groups[i].n_tag; j++) {
                 json_req.add_gtag.groups[i].tags[j].type =
                     add_gtag->groups[i].tags[j].type;
@@ -239,7 +249,11 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         neu_json_encode_by_fn(&json_req, neu_json_encode_add_gtags_req,
                               &json_str);
 
-        free(json_req.add_tags.tags);
+        for (u_int16_t i = 0; i < add_gtag->n_group; i++) {
+            free(json_req.add_gtag.groups[i].group);
+            free(json_req.add_gtag.groups[i].tags);
+        }
+        free(json_req.add_gtag.groups);
         break;
     }
     case NEU_REQ_ADD_PLUGIN_EVENT: {
