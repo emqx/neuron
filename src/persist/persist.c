@@ -117,19 +117,23 @@ int read_file_string(const char *fn, char **out)
     }
 
     // read all file content
-    ssize_t n = 0;
-    while ((n = read(fd, buf + n, fsize))) {
-        if (fsize == n) {
-            break;
-        } else if (n < fsize && EINTR == errno) {
-            continue;
-        } else {
+    ssize_t total = 0;
+    while (total < fsize) {
+        ssize_t n = read(fd, buf + total, fsize - total);
+        if (n < 0) {
+            if (EINTR == errno) {
+                continue;
+            }
             rv = -1;
             goto error_read;
         }
+        if (0 == n) {
+            break; // EOF before the expected size
+        }
+        total += n;
     }
 
-    buf[fsize] = 0;
+    buf[total] = 0;
     *out       = buf;
     close(fd);
     return rv;

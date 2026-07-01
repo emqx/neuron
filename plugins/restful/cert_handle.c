@@ -872,7 +872,9 @@ void handle_get_server_security_policy_resp(
     if (resp->policy_name != NULL && strlen(resp->policy_name) > 0) {
         // Split policy names by comma
         char *token = strtok(resp->policy_name, ",");
-        while (token != NULL) {
+        while (token != NULL &&
+               policy_count <
+                   (int) (sizeof(policy_names) / sizeof(policy_names[0]))) {
             policy_names[policy_count] = strdup(token);
             policy_count++;
             token = strtok(NULL, ",");
