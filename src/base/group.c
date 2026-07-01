@@ -49,8 +49,15 @@ static void      update_timestamp(neu_group_t *group);
 neu_group_t *neu_group_new(const char *name, uint32_t interval)
 {
     neu_group_t *group = calloc(1, sizeof(neu_group_t));
+    if (NULL == group) {
+        return NULL;
+    }
 
-    group->name     = strdup(name);
+    group->name = strdup(name);
+    if (NULL == group->name) {
+        free(group);
+        return NULL;
+    }
     group->interval = interval;
     pthread_mutex_init(&group->mtx, NULL);
 
@@ -128,9 +135,22 @@ int neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag)
         return NEU_ERR_TAG_NAME_CONFLICT;
     }
 
-    el       = calloc(1, sizeof(tag_elem_t));
+    el = calloc(1, sizeof(tag_elem_t));
+    if (NULL == el) {
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_EINTERNAL;
+    }
     el->name = strdup(tag->name);
     el->tag  = neu_tag_dup(tag);
+    if (NULL == el->name || NULL == el->tag) {
+        free(el->name);
+        if (el->tag) {
+            neu_tag_free(el->tag);
+        }
+        free(el);
+        pthread_mutex_unlock(&group->mtx);
+        return NEU_ERR_EINTERNAL;
+    }
 
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);

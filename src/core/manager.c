@@ -31,6 +31,7 @@
 #include "utils/base64.h"
 #include "utils/http.h"
 #include "utils/log.h"
+#include "utils/neu_path.h"
 #include "utils/time.h"
 
 #include "adapter.h"
@@ -302,6 +303,21 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_plugin_kind_e     kind       = -1;
         char                  schema[64] = { 0 };
         char                  buffer[65] = { 0 };
+
+        // The library name is used to build a path under the plugin dir; reject
+        // any name with a path separator or '..' so it cannot escape that dir.
+        if (!neu_path_is_valid_component(cmd->library)) {
+            nlog_warn("reject library name with path separator: %s",
+                      cmd->library);
+            free(cmd->so_file);
+            free(cmd->schema_file);
+            header->type = NEU_RESP_ERROR;
+            e.error      = NEU_ERR_LIBRARY_NAME_NOT_CONFORM;
+            snprintf(header->receiver, sizeof(header->receiver), "%s",
+                     header->sender);
+            reply(manager, header, &e);
+            break;
+        }
 
         if (sscanf(cmd->library, "libplugin-%64s.so", buffer) != 1) {
             nlog_warn("library %s no conform", cmd->library);

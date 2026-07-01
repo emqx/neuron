@@ -706,7 +706,9 @@ void handle_put_node_tag(nng_aio *aio)
                 header.ctx                       = aio;
                 header.type                      = NEU_REQ_UPDATE_NODE_TAG;
                 strncpy(cmd.node, req->name, NEU_NODE_NAME_LEN - 1);
-                strncpy(cmd.tags, req->tags, NEU_NODE_TAGS_LEN - 1);
+                if (req->tags != NULL) {
+                    strncpy(cmd.tags, req->tags, NEU_NODE_TAGS_LEN - 1);
+                }
                 int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {

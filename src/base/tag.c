@@ -99,6 +99,9 @@ UT_icd *neu_tag_get_icd()
 neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag)
 {
     neu_datatag_t *new = calloc(1, sizeof(*new));
+    if (NULL == new) {
+        return NULL;
+    }
     tag_array_copy(new, tag);
     return new;
 }
