@@ -18,6 +18,7 @@
  **/
 
 #include <math.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -546,6 +547,13 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         } else if (json_is_object(ob)) {
             ele->t = NEU_JSON_OBJECT;
         }
+    }
+
+    if (json_is_array(ob) && json_array_size(ob) > UINT16_MAX) {
+        ele->ok = false;
+        zlog_error(neuron, "json decode: array too long (%zu elements)",
+                   json_array_size(ob));
+        return -1;
     }
 
     ele->ok = true;
