@@ -283,10 +283,13 @@ typedef struct {
 
 static int find_da_basic_type(cid_template_t *template, const char *datype_id,
                               const char *seg_name, da_basic_type_t *da_types,
-                              int max)
+                              int max, int depth)
 {
     char name[NEU_CID_LEN64] = { 0 };
     int  index               = 0;
+    if (depth > 32) {
+        return 0;
+    }
     for (int i = 0; i < template->n_datypes; i++) {
         if (strcmp(template->datypes[i].id, datype_id) == 0) {
             for (int j = 0; j < template->datypes[i].n_bdas; j++) {
@@ -303,7 +306,7 @@ static int find_da_basic_type(cid_template_t *template, const char *datype_id,
                 if (template->datypes[i].bdas[j].btype == Struct) {
                     index += find_da_basic_type(
                         template, template->datypes[i].bdas[j].ref_type, name,
-                        da_types + index, max - index);
+                        da_types + index, max - index, depth + 1);
                 } else {
                     snprintf(da_types[index].all_name,
                              sizeof(da_types[index].all_name), "%s", name);
@@ -350,7 +353,7 @@ static int find_basic_type(cid_template_t *template, const char *type_id,
         da_basic_type_t da_types[32] = { 0 };
         int             n_da_types   = find_da_basic_type(
             template, dotype->das[i].ref_type, dotype->das[i].name, da_types,
-            (int) (sizeof(da_types) / sizeof(da_types[0])));
+            (int) (sizeof(da_types) / sizeof(da_types[0])), 0);
         for (int j = 0; j < n_da_types; j++) {
             if (strlen(da_name) > 0) {
                 if (strcmp(da_types[j].all_name, da_name) == 0) {
@@ -479,7 +482,7 @@ static void update_doi(const char *ref_type, cid_doi_t *dois, int n_dois,
             da_basic_type_t da_types[32] = { 0 };
             int             n_da_types   = find_da_basic_type(
                 template, tm_do->das[k].ref_type, tm_do->das[k].name, da_types,
-                (int) (sizeof(da_types) / sizeof(da_types[0])));
+                (int) (sizeof(da_types) / sizeof(da_types[0])), 0);
 
             if (da->fc == SP || da->fc == SG) {
                 for (int j = 0; j < n_da_types; j++) {
