@@ -365,8 +365,8 @@ void handle_write(nng_aio *aio)
                 cmd.value.value.strs.strs =
                     calloc(req->value.val_array_str.length, sizeof(char *));
                 for (size_t i = 0; i < req->value.val_array_str.length; i++) {
-                    cmd.value.value.strs.strs[i] =
-                        strdup(req->value.val_array_str.p_strs[i]);
+                    const char *s = req->value.val_array_str.p_strs[i];
+                    cmd.value.value.strs.strs[i] = strdup(s ? s : "");
                 }
                 break;
             case NEU_JSON_OBJECT:
@@ -588,8 +588,10 @@ void handle_write_tags(nng_aio *aio)
                                sizeof(char *));
                     for (size_t k = 0;
                          k < req->tags[i].value.val_array_str.length; k++) {
+                        const char *s =
+                            req->tags[i].value.val_array_str.p_strs[k];
                         cmd.tags[i].value.value.strs.strs[k] =
-                            strdup(req->tags[i].value.val_array_str.p_strs[k]);
+                            strdup(s ? s : "");
                     }
                     break;
                 case NEU_JSON_OBJECT:
@@ -732,8 +734,10 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                 for (size_t j = 0;
                      j < req->groups[i].tags[k].value.val_array_str.length;
                      j++) {
-                    cmd->groups[i].tags[k].value.value.strs.strs[j] = strdup(
-                        req->groups[i].tags[k].value.val_array_str.p_strs[j]);
+                    const char *s =
+                        req->groups[i].tags[k].value.val_array_str.p_strs[j];
+                    cmd->groups[i].tags[k].value.value.strs.strs[j] =
+                        strdup(s ? s : "");
                 }
 
                 break;
