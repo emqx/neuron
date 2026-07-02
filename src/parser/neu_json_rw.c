@@ -591,6 +591,12 @@ static int decode_write_tags_req_json(void *                     json_obj,
     }
 
     req->tags = calloc(req->n_tag, sizeof(neu_json_write_tags_elem_t));
+    if (NULL == req->tags) {
+        req->n_tag = 0;
+        free(req->node);
+        free(req->group);
+        return -1;
+    }
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t v_elems[] = {
             {
@@ -1299,6 +1305,11 @@ static int decode_write_gtags_req_json(void *                      json_obj,
     }
 
     req->groups = calloc(req->n_group, sizeof(neu_json_write_gtags_elem_t));
+    if (NULL == req->groups) {
+        req->n_group = 0;
+        free(req->node);
+        return -1;
+    }
     for (int i = 0; i < req->n_group; i++) {
         neu_json_elem_t g_elems[] = {
             {
@@ -1313,6 +1324,13 @@ static int decode_write_gtags_req_json(void *                      json_obj,
 
         ret = neu_json_decode_array_by_json(
             json_obj, "groups", i, NEU_JSON_ELEM_SIZE(g_elems), g_elems);
+        if (ret != 0) {
+            for (int x = i - 1; x >= 0; x--) {
+                free(req->groups[x].tags);
+            }
+            free(req->groups);
+            return -1;
+        }
 
         req->groups[i].group = g_elems[0].v.val_str;
         req->groups[i].n_tag = json_array_size(g_elems[1].v.val_object);
@@ -1322,6 +1340,14 @@ static int decode_write_gtags_req_json(void *                      json_obj,
 
         req->groups[i].tags =
             calloc(req->groups[i].n_tag, sizeof(neu_json_write_tags_elem_t));
+        if (NULL == req->groups[i].tags) {
+            req->groups[i].n_tag = 0;
+            for (int x = i - 1; x >= 0; x--) {
+                free(req->groups[x].tags);
+            }
+            free(req->groups);
+            return -1;
+        }
 
         for (int k = 0; k < req->groups[i].n_tag; k++) {
             neu_json_elem_t v_elems[] = {

@@ -532,12 +532,15 @@ int neu_sqlite_persister_load_nodes(neu_persister_t *self,
     int step = sqlite3_step(stmt);
     while (SQLITE_ROW == step) {
         neu_persist_node_info_t info = {};
-        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        const char *name_txt = (const char *) sqlite3_column_text(stmt, 0);
+        char *      name     = name_txt ? strdup(name_txt) : NULL;
         if (NULL == name) {
             break;
         }
 
-        char *plugin_name = strdup((char *) sqlite3_column_text(stmt, 3));
+        const char *plugin_name_txt =
+            (const char *) sqlite3_column_text(stmt, 3);
+        char *plugin_name = plugin_name_txt ? strdup(plugin_name_txt) : NULL;
         if (NULL == plugin_name) {
             free(name);
             break;
@@ -925,12 +928,16 @@ int neu_sqlite_persister_load_subscriptions(neu_persister_t *self,
 
     int step = sqlite3_step(stmt);
     while (SQLITE_ROW == step) {
-        char *driver_name = strdup((char *) sqlite3_column_text(stmt, 0));
+        const char *driver_name_txt =
+            (const char *) sqlite3_column_text(stmt, 0);
+        char *driver_name = driver_name_txt ? strdup(driver_name_txt) : NULL;
         if (NULL == driver_name) {
             break;
         }
 
-        char *group_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        const char *group_name_txt =
+            (const char *) sqlite3_column_text(stmt, 1);
+        char *group_name = group_name_txt ? strdup(group_name_txt) : NULL;
         if (NULL == group_name) {
             free(driver_name);
             break;
@@ -1045,7 +1052,8 @@ static int collect_group_info(sqlite3_stmt *stmt, UT_array **group_infos)
     int step = sqlite3_step(stmt);
     while (SQLITE_ROW == step) {
         neu_persist_group_info_t info = {};
-        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        const char *name_txt = (const char *) sqlite3_column_text(stmt, 0);
+        char *      name     = name_txt ? strdup(name_txt) : NULL;
         if (NULL == name) {
             break;
         }
@@ -1161,7 +1169,8 @@ int neu_sqlite_persister_load_node_setting(neu_persister_t *  self,
         goto end;
     }
 
-    char *s = strdup((char *) sqlite3_column_text(stmt, 0));
+    const char *setting_txt = (const char *) sqlite3_column_text(stmt, 0);
+    char *      s           = setting_txt ? strdup(setting_txt) : NULL;
     if (NULL == s) {
         nlog_error("strdup fail");
         rv = NEU_ERR_EINTERNAL;
@@ -1194,14 +1203,17 @@ static int collect_user_info(sqlite3_stmt *stmt, UT_array **user_infos)
     int step = sqlite3_step(stmt);
     while (SQLITE_ROW == step) {
         neu_persist_user_info_t info = {};
-        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        const char *name_txt = (const char *) sqlite3_column_text(stmt, 0);
+        char *      name     = name_txt ? strdup(name_txt) : NULL;
         if (NULL == name) {
             break;
         }
 
-        info.name = name;
-        info.hash = strdup((char *) sqlite3_column_text(stmt, 1));
+        info.name            = name;
+        const char *hash_txt = (const char *) sqlite3_column_text(stmt, 1);
+        info.hash            = hash_txt ? strdup(hash_txt) : NULL;
         if (NULL == info.hash) {
+            free(name);
             break;
         }
         utarray_push_back(*user_infos, &info);
@@ -1296,7 +1308,8 @@ int neu_sqlite_persister_load_user(neu_persister_t *self, const char *user_name,
         goto error;
     }
 
-    user->hash = strdup((char *) sqlite3_column_text(stmt, 0));
+    const char *hash_txt = (const char *) sqlite3_column_text(stmt, 0);
+    user->hash           = hash_txt ? strdup(hash_txt) : NULL;
     if (NULL == user->hash) {
         nlog_error("strdup fail");
         goto error;
@@ -1435,8 +1448,10 @@ int neu_sqlite_persister_load_server_cert(
 
     // Read all fields
     cert_info->id          = sqlite3_column_int(stmt, 0);
-    cert_info->app_name    = strdup((char *) sqlite3_column_text(stmt, 1));
-    cert_info->common_name = strdup((char *) sqlite3_column_text(stmt, 2));
+    char *app_name_db      = (char *) sqlite3_column_text(stmt, 1);
+    cert_info->app_name    = app_name_db ? strdup(app_name_db) : NULL;
+    char *common_name      = (char *) sqlite3_column_text(stmt, 2);
+    cert_info->common_name = common_name ? strdup(common_name) : NULL;
 
     char *subject      = (char *) sqlite3_column_text(stmt, 3);
     cert_info->subject = subject ? strdup(subject) : NULL;
@@ -1497,13 +1512,16 @@ static int collect_client_cert_info(sqlite3_stmt *stmt, UT_array **cert_infos)
 
         info.id = sqlite3_column_int(stmt, 0);
 
-        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        const char *app_name_col = (const char *) sqlite3_column_text(stmt, 1);
+        char *      app_name     = app_name_col ? strdup(app_name_col) : NULL;
         if (NULL == app_name) {
             break;
         }
         info.app_name = app_name;
 
-        char *common_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        const char *common_name_col =
+            (const char *) sqlite3_column_text(stmt, 2);
+        char *common_name = common_name_col ? strdup(common_name_col) : NULL;
         if (NULL == common_name) {
             free(app_name);
             break;
@@ -1792,7 +1810,8 @@ int neu_sqlite_persister_load_security_policy(
 
         info->id = sqlite3_column_int(stmt, 0);
 
-        char *app_name_col = strdup((char *) sqlite3_column_text(stmt, 1));
+        const char *app_name_txt = (const char *) sqlite3_column_text(stmt, 1);
+        char *      app_name_col = app_name_txt ? strdup(app_name_txt) : NULL;
         if (NULL == app_name_col) {
             free(info);
             sqlite3_finalize(stmt);
@@ -1800,7 +1819,9 @@ int neu_sqlite_persister_load_security_policy(
         }
         info->app_name = app_name_col;
 
-        char *policy_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        const char *policy_name_txt =
+            (const char *) sqlite3_column_text(stmt, 2);
+        char *policy_name = policy_name_txt ? strdup(policy_name_txt) : NULL;
         if (NULL == policy_name) {
             free(info->app_name);
             free(info);
@@ -1853,13 +1874,16 @@ static int collect_security_policy_info(sqlite3_stmt *stmt,
 
         info.id = sqlite3_column_int(stmt, 0);
 
-        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        const char *app_name_txt = (const char *) sqlite3_column_text(stmt, 1);
+        char *      app_name     = app_name_txt ? strdup(app_name_txt) : NULL;
         if (NULL == app_name) {
             break;
         }
         info.app_name = app_name;
 
-        char *policy_name = strdup((char *) sqlite3_column_text(stmt, 2));
+        const char *policy_name_txt =
+            (const char *) sqlite3_column_text(stmt, 2);
+        char *policy_name = policy_name_txt ? strdup(policy_name_txt) : NULL;
         if (NULL == policy_name) {
             free(app_name);
             break;
@@ -1981,7 +2005,8 @@ int neu_sqlite_persister_load_auth_setting(
     auth_info->id      = sqlite3_column_int(stmt, 0);
     auth_info->enabled = sqlite3_column_int(stmt, 2);
 
-    auth_info->app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+    const char *auth_app_name = (const char *) sqlite3_column_text(stmt, 1);
+    auth_info->app_name       = auth_app_name ? strdup(auth_app_name) : NULL;
     if (NULL == auth_info->app_name) {
         nlog_error("strdup fail");
         goto error;
@@ -2018,20 +2043,25 @@ static int collect_auth_user_info(sqlite3_stmt *stmt, UT_array **user_infos)
 
         info.id = sqlite3_column_int(stmt, 0);
 
-        char *app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        const char *app_name_txt = (const char *) sqlite3_column_text(stmt, 1);
+        char *      app_name     = app_name_txt ? strdup(app_name_txt) : NULL;
         if (NULL == app_name) {
             break;
         }
         info.app_name = app_name;
 
-        char *username = strdup((char *) sqlite3_column_text(stmt, 2));
+        const char *username_txt = (const char *) sqlite3_column_text(stmt, 2);
+        char *      username     = username_txt ? strdup(username_txt) : NULL;
         if (NULL == username) {
             free(app_name);
             break;
         }
         info.username = username;
 
-        char *password_hash = strdup((char *) sqlite3_column_text(stmt, 3));
+        const char *password_hash_txt =
+            (const char *) sqlite3_column_text(stmt, 3);
+        char *password_hash =
+            password_hash_txt ? strdup(password_hash_txt) : NULL;
         if (NULL == password_hash) {
             free(app_name);
             free(username);
@@ -2124,19 +2154,23 @@ int neu_sqlite_persister_load_auth_user(
 
     user_info->id = sqlite3_column_int(stmt, 0);
 
-    user_info->app_name = strdup((char *) sqlite3_column_text(stmt, 1));
+    const char *ui_app_name = (const char *) sqlite3_column_text(stmt, 1);
+    user_info->app_name     = ui_app_name ? strdup(ui_app_name) : NULL;
     if (NULL == user_info->app_name) {
         nlog_error("strdup fail");
         goto error;
     }
 
-    user_info->username = strdup((char *) sqlite3_column_text(stmt, 2));
+    const char *ui_username = (const char *) sqlite3_column_text(stmt, 2);
+    user_info->username     = ui_username ? strdup(ui_username) : NULL;
     if (NULL == user_info->username) {
         nlog_error("strdup fail");
         goto error;
     }
 
-    user_info->password_hash = strdup((char *) sqlite3_column_text(stmt, 3));
+    const char *ui_password_hash = (const char *) sqlite3_column_text(stmt, 3);
+    user_info->password_hash =
+        ui_password_hash ? strdup(ui_password_hash) : NULL;
     if (NULL == user_info->password_hash) {
         nlog_error("strdup fail");
         goto error;

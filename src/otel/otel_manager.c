@@ -785,7 +785,15 @@ void neu_otel_scope_set_parent_span_id2(neu_otel_scope_ctx ctx,
 {
     trace_scope_t *scope = (trace_scope_t *) ctx;
 
+    if (len < 0) {
+        len = 0;
+    } else if (len > 8) {
+        len = 8; // parent_span_id buffer is 8 bytes
+    }
     uint8_t *p_sp_id = calloc(1, 8);
+    if (NULL == p_sp_id) {
+        return;
+    }
     memcpy(p_sp_id, parent_span_id, len);
     scope->span->parent_span_id.len  = len;
     scope->span->parent_span_id.data = p_sp_id;
@@ -1035,6 +1043,13 @@ void neu_otel_split_traceparent(const char *in, char *trace_id, char *span_id,
 
     const size_t trace_id_cap = 64;
     const size_t span_id_cap  = 32;
+
+    if (NULL == copy) {
+        trace_id[0] = '\0';
+        span_id[0]  = '\0';
+        *flags      = 0;
+        return;
+    }
 
     token = strtok_r(copy, delimiter, &saveptr);
 

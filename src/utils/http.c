@@ -67,6 +67,9 @@ ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size)
     size_t       i = 0, j = 0;
     int          n = 0;
     unsigned int c;
+    if (size == 0) {
+        return -1;
+    }
     while (i < len && j < size) {
         c = s[i++];
         if ('+' == c) {
