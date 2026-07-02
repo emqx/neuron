@@ -601,9 +601,8 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
             for (int i = 0; i < ele->v.val_array_str.length; i++) {
                 json_t *    value   = json_array_get(ob, i);
                 const char *str_val = json_string_value(value);
-                if (str_val != NULL) {
-                    ele->v.val_array_str.p_strs[i] = strdup(str_val);
-                }
+                ele->v.val_array_str.p_strs[i] =
+                    strdup(str_val != NULL ? str_val : "");
             }
         }
 
