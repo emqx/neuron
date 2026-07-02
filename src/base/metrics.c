@@ -76,7 +76,7 @@ static void find_os_info()
     }
     buf[strcspn(buf, "\n")] = 0;
     strncpy(g_metrics_.machine, buf, sizeof(g_metrics_.machine));
-    g_metrics_.kernel[sizeof(g_metrics_.machine) - 1] = 0;
+    g_metrics_.machine[sizeof(g_metrics_.machine) - 1] = 0;
 
     pclose(f);
 
@@ -87,6 +87,7 @@ static void find_os_info()
     strncpy(g_metrics_.clib, "glibc", sizeof(g_metrics_.clib));
     strncpy(g_metrics_.clib_version, gnu_get_libc_version(),
             sizeof(g_metrics_.clib_version));
+    g_metrics_.clib_version[sizeof(g_metrics_.clib_version) - 1] = 0;
 #endif
 }
 
@@ -96,7 +97,7 @@ static size_t parse_memory_fields(int col)
     char   buf[64] = {};
     size_t val     = 0;
 
-    sprintf(buf, "free -b | awk 'NR==2 {print $%i}'", col);
+    snprintf(buf, sizeof(buf), "free -b | awk 'NR==2 {print $%i}'", col);
 
     f = popen(buf, "r");
     if (NULL == f) {
@@ -131,7 +132,7 @@ static inline size_t neuron_memory_used()
     size_t val     = 0;
     pid_t  pid     = getpid();
 
-    sprintf(buf, "ps -o rss= %ld", (long) pid);
+    snprintf(buf, sizeof(buf), "ps -o rss= %ld", (long) pid);
 
     f = popen(buf, "r");
     if (NULL == f) {

@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "utils/ede.h"
+#include "utils/neu_path.h"
 
 typedef struct {
     int         object_type;
@@ -242,7 +243,12 @@ int neu_ede_parse_file(const char *file_path, neu_ede_result_t *result)
     result->entries = NULL;
     result->count   = 0;
 
-    fp = fopen(file_path, "r");
+    char *safe_path = neu_path_confine(NULL, file_path);
+    if (safe_path == NULL) {
+        return -1;
+    }
+    fp = fopen(safe_path, "r");
+    free(safe_path);
     if (fp == NULL) {
         return -1;
     }
@@ -357,6 +363,13 @@ int neu_ede_parse_file_to_tags(const char *file_path, neu_datatag_t **tags,
 
     if (neu_ede_parse_file(file_path, &result) != 0) {
         return -1;
+    }
+
+    if (result.count == 0) {
+        neu_ede_result_uninit(&result);
+        *tags  = NULL;
+        *count = 0;
+        return 0;
     }
 
     out = calloc(result.count, sizeof(neu_datatag_t));

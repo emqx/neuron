@@ -604,7 +604,12 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
             }
         }
 
-        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt = calloc(1, sizeof(neu_json_mqtt_t));
+        if (NULL == mqtt) {
+            plog_error(plugin, "calloc mqtt fail");
+            model__write_request__free_unpacked(wr, NULL);
+            return;
+        }
         mqtt->uuid        = strdup(wr->uuid);
         mqtt->payload     = NULL;
         mqtt->traceparent = NULL;
@@ -620,6 +625,14 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         cmd.n_tag   = wr->n_tags;
         if (cmd.n_tag > 0) {
             cmd.tags = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+            if (NULL == cmd.tags) {
+                plog_error(plugin, "calloc cmd.tags fail");
+                free(cmd.driver);
+                free(cmd.group);
+                neu_json_decode_mqtt_req_free(mqtt);
+                model__write_request__free_unpacked(wr, NULL);
+                return;
+            }
         }
 
         for (int i = 0; i < cmd.n_tag; i++) {
@@ -930,7 +943,12 @@ void handle_driver_action_req(neu_mqtt_qos_e qos, const char *topic,
             return;
         }
 
-        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt = calloc(1, sizeof(neu_json_mqtt_t));
+        if (NULL == mqtt) {
+            plog_error(plugin, "calloc mqtt fail");
+            model__driver_action_request__free_unpacked(dar, NULL);
+            return;
+        }
         mqtt->uuid        = strdup(dar->uuid);
         mqtt->payload     = NULL;
         mqtt->traceparent = NULL;
@@ -1004,7 +1022,12 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 
         neu_reqresp_head_t header = { 0 };
 
-        mqtt              = calloc(1, sizeof(neu_json_mqtt_t));
+        mqtt = calloc(1, sizeof(neu_json_mqtt_t));
+        if (NULL == mqtt) {
+            plog_error(plugin, "calloc mqtt fail");
+            model__read_request__free_unpacked(read_req, NULL);
+            return;
+        }
         mqtt->uuid        = strdup(read_req->uuid);
         mqtt->payload     = NULL;
         mqtt->traceparent = NULL;
@@ -1021,6 +1044,14 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
         cmd.n_tag  = read_req->n_tags;
         if (cmd.n_tag > 0) {
             cmd.tags = calloc(cmd.n_tag, sizeof(char *));
+            if (NULL == cmd.tags) {
+                plog_error(plugin, "calloc cmd.tags fail");
+                free(cmd.driver);
+                free(cmd.group);
+                neu_json_decode_mqtt_req_free(mqtt);
+                model__read_request__free_unpacked(read_req, NULL);
+                return;
+            }
         }
         for (int i = 0; i < cmd.n_tag; i++) {
             cmd.tags[i] = strdup(read_req->tags[i]);
@@ -1029,6 +1060,7 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
         if (0 != neu_plugin_op(plugin, header, &cmd)) {
             neu_req_read_group_fini(&cmd);
             plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail");
+            model__read_request__free_unpacked(read_req, NULL);
             return;
         }
 
