@@ -30,6 +30,7 @@
 #include "read_write.h"
 
 #define EKUIPER_PLUGIN_URL "tcp://127.0.0.1:7081"
+#define EKUIPER_PLUGIN_RECV_MAX_SIZE (4 * 1024 * 1024)
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -149,6 +150,8 @@ static inline int start(neu_plugin_t *plugin, const char *url)
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
     nng_socket_set_int(plugin->sock, NNG_OPT_SENDBUF, 2048);
     nng_socket_set_int(plugin->sock, NNG_OPT_RECVBUF, 2048);
+    nng_socket_set_size(plugin->sock, NNG_OPT_RECVMAXSZ,
+                        EKUIPER_PLUGIN_RECV_MAX_SIZE);
 
     if ((rv = nng_listen(plugin->sock, url, NULL, 0)) != 0) {
         plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
