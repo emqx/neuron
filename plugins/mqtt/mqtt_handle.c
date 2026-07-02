@@ -583,7 +583,9 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         }
 
         for (size_t i = 0; i < wr->n_tags; i++) {
-            if (wr->tags[i]->name == NULL || wr->tags[i]->value == NULL) {
+            if (wr->tags[i]->name == NULL ||
+                wr->tags[i]->item_case != MODEL__DATA_ITEM__ITEM_VALUE ||
+                wr->tags[i]->value == NULL) {
                 plog_error(plugin, "write request tag missing name/value");
                 model__write_request__free_unpacked(wr, NULL);
                 return;
