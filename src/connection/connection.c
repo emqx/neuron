@@ -1408,6 +1408,9 @@ int neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
 int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
                       neu_conn_process_msg fn)
 {
+    if (n_byte > conn->buf_size) {
+        n_byte = conn->buf_size;
+    }
     ssize_t                   ret  = neu_conn_recv(conn, conn->buf, n_byte);
     neu_protocol_unpack_buf_t pbuf = { 0 };
     conn->offset                   = 0;

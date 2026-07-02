@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,6 +58,11 @@ int Base64Decode(const char *b64message, unsigned char **buffer, int *length)
 { // Decodes a base64 encoded string
     BIO *bio, *b64;
 
+    // BIO_read() takes an int length; reject oversized input so neither the
+    // read length nor the derived decodeLen can overflow/truncate to int.
+    if (strlen(b64message) > INT_MAX) {
+        return -1;
+    }
     int decodeLen = calcDecodeLength(b64message);
     *buffer       = (unsigned char *) malloc(decodeLen + 1);
     if (NULL == *buffer) {
