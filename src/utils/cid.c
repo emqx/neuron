@@ -24,6 +24,7 @@
 #include "define.h"
 #include "utils/cid.h"
 #include "utils/log.h"
+#include "utils/neu_path.h"
 #include "json/json.h"
 
 static int parse_ied(xmlNode *xml_ied, cid_ied_t *ied);
@@ -40,7 +41,14 @@ static void fill_doi_ctls(cid_t *cid);
 int neu_cid_parse(const char *path, cid_t *cid)
 {
     memset(cid, 0, sizeof(cid_t));
-    xmlDoc *doc = xmlReadFile(path, NULL, 0);
+    char *safe_path = neu_path_confine(NULL, path);
+    if (safe_path == NULL) {
+        nlog_warn("reject icd file path outside working dir: %s", path);
+        return -1;
+    }
+    // XML_PARSE_NONET blocks network access for external entities/DTDs (XXE).
+    xmlDoc *doc = xmlReadFile(safe_path, NULL, XML_PARSE_NONET);
+    free(safe_path);
     if (doc == NULL) {
         nlog_warn("Failed to read icd file %s", path);
         return -1;
@@ -1059,8 +1067,14 @@ static int parse_template(xmlNode *xml_template, cid_template_t *template)
                             }
 
                             if (count != NULL) {
+                                int cnt = atoi(count);
+                                if (cnt < 0) {
+                                    cnt = 0;
+                                } else if (cnt > 255) {
+                                    cnt = 255; // array_size is uint8_t
+                                }
                                 tm_da->is_array   = true;
-                                tm_da->array_size = atoi(count);
+                                tm_da->array_size = (uint8_t) cnt;
                             } else {
                                 tm_da->is_array   = false;
                                 tm_da->array_size = 0;

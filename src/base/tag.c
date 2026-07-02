@@ -37,9 +37,9 @@ static void tag_array_copy(void *_dst, const void *_src)
     dst->decimal     = src->decimal;
     dst->bias        = src->bias;
     dst->option      = src->option;
-    dst->address     = strdup(src->address);
-    dst->name        = strdup(src->name);
-    dst->description = strdup(src->description);
+    dst->address     = strdup(src->address ? src->address : "");
+    dst->name        = strdup(src->name ? src->name : "");
+    dst->description = strdup(src->description ? src->description : "");
     if (src->unit == NULL) {
         dst->unit = strdup("");
     } else {
@@ -107,6 +107,9 @@ UT_icd *neu_tag_get_icd()
 neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag)
 {
     neu_datatag_t *new = calloc(1, sizeof(*new));
+    if (NULL == new) {
+        return NULL;
+    }
     tag_array_copy(new, tag);
     return new;
 }

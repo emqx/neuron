@@ -102,6 +102,7 @@ set(NEURON_BASE_SOURCES
     src/utils/log.c
     src/utils/cid.c
     src/utils/tpy.c
+    src/utils/neu_path.c
     ${PERSIST_SOURCES})
   
 if (SMART_LINK) 

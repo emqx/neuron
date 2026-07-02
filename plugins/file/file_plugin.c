@@ -181,7 +181,9 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
     {
         neu_dvalue_t dvalue = { 0 };
 
-        FILE *fp = fopen(tag->address, "r");
+        char *safe_path = neu_path_confine(NULL, tag->address);
+        FILE *fp        = safe_path ? fopen(safe_path, "r") : NULL;
+        free(safe_path);
         if (fp == NULL) {
             dvalue.type = NEU_TYPE_ERROR;
             if (errno == ENOENT) {
@@ -190,14 +192,16 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
                 dvalue.value.i32 = NEU_ERR_FILE_OPEN_FAILURE;
             }
         } else {
-            char *buf = calloc(1, 1024);
-            int   ret = fread(buf, 1, 1024, fp);
-            if (ret < 0) {
+            char * buf = calloc(1, 1024);
+            size_t ret = fread(buf, 1, 1024, fp);
+            if (ret == 0 && ferror(fp)) {
                 dvalue.type      = NEU_TYPE_ERROR;
                 dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
             } else {
+                size_t n = ret < NEU_VALUE_SIZE - 1 ? ret : NEU_VALUE_SIZE - 1;
                 dvalue.type = NEU_TYPE_STRING;
-                strncpy(dvalue.value.str, buf, NEU_VALUE_SIZE - 1);
+                strncpy(dvalue.value.str, buf, n);
+                dvalue.value.str[n] = '\0';
             }
 
             fclose(fp);
@@ -219,7 +223,9 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value)
 {
-    FILE *fp = fopen(tag->address, "w");
+    char *safe_path = neu_path_confine(NULL, tag->address);
+    FILE *fp        = safe_path ? fopen(safe_path, "w") : NULL;
+    free(safe_path);
     if (fp == NULL) {
         if (errno == ENOENT) {
             plugin->common.adapter_callbacks->driver.write_response(
