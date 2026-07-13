@@ -332,13 +332,23 @@ void set_skip_timer(uint8_t slave_id, uint32_t degrade_time)
 {
     degrade_timer_data_t *data =
         (degrade_timer_data_t *) malloc(sizeof(degrade_timer_data_t));
+    if (data == NULL) {
+        skip[slave_id] = false;
+        return;
+    }
+
     data->slave_id     = slave_id;
     data->degrade_time = degrade_time;
 
     failed_cycles[slave_id] = 0;
 
     pthread_t timer_thread;
-    pthread_create(&timer_thread, NULL, degrade_timer, data);
+    int       ret = pthread_create(&timer_thread, NULL, degrade_timer, data);
+    if (ret != 0) {
+        free(data);
+        skip[slave_id] = false;
+        return;
+    }
 
     pthread_detach(timer_thread);
 }
