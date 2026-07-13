@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--This file is created by the TCatPlcCtrl automatically. Manually changes will be overwritten!-->
+<PlcProjectInfo xmlns:p="http://www.beckhoff.com/2002/01/TcPlcProjectDesc">
+	<ProjectInfo>
+		<Path>D:\Samples\VarTypes\VarTypes.pro</Path>
+		<IsLibrary>false</IsLibrary>
+		<ChangeDate>2026-07-13T10:00:00</ChangeDate>
+	</ProjectInfo>
+	<RoutingInfo>
+		<AdsInfo>
+			<NetId>5.1.2.3.1.1</NetId>
+			<Port>801</Port>
+			<TargetName>
+				<![CDATA[Zielsystem: VarTypesSample (5.1.2.3.1.1), Laufzeit: 1]]>
+			</TargetName>
+		</AdsInfo>
+	</RoutingInfo>
+	<CompilerInfo>
+		<CpuFamily>x86</CpuFamily>
+		<CompilerVersion>3.1.4024.20</CompilerVersion>
+		<Alignment>Byte</Alignment>
+		<PackSize>1</PackSize>
+		<TwinCATVersion>3.1.0</TwinCATVersion>
+		<TCatPlcCtrlVersion>3.1.4024</TCatPlcCtrlVersion>
+	</CompilerInfo>
+	<VarConfigs>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.bMotorRunning</Name>
+			<Type>BOOL</Type>
+			<Comment>
+				<![CDATA[BOOL type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">0</IOffset>
+			<BitSize>1</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.byStatus</Name>
+			<Type>BYTE</Type>
+			<Comment>
+				<![CDATA[BYTE type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">1</IOffset>
+			<BitSize>8</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.wAlarmCode</Name>
+			<Type>WORD</Type>
+			<Comment>
+				<![CDATA[WORD type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">2</IOffset>
+			<BitSize>16</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.siTemperature</Name>
+			<Type>SINT</Type>
+			<Comment>
+				<![CDATA[SINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">4</IOffset>
+			<BitSize>8</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.usiLevel</Name>
+			<Type>USINT</Type>
+			<Comment>
+				<![CDATA[USINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">5</IOffset>
+			<BitSize>8</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.iCounter</Name>
+			<Type>INT</Type>
+			<Comment>
+				<![CDATA[INT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">6</IOffset>
+			<BitSize>16</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.uiSpeed</Name>
+			<Type>UINT</Type>
+			<Comment>
+				<![CDATA[UINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">8</IOffset>
+			<BitSize>16</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.diPosition</Name>
+			<Type>DINT</Type>
+			<Comment>
+				<![CDATA[DINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">10</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.udiRuntime</Name>
+			<Type>UDINT</Type>
+			<Comment>
+				<![CDATA[UDINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">14</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="1">GVL.dwFlags</Name>
+			<Type>DWORD</Type>
+			<Comment>
+				<![CDATA[DWORD type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">18</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Output" TaskPrio="1">GVL.rTemperatureSetpoint</Name>
+			<Type>REAL</Type>
+			<Comment>
+				<![CDATA[REAL type]]>
+			</Comment>
+			<IGroup>61488</IGroup>
+			<IOffset VarConfig="Fixed">0</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Output" TaskPrio="1">GVL.lrFlowTotal</Name>
+			<Type>LREAL</Type>
+			<Comment>
+				<![CDATA[LREAL type]]>
+			</Comment>
+			<IGroup>61488</IGroup>
+			<IOffset VarConfig="Fixed">4</IOffset>
+			<BitSize>64</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="2">GVL.tCycleTime</Name>
+			<Type>TIME</Type>
+			<Comment>
+				<![CDATA[TIME type, mapped to raw UINT32 milliseconds]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">22</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="2">GVL.dStartDate</Name>
+			<Type>DATE</Type>
+			<Comment>
+				<![CDATA[DATE type, mapped to raw UINT32 seconds since epoch]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">50</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="2">GVL.todShiftStart</Name>
+			<Type>TOD</Type>
+			<Comment>
+				<![CDATA[unrecognized type, exercises to_neu_type() default fallback]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">54</IOffset>
+			<BitSize>32</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.bBitFlag</Name>
+			<Type>BIT</Type>
+			<Comment>
+				<![CDATA[BIT type, bit-addressed %IX area]]>
+			</Comment>
+			<IGroup>61473</IGroup>
+			<IOffset VarConfig="Fixed">0</IOffset>
+			<BitSize>1</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.liTotalCounter</Name>
+			<Type>LINT</Type>
+			<Comment>
+				<![CDATA[LINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">26</IOffset>
+			<BitSize>64</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.uliTotalRuntime</Name>
+			<Type>ULINT</Type>
+			<Comment>
+				<![CDATA[ULINT type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">34</IOffset>
+			<BitSize>64</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.lwFlags64</Name>
+			<Type>LWORD</Type>
+			<Comment>
+				<![CDATA[LWORD type]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">42</IOffset>
+			<BitSize>64</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.szCommand</Name>
+			<Type Decoration="40000051">STRING(80)</Type>
+			<Comment>
+				<![CDATA[default-length STRING, BitSize includes the null terminator byte]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">50</IOffset>
+			<BitSize>648</BitSize>
+		</VarConfig>
+		<VarConfig>
+			<Name Static="Input" TaskPrio="3">GVL.szShortCode</Name>
+			<Type Decoration="40000010">STRING(15)</Type>
+			<Comment>
+				<![CDATA[custom-length STRING]]>
+			</Comment>
+			<IGroup>61472</IGroup>
+			<IOffset VarConfig="Fixed">131</IOffset>
+			<BitSize>128</BitSize>
+		</VarConfig>
+	</VarConfigs>
+</PlcProjectInfo>
