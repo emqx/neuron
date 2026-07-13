@@ -30,6 +30,7 @@ extern "C" {
 typedef struct {
     int64_t igroup;
     int64_t ioffset;
+    int64_t bitsize;
     char    name[NEU_TAG_NAME_LEN];
     char    type[NEU_TAG_NAME_LEN];
 } tpy_var_t;
