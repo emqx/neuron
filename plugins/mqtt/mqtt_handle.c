@@ -1748,12 +1748,14 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
             goto end;
         }
 
+        bool alloc_fail = false;
         utarray_foreach(states->states, neu_nodes_state_t *, state)
         {
             Model__NodeState *ns = calloc(1, sizeof(Model__NodeState));
             if (NULL == ns) {
                 plog_error(plugin, "malloc fail");
-                goto end;
+                alloc_fail = true;
+                break;
             }
             model__node_state__init(ns);
             ns->node    = state->node;
@@ -1763,9 +1765,25 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
             node_states[utarray_eltidx(states->states, state)] = ns;
         }
 
+        if (alloc_fail) {
+            for (size_t i = 0; i < nsr.n_nodes; i++) {
+                free(node_states[i]);
+            }
+            free(node_states);
+            goto end;
+        }
+
         nsr.nodes = node_states;
         size      = model__node_state_report__get_packed_size(&nsr);
         json_str  = malloc(size);
+        if (NULL == json_str) {
+            plog_error(plugin, "malloc fail");
+            for (size_t i = 0; i < nsr.n_nodes; i++) {
+                free(node_states[i]);
+            }
+            free(node_states);
+            goto end;
+        }
         model__node_state_report__pack(&nsr, (uint8_t *) json_str);
 
         for (size_t i = 0; i < nsr.n_nodes; i++) {
