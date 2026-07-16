@@ -174,7 +174,6 @@ set(NEURON_SOURCES
     plugins/restful/cid_handle.c
     plugins/restful/ede_handle.c
     plugins/restful/tpy_handle.c
-    plugins/restful/system_handle.c
     plugins/restful/datalayers_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c
