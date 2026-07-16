@@ -38,7 +38,6 @@
 #include "plugin_handle.h"
 #include "rw_handle.h"
 #include "scan_handle.h"
-#include "system_handle.h"
 #include "tpy_handle.h"
 #include "utils/http.h"
 #include "version_handle.h"
@@ -141,9 +140,6 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/tpy",
-    },
-    {
-        .url = "/api/v2/system/ctl",
     },
     {
         .url = "/api/v2/users",
@@ -517,12 +513,6 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/otel",
         .value.handler = handle_otel_get,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/system/ctl",
-        .value.handler = handle_system_ctl,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
