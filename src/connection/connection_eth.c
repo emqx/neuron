@@ -206,13 +206,14 @@ int neu_conn_eth_check_interface(const char *interface)
     int          fd  = socket(PF_PACKET, SOCK_RAW, ETH_P_IPV6);
     int          ret = -1;
 
-    if (fd <= 0) {
+    if (fd < 0) {
         return -1;
     }
 
     snprintf(ifr.ifr_name, IFNAMSIZ, "%s", interface);
     ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
     if (ret != 0) {
+        close(fd);
         return -1;
     }
 
