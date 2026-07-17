@@ -300,6 +300,7 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
         break;
     }
 
+    case NEU_TYPE_BOOL:
     case NEU_TYPE_BIT: {
         char *op = find_last_character(datatag->address, '.');
 
