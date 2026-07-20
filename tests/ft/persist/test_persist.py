@@ -5,6 +5,7 @@ import neuron.process as process
 from neuron.error import *
 import shutil
 import os
+import subprocess
 import time
 
 hold_bit = [{"name": "hold_bit", "address": "1!400001.15",
@@ -508,3 +509,43 @@ class TestPersist:
 
         os.remove(dst_file)
         os.rename(dst_backup, dst_file)
+
+
+class TestOfflineNodeStopCli:
+
+    def test_offline_node_stop_persists_stopped(self):
+        process.remove_persistence()
+        p = process.NeuronProcess()
+        p.start()
+        api.add_node_check(node='cli-offline-stop', plugin=PLUGIN_MODBUS_TCP)
+        response = api.modbus_tcp_node_setting(node='cli-offline-stop',
+                                               port=60502)
+        assert 200 == response.status_code
+        p.stop()
+
+        result = subprocess.run(
+            ['./neuron', 'node', 'stop', '--node', 'cli-offline-stop'],
+            cwd='build', text=True, capture_output=True, check=False)
+        assert result.returncode == 0, result.stderr
+        assert 'STOPPED' in result.stdout
+
+        p.start()
+        try:
+            time.sleep(1)
+            response = api.get_nodes_state(node='cli-offline-stop')
+            assert 200 == response.status_code
+            assert NEU_NODE_STATE_STOPPED == response.json()['running']
+        finally:
+            p.stop()
+
+    def test_offline_node_stop_rejects_missing_node(self):
+        process.remove_persistence()
+        p = process.NeuronProcess()
+        p.start()
+        p.stop()
+
+        result = subprocess.run(
+            ['./neuron', 'node', 'stop', '--node', 'missing-node'],
+            cwd='build', text=True, capture_output=True, check=False)
+        assert result.returncode != 0
+        assert 'not found' in result.stderr

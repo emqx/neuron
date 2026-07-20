@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -31,11 +32,14 @@
 #include <zlog.h>
 
 #include "argparse.h"
+#include "define.h"
 #include "persist/persist.h"
 #include "utils/log.h"
 #include "version.h"
 #include "json/json.h"
 #include "json/neu_json_param.h"
+
+#include <sqlite3.h>
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
@@ -65,6 +69,9 @@ const char *usage_text =
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
 "    stop                 stop running neuron\n"
+"    node stop --node <NAME>\n"
+"                         set a south/north node state to STOPPED in the DB\n"
+"                         (offline; restart neuron manually afterwards)\n"
 "    --log                log to the stdout\n"
 "    --log_level <LEVEL>  default log level(DEBUG,NOTICE)\n"
 "    --reset-password     reset dashboard to use default password\n"
@@ -112,6 +119,120 @@ static inline int reset_password()
     return rv;
 }
 
+static inline bool file_exists(const char *const path)
+{
+    struct stat buf = { 0 };
+    return -1 != stat(path, &buf);
+}
+
+#define NEURON_DB_FILE "persistence/sqlite.db"
+
+int neu_cli_stop_node_offline(const char *node_name)
+{
+    if (NULL == node_name || '\0' == node_name[0] ||
+        strlen(node_name) >= NEU_NODE_NAME_LEN) {
+        fprintf(stderr, "node stop requires --node with 1-%d bytes\n",
+                NEU_NODE_NAME_LEN - 1);
+        return 1;
+    }
+
+    for (const unsigned char *p = (const unsigned char *) node_name; *p; ++p) {
+        if (iscntrl(*p)) {
+            fprintf(stderr, "node name must not contain control characters\n");
+            return 1;
+        }
+    }
+
+    if (!file_exists(NEURON_DB_FILE)) {
+        fprintf(stderr, "database `%s` not exists\n", NEURON_DB_FILE);
+        return 1;
+    }
+
+    if (0 != access(NEURON_DB_FILE, R_OK | W_OK)) {
+        fprintf(stderr,
+                "no read/write permission on `%s` (errno=%d: %s).\n"
+                "If Neuron was started with sudo, run this command with the "
+                "same user, e.g. `sudo ./neuron node stop --node ...`\n",
+                NEURON_DB_FILE, errno, strerror(errno));
+        return 1;
+    }
+
+    sqlite3 *db = NULL;
+    int      rc =
+        sqlite3_open_v2(NEURON_DB_FILE, &db,
+                        SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, NULL);
+    if (SQLITE_OK != rc) {
+        fprintf(stderr, "failed to open `%s`: %s\n", NEURON_DB_FILE,
+                db ? sqlite3_errmsg(db) : sqlite3_errstr(rc));
+        if (db) {
+            sqlite3_close(db);
+        }
+        return 1;
+    }
+
+    sqlite3_busy_timeout(db, 3000);
+
+    sqlite3_stmt *stmt       = NULL;
+    const char *  select_sql = "SELECT type FROM nodes WHERE name=? LIMIT 1";
+    rc = sqlite3_prepare_v2(db, select_sql, -1, &stmt, NULL);
+    if (SQLITE_OK != rc) {
+        fprintf(stderr, "prepare failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return 1;
+    }
+    sqlite3_bind_text(stmt, 1, node_name, -1, SQLITE_TRANSIENT);
+    rc = sqlite3_step(stmt);
+    if (SQLITE_ROW != rc) {
+        fprintf(stderr, "node `%s` not found\n", node_name);
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+    int type = sqlite3_column_int(stmt, 0);
+    sqlite3_finalize(stmt);
+    if (NEU_NA_TYPE_DRIVER != type && NEU_NA_TYPE_APP != type) {
+        fprintf(stderr, "node `%s` is not a south/north node\n", node_name);
+        sqlite3_close(db);
+        return 1;
+    }
+
+    const char *update_sql =
+        "UPDATE nodes SET state=? WHERE name=? AND type IN (?,?)";
+    rc = sqlite3_prepare_v2(db, update_sql, -1, &stmt, NULL);
+    if (SQLITE_OK != rc) {
+        fprintf(stderr, "prepare update failed: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return 1;
+    }
+    sqlite3_bind_int(stmt, 1, NEU_NODE_RUNNING_STATE_STOPPED);
+    sqlite3_bind_text(stmt, 2, node_name, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, NEU_NA_TYPE_DRIVER);
+    sqlite3_bind_int(stmt, 4, NEU_NA_TYPE_APP);
+    rc = sqlite3_step(stmt);
+    if (SQLITE_DONE != rc) {
+        fprintf(stderr,
+                "failed to update node `%s`: %s\n"
+                "If Neuron is still running, stop it first (`sudo ./neuron "
+                "stop`), then retry.\n",
+                node_name, sqlite3_errmsg(db));
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+    if (0 == sqlite3_changes(db)) {
+        fprintf(stderr, "node `%s` was not updated\n", node_name);
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    printf("node `%s` state set to STOPPED (uid=%u); restart neuron manually\n",
+           node_name, (unsigned) getuid());
+    return 0;
+}
+
 static inline size_t parse_restart_policy(const char *s, size_t *out)
 {
     if (0 == strcmp(s, "always")) {
@@ -135,17 +256,14 @@ static inline size_t parse_restart_policy(const char *s, size_t *out)
     return 0;
 }
 
-static inline bool file_exists(const char *const path)
-{
-    struct stat buf = { 0 };
-    return -1 != stat(path, &buf);
-}
-
 static inline int load_spec_arg(int argc, char *argv[], neu_cli_args_t *args)
 {
     int ret = 0;
     if (argc > 1 && strcmp(argv[1], "stop") == 0) {
         args->stop = true;
+    } else if (argc > 2 && strcmp(argv[1], "node") == 0 &&
+               strcmp(argv[2], "stop") == 0) {
+        args->node_stop = true;
     }
     return ret;
 }
@@ -450,6 +568,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "syslog_host", required_argument, NULL, 'S' },
         { "syslog_port", required_argument, NULL, 'P' },
         { "sub_filter_error", no_argument, NULL, 'f' },
+        { "node", required_argument, NULL, 'n' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -546,6 +665,10 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         case 'f':
             args->sub_filter_err = true;
             break;
+        case 'n':
+            free(args->node_name);
+            args->node_name = strdup(optarg);
+            break;
         case '?':
         default:
             usage();
@@ -596,6 +719,18 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         goto quit;
     }
 
+    if (args->node_stop) {
+        if (args->node_name == NULL || args->node_name[0] == '\0') {
+            fprintf(stderr, "node stop requires --node <NAME>\n");
+            ret = 1;
+            goto quit;
+        }
+    } else if (args->node_name != NULL) {
+        fprintf(stderr, "--node requires `node stop`\n");
+        ret = 1;
+        goto quit;
+    }
+
     if (log_level != NULL) {
         if (strcmp(log_level, "DEBUG") == 0) {
             default_log_level = ZLOG_LEVEL_DEBUG;
@@ -619,6 +754,7 @@ void neu_cli_args_fini(neu_cli_args_t *args)
         free(args->log_init_file);
         free(args->config_dir);
         free(args->plugin_dir);
+        free(args->node_name);
         free(args->ip);
         free(args->syslog_host);
     }

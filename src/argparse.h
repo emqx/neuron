@@ -61,6 +61,8 @@ typedef struct {
     char *   config_dir;
     char *   plugin_dir;
     bool     stop;
+    bool     node_stop;
+    char *   node_name;
     char *   ip;
     int      port;
     char *   syslog_host;
@@ -71,6 +73,9 @@ typedef struct {
 /** Parse command line arguments.
  */
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[]);
+
+/** Offline: set node state to STOPPED in sqlite.db. */
+int neu_cli_stop_node_offline(const char *node_name);
 
 /** Clean up the command line arguments.
  */
