@@ -29,6 +29,7 @@ typedef struct tag_elem {
     char *name;
 
     neu_datatag_t *tag;
+    uint64_t       order;
 
     UT_hash_handle hh;
 } tag_elem_t;
@@ -37,14 +38,21 @@ struct neu_group {
     char *name;
 
     tag_elem_t *tags;
+    uint64_t    next_tag_order;
     uint32_t    interval;
 
     int64_t         timestamp;
     pthread_mutex_t mtx;
 };
 
+static int       tag_order_cmp(tag_elem_t *left, tag_elem_t *right);
 static UT_array *to_array(tag_elem_t *tags);
 static void      update_timestamp(neu_group_t *group);
+
+static int tag_order_cmp(tag_elem_t *left, tag_elem_t *right)
+{
+    return (left->order > right->order) - (left->order < right->order);
+}
 
 neu_group_t *neu_group_new(const char *name, uint32_t interval)
 {
@@ -166,6 +174,7 @@ int neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag)
         return NEU_ERR_EINTERNAL;
     }
 
+    el->order = group->next_tag_order++;
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);
     pthread_mutex_unlock(&group->mtx);
@@ -232,7 +241,8 @@ int neu_group_rename_tag(neu_group_t *group, const char *old_name,
     el->name = new_el_name;
     free(el->tag->name);
     el->tag->name = new_tag_name;
-    HASH_ADD_STR(group->tags, name, el);
+    HASH_ADD_KEYPTR_INORDER(hh, group->tags, el->name, strlen(el->name), el,
+                            tag_order_cmp);
 
     update_timestamp(group);
     ret = NEU_ERR_SUCCESS;
