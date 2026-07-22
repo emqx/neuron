@@ -173,6 +173,12 @@ int main(int argc, char *argv[])
     global_timestamp = neu_time_ms();
     neu_cli_args_init(&args, argc, argv);
 
+    if (args.node_stop) {
+        rv = neu_cli_stop_node_offline(args.node_name);
+        neu_cli_args_fini(&args);
+        return rv;
+    }
+
     disable_jwt    = args.disable_auth;
     sub_filter_err = args.sub_filter_err;
     snprintf(host_port, sizeof(host_port), "http://%s:%d", args.ip, args.port);
@@ -191,7 +197,9 @@ int main(int argc, char *argv[])
     }
 
     neuron = zlog_get_category("neuron");
-    zlog_level_switch(neuron, default_log_level);
+    if (neuron) {
+        zlog_level_switch(neuron, default_log_level);
+    }
 
     if (neu_modbus_simulator_init(args.config_dir) != 0) {
         nlog_warn("modbus simulator init failed");

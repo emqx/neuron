@@ -826,24 +826,39 @@ class TestTag:
         assert NEU_ERR_TAG_DECIMAL_INVALID == response.json()['error']
         assert 1 == response.json()['index']
 
-    @description(given="an existing tag", when="renaming to a new name", then="successfully renamed")
+    @description(given="three existing tags", when="renaming the middle tag", then="successfully renamed without changing tag order")
     def test_rename_tag_success(self):
-        tag = [{"name": "rename_test_tag", "address": "1!400001",
-                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16}]
-        api.add_tags(node="modbus-tcp", group="group1", tags=tag)
+        tags = [
+            {"name": "rename_first_tag", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16},
+            {"name": "rename_middle_tag", "address": "1!400002",
+             "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16},
+            {"name": "rename_last_tag", "address": "1!400003",
+             "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16},
+        ]
+        api.add_tags(node="modbus-tcp", group="group1", tags=tags)
 
         response = api.rename_tag(node="modbus-tcp", group="group1",
-                                  old_name="rename_test_tag", new_name="renamed_tag")
+                                  old_name="rename_middle_tag",
+                                  new_name="renamed_middle_tag")
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
 
         response = api.get_tags(node="modbus-tcp", group="group1")
         assert 200 == response.status_code
         tag_names = [t['name'] for t in response.json()['tags']]
-        assert "renamed_tag" in tag_names
-        assert "rename_test_tag" not in tag_names
+        renamed_tags = [
+            name for name in tag_names
+            if name in {"rename_first_tag", "renamed_middle_tag",
+                        "rename_last_tag"}
+        ]
+        assert ["rename_first_tag", "renamed_middle_tag",
+                "rename_last_tag"] == renamed_tags
+        assert "rename_middle_tag" not in tag_names
 
-        api.del_tags(node="modbus-tcp", group="group1", tags=["renamed_tag"])
+        api.del_tags(node="modbus-tcp", group="group1",
+                     tags=["rename_first_tag", "renamed_middle_tag",
+                           "rename_last_tag"])
 
     @description(given="an existing tag", when="renaming to a name that already exists", then="fail with conflict error")
     def test_rename_tag_conflict(self):
