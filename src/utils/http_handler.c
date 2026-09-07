@@ -24,6 +24,7 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "define.h"
 #include "utils/http_handler.h"
 #include "utils/log.h"
 
@@ -51,6 +52,12 @@ int neu_http_add_handler(nng_http_server *              server,
 
     if (ret != 0) {
         return -1;
+    }
+
+    if (NEU_HTTP_HANDLER_FUNCTION == http_handler->type) {
+        size_t max_body = http_handler->max_body > 0 ? http_handler->max_body
+                                                     : NEU_HTTP_BODY_MAX_SIZE;
+        nng_http_handler_collect_body(handler, true, max_body);
     }
 
     switch (http_handler->method) {
