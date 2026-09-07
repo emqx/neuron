@@ -35,6 +35,10 @@ extern "C" {
 // buffer overflow.
 ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size);
 
+// Get a NUL terminated copy of the request body, which the caller must free.
+// Returns 0 on success, NEU_HTTP_BODY_TOO_BIG if the body exceeds
+// NEU_HTTP_BODY_MAX_SIZE_LARGE, and -1 if the body is empty or on allocation
+// failure. On failure `*data` is NULL and `*data_size` is zero.
 int neu_http_get_body(nng_aio *aio, void **data, size_t *data_size);
 
 // Find query parameter value of the given name.
