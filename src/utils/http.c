@@ -100,8 +100,18 @@ int neu_http_get_body(nng_aio *aio, void **data, size_t *data_size)
     nng_http_req_get_data(req, data, data_size);
     if (*data_size == 0) {
         return -1;
+    } else if (*data_size > NEU_HTTP_BODY_MAX_SIZE_LARGE) {
+        nlog_error("<%p> request body too big: %zu", aio, *data_size);
+        *data      = NULL;
+        *data_size = 0;
+        return NEU_HTTP_BODY_TOO_BIG;
     } else {
         char *buf = calloc(*data_size + 1, sizeof(char));
+        if (NULL == buf) {
+            *data      = NULL;
+            *data_size = 0;
+            return -1;
+        }
         memcpy(buf, *data, *data_size);
         *data = buf;
         return 0;
