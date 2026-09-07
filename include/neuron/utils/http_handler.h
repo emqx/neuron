@@ -25,24 +25,27 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "define.h"
 #include "utils/neu_jwt.h"
 #include "json/neu_json_error.h"
 
-#define NEU_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
-    {                                                                        \
-        char *    req_data      = NULL;                                      \
-        size_t    req_data_size = 0;                                         \
-        req_type *req           = NULL;                                      \
-                                                                             \
-        if (neu_http_get_body((aio), (void **) &req_data, &req_data_size) == \
-                0 &&                                                         \
-            decode_fun(req_data, &req) == 0) {                               \
-            { func };                                                        \
-            decode_fun##_free(req);                                          \
-        } else {                                                             \
-            neu_http_bad_request(aio, "{\"error\": 1002}");                  \
-        }                                                                    \
-        free(req_data);                                                      \
+#define NEU_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)          \
+    {                                                                      \
+        char *    req_data      = NULL;                                    \
+        size_t    req_data_size = 0;                                       \
+        req_type *req           = NULL;                                    \
+        int       body_rv =                                                \
+            neu_http_get_body((aio), (void **) &req_data, &req_data_size); \
+                                                                           \
+        if (0 == body_rv && decode_fun(req_data, &req) == 0) {             \
+            { func };                                                      \
+            decode_fun##_free(req);                                        \
+        } else if (NEU_HTTP_BODY_TOO_BIG == body_rv) {                     \
+            neu_http_bad_request(aio, "{\"error\": 1017}");                \
+        } else {                                                           \
+            neu_http_bad_request(aio, "{\"error\": 1002}");                \
+        }                                                                  \
+        free(req_data);                                                    \
     }
 
 #define NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun, func) \
@@ -119,6 +122,8 @@ struct neu_http_handler {
         char *path;
         char *dst_url;
     } value;
+
+    size_t max_body;
 };
 
 int  neu_http_add_handler(nng_http_server *              server,

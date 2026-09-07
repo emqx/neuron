@@ -269,25 +269,28 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
         .value.handler = handle_add_tags,
-
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/gtags",
         .value.handler = handle_add_gtags,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags/import",
         .value.handler = handle_import_tags,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_PUT,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
         .value.handler = handle_update_tags,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
@@ -408,12 +411,14 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/write/tags",
         .value.handler = handle_write_tags,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/write/gtags",
         .value.handler = handle_write_gtags,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,
@@ -450,6 +455,7 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/subscribes",
         .value.handler = handle_grp_subscribes,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
@@ -516,12 +522,14 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/config",
         .value.handler = handle_put_global_config,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_PUT,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/drivers",
         .value.handler = handle_put_drivers,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
@@ -540,6 +548,7 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/apps",
         .value.handler = handle_put_apps,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
@@ -746,6 +755,7 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/simulator/config",
         .value.handler = handle_simulator_set_config,
+        .max_body      = NEU_HTTP_BODY_MAX_SIZE_LARGE,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

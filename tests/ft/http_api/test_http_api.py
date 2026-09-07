@@ -1,5 +1,7 @@
 import copy
 
+import requests
+
 import neuron.api as api
 import neuron.error as error
 import neuron.config as config
@@ -648,6 +650,23 @@ class TestHttp:
         response = api.get_group(node=node_2)
         assert 1 == len(response.json()["groups"])
 
+
+    @description(given="running neuron", when="post an over sized body", then="should be rejected before parsing")
+    def test_body_too_big(self):
+        # far above the 1MB cap of an ordinary endpoint, but below the 4MB
+        # cap of the bulk endpoints
+        payload = '{"name": "' + 'a' * (2 * 1024 * 1024) + '"}'
+        headers = {"Authorization": config.default_jwt,
+                   "Content-Type": "application/json"}
+
+        response = requests.post(
+            url=config.BASE_URL + '/api/v2/node', headers=headers, data=payload)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_BODY_TOO_BIG == response.json()['error']
+
+        # neuron is still alive and serving after the rejection
+        response = api.get_version()
+        assert 200 == response.status_code
 
     @description(given="running neuron", when="test jwt error", then="failed")
     def test_jwt_err(self):
