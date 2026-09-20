@@ -350,7 +350,7 @@ static int kafka_plugin_config(neu_plugin_t *plugin, const char *setting)
     if (NULL == plugin->rk) {
         plog_error(plugin, "create kafka producer fail");
         kafka_config_fini(&config);
-        return NEU_ERR_PLUGIN_NOT_RUNNING;
+        return NEU_ERR_PLUGIN_APP_NOT_RUNNING;
     }
 
     if (0 != start_poll_timer(plugin)) {
@@ -375,7 +375,7 @@ static int kafka_plugin_start(neu_plugin_t *plugin)
 {
     if (NULL == plugin->rk) {
         plog_error(plugin, "kafka producer is NULL");
-        return NEU_ERR_PLUGIN_NOT_RUNNING;
+        return NEU_ERR_PLUGIN_APP_NOT_RUNNING;
     }
 
     if (0 != start_poll_timer(plugin)) {
@@ -445,7 +445,7 @@ static int kafka_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     }
     default:
-        error = NEU_ERR_PLUGIN_NOT_RUNNING;
+        error = NEU_ERR_PLUGIN_APP_NOT_RUNNING;
         break;
     }
 
