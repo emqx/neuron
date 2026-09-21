@@ -35,7 +35,7 @@ class TestNodeTag:
     
     @description(given="existent driver node", when="add tags with invalid symbol", then="add failed")
     def test_add_tags_with_invalid_symbol(self):
-        response = api.add_node_with_tags(node="modbus-tcp-2", plugin=PLUGIN_MODBUS_TCP, tags="tag1,tag@2")
+        response = api.add_node_with_tags(node="modbus-tcp-2", plugin=PLUGIN_MODBUS_TCP, tags="tag1,tag?2")
         assert 400 == response.status_code
         assert NEU_ERR_NODE_TAGS_INVALID == response.json()['error']
     
@@ -44,7 +44,7 @@ class TestNodeTag:
         response = api.add_node(node="modbus-tcp-2", plugin=PLUGIN_MODBUS_TCP)
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
-        response = api.update_node_tags(node="modbus-tcp-2", tags="tag#3,tag4")
+        response = api.update_node_tags(node="modbus-tcp-2", tags="tag?3,tag4")
         assert 400 == response.status_code
         assert NEU_ERR_NODE_TAGS_INVALID == response.json()['error']
     

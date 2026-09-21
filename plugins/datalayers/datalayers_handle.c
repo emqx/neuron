@@ -391,7 +391,7 @@ int handle_trans_data(neu_plugin_t *            plugin,
 
     if (plugin->common.link_state != NEU_NODE_LINK_STATE_CONNECTED) {
         pthread_rwlock_unlock(&plugin->plugin_mutex);
-        return NEU_ERR_PLUGIN_NOT_RUNNING;
+        return NEU_ERR_PLUGIN_APP_NOT_RUNNING;
     }
 
     const route_entry_t *route = route_tbl_get(

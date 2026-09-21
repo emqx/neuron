@@ -142,7 +142,7 @@ int handle_trans_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data)
     int rv = 0;
 
     if (NULL == plugin->rk) {
-        return NEU_ERR_PLUGIN_NOT_RUNNING;
+        return NEU_ERR_PLUGIN_APP_NOT_RUNNING;
     }
 
     const kafka_route_entry_t *route =
@@ -176,7 +176,7 @@ int handle_trans_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data)
     }
 
     free(json_str);
-    return rv == 0 ? NEU_ERR_SUCCESS : NEU_ERR_PLUGIN_NOT_RUNNING;
+    return rv == 0 ? NEU_ERR_SUCCESS : NEU_ERR_PLUGIN_APP_NOT_RUNNING;
 }
 
 int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub)

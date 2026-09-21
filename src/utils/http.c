@@ -270,6 +270,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_ALREADY_SUBSCRIBED:
     case NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE:
     case NEU_ERR_PLUGIN_NOT_RUNNING:
+    case NEU_ERR_PLUGIN_APP_NOT_RUNNING:
     case NEU_ERR_PLUGIN_TAG_NOT_READY:
     case NEU_ERR_PLUGIN_PACKET_OUT_OF_ORDER:
     case NEU_ERR_MQTT_FAILURE:
