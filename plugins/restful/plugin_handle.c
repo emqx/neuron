@@ -40,7 +40,7 @@ void handle_add_plugin(nng_aio *aio)
 
             header.ctx  = aio;
             header.type = NEU_REQ_ADD_PLUGIN;
-            strcpy(cmd.library, req->library);
+            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
             ret             = neu_plugin_op(plugin, header, &cmd);
@@ -64,7 +64,7 @@ void handle_update_plugin(nng_aio *aio)
 
             header.ctx  = aio;
             header.type = NEU_REQ_UPDATE_PLUGIN;
-            strcpy(cmd.library, req->library);
+            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN);
             cmd.schema_file = req->schema_file;
             cmd.so_file     = req->so_file;
             ret             = neu_plugin_op(plugin, header, &cmd);
