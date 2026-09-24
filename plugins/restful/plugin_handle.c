@@ -40,7 +40,7 @@ void handle_add_plugin(nng_aio *aio)
 
             header.ctx  = aio;
             header.type = NEU_REQ_ADD_PLUGIN;
-            strcpy(cmd.library, req->library);
+            strncpy(cmd.library, req->library, NEU_PLUGIN_LIBRARY_LEN);
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
