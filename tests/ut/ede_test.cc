@@ -15,6 +15,7 @@ zlog_category_t *neuron = NULL;
 
 static constexpr size_t kExpectedEdeTagCount = 1499;
 #define EDE_TEST_FILE_PATH "./config/EDE_test.csv"
+#define WRONG_EDE_FILE_PATH "./config/wrong.ede"
 
 static std::vector<std::string> split_semicolon(const std::string &line)
 {
@@ -148,6 +149,22 @@ TEST(EdeTest, ParseEdeFileToAddressAndType)
     EXPECT_TRUE(found_bv);
 
     neu_ede_result_uninit(&result);
+}
+
+TEST(EdeTest, RejectTruncatedEdeFile)
+{
+    neu_ede_result_t result = { 0 };
+    neu_datatag_t *  tags   = NULL;
+    size_t           count  = 0;
+
+    EXPECT_NE(neu_ede_parse_file(WRONG_EDE_FILE_PATH, &result), 0);
+    EXPECT_EQ(result.entries, nullptr);
+    EXPECT_EQ(result.count, 0);
+
+    EXPECT_NE(neu_ede_parse_file_to_tags(WRONG_EDE_FILE_PATH, &tags, &count),
+              0);
+    EXPECT_EQ(tags, nullptr);
+    EXPECT_EQ(count, 0);
 }
 
 TEST(EdeTest, FormatAddress)

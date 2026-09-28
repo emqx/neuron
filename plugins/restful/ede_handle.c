@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
@@ -10,6 +12,20 @@
 #include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
+
+static void ede_cmd_uninit(neu_req_add_gtag_t *cmd)
+{
+    if (cmd == NULL || cmd->groups == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < cmd->n_group; ++i) {
+        neu_ede_tags_uninit(cmd->groups[i].tags, cmd->groups[i].n_tag);
+    }
+    free(cmd->groups);
+    cmd->groups  = NULL;
+    cmd->n_group = 0;
+}
 
 void handle_ede(nng_aio *aio)
 {
@@ -31,13 +47,16 @@ void handle_ede(nng_aio *aio)
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_CID, {
                     neu_http_response(aio, NEU_ERR_INVALID_CID, result_error);
                 });
+                goto success;
             }
 
-            int ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
+            if (neu_plugin_op(plugin, header, &cmd) != 0) {
+                ede_cmd_uninit(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+
+        success:;
         })
 }

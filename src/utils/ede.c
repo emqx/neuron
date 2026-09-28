@@ -332,6 +332,12 @@ int neu_ede_parse_file(const char *file_path, neu_ede_result_t *result)
     }
 
     fclose(fp);
+
+    if (!object_header_seen || result->count == 0) {
+        neu_ede_result_uninit(result);
+        return -1;
+    }
+
     return 0;
 }
 
