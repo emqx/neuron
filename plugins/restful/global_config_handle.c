@@ -1148,6 +1148,7 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
         tags_res.tags[index].bias        = tag->bias;
+        tags_res.tags[index].unit        = tag->unit;
         tags_res.tags[index].t           = NEU_JSON_UNDEFINE;
     }
 
