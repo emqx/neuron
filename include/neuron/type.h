@@ -340,9 +340,17 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
 }
 
 typedef struct {
-    neu_type_e  type;
-    neu_value_u value;
-    uint8_t     precision;
+    int64_t timestamp;
+    int32_t quality;
+    bool    has_timestamp;
+    bool    has_quality;
+} neu_tag_sample_attrs_t;
+
+typedef struct {
+    neu_type_e             type;
+    neu_value_u            value;
+    uint8_t                precision;
+    neu_tag_sample_attrs_t attrs;
 } neu_dvalue_t;
 
 static inline bool neu_dvalue_is_array(const neu_dvalue_t *dvalue)
@@ -508,6 +516,7 @@ static inline void neu_copy_dvalue(const neu_dvalue_t *src, neu_dvalue_t *dst)
     dst->type      = src->type;
     dst->precision = src->precision;
     dst->value     = src->value;
+    dst->attrs     = src->attrs;
 
     // value need deep copy
     switch (src->type) {
