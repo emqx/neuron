@@ -169,6 +169,7 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     elem->timestamp = 0;
     elem->changed   = false;
     elem->value     = value;
+    memset(&elem->value_old.attrs, 0, sizeof(elem->value_old.attrs));
 
     pthread_mutex_unlock(&cache->mtx);
 }
@@ -228,6 +229,13 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
     struct elem *elem        = NULL;
     tkey_t       key         = to_key(group, tag);
     bool         tag_changed = false;
+
+    if (!value.attrs.has_timestamp) {
+        value.attrs.timestamp = 0;
+    }
+    if (!value.attrs.has_quality) {
+        value.attrs.quality = 0;
+    }
 
     pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
@@ -483,9 +491,8 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
             }
             case NEU_TYPE_FLOAT:
                 if (elem->value_old.precision == 0) {
-                    elem->changed =
-                        elem->value_old.value.f32 != value.value.f32;
-                    tag_changed = elem->changed;
+                    tag_changed = elem->value_old.value.f32 != value.value.f32;
+                    elem->changed |= tag_changed;
                 } else {
                     if (fabs(elem->value_old.value.f32 - value.value.f32) >
                         pow(0.1, elem->value_old.precision)) {
@@ -496,9 +503,8 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 break;
             case NEU_TYPE_DOUBLE:
                 if (elem->value_old.precision == 0) {
-                    elem->changed =
-                        elem->value_old.value.d64 != value.value.d64;
-                    tag_changed = elem->changed;
+                    tag_changed = elem->value_old.value.d64 != value.value.d64;
+                    elem->changed |= tag_changed;
                 } else {
                     if (fabs(elem->value_old.value.d64 - value.value.d64) >
                         pow(0.1, elem->value_old.precision)) {
@@ -728,8 +734,8 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
             }
             case NEU_TYPE_FLOAT:
                 if (elem->value.precision == 0) {
-                    elem->changed = elem->value.value.f32 != value.value.f32;
-                    tag_changed   = elem->changed;
+                    tag_changed = elem->value.value.f32 != value.value.f32;
+                    elem->changed |= tag_changed;
                 } else {
                     if (fabs(elem->value.value.f32 - value.value.f32) >
                         pow(0.1, elem->value.precision)) {
@@ -740,8 +746,8 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
                 break;
             case NEU_TYPE_DOUBLE:
                 if (elem->value.precision == 0) {
-                    elem->changed = elem->value.value.d64 != value.value.d64;
-                    tag_changed   = elem->changed;
+                    tag_changed = elem->value.value.d64 != value.value.d64;
+                    elem->changed |= tag_changed;
                 } else {
                     if (fabs(elem->value.value.d64 - value.value.d64) >
                         pow(0.1, elem->value.precision)) {
@@ -758,13 +764,26 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
             }
         }
 
+        const neu_tag_sample_attrs_t *previous_attrs =
+            sub_filter_err && elem->value.type == NEU_TYPE_ERROR
+            ? &elem->value_old.attrs
+            : &elem->value.attrs;
+        if (previous_attrs->has_quality != value.attrs.has_quality ||
+            (value.attrs.has_quality &&
+             previous_attrs->quality != value.attrs.quality)) {
+            elem->changed = true;
+            tag_changed   = true;
+        }
+
         if (sub_filter_err && value.type != NEU_TYPE_ERROR) {
             elem->value_old.type      = value.type;
             elem->value_old.value     = value.value;
             elem->value_old.precision = value.precision;
+            elem->value_old.attrs     = value.attrs;
         }
 
     error_not_report:
+        elem->value.attrs = value.attrs;
 
         if (change) {
             elem->changed = true;
@@ -887,6 +906,7 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
 
     if (elem != NULL) {
         value->timestamp       = elem->timestamp;
+        value->value.attrs     = elem->value.attrs;
         value->value.type      = elem->value.type;
         value->value.precision = elem->value.precision;
 
@@ -1061,6 +1081,7 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
 
     if (elem != NULL && elem->changed) {
         value->timestamp       = elem->timestamp;
+        value->value.attrs     = elem->value.attrs;
         value->value.type      = elem->value.type;
         value->value.precision = elem->value.precision;
 
