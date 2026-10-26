@@ -31,6 +31,7 @@ extern "C" {
 
 #include "define.h"
 #include "errcodes.h"
+#include "property.h"
 #include "tag.h"
 #include "type.h"
 #include <math.h>
@@ -206,6 +207,12 @@ typedef enum neu_reqresp_type {
     NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD,
     NEU_REQ_SERVER_AUTH_USER_INFO,
     NEU_RESP_SERVER_AUTH_USER_INFO,
+
+    NEU_REQ_ADD_NODE_PROPERTIES,
+    NEU_REQ_DELETE_NODE_PROPERTIES,
+    NEU_REQ_UPDATE_NODE_PROPERTY,
+    NEU_REQ_GET_NODE_PROPERTIES,
+    NEU_RESP_GET_NODE_PROPERTIES,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -374,6 +381,12 @@ static const char *neu_reqresp_type_string_t[] = {
         "NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD",
     [NEU_REQ_SERVER_AUTH_USER_INFO]  = "NEU_REQ_SERVER_AUTH_USER_INFO",
     [NEU_RESP_SERVER_AUTH_USER_INFO] = "NEU_RESP_SERVER_AUTH_USER_INFO",
+
+    [NEU_REQ_ADD_NODE_PROPERTIES]    = "NEU_REQ_ADD_NODE_PROPERTIES",
+    [NEU_REQ_DELETE_NODE_PROPERTIES] = "NEU_REQ_DELETE_NODE_PROPERTIES",
+    [NEU_REQ_UPDATE_NODE_PROPERTY]   = "NEU_REQ_UPDATE_NODE_PROPERTY",
+    [NEU_REQ_GET_NODE_PROPERTIES]    = "NEU_REQ_GET_NODE_PROPERTIES",
+    [NEU_RESP_GET_NODE_PROPERTIES]   = "NEU_RESP_GET_NODE_PROPERTIES",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -553,6 +566,65 @@ typedef struct neu_req_update_node_tag {
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
 } neu_req_del_node_t;
+
+typedef struct neu_req_add_node_properties {
+    char                 node[NEU_NODE_NAME_LEN];
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_req_add_node_properties_t;
+
+static inline void
+neu_req_add_node_properties_fini(neu_req_add_node_properties_t *req)
+{
+    neu_node_properties_free(req->properties, req->n_property);
+    req->properties = NULL;
+    req->n_property = 0;
+}
+
+typedef struct neu_req_delete_node_properties {
+    char   node[NEU_NODE_NAME_LEN];
+    size_t n_key;
+    char **keys;
+} neu_req_delete_node_properties_t;
+
+static inline void
+neu_req_delete_node_properties_fini(neu_req_delete_node_properties_t *req)
+{
+    for (size_t i = 0; i < req->n_key; ++i) {
+        free(req->keys[i]);
+    }
+    free(req->keys);
+    req->keys  = NULL;
+    req->n_key = 0;
+}
+
+typedef struct neu_req_update_node_property {
+    char                node[NEU_NODE_NAME_LEN];
+    neu_node_property_t property;
+} neu_req_update_node_property_t;
+
+static inline void
+neu_req_update_node_property_fini(neu_req_update_node_property_t *req)
+{
+    neu_node_property_fini(&req->property);
+}
+
+typedef struct neu_req_get_node_properties {
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_get_node_properties_t;
+
+typedef struct neu_resp_get_node_properties {
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_resp_get_node_properties_t;
+
+static inline void
+neu_resp_get_node_properties_fini(neu_resp_get_node_properties_t *resp)
+{
+    neu_node_properties_free(resp->properties, resp->n_property);
+    resp->properties = NULL;
+    resp->n_property = 0;
+}
 
 typedef struct neu_req_get_node {
     neu_node_type_e type;

@@ -30,6 +30,7 @@
 #include "json/json.h"
 
 #include "neu_json_node.h"
+#include "utils/set.h"
 
 int neu_json_encode_add_node_req(void *json_object, void *param)
 {
@@ -748,4 +749,212 @@ void neu_json_decode_update_node_tag_req_free(
             free(req->tags);
         free(req);
     }
+}
+
+static char *property_string(json_t *value, size_t max_length)
+{
+    if (!json_is_string(value)) {
+        return NULL;
+    }
+    size_t      length = json_string_length(value);
+    const char *str    = json_string_value(value);
+    if (length == 0 || length >= max_length || strlen(str) != length) {
+        return NULL;
+    }
+    return strdup(str);
+}
+
+static int decode_property(json_t *object, neu_node_property_t *property)
+{
+    property->key = property_string(json_object_get(object, "key"), SIZE_MAX);
+    json_t *value = json_object_get(object, "value");
+    if (property->key == NULL || !neu_node_property_value_valid(value)) {
+        return -1;
+    }
+    property->value_json = neu_node_property_json_dump(value);
+    return property->value_json == NULL ? -1 : 0;
+}
+
+int neu_json_decode_add_node_properties_req(
+    char *buf, neu_json_add_node_properties_req_t **result)
+{
+    *result = NULL;
+    json_t *object =
+        json_loads(buf, JSON_REJECT_DUPLICATES | JSON_ALLOW_NUL, NULL);
+    neu_json_add_node_properties_req_t *req  = calloc(1, sizeof(*req));
+    neu_strset_t                        seen = NULL;
+    int                                 ret  = -1;
+    if (req == NULL || !json_is_object(object)) {
+        goto end;
+    }
+    req->node =
+        property_string(json_object_get(object, "node"), NEU_NODE_NAME_LEN);
+    json_t *array = json_object_get(object, "properties");
+    if (req->node == NULL || !json_is_array(array) ||
+        json_array_size(array) == 0) {
+        goto end;
+    }
+    size_t count    = json_array_size(array);
+    req->properties = calloc(count, sizeof(*req->properties));
+    if (req->properties == NULL) {
+        goto end;
+    }
+    req->n_property = count;
+    for (size_t i = 0; i < count; ++i) {
+        if (decode_property(json_array_get(array, i), &req->properties[i]) !=
+                0 ||
+            neu_strset_add(&seen, req->properties[i].key) != 1) {
+            goto end;
+        }
+    }
+    *result = req;
+    ret     = 0;
+end:
+    neu_strset_free(&seen);
+    json_decref(object);
+    if (ret != 0) {
+        neu_json_decode_add_node_properties_req_free(req);
+    }
+    return ret;
+}
+
+void neu_json_decode_add_node_properties_req_free(
+    neu_json_add_node_properties_req_t *req)
+{
+    if (req != NULL) {
+        free(req->node);
+        neu_node_properties_free(req->properties, req->n_property);
+        free(req);
+    }
+}
+
+int neu_json_decode_delete_node_properties_req(
+    char *buf, neu_json_delete_node_properties_req_t **result)
+{
+    *result = NULL;
+    json_t *object =
+        json_loads(buf, JSON_REJECT_DUPLICATES | JSON_ALLOW_NUL, NULL);
+    neu_json_delete_node_properties_req_t *req  = calloc(1, sizeof(*req));
+    neu_strset_t                           seen = NULL;
+    int                                    ret  = -1;
+    if (req == NULL || !json_is_object(object)) {
+        goto end;
+    }
+    req->node =
+        property_string(json_object_get(object, "node"), NEU_NODE_NAME_LEN);
+    json_t *array = json_object_get(object, "keys");
+    if (req->node == NULL || !json_is_array(array) ||
+        json_array_size(array) == 0) {
+        goto end;
+    }
+    size_t count = json_array_size(array);
+    req->keys    = calloc(count, sizeof(*req->keys));
+    if (req->keys == NULL) {
+        goto end;
+    }
+    req->n_key = count;
+    for (size_t i = 0; i < count; ++i) {
+        req->keys[i] = property_string(json_array_get(array, i), SIZE_MAX);
+        if (req->keys[i] == NULL || neu_strset_add(&seen, req->keys[i]) != 1) {
+            goto end;
+        }
+    }
+    *result = req;
+    ret     = 0;
+end:
+    neu_strset_free(&seen);
+    json_decref(object);
+    if (ret != 0) {
+        neu_json_decode_delete_node_properties_req_free(req);
+    }
+    return ret;
+}
+
+void neu_json_decode_delete_node_properties_req_free(
+    neu_json_delete_node_properties_req_t *req)
+{
+    if (req != NULL) {
+        free(req->node);
+        for (size_t i = 0; i < req->n_key; ++i) {
+            free(req->keys[i]);
+        }
+        free(req->keys);
+        free(req);
+    }
+}
+
+int neu_json_decode_update_node_property_req(
+    char *buf, neu_json_update_node_property_req_t **result)
+{
+    *result = NULL;
+    json_t *object =
+        json_loads(buf, JSON_REJECT_DUPLICATES | JSON_ALLOW_NUL, NULL);
+    neu_json_update_node_property_req_t *req = calloc(1, sizeof(*req));
+    if (req == NULL || !json_is_object(object)) {
+        goto error;
+    }
+    req->node =
+        property_string(json_object_get(object, "node"), NEU_NODE_NAME_LEN);
+    if (req->node == NULL || decode_property(object, &req->property) != 0) {
+        goto error;
+    }
+    json_decref(object);
+    *result = req;
+    return 0;
+error:
+    json_decref(object);
+    neu_json_decode_update_node_property_req_free(req);
+    return -1;
+}
+
+void neu_json_decode_update_node_property_req_free(
+    neu_json_update_node_property_req_t *req)
+{
+    if (req != NULL) {
+        free(req->node);
+        neu_node_property_fini(&req->property);
+        free(req);
+    }
+}
+
+static int
+encode_node_properties_resp(json_t *                             json_object,
+                            neu_json_get_node_properties_resp_t *resp)
+{
+    json_t *array = json_array();
+    if (array == NULL) {
+        return -1;
+    }
+    for (size_t i = 0; i < resp->n_property; ++i) {
+        neu_node_property_t *property = &resp->properties[i];
+        json_t *             value    = json_loads(property->value_json,
+                                   JSON_DECODE_ANY | JSON_ALLOW_NUL, NULL);
+        if (!neu_node_property_value_valid(value)) {
+            json_decref(value);
+            json_decref(array);
+            return -1;
+        }
+        json_t *item =
+            json_pack("{s:s,s:o}", "key", property->key, "value", value);
+        if (item == NULL || json_array_append_new(array, item) != 0) {
+            json_decref(array);
+            return -1;
+        }
+    }
+    return json_object_set_new(json_object, "properties", array);
+}
+
+int neu_json_encode_get_node_properties_resp(
+    neu_json_get_node_properties_resp_t *resp, char **result)
+{
+    *result        = NULL;
+    json_t *object = json_object();
+    if (object == NULL) {
+        return -1;
+    }
+    if (encode_node_properties_resp(object, resp) == 0) {
+        *result = neu_node_property_json_dump(object);
+    }
+    json_decref(object);
+    return *result == NULL ? -1 : 0;
 }

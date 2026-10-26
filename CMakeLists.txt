@@ -89,6 +89,7 @@ if(NOT ENABLE_DATALAYERS)
   list(FILTER NEURON_SRC_PARSE EXCLUDE REGEX "neu_json_datalayers\\.c$")
 endif()
 set(NEURON_BASE_SOURCES
+    src/base/property.c
     src/base/tag.c
     src/base/neu_plugin_common.c
     src/base/tag_sort.c
