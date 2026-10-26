@@ -1,0 +1,137 @@
+{
+	"version": {
+		"name": "MQTT Version",
+		"name_zh": "MQTT 版本",
+		"type": "map",
+		"attribute": "optional",
+		"default": 4,
+		"valid": {
+			"map": [
+				{
+					"key": "3.1.1",
+					"value": 4
+				},
+				{
+					"key": "5.0",
+					"value": 5
+				}
+			]
+		}
+	},
+	"client-id": {
+		"name": "Client ID",
+		"name_zh": "客户端 ID",
+		"type": "string",
+		"attribute": "required",
+		"default": "neuron_${random_str}",
+		"valid": {
+			"length": 255
+		}
+	},
+	"qos": {
+		"name": "QoS Level",
+		"name_zh": "QoS 等级",
+		"type": "map",
+		"attribute": "optional",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "QoS 0",
+					"value": 0
+				},
+				{
+					"key": "QoS 1",
+					"value": 1
+				},
+				{
+					"key": "QoS 2",
+					"value": 2
+				}
+			]
+		}
+	},
+	"host": {
+		"name": "Broker Host",
+		"name_zh": "服务器地址",
+		"attribute": "required",
+		"type": "string",
+		"default": "127.0.0.1",
+		"valid": {
+			"length": 255
+		}
+	},
+	"port": {
+		"name": "Broker Port",
+		"name_zh": "服务器端口",
+		"attribute": "required",
+		"type": "int",
+		"default": 1883,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		}
+	},
+	"username": {
+		"name": "Username",
+		"name_zh": "用户名",
+		"attribute": "optional",
+		"type": "string",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"password": {
+		"name": "Password",
+		"name_zh": "密码",
+		"attribute": "optional",
+		"type": "string",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"ssl": {
+		"name": "SSL",
+		"name_zh": "SSL",
+		"attribute": "optional",
+		"type": "bool",
+		"default": false,
+		"valid": {}
+	},
+	"product-key": {
+		"name": "Product Key",
+		"name_zh": "产品标识",
+		"description": "ThingsNeural productKey used in NLINK topics.",
+		"description_zh": "拼 NLINK 主题使用的 productKey。",
+		"attribute": "required",
+		"type": "string",
+		"valid": {
+			"length": 128
+		}
+	},
+	"device-key": {
+		"name": "Device Key",
+		"name_zh": "设备标识",
+		"description": "ThingsNeural deviceKey used in NLINK topics.",
+		"description_zh": "拼 NLINK 主题使用的 deviceKey。",
+		"attribute": "required",
+		"type": "string",
+		"valid": {
+			"length": 128
+		}
+	},
+	"points": {
+		"name": "Point Map",
+		"name_zh": "点位映射",
+		"description": "JSON array string. Each item maps a thing-model property to a south node, group and tag.",
+		"description_zh": "JSON 数组字符串。每一项把物模型属性映射到南向 node、group 和 tag。",
+		"attribute": "required",
+		"type": "string",
+		"default": "[]",
+		"valid": {
+			"length": 81960
+		}
+	}
+}
