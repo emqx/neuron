@@ -50,6 +50,21 @@ int neu_sqlite_persister_update_node_tags(neu_persister_t *self,
                                           const char *     tags);
 int neu_sqlite_persister_update_node_state(neu_persister_t *self,
                                            const char *node_name, int state);
+int neu_sqlite_persister_add_node_properties(
+    neu_persister_t *self, const char *node,
+    const neu_node_property_t *properties, size_t n_property);
+int neu_sqlite_persister_delete_node_properties(neu_persister_t *  self,
+                                                const char *       node,
+                                                const char *const *keys,
+                                                size_t             n_key);
+int neu_sqlite_persister_update_node_property(
+    neu_persister_t *self, const char *node,
+    const neu_node_property_t *property);
+int neu_sqlite_persister_load_node_properties(neu_persister_t *     self,
+                                              const char *          node,
+                                              neu_node_property_t **properties,
+                                              size_t *              n_property);
+
 int neu_sqlite_persister_store_tag(neu_persister_t *    self,
                                    const char *         driver_name,
                                    const char *         group_name,

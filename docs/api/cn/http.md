@@ -299,6 +299,123 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 }
 ```
 
+## Node 自定义属性
+
+自定义属性是节点的 key/value 元数据，南向驱动节点和北向应用节点均支持。四种操作统一使用 **/api/v2/node/properties**，且节点必须已存在。
+
+属性的 JSON 值类型在查询和重启后保持不变。节点重命名后，属性随节点迁移到新名称；删除节点时，其属性一并删除。重新创建同名节点不会恢复已删除的属性。
+
+### 请求头部
+
+**Authorization** Bearer \<token\>（登录接口返回的 JWT，鉴权规则与其他节点接口一致）
+
+**Content-Type** application/json（POST、PUT、DELETE）
+
+### 键和值
+
+* `node`、`key` 为必填非空字符串，不允许包含 NUL（`\u0000`）。同一节点内的属性 key 唯一。
+* `value` 必填，`false`、`0`、`""`、`[]` 均为有效值，不能因其为空或为零而省略。请直接传入 JSON 值，不要将其再次编码成 JSON 字符串。
+* 支持的标量值：字符串、布尔值、整数、浮点数。整数范围为有符号 64 位；浮点数必须是可用双精度表示的有限数值。
+* 支持的一维数组：元素全部为字符串、全部为布尔值或全部为数值。数值数组允许整数和浮点数混用，例如 `[1, 2.5]`。允许空数组。
+* 不接受 `null`、对象、嵌套数组及不同类别混合的数组，例如 `[true, 1]`、`[1, "2"]`。字符串值允许包含转义 NUL（`\u0000`）及其他转义字符。
+* POST 的 `properties` 和 DELETE 的 `keys` 必须为非空数组，批次内不允许重复 key，每项都必须合法。批次操作是原子的：全部成功或完全不修改。
+
+### 获取属性
+
+*GET* **/api/v2/node/properties?node=modbus-tcp-node**
+
+查询参数 `node` 必填。节点名称包含特殊字符时需进行 URL 编码。
+
+HTTP 200 响应：
+
+```json
+{
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+节点没有属性时返回 `{"properties": []}`。响应值保持原有 JSON 类型；客户端应按 key 识别属性，不依赖数组中的位置。
+
+### 新增属性
+
+*POST* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+所有 key 都必须是新属性。任一 key 已存在时，拒绝整个批次，不会新增或覆盖任何属性。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 更新单个属性
+
+*PUT* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "key": "enabled",
+    "value": true
+}
+```
+
+替换一个已有属性的值，新值可以变为其他支持的类型。此操作不会创建不存在的属性，也不能重命名 key。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 删除属性
+
+*DELETE* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "keys": ["location", "enabled"]
+}
+```
+
+原子地删除指定 key。不存在的 key 会被忽略，即使所有指定 key 都不存在也返回成功。空 `keys` 数组不表示删除全部属性，而是非法请求。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 响应状态
+
+| HTTP 状态 | 错误码 | 含义 |
+| --- | --- | --- |
+| 200 | 0 | POST、PUT、DELETE 成功；GET 返回上述 properties 对象 |
+| 400 | 1002 | JSON 请求体、必填字段、key、value 或批次不合法 |
+| 400 | 1003 | GET 查询参数缺失或不合法 |
+| 401 / 403 | 现有 JWT 错误码 | 令牌缺失、格式错误、过期或无效，遵循现有鉴权规则 |
+| 404 | 2003 | 节点不存在，适用于全部四种操作 |
+| 404 | 2020 | 属性不存在，仅适用于 PUT |
+| 409 | 2019 | 属性已存在，仅适用于 POST；整个批次保持不变 |
+
+错误响应格式为 `{"error": <错误码>}`。
+
 ## 获取 Node
 
 *GET*  /api/v2/node

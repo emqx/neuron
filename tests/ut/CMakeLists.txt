@@ -109,6 +109,16 @@ target_include_directories(ede_test PRIVATE
 )
 target_link_libraries(ede_test neuron-base gtest_main gtest)
 
+add_executable(node_property_persist_test node_property_persist_test.cc)
+target_include_directories(node_property_persist_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+)
+target_compile_definitions(node_property_persist_test PRIVATE
+    NEU_PROPERTY_SCHEMA_DIR="${CMAKE_SOURCE_DIR}/persistence"
+)
+target_link_libraries(node_property_persist_test neuron-base gtest_main gtest pthread jansson sqlite3)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -124,3 +134,4 @@ gtest_discover_tests(cache_test)
 gtest_discover_tests(cid_test)
 gtest_discover_tests(mqtt_schema_test)
 gtest_discover_tests(ede_test)
+gtest_discover_tests(node_property_persist_test)

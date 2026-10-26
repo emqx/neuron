@@ -107,6 +107,25 @@ def get_nodes_by_tags(type, tags, jwt=config.default_jwt):
     return requests.get(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, params={"type": type, "node": tags})
 
 
+def get_node_properties(node, jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + '/api/v2/node/properties', headers={"Authorization": jwt}, params={"node": node})
+
+
+@gen_check
+def add_node_properties(node, properties, jwt=config.default_jwt):
+    return requests.post(url=config.BASE_URL + '/api/v2/node/properties', headers={"Authorization": jwt}, json={"node": node, "properties": properties})
+
+
+@gen_check
+def update_node_property(node, key, value, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/node/properties', headers={"Authorization": jwt}, json={"node": node, "key": key, "value": value})
+
+
+@gen_check
+def delete_node_properties(node, keys, jwt=config.default_jwt):
+    return requests.delete(url=config.BASE_URL + '/api/v2/node/properties', headers={"Authorization": jwt}, json={"node": node, "keys": keys})
+
+
 @gen_check
 def node_ctl(node, ctl, jwt=config.default_jwt):
     return requests.post(url=config.BASE_URL + '/api/v2/node/ctl', headers={"Authorization": jwt}, json={"node": node, "cmd": ctl})

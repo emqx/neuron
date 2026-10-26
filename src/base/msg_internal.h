@@ -174,7 +174,12 @@ extern "C" {
     XX(NEU_REQ_SERVER_AUTH_USER_INFO, neu_req_server_auth_users_info_t)        \
     XX(NEU_RESP_SERVER_AUTH_USER_INFO, neu_resp_server_auth_users_info_t)      \
     XX(NEU_REQ_RENAME_TAG, neu_req_rename_tag_t)                               \
-    XX(NEU_RESP_RENAME_TAG, neu_resp_rename_tag_t)
+    XX(NEU_RESP_RENAME_TAG, neu_resp_rename_tag_t)                             \
+    XX(NEU_REQ_ADD_NODE_PROPERTIES, neu_req_add_node_properties_t)             \
+    XX(NEU_REQ_DELETE_NODE_PROPERTIES, neu_req_delete_node_properties_t)       \
+    XX(NEU_REQ_UPDATE_NODE_PROPERTY, neu_req_update_node_property_t)           \
+    XX(NEU_REQ_GET_NODE_PROPERTIES, neu_req_get_node_properties_t)             \
+    XX(NEU_RESP_GET_NODE_PROPERTIES, neu_resp_get_node_properties_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {
@@ -234,6 +239,12 @@ static inline neu_msg_t *neu_msg_new(neu_reqresp_type_e t, void *ctx,
         break;
     case NEU_REQ_GET_NODE_SETTING:
         body_size = neu_reqresp_size(NEU_RESP_GET_NODE_SETTING);
+        break;
+    case NEU_REQ_GET_NODE_PROPERTIES:
+        body_size = neu_reqresp_size(NEU_RESP_GET_NODE_PROPERTIES);
+        if (body_size < data_size) {
+            body_size = data_size;
+        }
         break;
     case NEU_REQ_GET_NODES_STATE:
         body_size = neu_reqresp_size(NEU_RESP_GET_NODES_STATE);
