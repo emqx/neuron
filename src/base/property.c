@@ -93,6 +93,7 @@ static int dump_value(property_json_buffer_t *buffer, const json_t *value)
                 return -1;
             }
             first = false;
+            (void) first;
         }
         return append(buffer, "}");
     }

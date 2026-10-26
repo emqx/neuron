@@ -313,8 +313,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
 
         if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
-            e.error = neu_persister_update_node_property(cmd->node,
-                                                        &cmd->property);
+            e.error =
+                neu_persister_update_node_property(cmd->node, &cmd->property);
         }
         neu_req_update_node_property_fini(cmd);
         header->type = NEU_RESP_ERROR;
@@ -326,7 +326,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_get_node_properties_t *cmd =
             (neu_req_get_node_properties_t *) &header[1];
         neu_resp_get_node_properties_t resp = { 0 };
-        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+        neu_resp_error_t               e = { .error = NEU_ERR_NODE_NOT_EXIST };
 
         if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
             e.error = neu_persister_load_node_properties(

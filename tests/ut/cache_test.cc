@@ -10,7 +10,7 @@ class DriverCacheSample : public testing::Test {
 protected:
     void SetUp() override
     {
-        cache = neu_driver_cache_new();
+        cache                = neu_driver_cache_new();
         neu_dvalue_t initial = {};
         initial.type         = NEU_TYPE_ERROR;
         neu_driver_cache_add(cache, "group", "tag", initial);
@@ -36,8 +36,8 @@ protected:
 
     bool update(neu_dvalue_t value)
     {
-        return neu_driver_cache_update_change(cache, "group", "tag", 200,
-                                              value, NULL, 0, false);
+        return neu_driver_cache_update_change(cache, "group", "tag", 200, value,
+                                              NULL, 0, false);
     }
 
     int changed()
@@ -46,10 +46,10 @@ protected:
                                                  &metas, &n_meta);
     }
 
-    neu_driver_cache_t *cache = NULL;
-    neu_driver_cache_value_t out = {};
-    neu_tag_meta_t *metas = NULL;
-    int n_meta = 0;
+    neu_driver_cache_t *     cache  = NULL;
+    neu_driver_cache_value_t out    = {};
+    neu_tag_meta_t *         metas  = NULL;
+    int                      n_meta = 0;
 };
 
 TEST_F(DriverCacheSample, existing_update_preserves_optional_attrs)
@@ -60,8 +60,9 @@ TEST_F(DriverCacheSample, existing_update_preserves_optional_attrs)
         value.attrs.has_quality   = flags & 2;
         neu_driver_cache_update(cache, "group", "tag", 200, value, NULL, 0);
 
-        ASSERT_EQ(0, neu_driver_cache_meta_get(cache, "group", "tag", &out,
-                                               &metas, &n_meta));
+        ASSERT_EQ(0,
+                  neu_driver_cache_meta_get(cache, "group", "tag", &out, &metas,
+                                            &n_meta));
         EXPECT_EQ(200, out.timestamp);
         EXPECT_EQ(value.attrs.has_timestamp, out.value.attrs.has_timestamp);
         EXPECT_EQ(value.attrs.has_quality, out.value.attrs.has_quality);
@@ -79,8 +80,9 @@ TEST_F(DriverCacheSample, timestamp_alone_does_not_trigger_change)
     value.attrs.timestamp++;
     EXPECT_FALSE(update(value));
     EXPECT_NE(0, changed());
-    ASSERT_EQ(0, neu_driver_cache_meta_get(cache, "group", "tag", &out,
-                                           &metas, &n_meta));
+    ASSERT_EQ(0,
+              neu_driver_cache_meta_get(cache, "group", "tag", &out, &metas,
+                                        &n_meta));
     EXPECT_EQ(value.attrs.timestamp, out.value.attrs.timestamp);
 
     value.attrs.has_timestamp = false;
@@ -143,7 +145,7 @@ TEST_F(DriverCacheSample, forced_update_preserves_attrs)
 
 TEST_F(DriverCacheSample, filtered_error_compares_last_good_quality)
 {
-    sub_filter_err = true;
+    sub_filter_err     = true;
     neu_dvalue_t value = sample();
     ASSERT_TRUE(update(value));
     ASSERT_EQ(0, changed());
