@@ -54,8 +54,8 @@ protected:
         ASSERT_EQ(0, mkdir((directory + "/schemas").c_str(), 0700));
         std::filesystem::copy_file(
             std::string(NEU_PROPERTY_SCHEMA_DIR) +
-                "/0123_2.16.0_node_properties.sql",
-            directory + "/schemas/0123_2.16.0_node_properties.sql");
+                "/0160_2.16.1_node_properties.sql",
+            directory + "/schemas/0160_2.16.1_node_properties.sql");
         ASSERT_EQ(0, chdir(directory.c_str()));
         ASSERT_EQ(SQLITE_OK,
                   sqlite3_open_v2("persistence/sqlite.db", &db,
@@ -401,7 +401,7 @@ TEST_F(NodePropertyPersist, PersistenceReopenAndMigration)
     db     = neu_persister_get_db();
     expect("driver", { { "key", "[true,false]" } });
     EXPECT_EQ(1,
-              scalar("SELECT count(*) FROM migrations WHERE version='0123' AND "
+              scalar("SELECT count(*) FROM migrations WHERE version='0160' AND "
                      "dirty=0"));
     EXPECT_EQ(1, scalar("PRAGMA foreign_keys"));
     EXPECT_NE(nullptr, sqlite3_db_mutex(db));
