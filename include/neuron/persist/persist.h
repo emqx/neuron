@@ -28,6 +28,7 @@ extern "C" {
 
 #include "adapter_info.h"
 #include "persist/json/persist_json_plugin.h"
+#include "property.h"
 
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
 
@@ -263,6 +264,17 @@ int neu_persister_update_node_tags(const char *node_name, const char *tags);
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_update_node_state(const char *node_name, int state);
+
+int neu_persister_add_node_properties(const char *               node,
+                                      const neu_node_property_t *properties,
+                                      size_t                     n_property);
+int neu_persister_delete_node_properties(const char *       node,
+                                         const char *const *keys, size_t n_key);
+int neu_persister_update_node_property(const char *               node,
+                                       const neu_node_property_t *property);
+int neu_persister_load_node_properties(const char *          node,
+                                       neu_node_property_t **properties,
+                                       size_t *              n_property);
 
 /**
  * Persist plugins.

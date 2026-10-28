@@ -291,6 +291,123 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 }
 ```
 
+## Node Properties
+
+Node properties are custom key/value metadata for both southbound driver nodes and northbound application nodes. All four operations use **/api/v2/node/properties** and require an existing node.
+
+Properties retain their JSON value types across reads and restarts. Renaming a node moves its properties to the new name; deleting a node also deletes its properties. Recreating a node with the same name starts with no properties.
+
+### Request Headers
+
+**Authorization** Bearer \<token\> (JWT returned by the login API, using the same authentication rules as other node APIs)
+
+**Content-Type** application/json (POST, PUT and DELETE)
+
+### Keys and Values
+
+* `node` and `key` are required, non-empty strings and must not contain NUL (`\u0000`). Keys are unique within a node.
+* `value` is required, including when it is `false`, `0`, `""` or `[]`. It is a JSON value, not a JSON-encoded string.
+* Supported scalar values: string, boolean, integer and floating-point number. Integers use the signed 64-bit range; floating-point numbers must be finite and representable as double precision.
+* Supported arrays: one-dimensional arrays containing only strings, only booleans, or only numbers. Integers and floating-point numbers may be mixed in a numeric array, for example `[1, 2.5]`. Empty arrays are allowed.
+* `null`, objects, nested arrays and mixed-category arrays such as `[true, 1]` or `[1, "2"]` are rejected. JSON string values may contain escaped NUL (`\u0000`) and other escaped characters.
+* POST `properties` and DELETE `keys` must be non-empty arrays, without duplicate keys. Every item must be valid. A batch either succeeds in full or makes no changes.
+
+### Get Properties
+
+*GET* **/api/v2/node/properties?node=modbus-tcp-node**
+
+The `node` query parameter is required. URL-encode the node name when needed.
+
+HTTP 200 response:
+
+```json
+{
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+A node without properties returns `{"properties": []}`. The response contains JSON values with their original types; clients should identify properties by key rather than array position.
+
+### Add Properties
+
+*POST* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+All keys must be new. If any key already exists, the entire batch is rejected without adding or replacing any properties.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Update a Property
+
+*PUT* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "key": "enabled",
+    "value": true
+}
+```
+
+Replaces the value of one existing property. The new value may have a different supported type. This operation does not create a missing property or rename its key.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Delete Properties
+
+*DELETE* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "keys": ["location", "enabled"]
+}
+```
+
+Deletes the listed keys atomically. Missing keys are ignored and do not cause an error, including when all listed keys are missing. An empty `keys` array is not a request to delete all properties and is rejected.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Response Status
+
+| HTTP status | Error | Meaning |
+| --- | --- | --- |
+| 200 | 0 | POST, PUT or DELETE succeeded; GET returns the properties object shown above |
+| 400 | 1002 | Invalid JSON body, missing required fields or invalid keys/values/batch |
+| 400 | 1003 | Missing or invalid GET query parameter |
+| 401 / 403 | Existing JWT error codes | Missing, malformed, expired or invalid token, following the existing authentication rules |
+| 404 | 2003 | Node does not exist (all four operations) |
+| 404 | 2020 | Property does not exist (PUT only) |
+| 409 | 2019 | A property already exists (POST only); the entire batch is unchanged |
+
+Error responses use `{"error": <error code>}`.
+
 ## Get Node
 
 *GET*  /api/v2/node

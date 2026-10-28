@@ -85,6 +85,17 @@ struct neu_persister_vtbl_s {
     int (*update_node_state)(neu_persister_t *self, const char *node_name,
                              int state);
 
+    int (*add_node_properties)(neu_persister_t *self, const char *node,
+                               const neu_node_property_t *properties,
+                               size_t                     n_property);
+    int (*delete_node_properties)(neu_persister_t *self, const char *node,
+                                  const char *const *keys, size_t n_key);
+    int (*update_node_property)(neu_persister_t *self, const char *node,
+                                const neu_node_property_t *property);
+    int (*load_node_properties)(neu_persister_t *self, const char *node,
+                                neu_node_property_t **properties,
+                                size_t *              n_property);
+
     /**
      * Persist node setting.
      * @param adapter_name              name of the adapter who owns the

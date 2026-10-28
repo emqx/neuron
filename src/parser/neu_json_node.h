@@ -26,6 +26,7 @@
 #define _NEU_JSON_API_NEU_JSON_NODE_H_
 
 #include "define.h"
+#include "property.h"
 #include "json/json.h"
 
 #ifdef __cplusplus
@@ -148,6 +149,43 @@ typedef struct {
 } neu_json_get_node_setting_resp_t;
 
 int neu_json_encode_get_node_setting_resp(void *json_object, void *param);
+
+typedef struct {
+    char *               node;
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_json_add_node_properties_req_t;
+
+typedef struct {
+    char * node;
+    size_t n_key;
+    char **keys;
+} neu_json_delete_node_properties_req_t;
+
+typedef struct {
+    char *              node;
+    neu_node_property_t property;
+} neu_json_update_node_property_req_t;
+
+typedef struct {
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_json_get_node_properties_resp_t;
+
+int neu_json_decode_add_node_properties_req(
+    char *buf, neu_json_add_node_properties_req_t **result);
+void neu_json_decode_add_node_properties_req_free(
+    neu_json_add_node_properties_req_t *req);
+int neu_json_decode_delete_node_properties_req(
+    char *buf, neu_json_delete_node_properties_req_t **result);
+void neu_json_decode_delete_node_properties_req_free(
+    neu_json_delete_node_properties_req_t *req);
+int neu_json_decode_update_node_property_req(
+    char *buf, neu_json_update_node_property_req_t **result);
+void neu_json_decode_update_node_property_req_free(
+    neu_json_update_node_property_req_t *req);
+int neu_json_encode_get_node_properties_resp(
+    neu_json_get_node_properties_resp_t *resp, char **result);
 
 #ifdef __cplusplus
 }

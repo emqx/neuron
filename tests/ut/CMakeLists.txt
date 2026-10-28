@@ -77,6 +77,14 @@ target_include_directories(common_test PRIVATE
 )
 target_link_libraries(common_test neuron-base gtest_main gtest)
 
+add_executable(cache_test cache_test.cc
+    ${CMAKE_SOURCE_DIR}/src/adapter/driver/cache.c)
+target_include_directories(cache_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(cache_test gtest_main gtest pthread jansson m)
+
 file(COPY ${CMAKE_SOURCE_DIR}/tests/ut/serverBMS_3_test.cid DESTINATION ${UT_DIRECTORY}/config)
 add_executable(cid_test cid_test.cc)
 target_include_directories(cid_test PRIVATE 
@@ -101,6 +109,16 @@ target_include_directories(ede_test PRIVATE
 )
 target_link_libraries(ede_test neuron-base gtest_main gtest)
 
+add_executable(node_property_persist_test node_property_persist_test.cc)
+target_include_directories(node_property_persist_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+)
+target_compile_definitions(node_property_persist_test PRIVATE
+    NEU_PROPERTY_SCHEMA_DIR="${CMAKE_SOURCE_DIR}/persistence"
+)
+target_link_libraries(node_property_persist_test neuron-base gtest_main gtest pthread jansson sqlite3)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -112,6 +130,8 @@ gtest_discover_tests(async_queue_test)
 gtest_discover_tests(rolling_counter_test)
 gtest_discover_tests(mqtt_client_test)
 gtest_discover_tests(common_test)
+gtest_discover_tests(cache_test)
 gtest_discover_tests(cid_test)
 gtest_discover_tests(mqtt_schema_test)
 gtest_discover_tests(ede_test)
+gtest_discover_tests(node_property_persist_test)

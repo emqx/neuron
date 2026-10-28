@@ -277,6 +277,72 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_msg_free(msg);
         break;
     }
+    case NEU_REQ_ADD_NODE_PROPERTIES: {
+        neu_req_add_node_properties_t *cmd =
+            (neu_req_add_node_properties_t *) &header[1];
+        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+
+        if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
+            e.error = neu_persister_add_node_properties(
+                cmd->node, cmd->properties, cmd->n_property);
+        }
+        neu_req_add_node_properties_fini(cmd);
+        header->type = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(manager, header, &e);
+        break;
+    }
+    case NEU_REQ_DELETE_NODE_PROPERTIES: {
+        neu_req_delete_node_properties_t *cmd =
+            (neu_req_delete_node_properties_t *) &header[1];
+        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+
+        if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
+            e.error = neu_persister_delete_node_properties(
+                cmd->node, (const char *const *) cmd->keys, cmd->n_key);
+        }
+        neu_req_delete_node_properties_fini(cmd);
+        header->type = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(manager, header, &e);
+        break;
+    }
+    case NEU_REQ_UPDATE_NODE_PROPERTY: {
+        neu_req_update_node_property_t *cmd =
+            (neu_req_update_node_property_t *) &header[1];
+        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+
+        if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
+            e.error =
+                neu_persister_update_node_property(cmd->node, &cmd->property);
+        }
+        neu_req_update_node_property_fini(cmd);
+        header->type = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(manager, header, &e);
+        break;
+    }
+    case NEU_REQ_GET_NODE_PROPERTIES: {
+        neu_req_get_node_properties_t *cmd =
+            (neu_req_get_node_properties_t *) &header[1];
+        neu_resp_get_node_properties_t resp = { 0 };
+        neu_resp_error_t               e = { .error = NEU_ERR_NODE_NOT_EXIST };
+
+        if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
+            e.error = neu_persister_load_node_properties(
+                cmd->node, &resp.properties, &resp.n_property);
+        }
+        neu_msg_exchange(header);
+        if (e.error == NEU_ERR_SUCCESS) {
+            header->type = NEU_RESP_GET_NODE_PROPERTIES;
+            reply(manager, header, &resp);
+        } else {
+            neu_resp_get_node_properties_fini(&resp);
+            header->type = NEU_RESP_ERROR;
+            reply(manager, header, &e);
+        }
+        break;
+    }
     case NEU_REQ_UPDATE_NODE_TAG: {
         neu_req_update_node_tag_t *cmd =
             (neu_req_update_node_tag_t *) &header[1];
@@ -1645,6 +1711,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    case NEU_RESP_GET_NODE_PROPERTIES: {
+        neu_resp_get_node_properties_t resp =
+            *(neu_resp_get_node_properties_t *) &header[1];
+        reply(manager, header, &resp);
+        break;
+    }
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
     case NEU_RESP_IMPORT_TAGS:
@@ -1923,6 +1995,10 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
     } else {
         nlog_warn("reply %s to %s, error: %d", neu_reqresp_type_string(t),
                   receiver, ret);
+        if (t == NEU_RESP_GET_NODE_PROPERTIES) {
+            neu_resp_get_node_properties_fini(
+                (neu_resp_get_node_properties_t *) neu_msg_get_body(msg));
+        }
         neu_msg_free(msg);
     }
 }

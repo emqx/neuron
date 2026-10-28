@@ -713,6 +713,122 @@ void handle_put_drivers(nng_aio *aio)
         })
 }
 
+void handle_add_node_properties(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_add_node_properties_req_t,
+        neu_json_decode_add_node_properties_req, {
+            neu_reqresp_head_t            header = { 0 };
+            neu_req_add_node_properties_t cmd    = { 0 };
+            header.ctx                           = aio;
+            header.type                          = NEU_REQ_ADD_NODE_PROPERTIES;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+            strcpy(cmd.node, req->node);
+            cmd.properties  = req->properties;
+            cmd.n_property  = req->n_property;
+            req->properties = NULL;
+            req->n_property = 0;
+            if (neu_plugin_op(neu_rest_get_plugin(), header, &cmd) != 0) {
+                neu_req_add_node_properties_fini(&cmd);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+        })
+}
+
+void handle_delete_node_properties(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_delete_node_properties_req_t,
+        neu_json_decode_delete_node_properties_req, {
+            neu_reqresp_head_t               header = { 0 };
+            neu_req_delete_node_properties_t cmd    = { 0 };
+            header.ctx                              = aio;
+            header.type            = NEU_REQ_DELETE_NODE_PROPERTIES;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+            strcpy(cmd.node, req->node);
+            cmd.keys   = req->keys;
+            cmd.n_key  = req->n_key;
+            req->keys  = NULL;
+            req->n_key = 0;
+            if (neu_plugin_op(neu_rest_get_plugin(), header, &cmd) != 0) {
+                neu_req_delete_node_properties_fini(&cmd);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+        })
+}
+
+void handle_update_node_property(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_node_property_req_t,
+        neu_json_decode_update_node_property_req, {
+            neu_reqresp_head_t             header = { 0 };
+            neu_req_update_node_property_t cmd    = { 0 };
+            header.ctx                            = aio;
+            header.type            = NEU_REQ_UPDATE_NODE_PROPERTY;
+            header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+            strcpy(cmd.node, req->node);
+            cmd.property             = req->property;
+            req->property.key        = NULL;
+            req->property.value_json = NULL;
+            if (neu_plugin_op(neu_rest_get_plugin(), header, &cmd) != 0) {
+                neu_req_update_node_property_fini(&cmd);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+        })
+}
+
+void handle_get_node_properties(nng_aio *aio)
+{
+    NEU_VALIDATE_JWT(aio);
+
+    neu_req_get_node_properties_t cmd = { 0 };
+    ssize_t                       length =
+        neu_http_get_param_str(aio, "node", cmd.node, sizeof(cmd.node));
+    if (length <= 0 || length >= (ssize_t) sizeof(cmd.node) ||
+        strlen(cmd.node) != (size_t) length) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+        return;
+    }
+    neu_reqresp_head_t header = {
+        .ctx             = aio,
+        .type            = NEU_REQ_GET_NODE_PROPERTIES,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+    if (neu_plugin_op(neu_rest_get_plugin(), header, &cmd) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+    }
+}
+
+void handle_get_node_properties_resp(nng_aio *                       aio,
+                                     neu_resp_get_node_properties_t *properties)
+{
+    neu_json_get_node_properties_resp_t resp = {
+        .n_property = properties->n_property,
+        .properties = properties->properties,
+    };
+    char *result = NULL;
+    if (neu_json_encode_get_node_properties_resp(&resp, &result) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+    } else {
+        neu_http_ok(aio, result);
+    }
+    free(result);
+    neu_resp_get_node_properties_fini(properties);
+}
+
 void handle_put_node_tag(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();

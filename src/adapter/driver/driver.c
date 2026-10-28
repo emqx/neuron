@@ -2851,6 +2851,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
 
         tag_value.datatag.bias = tag->bias;
 
+        tag_value.value.attrs = value.value.attrs;
+
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
 
@@ -3040,6 +3042,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
             utarray_push_back(tag_values, &tag_value);
             continue;
         }
+
+        tag_value.value.attrs = value.value.attrs;
 
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
@@ -3235,6 +3239,8 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
             utarray_push_back(tag_values, &tag_value);
             continue;
         }
+
+        tag_value.value.attrs = value.value.attrs;
 
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
