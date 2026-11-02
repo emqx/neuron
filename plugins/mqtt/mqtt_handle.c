@@ -179,6 +179,47 @@ char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
     return json_str;
 }
 
+char *generate_flat_upload_json(neu_plugin_t *            plugin,
+                                neu_reqresp_trans_data_t *data)
+{
+    char *               json_str = NULL;
+    void *               values   = NULL;
+    neu_json_read_resp_t json     = { 0 };
+
+    if (0 != tag_values_to_json(data->tags, NULL, 0, &json, true)) {
+        plog_error(plugin, "tag_values_to_json fail");
+        return NULL;
+    }
+    if (json.n_tag == 0) {
+        return NULL;
+    }
+
+    values = neu_json_encode_new();
+    for (int i = 0; i < json.n_tag; i++) {
+        neu_json_elem_t tag_elem = { 0 };
+
+        if (json.tags[i].error != 0) {
+            continue;
+        }
+        tag_elem.name      = json.tags[i].name;
+        tag_elem.t         = json.tags[i].t;
+        tag_elem.v         = json.tags[i].value;
+        tag_elem.precision = json.tags[i].precision;
+        tag_elem.bias      = json.tags[i].datatag.bias;
+        neu_json_encode_field(values, &tag_elem, 1);
+    }
+    neu_json_encode(values, &json_str);
+    neu_json_encode_free(values);
+
+    for (int i = 0; i < json.n_tag; i++) {
+        if (json.tags[i].n_meta > 0) {
+            free(json.tags[i].metas);
+        }
+    }
+    free(json.tags);
+    return json_str;
+}
+
 static char *generate_read_resp_json(neu_plugin_t *         plugin,
                                      neu_json_mqtt_t *      mqtt,
                                      neu_resp_read_group_t *data)
