@@ -64,6 +64,9 @@ struct neu_plugin {
     void *app_data;
     // Last DTDL telemetry body, republished after connect. Unused otherwise.
     char *model_payload;
+    // JSON array of asset ids inserted into Azure IoT telemetry. Unused
+    // otherwise.
+    char *             asset_path;
     neu_event_timer_t *model_timer;
     void (*on_connected)(neu_plugin_t *plugin);
 };
