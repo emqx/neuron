@@ -211,6 +211,26 @@ char *generate_flat_upload_json(neu_plugin_t *            plugin,
     neu_json_encode(values, &json_str);
     neu_json_encode_free(values);
 
+    if (NULL != json_str && NULL != plugin->asset_path &&
+        '\0' != plugin->asset_path[0] && '{' == json_str[0]) {
+        char *with_asset = NULL;
+        int   n          = 0;
+
+        if ('}' == json_str[1]) {
+            n = neu_asprintf(&with_asset, "{\"assetPath\":%s}",
+                             plugin->asset_path);
+        } else {
+            n = neu_asprintf(&with_asset, "{\"assetPath\":%s,%s",
+                             plugin->asset_path, json_str + 1);
+        }
+        if (n > 0) {
+            free(json_str);
+            json_str = with_asset;
+        } else {
+            free(with_asset);
+        }
+    }
+
     for (int i = 0; i < json.n_tag; i++) {
         if (json.tags[i].n_meta > 0) {
             free(json.tags[i].metas);

@@ -1,4 +1,15 @@
 {
+  "asset-path": {
+    "name": "Asset Path",
+    "name_zh": "资产路径",
+    "description": "JSON array of asset ids from the plant to this sensor, included as assetPath in telemetry.",
+    "description_zh": "从工厂到本传感器的资产 id JSON 数组，随遥测以 assetPath 上报。",
+    "attribute": "optional",
+    "type": "string",
+    "valid": {
+      "length": 4096
+    }
+  },
   "model-id": {
     "name": "Model ID",
     "name_zh": "模型 ID",
