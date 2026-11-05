@@ -59,16 +59,6 @@ struct neu_plugin {
                         mqtt_config_t *config);
     int (*subscribe)(neu_plugin_t *plugin, const mqtt_config_t *config);
     int (*unsubscribe)(neu_plugin_t *plugin, const mqtt_config_t *config);
-
-    // Azure IoT DTDL tag routes. Unused by the other MQTT north plugins.
-    void *app_data;
-    // Last DTDL telemetry body, republished after connect. Unused otherwise.
-    char *model_payload;
-    // JSON array of asset ids inserted into Azure IoT telemetry. Unused
-    // otherwise.
-    char *             asset_path;
-    neu_event_timer_t *model_timer;
-    void (*on_connected)(neu_plugin_t *plugin);
 };
 
 static inline void route_entry_free(route_entry_t *e)

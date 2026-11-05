@@ -1,26 +1,4 @@
 {
-  "asset-path": {
-    "name": "Asset Path",
-    "name_zh": "资产路径",
-    "description": "JSON array of asset ids from the plant to this sensor, included as assetPath in telemetry.",
-    "description_zh": "从工厂到本传感器的资产 id JSON 数组，随遥测以 assetPath 上报。",
-    "attribute": "optional",
-    "type": "string",
-    "valid": {
-      "length": 4096
-    }
-  },
-  "model-id": {
-    "name": "Model ID",
-    "name_zh": "模型 ID",
-    "description": "DTDL interface ID announced as the MQTT model-id. When set, telemetry is a flat JSON object of tag names, and downlink uses twin desired properties and direct methods.",
-    "description_zh": "作为 MQTT model-id 声明的 DTDL Interface 标识。设置后，遥测改为点名平铺 JSON，下发改为 twin desired 和 direct method。",
-    "attribute": "optional",
-    "type": "string",
-    "valid": {
-      "length": 255
-    }
-  },
   "device-id": {
     "name": "Device ID",
     "name_zh": "设备 ID",

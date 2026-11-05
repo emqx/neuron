@@ -102,9 +102,6 @@ static void connect_cb(void *data)
     if (plugin->heartbeat_timer) {
         heartbeat_timer_cb(plugin);
     }
-    if (plugin->on_connected) {
-        plugin->on_connected(plugin);
-    }
 }
 
 static void disconnect_cb(void *data)

@@ -17,11 +17,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <inttypes.h>
-#include <string.h>
-
-#include <jansson.h>
-
 #include "utils/asprintf.h"
 #include "utils/time.h"
 
@@ -34,129 +29,6 @@
 #define AUTH_CERT 1
 
 #define MB 1000000
-
-#define AZURE_PENDING_MAGIC 0x415a4454u
-#define AZURE_PENDING_DESIRED 1
-#define AZURE_PENDING_METHOD 2
-
-#define AZURE_DESIRED_TOPIC "$iothub/twin/PATCH/properties/desired/#"
-#define AZURE_METHOD_TOPIC "$iothub/methods/POST/#"
-#define AZURE_TWIN_RES_TOPIC "$iothub/twin/res/#"
-
-typedef struct azure_tag_route {
-    char           tag[NEU_TAG_NAME_LEN];
-    char           driver[NEU_NODE_NAME_LEN];
-    char           group[NEU_GROUP_NAME_LEN];
-    UT_hash_handle hh;
-} azure_tag_route_t;
-
-typedef struct azure_pending {
-    uint32_t magic;
-    int      kind;
-    char *   rid;
-    char *   name;
-    char *   value_json;
-    int64_t  version;
-} azure_pending_t;
-
-static uint32_t azure_request_id = 1;
-
-static bool azure_model_mode(const mqtt_config_t *config)
-{
-    return NULL != config->username &&
-        NULL != strstr(config->username, "&model-id=");
-}
-
-static char *azure_url_encode(const char *src)
-{
-    static const char hex[] = "0123456789ABCDEF";
-    size_t            len   = strlen(src);
-    char *            out   = malloc(len * 3 + 1);
-    char *            p     = out;
-
-    if (NULL == out) {
-        return NULL;
-    }
-    for (; *src != '\0'; ++src) {
-        unsigned char c = (unsigned char) *src;
-        if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-            (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' ||
-            c == '~') {
-            *p++ = (char) c;
-        } else {
-            *p++ = '%';
-            *p++ = hex[c >> 4];
-            *p++ = hex[c & 0x0f];
-        }
-    }
-    *p = '\0';
-    return out;
-}
-
-static void azure_routes_free(neu_plugin_t *plugin)
-{
-    azure_tag_route_t *head  = plugin->app_data;
-    azure_tag_route_t *route = NULL;
-    azure_tag_route_t *tmp   = NULL;
-
-    HASH_ITER(hh, head, route, tmp)
-    {
-        HASH_DEL(head, route);
-        free(route);
-    }
-    plugin->app_data = head;
-}
-
-static void azure_route_put(neu_plugin_t *plugin, const char *tag,
-                            const char *driver, const char *group)
-{
-    azure_tag_route_t *head  = plugin->app_data;
-    azure_tag_route_t *route = NULL;
-
-    if (NULL == tag || '\0' == tag[0] || strlen(tag) >= NEU_TAG_NAME_LEN ||
-        NULL == driver || strlen(driver) >= NEU_NODE_NAME_LEN ||
-        NULL == group || strlen(group) >= NEU_GROUP_NAME_LEN) {
-        return;
-    }
-
-    HASH_FIND_STR(head, tag, route);
-    if (NULL == route) {
-        route = calloc(1, sizeof(*route));
-        if (NULL == route) {
-            return;
-        }
-        strncpy(route->tag, tag, sizeof(route->tag) - 1);
-        HASH_ADD_STR(head, tag, route);
-        plugin->app_data = head;
-    }
-    strncpy(route->driver, driver, sizeof(route->driver) - 1);
-    strncpy(route->group, group, sizeof(route->group) - 1);
-}
-
-static azure_tag_route_t *azure_route_get(neu_plugin_t *plugin, const char *tag)
-{
-    azure_tag_route_t *head  = plugin->app_data;
-    azure_tag_route_t *route = NULL;
-    HASH_FIND_STR(head, tag, route);
-    return route;
-}
-
-static void azure_pending_free(azure_pending_t *pending)
-{
-    if (NULL == pending) {
-        return;
-    }
-    free(pending->rid);
-    free(pending->name);
-    free(pending->value_json);
-    free(pending);
-}
-
-static bool azure_is_pending(const void *ctx)
-{
-    const azure_pending_t *pending = ctx;
-    return NULL != pending && AZURE_PENDING_MAGIC == pending->magic;
-}
 
 static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
                               mqtt_config_t *config)
@@ -231,49 +103,6 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
-static int azure_take_asset_path(neu_plugin_t *plugin, const char *setting)
-{
-    neu_json_elem_t elem = { .name = "asset-path", .t = NEU_JSON_STR };
-    char *          path = NULL;
-
-    if (0 == neu_parse_param(setting, NULL, 1, &elem) &&
-        NULL != elem.v.val_str && '\0' != elem.v.val_str[0]) {
-        json_error_t error = { 0 };
-        json_t *     root  = json_loads(elem.v.val_str, 0, &error);
-        size_t       index = 0;
-        json_t *     item  = NULL;
-
-        if (NULL == root || !json_is_array(root)) {
-            plog_error(plugin, "setting asset-path must be a JSON array");
-            json_decref(root);
-            free(elem.v.val_str);
-            return -1;
-        }
-        json_array_foreach(root, index, item)
-        {
-            if (!json_is_string(item) || '\0' == json_string_value(item)[0]) {
-                plog_error(plugin, "setting asset-path items must be strings");
-                json_decref(root);
-                free(elem.v.val_str);
-                return -1;
-            }
-        }
-        json_decref(root);
-        if (strlen(elem.v.val_str) > 4096) {
-            plog_error(plugin, "setting asset-path too long");
-            free(elem.v.val_str);
-            return -1;
-        }
-        path = elem.v.val_str;
-    } else {
-        free(elem.v.val_str);
-    }
-
-    free(plugin->asset_path);
-    plugin->asset_path = path;
-    return 0;
-}
-
 static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
                               mqtt_config_t *config)
 {
@@ -283,7 +112,6 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     char *      write_req_topic  = NULL;
     char *      write_resp_topic = NULL;
     char *      username         = NULL;
-    char *      model_id         = NULL;
 
     neu_json_elem_t client_id = { .name = "device-id", .t = NEU_JSON_STR };
     neu_json_elem_t qos       = { .name = "qos", .t = NEU_JSON_INT };
@@ -380,23 +208,6 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    {
-        neu_json_elem_t model_elem = { .name = "model-id", .t = NEU_JSON_STR };
-        if (0 == neu_parse_param(setting, NULL, 1, &model_elem)) {
-            if (NULL != model_elem.v.val_str &&
-                '\0' != model_elem.v.val_str[0]) {
-                if (strlen(model_elem.v.val_str) > 255) {
-                    plog_error(plugin, "setting model-id too long");
-                    free(model_elem.v.val_str);
-                    goto error;
-                }
-                model_id = model_elem.v.val_str;
-            } else {
-                free(model_elem.v.val_str);
-            }
-        }
-    }
-
     // write request topic
     if (0 > neu_asprintf(&write_req_topic, "devices/%s/messages/devicebound/#",
                          client_id.v.val_str)) {
@@ -411,25 +222,10 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    if (NULL == model_id) {
-        if (0 > neu_asprintf(&username, "%s/%s/?api-version=2021-04-12",
-                             host.v.val_str, client_id.v.val_str)) {
-            plog_error(plugin, "gen username fail");
-            goto error;
-        }
-    } else {
-        char *encoded = azure_url_encode(model_id);
-        if (NULL == encoded ||
-            0 > neu_asprintf(&username,
-                             "%s/%s/?api-version=2021-04-12&model-id=%s",
-                             host.v.val_str, client_id.v.val_str, encoded)) {
-            plog_error(plugin, "gen username fail");
-            free(encoded);
-            goto error;
-        }
-        free(encoded);
-        free(model_id);
-        model_id = NULL;
+    if (0 > neu_asprintf(&username, "%s/%s/?api-version=2021-04-12",
+                         host.v.val_str, client_id.v.val_str)) {
+        plog_error(plugin, "gen username fail");
+        goto error;
     }
 
     config->version          = NEU_MQTT_VERSION_V311;
@@ -471,8 +267,6 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     if (config->username) {
         plog_notice(plugin, "config username        : %s", config->username);
     }
-    plog_notice(plugin, "config dtdl            : %d",
-                azure_model_mode(config));
     if (config->password) {
         plog_notice(plugin, "config password        : %s",
                     0 == strlen(config->password) ? "" : placeholder);
@@ -488,17 +282,11 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     if (config->key) {
         plog_notice(plugin, "config key             : %s", placeholder);
     }
-    if (0 != azure_take_asset_path(plugin, setting)) {
-        goto error;
-    }
-    plog_notice(plugin, "config asset-path      : %s",
-                NULL != plugin->asset_path ? "set" : "");
 
     return 0;
 
 error:
     free(err_param);
-    free(model_id);
     free(client_id.v.val_str);
     free(write_req_topic);
     free(write_resp_topic);
@@ -509,367 +297,6 @@ error:
     free(cert.v.val_str);
     free(key.v.val_str);
     return -1;
-}
-
-static int azure_publish_copy(neu_plugin_t *plugin, const char *topic,
-                              const char *payload)
-{
-    char *topic_copy   = strdup(topic);
-    char *payload_copy = strdup(payload);
-    int   rv           = 0;
-
-    if (NULL == topic_copy || NULL == payload_copy) {
-        free(topic_copy);
-        free(payload_copy);
-        return -1;
-    }
-    rv = publish(plugin, NEU_MQTT_QOS0, topic_copy, payload_copy,
-                 strlen(payload_copy));
-    free(topic_copy);
-    return rv;
-}
-
-static void azure_publish_reported(neu_plugin_t *plugin, const char *name,
-                                   const char *value_json, int code,
-                                   int64_t version)
-{
-    json_t *     value   = NULL;
-    json_t *     item    = NULL;
-    json_t *     root    = NULL;
-    char *       payload = NULL;
-    char         topic[128];
-    json_error_t error = { 0 };
-    uint32_t     rid   = azure_request_id++;
-
-    value = json_loads(value_json, JSON_DECODE_ANY, &error);
-    if (NULL == value) {
-        plog_error(plugin, "reported value is not json");
-        return;
-    }
-    item = json_object();
-    root = json_object();
-    if (NULL == item || NULL == root) {
-        json_decref(value);
-        json_decref(item);
-        json_decref(root);
-        return;
-    }
-    json_object_set_new(item, "value", value);
-    json_object_set_new(item, "ac", json_integer(code));
-    json_object_set_new(item, "av", json_integer(version));
-    json_object_set_new(root, name, item);
-    payload = json_dumps(root, JSON_REAL_PRECISION(16));
-    json_decref(root);
-    if (NULL == payload) {
-        return;
-    }
-    snprintf(topic, sizeof(topic),
-             "$iothub/twin/PATCH/properties/reported/?$rid=%" PRIu32, rid);
-    if (0 != azure_publish_copy(plugin, topic, payload)) {
-        plog_error(plugin, "publish twin reported fail");
-    }
-    free(payload);
-}
-
-static void azure_publish_method_res(neu_plugin_t *plugin, const char *rid,
-                                     int status)
-{
-    char topic[160];
-
-    snprintf(topic, sizeof(topic), "$iothub/methods/res/%d/?$rid=%s", status,
-             rid);
-    if (0 != azure_publish_copy(plugin, topic, "{}")) {
-        plog_error(plugin, "publish direct method response fail");
-    }
-}
-
-static int azure_finish_write(neu_plugin_t *plugin, azure_pending_t *pending,
-                              neu_resp_error_t *resp)
-{
-    int ok = NULL != resp && NEU_ERR_SUCCESS == resp->error;
-
-    if (AZURE_PENDING_DESIRED == pending->kind) {
-        azure_publish_reported(plugin, pending->name, pending->value_json,
-                               ok ? 200 : 500, pending->version);
-    } else {
-        azure_publish_method_res(plugin, pending->rid, ok ? 200 : 500);
-    }
-    azure_pending_free(pending);
-    return NEU_ERR_SUCCESS;
-}
-
-static int json_to_dvalue(json_t *val, neu_dvalue_t *out)
-{
-    memset(out, 0, sizeof(*out));
-    if (json_is_integer(val)) {
-        out->type      = NEU_TYPE_INT64;
-        out->value.i64 = json_integer_value(val);
-        return 0;
-    }
-    if (json_is_real(val)) {
-        out->type      = NEU_TYPE_DOUBLE;
-        out->value.d64 = json_real_value(val);
-        return 0;
-    }
-    if (json_is_boolean(val)) {
-        out->type          = NEU_TYPE_BOOL;
-        out->value.boolean = json_is_true(val);
-        return 0;
-    }
-    if (json_is_string(val)) {
-        const char *text = json_string_value(val);
-        if (NULL == text || strlen(text) >= NEU_VALUE_SIZE) {
-            return -1;
-        }
-        out->type = NEU_TYPE_STRING;
-        strncpy(out->value.str, text, sizeof(out->value.str) - 1);
-        return 0;
-    }
-    return -1;
-}
-
-static int azure_write_value(neu_plugin_t *plugin, const char *name,
-                             json_t *value, int kind, const char *rid,
-                             int64_t version)
-{
-    azure_tag_route_t * route   = azure_route_get(plugin, name);
-    azure_pending_t *   pending = NULL;
-    neu_reqresp_head_t  header  = { 0 };
-    neu_req_write_tag_t cmd     = { 0 };
-    char *              dumped  = NULL;
-
-    dumped = json_dumps(value, JSON_ENCODE_ANY | JSON_REAL_PRECISION(16));
-    if (NULL == dumped) {
-        return -1;
-    }
-    if (NULL == route) {
-        plog_notice(plugin, "no south tag for `%s`", name);
-        if (AZURE_PENDING_DESIRED == kind) {
-            azure_publish_reported(plugin, name, dumped, 404, version);
-        } else if (NULL != rid) {
-            azure_publish_method_res(plugin, rid, 404);
-        }
-        free(dumped);
-        return 0;
-    }
-    if (0 != json_to_dvalue(value, &cmd.value)) {
-        plog_error(plugin, "unsupported value for `%s`", name);
-        if (AZURE_PENDING_DESIRED == kind) {
-            azure_publish_reported(plugin, name, dumped, 400, version);
-        } else if (NULL != rid) {
-            azure_publish_method_res(plugin, rid, 400);
-        }
-        free(dumped);
-        return 0;
-    }
-
-    pending = calloc(1, sizeof(*pending));
-    if (NULL == pending) {
-        free(dumped);
-        return -1;
-    }
-    pending->magic      = AZURE_PENDING_MAGIC;
-    pending->kind       = kind;
-    pending->name       = strdup(name);
-    pending->value_json = dumped;
-    pending->version    = version;
-    pending->rid        = NULL != rid ? strdup(rid) : NULL;
-    if (NULL == pending->name || NULL == pending->value_json ||
-        (NULL != rid && NULL == pending->rid)) {
-        azure_pending_free(pending);
-        return -1;
-    }
-
-    header.ctx  = pending;
-    header.type = NEU_REQ_WRITE_TAG;
-    cmd.driver  = strdup(route->driver);
-    cmd.group   = strdup(route->group);
-    cmd.tag     = strdup(name);
-    if (NULL == cmd.driver || NULL == cmd.group || NULL == cmd.tag ||
-        0 != neu_plugin_op(plugin, header, &cmd)) {
-        plog_error(plugin, "write tag `%s` fail", name);
-        free(cmd.driver);
-        free(cmd.group);
-        free(cmd.tag);
-        if (AZURE_PENDING_DESIRED == kind) {
-            azure_publish_reported(plugin, name, pending->value_json, 500,
-                                   version);
-        } else if (NULL != rid) {
-            azure_publish_method_res(plugin, rid, 500);
-        }
-        azure_pending_free(pending);
-        return -1;
-    }
-    return 0;
-}
-
-static void azure_apply_properties(neu_plugin_t *plugin, json_t *object,
-                                   int64_t version)
-{
-    const char *key = NULL;
-    json_t *    val = NULL;
-
-    json_object_foreach(object, key, val)
-    {
-        if ('$' == key[0]) {
-            continue;
-        }
-        azure_write_value(plugin, key, val, AZURE_PENDING_DESIRED, NULL,
-                          version);
-    }
-}
-
-static void azure_on_twin(neu_mqtt_qos_e qos, const char *topic,
-                          const uint8_t *payload, uint32_t len, void *data,
-                          trace_w3c_t *trace_w3c)
-{
-    neu_plugin_t *plugin  = data;
-    json_error_t  error   = { 0 };
-    json_t *      root    = NULL;
-    json_t *      desired = NULL;
-    json_t *      version = NULL;
-    int64_t       ver     = 0;
-
-    (void) qos;
-    (void) trace_w3c;
-    root = json_loadb((const char *) payload, len, 0, &error);
-    if (!json_is_object(root)) {
-        json_decref(root);
-        plog_error(plugin, "twin payload is not an object");
-        return;
-    }
-    if (NULL != strstr(topic, "$iothub/twin/res/")) {
-        if (NULL == strstr(topic, "/res/200/")) {
-            json_decref(root);
-            return;
-        }
-        desired = json_object_get(root, "desired");
-    } else {
-        desired = root;
-    }
-    if (!json_is_object(desired)) {
-        json_decref(root);
-        return;
-    }
-    version = json_object_get(desired, "$version");
-    if (json_is_integer(version)) {
-        ver = json_integer_value(version);
-    }
-    azure_apply_properties(plugin, desired, ver);
-    json_decref(root);
-}
-
-static void azure_on_method(neu_mqtt_qos_e qos, const char *topic,
-                            const uint8_t *payload, uint32_t len, void *data,
-                            trace_w3c_t *trace_w3c)
-{
-    neu_plugin_t *plugin = data;
-    const char *  post   = NULL;
-    const char *  slash  = NULL;
-    const char *  rid    = NULL;
-    char          name[NEU_TAG_NAME_LEN];
-    json_error_t  error = { 0 };
-    json_t *      body  = NULL;
-    size_t        nlen  = 0;
-
-    (void) qos;
-    (void) trace_w3c;
-    post = strstr(topic, "/POST/");
-    rid  = strstr(topic, "$rid=");
-    if (NULL == post || NULL == rid) {
-        plog_error(plugin, "direct method topic `%s` missing name or rid",
-                   topic);
-        return;
-    }
-    post += strlen("/POST/");
-    slash = strchr(post, '/');
-    nlen  = NULL == slash ? strlen(post) : (size_t)(slash - post);
-    if (0 == nlen || nlen >= sizeof(name)) {
-        azure_publish_method_res(plugin, rid + 5, 404);
-        return;
-    }
-    memcpy(name, post, nlen);
-    name[nlen] = '\0';
-    rid += 5;
-
-    body = json_loadb((const char *) payload, len, JSON_DECODE_ANY, &error);
-    if (NULL == body) {
-        azure_publish_method_res(plugin, rid, 400);
-        return;
-    }
-    azure_write_value(plugin, name, body, AZURE_PENDING_METHOD, rid, 0);
-    json_decref(body);
-}
-
-static void azure_remember_payload(neu_plugin_t *plugin, const char *json)
-{
-    char *copy = strdup(json);
-    if (NULL == copy) {
-        return;
-    }
-    free(plugin->model_payload);
-    plugin->model_payload = copy;
-}
-
-static void azure_publish_model_payload(neu_plugin_t *plugin)
-{
-    char *copy = NULL;
-
-    if (!azure_model_mode(&plugin->config) || NULL == plugin->model_payload ||
-        NULL == plugin->upload_topic || NULL == plugin->client ||
-        !neu_mqtt_client_is_connected(plugin->client)) {
-        return;
-    }
-    copy = strdup(plugin->model_payload);
-    if (NULL == copy) {
-        return;
-    }
-    publish(plugin, plugin->config.qos, plugin->upload_topic, copy,
-            strlen(copy));
-}
-
-static int azure_model_timer(void *data)
-{
-    azure_publish_model_payload(data);
-    return 0;
-}
-
-static void azure_start_model_timer(neu_plugin_t *plugin)
-{
-    neu_event_timer_param_t param = {
-        .second      = 10,
-        .millisecond = 0,
-        .cb          = azure_model_timer,
-        .usr_data    = plugin,
-    };
-
-    if (NULL != plugin->model_timer || !azure_model_mode(&plugin->config)) {
-        return;
-    }
-    if (NULL == plugin->events) {
-        plugin->events = neu_event_new(plugin->common.name);
-        if (NULL == plugin->events) {
-            return;
-        }
-    }
-    plugin->model_timer = neu_event_add_timer(plugin->events, param);
-}
-
-static void azure_on_connected(neu_plugin_t *plugin)
-{
-    azure_start_model_timer(plugin);
-    azure_publish_model_payload(plugin);
-}
-
-static void azure_request_twin(neu_plugin_t *plugin)
-{
-    if (NULL == plugin->client ||
-        !neu_mqtt_client_is_connected(plugin->client)) {
-        return;
-    }
-    if (0 != azure_publish_copy(plugin, "$iothub/twin/GET/?$rid=1", "")) {
-        plog_notice(plugin, "request twin failed");
-    }
 }
 
 static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
@@ -887,45 +314,21 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
         }
     }
 
-    if (!azure_model_mode(config)) {
-        if (0 !=
-            neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                      config->write_req_topic, plugin,
-                                      handle_write_req)) {
-            plog_error(plugin, "subscribe [%s] fail", config->write_req_topic);
-            return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
-        }
-        return 0;
-    }
-
     if (0 !=
-            neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                      AZURE_DESIRED_TOPIC, plugin,
-                                      azure_on_twin) ||
-        0 !=
-            neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                      AZURE_TWIN_RES_TOPIC, plugin,
-                                      azure_on_twin) ||
-        0 !=
-            neu_mqtt_client_subscribe(plugin->client, config->qos,
-                                      AZURE_METHOD_TOPIC, plugin,
-                                      azure_on_method)) {
-        plog_error(plugin, "subscribe twin or method topic fail");
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->write_req_topic, plugin,
+                                  handle_write_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.write_req_topic);
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }
-    azure_request_twin(plugin);
+
     return 0;
 }
 
 static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 {
-    if (azure_model_mode(config)) {
-        neu_mqtt_client_unsubscribe(plugin->client, AZURE_DESIRED_TOPIC);
-        neu_mqtt_client_unsubscribe(plugin->client, AZURE_TWIN_RES_TOPIC);
-        neu_mqtt_client_unsubscribe(plugin->client, AZURE_METHOD_TOPIC);
-    } else {
-        neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
-    }
+    neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
     neu_msleep(100); // wait for message completion
     return 0;
 }
@@ -937,39 +340,8 @@ static neu_plugin_t *azure_plugin_open(void)
     plugin->parse_config = azure_parse_config;
     plugin->subscribe    = subscribe;
     plugin->unsubscribe  = unsubscribe;
-    plugin->on_connected = azure_on_connected;
 
     return plugin;
-}
-
-static void azure_stop_model_timer(neu_plugin_t *plugin)
-{
-    if (NULL != plugin->model_timer && NULL != plugin->events) {
-        neu_event_del_timer(plugin->events, plugin->model_timer);
-    }
-    plugin->model_timer = NULL;
-}
-
-static int azure_plugin_uninit(neu_plugin_t *plugin)
-{
-    azure_stop_model_timer(plugin);
-    azure_routes_free(plugin);
-    free(plugin->model_payload);
-    plugin->model_payload = NULL;
-    free(plugin->asset_path);
-    plugin->asset_path = NULL;
-    return mqtt_plugin_uninit(plugin);
-}
-
-static int azure_plugin_close(neu_plugin_t *plugin)
-{
-    azure_stop_model_timer(plugin);
-    azure_routes_free(plugin);
-    free(plugin->model_payload);
-    plugin->model_payload = NULL;
-    free(plugin->asset_path);
-    plugin->asset_path = NULL;
-    return mqtt_plugin_close(plugin);
 }
 
 static int azure_handle_trans_data(neu_plugin_t *            plugin,
@@ -981,37 +353,17 @@ static int azure_handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_MQTT_IS_NULL;
     }
 
-    // DTDL mode keeps the sample and publishes it once the session connects.
-    if (!azure_model_mode(&plugin->config) && 0 == plugin->config.cache &&
+    if (0 == plugin->config.cache &&
         !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
         return NEU_ERR_MQTT_FAILURE;
     }
 
-    char *json_str = NULL;
-    if (azure_model_mode(&plugin->config)) {
-        utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *,
-                        tag_value)
-        {
-            azure_route_put(plugin, tag_value->tag, trans_data->driver,
-                            trans_data->group);
-        }
-        json_str = generate_flat_upload_json(plugin, trans_data);
-        if (NULL == json_str) {
-            return NEU_ERR_SUCCESS;
-        }
-        azure_remember_payload(plugin, json_str);
-        if (NULL == plugin->client ||
-            !neu_mqtt_client_is_connected(plugin->client)) {
-            free(json_str);
-            return NEU_ERR_SUCCESS;
-        }
-    } else {
-        json_str = generate_upload_json(
-            plugin, trans_data, plugin->config.format, NULL, 0, NULL, 0, NULL);
-        if (NULL == json_str) {
-            plog_error(plugin, "generate upload json fail");
-            return NEU_ERR_EINTERNAL;
-        }
+    char *json_str = generate_upload_json(
+        plugin, trans_data, plugin->config.format, NULL, 0, NULL, 0, NULL);
+    if (NULL == json_str) {
+        plog_error(plugin, "generate upload json fail");
+        return NEU_ERR_EINTERNAL;
     }
 
     char *         topic = plugin->upload_topic;
@@ -1038,12 +390,8 @@ static int azure_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        if (azure_is_pending(head->ctx)) {
-            error = azure_finish_write(plugin, head->ctx, data);
-        } else {
-            error = handle_write_response(plugin, head->ctx, data, NULL, NULL,
-                                          NULL);
-        }
+        error =
+            handle_write_response(plugin, head->ctx, data, NULL, NULL, NULL);
         break;
     case NEU_RESP_READ_GROUP:
         // error = handle_read_response(plugin, head->ctx, data);
@@ -1081,9 +429,9 @@ static int azure_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
 const neu_plugin_intf_funs_t azure_plugin_intf_funs = {
     .open    = azure_plugin_open,
-    .close   = azure_plugin_close,
+    .close   = mqtt_plugin_close,
     .init    = mqtt_plugin_init,
-    .uninit  = azure_plugin_uninit,
+    .uninit  = mqtt_plugin_uninit,
     .start   = mqtt_plugin_start,
     .stop    = mqtt_plugin_stop,
     .setting = mqtt_plugin_config,

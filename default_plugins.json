@@ -1,7 +1,6 @@
 {
 	"plugins": [
 		"libplugin-mqtt.so",
-		"libplugin-thingsneural.so",
 		"libplugin-aws-iot.so",
 		"libplugin-azure-iot.so",
 		"libplugin-ekuiper.so",
