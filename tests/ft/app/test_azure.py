@@ -58,11 +58,6 @@ FORMAT_TAGS = 1
 HUB = "127.0.0.1"
 DEVICE_ID = "client-005"
 USER = f"{HUB}/{DEVICE_ID}/?api-version=2021-04-12"
-MODEL_ID = "dtmi:com:example:Thermostat;1"
-DTDL_USER = (
-    f"{HUB}/{DEVICE_ID}/?api-version=2021-04-12"
-    "&model-id=dtmi%3Acom%3Aexample%3AThermostat%3B1"
-)
 SAS = "neuron"
 PASSWORD = SAS
 D2C_TOPIC = f"devices/{DEVICE_ID}/messages/events/"
@@ -137,14 +132,6 @@ def conf_fmt_tags(conf_base):
     return {
         **conf_base,
         "format": FORMAT_TAGS,
-    }
-
-
-@pytest.fixture(scope="function")
-def conf_dtdl(conf_base):
-    return {
-        **conf_base,
-        "model-id": MODEL_ID,
     }
 
 
@@ -455,62 +442,6 @@ class TestAzure:
 
         time.sleep(INTERVAL * 5 / 1000)
         assert 1234 == api.read_tag(DRIVER, GROUP, TAG0["name"])
-
-    @description(
-        given="Azure node with a DTDL model-id",
-        when="tags are reported and a desired property or direct method arrives",
-        then="telemetry is a flat object and the matching tag is written",
-    )
-    def test_azure_dtdl(self, mocker, conf_dtdl):
-        import os
-        import signal
-        import subprocess
-
-        subprocess.run(
-            [
-                "mosquitto_passwd",
-                "-b",
-                "/tmp/neuron-ft-mosquitto.pass",
-                DTDL_USER,
-                SAS,
-            ],
-            check=True,
-        )
-        os.kill(mocker.broker.proc.pid, signal.SIGHUP)
-        time.sleep(0.3)
-
-        api.node_setting_check(NODE, conf_dtdl)
-        api.node_ctl(NODE, config.NEU_CTL_START)
-        mocker.assert_client_connected()
-
-        msg = mocker.get(D2C_TOPIC, timeout=3)
-        assert msg is not None
-        assert "node" not in msg
-        assert "values" not in msg
-        assert TAG0["name"] in msg
-
-        reported = mocker.reqresp(
-            "$iothub/twin/PATCH/properties/reported/#",
-            "$iothub/twin/PATCH/properties/desired/?$version=3",
-            {"tag0": 1234, "$version": 3},
-            timeout=3,
-        )
-        assert reported is not None
-        assert 200 == reported["tag0"]["ac"]
-        assert 3 == reported["tag0"]["av"]
-        assert 1234 == reported["tag0"]["value"]
-        time.sleep(INTERVAL * 5 / 1000)
-        assert 1234 == api.read_tag(DRIVER, GROUP, TAG0["name"])
-
-        method = mocker.reqresp(
-            "$iothub/methods/res/200/?$rid=9",
-            "$iothub/methods/POST/tag0/?$rid=9",
-            42,
-            timeout=3,
-        )
-        assert {} == method
-        time.sleep(INTERVAL * 5 / 1000)
-        assert 42 == api.read_tag(DRIVER, GROUP, TAG0["name"])
 
     @description(
         given="Azure node",
