@@ -1183,7 +1183,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
         neu_req_get_sub_driver_tags_t *cmd =
             (neu_req_get_sub_driver_tags_t *) &header[1];
-        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        neu_resp_get_sub_driver_tags_t resp        = { 0 };
+        int                            value_error = NEU_ERR_SUCCESS;
         UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
 
         utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
@@ -1196,12 +1197,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
             snprintf(in.driver, sizeof(in.driver), "%s", info->driver);
             snprintf(in.group, sizeof(in.group), "%s", info->group);
-            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
-                                             info->group, &in.tags);
+            value_error = neu_adapter_driver_get_value_tag(
+                (neu_adapter_driver_t *) driver, info->group, &in.tags);
+            if (value_error != NEU_ERR_SUCCESS) {
+                break;
+            }
 
             utarray_push_back(resp.infos, &in);
         }
         utarray_free(groups);
+        if (value_error != NEU_ERR_SUCCESS) {
+            utarray_foreach(resp.infos, neu_resp_get_sub_driver_tags_info_t *,
+                            in)
+            {
+                utarray_free(in->tags);
+            }
+            utarray_free(resp.infos);
+            neu_resp_error_t error = { .error = value_error };
+            header->type           = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &error);
+            break;
+        }
 
         snprintf(header->receiver, sizeof(header->receiver), "%s",
                  header->sender);
@@ -1226,7 +1243,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_DATALAYERS_TAGS: {
         neu_req_get_sub_driver_tags_t *cmd =
             (neu_req_get_sub_driver_tags_t *) &header[1];
-        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        neu_resp_get_sub_driver_tags_t resp        = { 0 };
+        int                            value_error = NEU_ERR_SUCCESS;
         UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
         bool      found  = false;
 
@@ -1247,12 +1265,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
             snprintf(in.driver, sizeof(in.driver), "%s", info->driver);
             snprintf(in.group, sizeof(in.group), "%s", info->group);
-            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
-                                             info->group, &in.tags);
+            value_error = neu_adapter_driver_get_value_tag(
+                (neu_adapter_driver_t *) driver, info->group, &in.tags);
+            if (value_error != NEU_ERR_SUCCESS) {
+                break;
+            }
 
             utarray_push_back(resp.infos, &in);
         }
         utarray_free(groups);
+        if (value_error != NEU_ERR_SUCCESS) {
+            utarray_foreach(resp.infos, neu_resp_get_sub_driver_tags_info_t *,
+                            in)
+            {
+                utarray_free(in->tags);
+            }
+            utarray_free(resp.infos);
+            neu_resp_error_t error = { .error = value_error };
+            header->type           = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &error);
+            break;
+        }
 
         if (!found) {
             utarray_free(resp.infos);
@@ -1273,7 +1307,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_DATALAYERS_TAG: {
         neu_req_get_sub_driver_tags_t *cmd =
             (neu_req_get_sub_driver_tags_t *) &header[1];
-        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        neu_resp_get_sub_driver_tags_t resp        = { 0 };
+        int                            value_error = NEU_ERR_SUCCESS;
         UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
         bool      found  = false;
 
@@ -1286,8 +1321,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_node_manager_find(manager->node_manager, info->driver);
             assert(driver != NULL);
 
-            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
-                                             info->group, &in.tags);
+            value_error = neu_adapter_driver_get_value_tag(
+                (neu_adapter_driver_t *) driver, info->group, &in.tags);
+            if (value_error != NEU_ERR_SUCCESS) {
+                break;
+            }
 
             if (in.tags) {
                 UT_array *filtered_tags = NULL;
@@ -1315,6 +1353,19 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         utarray_free(groups);
+        if (value_error != NEU_ERR_SUCCESS) {
+            utarray_foreach(resp.infos, neu_resp_get_sub_driver_tags_info_t *,
+                            in)
+            {
+                utarray_free(in->tags);
+            }
+            utarray_free(resp.infos);
+            neu_resp_error_t error = { .error = value_error };
+            header->type           = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &error);
+            break;
+        }
 
         if (!found) {
             utarray_free(resp.infos);

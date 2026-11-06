@@ -6,6 +6,7 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 
 ### Data Type
 
+* AUTO   = 0
 * INT8   = 1
 * UINT8  = 2
 * INT16  = 3
@@ -24,6 +25,16 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 * WORD = 16
 * DWORD = 17
 * LWORD = 18
+
+### AUTO tags
+
+Set the required tag configuration field explicitly to `"type": 0` to request automatic type detection. Omitting `type` is not equivalent to AUTO. A driver must opt in through its existing tag validation and return concrete sample types; unsupported drivers reject AUTO with error `2204`. Modbus does not support AUTO. This framework support does not mean that closed-source drivers such as OPC UA have been integrated; each dynamic protocol driver requires its own implementation.
+
+The first valid, successful sample fixes the concrete runtime type for that tag's cache lifecycle. Before detection, reads and writes return `3011` (tag not ready). Later samples with a different semantic type return `3007` (type mismatch), without changing the detected type. Communication errors also preserve it, and sampling recovers when the original type returns. Rebuilding the tag/group cache, including a restart, resets detection; a disconnection alone does not.
+
+AUTO requires a readable tag; write-only AUTO is rejected with `2204`. After detection, single and batch writes are checked against the concrete type, including input type and numeric range, before the driver receives them. For example, an INT16 tag accepts integer `123`, but rejects `40000` and string `"123"`. Writes invalidated by a tag/group cache rebuild return `3011` rather than being reinterpreted with another type.
+
+Configuration queries, exports and persistent storage continue to show `type: 0`; detection does not rewrite metadata or add a `resolved_type` field. Read/report values use the detected concrete type and its applicable precision, scaling and address options. Numeric scaling does not apply to nonnumeric types, and a scaled output value does not change the detected device type.
 
 ### Baud
 
