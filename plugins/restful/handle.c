@@ -110,6 +110,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/node/setting",
     },
     {
+        .url = "/api/v2/node/properties",
+    },
+    {
         .url = "/api/v2/node/ctl",
     },
     {
@@ -762,6 +765,30 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/simulator/export",
         .value.handler = handle_simulator_export,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/properties",
+        .value.handler = handle_add_node_properties,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/properties",
+        .value.handler = handle_update_node_property,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/properties",
+        .value.handler = handle_delete_node_properties,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/properties",
+        .value.handler = handle_get_node_properties,
     },
     {
         .method        = NEU_HTTP_METHOD_PUT,

@@ -6,6 +6,7 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 
 ### Data Type
 
+* AUTO   = 0
 * INT8   = 1
 * UINT8  = 2
 * INT16  = 3
@@ -24,6 +25,16 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 * WORD = 16
 * DWORD = 17
 * LWORD = 18
+
+### AUTO tags
+
+Set the required tag configuration field explicitly to `"type": 0` to request automatic type detection. Omitting `type` is not equivalent to AUTO. A driver must opt in through its existing tag validation and return concrete sample types; unsupported drivers reject AUTO with error `2204`. Modbus does not support AUTO. This framework support does not mean that closed-source drivers such as OPC UA have been integrated; each dynamic protocol driver requires its own implementation.
+
+The first valid, successful sample fixes the concrete runtime type for that tag's cache lifecycle. Before detection, reads and writes return `3011` (tag not ready). Later samples with a different semantic type return `3007` (type mismatch), without changing the detected type. Communication errors also preserve it, and sampling recovers when the original type returns. Rebuilding the tag/group cache, including a restart, resets detection; a disconnection alone does not.
+
+AUTO requires a readable tag; write-only AUTO is rejected with `2204`. After detection, single and batch writes are checked against the concrete type, including input type and numeric range, before the driver receives them. For example, an INT16 tag accepts integer `123`, but rejects `40000` and string `"123"`. Writes invalidated by a tag/group cache rebuild return `3011` rather than being reinterpreted with another type.
+
+Configuration queries, exports and persistent storage continue to show `type: 0`; detection does not rewrite metadata or add a `resolved_type` field. Read/report values use the detected concrete type and its applicable precision, scaling and address options. Numeric scaling does not apply to nonnumeric types, and a scaled output value does not change the detected device type.
 
 ### Baud
 
@@ -290,6 +301,123 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
     "error": 0
 }
 ```
+
+## Node Properties
+
+Node properties are custom key/value metadata for both southbound driver nodes and northbound application nodes. All four operations use **/api/v2/node/properties** and require an existing node.
+
+Properties retain their JSON value types across reads and restarts. Renaming a node moves its properties to the new name; deleting a node also deletes its properties. Recreating a node with the same name starts with no properties.
+
+### Request Headers
+
+**Authorization** Bearer \<token\> (JWT returned by the login API, using the same authentication rules as other node APIs)
+
+**Content-Type** application/json (POST, PUT and DELETE)
+
+### Keys and Values
+
+* `node` and `key` are required, non-empty strings and must not contain NUL (`\u0000`). Keys are unique within a node.
+* `value` is required, including when it is `false`, `0`, `""` or `[]`. It is a JSON value, not a JSON-encoded string.
+* Supported scalar values: string, boolean, integer and floating-point number. Integers use the signed 64-bit range; floating-point numbers must be finite and representable as double precision.
+* Supported arrays: one-dimensional arrays containing only strings, only booleans, or only numbers. Integers and floating-point numbers may be mixed in a numeric array, for example `[1, 2.5]`. Empty arrays are allowed.
+* `null`, objects, nested arrays and mixed-category arrays such as `[true, 1]` or `[1, "2"]` are rejected. JSON string values may contain escaped NUL (`\u0000`) and other escaped characters.
+* POST `properties` and DELETE `keys` must be non-empty arrays, without duplicate keys. Every item must be valid. A batch either succeeds in full or makes no changes.
+
+### Get Properties
+
+*GET* **/api/v2/node/properties?node=modbus-tcp-node**
+
+The `node` query parameter is required. URL-encode the node name when needed.
+
+HTTP 200 response:
+
+```json
+{
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+A node without properties returns `{"properties": []}`. The response contains JSON values with their original types; clients should identify properties by key rather than array position.
+
+### Add Properties
+
+*POST* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+All keys must be new. If any key already exists, the entire batch is rejected without adding or replacing any properties.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Update a Property
+
+*PUT* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "key": "enabled",
+    "value": true
+}
+```
+
+Replaces the value of one existing property. The new value may have a different supported type. This operation does not create a missing property or rename its key.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Delete Properties
+
+*DELETE* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "keys": ["location", "enabled"]
+}
+```
+
+Deletes the listed keys atomically. Missing keys are ignored and do not cause an error, including when all listed keys are missing. An empty `keys` array is not a request to delete all properties and is rejected.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Response Status
+
+| HTTP status | Error | Meaning |
+| --- | --- | --- |
+| 200 | 0 | POST, PUT or DELETE succeeded; GET returns the properties object shown above |
+| 400 | 1002 | Invalid JSON body, missing required fields or invalid keys/values/batch |
+| 400 | 1003 | Missing or invalid GET query parameter |
+| 401 / 403 | Existing JWT error codes | Missing, malformed, expired or invalid token, following the existing authentication rules |
+| 404 | 2003 | Node does not exist (all four operations) |
+| 404 | 2020 | Property does not exist (PUT only) |
+| 409 | 2019 | A property already exists (POST only); the entire batch is unchanged |
+
+Error responses use `{"error": <error code>}`.
 
 ## Get Node
 

@@ -620,6 +620,10 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         snprintf(pheader->receiver, sizeof(pheader->receiver), "%s", cmd->node);
         break;
     }
+    case NEU_REQ_ADD_NODE_PROPERTIES:
+    case NEU_REQ_DELETE_NODE_PROPERTIES:
+    case NEU_REQ_UPDATE_NODE_PROPERTY:
+    case NEU_REQ_GET_NODE_PROPERTIES:
     case NEU_REQ_CHECK_SCHEMA:
     case NEU_REQ_GET_DRIVER_GROUP:
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
@@ -768,6 +772,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         break;
     }
     case NEU_RESP_ERROR:
+    case NEU_RESP_GET_NODE_PROPERTIES:
     case NEU_RESP_SERVER_AUTH_USER_INFO:
     case NEU_RESP_SERVER_AUTH_SWITCH_STATUS:
     case NEU_RESP_SERVER_SECURITY_POLICY_STATUS:
@@ -951,6 +956,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
+    case NEU_RESP_GET_NODE_PROPERTIES:
     case NEU_REQ_UPDATE_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
     case NEU_RESP_GET_DRIVER_SUBSCRIBE_GROUP:

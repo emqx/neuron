@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 
-#include "type.h"
+#include "tag.h"
 
 typedef struct neu_driver_cache neu_driver_cache_t;
 
@@ -31,6 +31,16 @@ void                neu_driver_cache_destroy(neu_driver_cache_t *cache);
 
 void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
                           const char *tag, neu_dvalue_t value);
+void neu_driver_cache_add_tag(neu_driver_cache_t *cache, const char *group,
+                              const neu_datatag_t *tag, neu_dvalue_t initial);
+int  neu_driver_cache_update_checked(neu_driver_cache_t *cache,
+                                     const char *group, const char *tag,
+                                     int64_t timestamp, neu_dvalue_t value,
+                                     neu_tag_meta_t *metas, int n_meta,
+                                     bool force, bool *changed);
+int  neu_driver_cache_type_get(neu_driver_cache_t *cache, const char *group,
+                               const char *tag, neu_type_e *type,
+                               uint64_t *generation);
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp,
                              neu_dvalue_t value, neu_tag_meta_t *metas,
@@ -54,6 +64,8 @@ void *neu_driver_cache_get_trace(neu_driver_cache_t *cache, const char *group);
 typedef struct {
     neu_dvalue_t value;
     int64_t      timestamp;
+    neu_type_e   resolved_type;
+    uint64_t     generation;
 } neu_driver_cache_value_t;
 
 int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
