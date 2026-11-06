@@ -27,6 +27,7 @@
 #include "utils/uthash.h"
 
 #include "define.h"
+#include "errcodes.h"
 #include "tag.h"
 
 #include "cache.h"
@@ -44,6 +45,14 @@ struct elem {
 
     neu_dvalue_t value;
     neu_dvalue_t value_old;
+    bool         has_old;
+    bool         configured;
+    neu_type_e   config_type;
+    neu_type_e   resolved_type;
+    uint64_t     generation;
+    uint8_t      precision;
+    double       decimal;
+    double       bias;
 
     neu_tag_meta_t *metas;
     int             n_meta;
@@ -62,10 +71,100 @@ struct neu_driver_cache {
     pthread_mutex_t mtx;
     group_trace_t * trace_table;
     struct elem *   table;
+    uint64_t        generation;
 };
 
-// static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-// const char *tag, int64_t timestamp, int error);
+static void value_free(neu_dvalue_t *value)
+{
+    if (value->type == NEU_TYPE_PTR) {
+        free(value->value.ptr.ptr);
+    } else {
+        neu_free_dvalue(value);
+    }
+    memset(value, 0, sizeof(*value));
+}
+
+static void value_copy(const neu_dvalue_t *src, neu_dvalue_t *dst)
+{
+    if (src->type >= NEU_TYPE_ARRAY_INT8 &&
+        src->type <= NEU_TYPE_ARRAY_STRING && src->value.bools.length == 0) {
+        *dst                   = *src;
+        dst->value.bools.bools = NULL;
+        return;
+    }
+    neu_copy_dvalue(src, dst);
+    if (src->type == NEU_TYPE_PTR) {
+        dst->value.ptr.ptr = calloc(1, src->value.ptr.length);
+        if (src->value.ptr.length != 0) {
+            memcpy(dst->value.ptr.ptr, src->value.ptr.ptr,
+                   src->value.ptr.length);
+        }
+    }
+}
+
+static void metas_free(neu_tag_meta_t *metas, int n_meta)
+{
+    for (int i = 0; i < n_meta; i++) {
+        value_free(&metas[i].value);
+    }
+    free(metas);
+}
+
+static void elem_clear(struct elem *elem)
+{
+    value_free(&elem->value);
+    value_free(&elem->value_old);
+    metas_free(elem->metas, elem->n_meta);
+    elem->metas   = NULL;
+    elem->n_meta  = 0;
+    elem->has_old = false;
+}
+
+static bool real_type(neu_type_e type)
+{
+    return (type >= NEU_TYPE_INT8 && type <= NEU_TYPE_BYTES) ||
+        (type >= NEU_TYPE_WORD && type <= NEU_TYPE_LWORD) ||
+        (type >= NEU_TYPE_TIME && type <= NEU_TYPE_ARRAY_STRING) ||
+        type == NEU_TYPE_CUSTOM;
+}
+
+static neu_type_e semantic_type(const neu_dvalue_t *value)
+{
+    if (value->type != NEU_TYPE_PTR) {
+        return value->type;
+    }
+    return value->value.ptr.type == NEU_TYPE_STRING ||
+            value->value.ptr.type == NEU_TYPE_BYTES
+        ? value->value.ptr.type
+        : NEU_TYPE_AUTO;
+}
+
+static int sample_validate(const struct elem *elem, const neu_dvalue_t *value)
+{
+    neu_type_e type = semantic_type(value);
+    if (!real_type(type)) {
+        return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+    }
+    if (elem->resolved_type != NEU_TYPE_AUTO && elem->resolved_type != type) {
+        return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+    }
+    if ((value->type == NEU_TYPE_FLOAT && !isfinite(value->value.f32)) ||
+        (value->type == NEU_TYPE_DOUBLE && !isfinite(value->value.d64))) {
+        return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
+    }
+    if (type < NEU_TYPE_INT8 || type > NEU_TYPE_DOUBLE) {
+        if (elem->decimal != 0) {
+            return NEU_ERR_TAG_DECIMAL_INVALID;
+        }
+        if (elem->bias != 0) {
+            return NEU_ERR_TAG_BIAS_INVALID;
+        }
+        if (elem->precision != 0) {
+            return NEU_ERR_TAG_PRECISION_INVALID;
+        }
+    }
+    return NEU_ERR_SUCCESS;
+}
 
 inline static tkey_t to_key(const char *group, const char *tag)
 {
@@ -95,33 +194,7 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
-        if (elem->value.type == NEU_TYPE_PTR) {
-            if (elem->value.value.ptr.ptr != NULL) {
-                free(elem->value.value.ptr.ptr);
-                elem->value.value.ptr.ptr = NULL;
-            }
-        } else if (elem->value.type == NEU_TYPE_CUSTOM) {
-            if (elem->value.value.json != NULL) {
-                json_decref(elem->value.value.json);
-                elem->value.value.json = NULL;
-            }
-        } else if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
-            for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                free(elem->value.value.strs.strs[i]);
-                elem->value.value.strs.strs[i] = NULL;
-            }
-            free(elem->value.value.strs.strs);
-        } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
-                   elem->value.type < NEU_TYPE_ARRAY_STRING) {
-            free(elem->value.value.bools.bools);
-        }
-
-        if (elem->metas != NULL) {
-            for (int i = 0; i < elem->n_meta; i++) {
-                neu_free_dvalue(&elem->metas[i].value);
-            }
-            free(elem->metas);
-        }
+        elem_clear(elem);
 
         free(elem);
     }
@@ -142,36 +215,93 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     free(cache);
 }
 
-// void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
-// const char *tag, int64_t timestamp, int32_t error)
-//{
-// update_tag_error(cache, group, tag, timestamp, error);
-//}
-
-void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
-                          const char *tag, neu_dvalue_t value)
+static void cache_add(neu_driver_cache_t *cache, const char *group,
+                      const char *tag, const neu_datatag_t *config,
+                      neu_dvalue_t initial)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
 
     pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
-
     if (elem == NULL) {
-        elem = calloc(1, sizeof(struct elem));
-
-        snprintf(elem->key.group, sizeof(elem->key.group), "%s", group);
-        snprintf(elem->key.tag, sizeof(elem->key.tag), "%s", tag);
-
+        elem      = calloc(1, sizeof(struct elem));
+        elem->key = key;
         HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
+    } else {
+        elem_clear(elem);
     }
 
-    elem->timestamp = 0;
-    elem->changed   = false;
-    elem->value     = value;
-    memset(&elem->value_old.attrs, 0, sizeof(elem->value_old.attrs));
-
+    elem->timestamp   = 0;
+    elem->changed     = false;
+    elem->configured  = config != NULL;
+    elem->config_type = config ? config->type : NEU_TYPE_AUTO;
+    elem->resolved_type =
+        config && real_type(config->type) ? config->type : NEU_TYPE_AUTO;
+    elem->generation = ++cache->generation;
+    elem->precision  = config ? config->precision : initial.precision;
+    elem->decimal    = config ? config->decimal : 0;
+    elem->bias       = config ? config->bias : 0;
+    if (config && config->type == NEU_TYPE_AUTO &&
+        initial.type != NEU_TYPE_ERROR) {
+        neu_type_e type = semantic_type(&initial);
+        int        ret  = sample_validate(elem, &initial);
+        if (ret == NEU_ERR_SUCCESS) {
+            elem->resolved_type = type;
+        } else {
+            neu_free_dvalue(&initial);
+            memset(&initial, 0, sizeof(initial));
+            initial.type      = NEU_TYPE_ERROR;
+            initial.value.i32 = ret;
+        }
+    }
+    elem->value = initial;
+    if (initial.type == NEU_TYPE_PTR) {
+        value_copy(&initial, &elem->value);
+    }
+    if (config) {
+        elem->value.precision = elem->precision;
+        elem->changed         = config->type == NEU_TYPE_AUTO &&
+            elem->resolved_type != NEU_TYPE_AUTO;
+    }
+    if (sub_filter_err && elem->value.type != NEU_TYPE_ERROR) {
+        value_copy(&elem->value, &elem->value_old);
+        elem->has_old = true;
+    }
     pthread_mutex_unlock(&cache->mtx);
+}
+
+void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
+                          const char *tag, neu_dvalue_t value)
+{
+    cache_add(cache, group, tag, NULL, value);
+}
+
+void neu_driver_cache_add_tag(neu_driver_cache_t *cache, const char *group,
+                              const neu_datatag_t *tag, neu_dvalue_t initial)
+{
+    cache_add(cache, group, tag->name, tag, initial);
+}
+
+int neu_driver_cache_type_get(neu_driver_cache_t *cache, const char *group,
+                              const char *tag, neu_type_e *type,
+                              uint64_t *generation)
+{
+    struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, tag);
+    int          ret  = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+    pthread_mutex_lock(&cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+    if (elem != NULL) {
+        *type       = elem->resolved_type;
+        *generation = elem->generation;
+        if (real_type(elem->resolved_type)) {
+            ret = NEU_ERR_SUCCESS;
+        }
+    }
+    pthread_mutex_unlock(&cache->mtx);
+    return ret;
 }
 
 void neu_driver_cache_update_trace(neu_driver_cache_t *cache, const char *group,
@@ -220,18 +350,81 @@ void *neu_driver_cache_get_trace(neu_driver_cache_t *cache, const char *group)
     return trace;
 }
 
-bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
+static bool value_equal(const neu_dvalue_t *previous, neu_dvalue_t *value)
+{
+    if (previous->type != value->type) {
+        return false;
+    }
+    if (value->type >= NEU_TYPE_ARRAY_INT8 &&
+        value->type <= NEU_TYPE_ARRAY_STRING &&
+        value->value.bools.length == 0) {
+        return previous->value.bools.length == 0;
+    }
+    if (value->type == NEU_TYPE_PTR && value->value.ptr.length == 0) {
+        return previous->value.ptr.length == 0 &&
+            previous->value.ptr.type == value->value.ptr.type;
+    }
+    switch (value->type) {
+    case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
+        return strncmp(previous->value.str, value->value.str,
+                       sizeof(value->value.str)) == 0;
+    case NEU_TYPE_ARRAY_CHAR:
+        return memcmp(previous->value.str, value->value.str,
+                      sizeof(value->value.str)) == 0;
+    case NEU_TYPE_FLOAT:
+        return previous->precision == 0
+            ? previous->value.f32 == value->value.f32
+            : !(fabs(previous->value.f32 - value->value.f32) >
+                pow(0.1, previous->precision));
+    case NEU_TYPE_DOUBLE:
+        return previous->precision == 0
+            ? previous->value.d64 == value->value.d64
+            : !(fabs(previous->value.d64 - value->value.d64) >
+                pow(0.1, previous->precision));
+    case NEU_TYPE_ARRAY_FLOAT:
+        return previous->value.f32s.length == value->value.f32s.length &&
+            (value->value.f32s.length == 0 ||
+             memcmp(previous->value.f32s.f32s, value->value.f32s.f32s,
+                    value->value.f32s.length * sizeof(float)) == 0);
+    case NEU_TYPE_ARRAY_DOUBLE:
+        return previous->value.f64s.length == value->value.f64s.length &&
+            (value->value.f64s.length == 0 ||
+             memcmp(previous->value.f64s.f64s, value->value.f64s.f64s,
+                    value->value.f64s.length * sizeof(double)) == 0);
+    case NEU_TYPE_ERROR:
+        return false;
+    default: {
+        neu_dvalue_t other = *value;
+        other.precision    = previous->precision;
+        return neu_equal_dvalue(previous, &other);
+    }
+    }
+}
+
+int neu_driver_cache_update_checked(neu_driver_cache_t *cache,
                                     const char *group, const char *tag,
                                     int64_t timestamp, neu_dvalue_t value,
                                     neu_tag_meta_t *metas, int n_meta,
-                                    bool change)
+                                    bool force, bool *changed)
 {
     struct elem *elem        = NULL;
     tkey_t       key         = to_key(group, tag);
     bool         tag_changed = false;
+    int          ret         = NEU_ERR_SUCCESS;
 
+    if (changed) {
+        *changed = false;
+    }
     if (!value.attrs.has_timestamp) {
         value.attrs.timestamp = 0;
+    }
+    if (!value.attrs.has_source_timestamp) {
+        value.attrs.source_timestamp = 0;
+    }
+    if (!value.attrs.has_server_timestamp) {
+        value.attrs.server_timestamp = 0;
     }
     if (!value.attrs.has_quality) {
         value.attrs.quality = 0;
@@ -239,649 +432,100 @@ bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
 
     pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
-    if (elem != NULL) {
-        elem->timestamp = timestamp;
-
-        if (sub_filter_err && value.type == NEU_TYPE_ERROR) {
-            goto error_not_report;
+    if (elem == NULL) {
+        ret = NEU_ERR_PLUGIN_TAG_NOT_READY;
+        neu_free_dvalue(&value);
+        for (int i = 0; metas && i < n_meta; i++) {
+            neu_free_dvalue(&metas[i].value);
         }
+        goto done;
+    }
 
-        if ((!sub_filter_err && elem->value.type != value.type) ||
-            (sub_filter_err && elem->value.type != value.type &&
-             elem->value.type != NEU_TYPE_ERROR)) {
-            elem->changed = true;
-            tag_changed   = true;
-        } else if (sub_filter_err && elem->value.type != value.type &&
-                   elem->value.type == NEU_TYPE_ERROR) {
-            switch (value.type) {
-            case NEU_TYPE_INT8:
-            case NEU_TYPE_UINT8:
-            case NEU_TYPE_INT16:
-            case NEU_TYPE_UINT16:
-            case NEU_TYPE_INT32:
-            case NEU_TYPE_UINT32:
-            case NEU_TYPE_INT64:
-            case NEU_TYPE_UINT64:
-            case NEU_TYPE_BIT:
-            case NEU_TYPE_BOOL:
-            case NEU_TYPE_STRING:
-            case NEU_TYPE_TIME:
-            case NEU_TYPE_DATA_AND_TIME:
-            case NEU_TYPE_WORD:
-            case NEU_TYPE_DWORD:
-            case NEU_TYPE_LWORD:
-            case NEU_TYPE_ARRAY_CHAR:
-                if (memcmp(&elem->value_old.value, &value.value,
-                           sizeof(value.value)) != 0) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                }
-                break;
-            case NEU_TYPE_BYTES:
-                if (elem->value_old.value.bytes.length !=
-                    value.value.bytes.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.bytes.bytes,
-                               value.value.bytes.bytes,
-                               value.value.bytes.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_BOOL:
-                if (elem->value_old.value.bools.length !=
-                    value.value.bools.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.bools.bools,
-                               value.value.bools.bools,
-                               value.value.bools.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT8:
-                if (elem->value_old.value.i8s.length !=
-                    value.value.i8s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.i8s.i8s,
-                               value.value.i8s.i8s,
-                               value.value.i8s.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT8:
-                if (elem->value_old.value.u8s.length !=
-                    value.value.u8s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.u8s.u8s,
-                               value.value.u8s.u8s,
-                               value.value.u8s.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT16:
-                if (elem->value_old.value.i16s.length !=
-                    value.value.i16s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.i16s.i16s,
-                               value.value.i16s.i16s,
-                               value.value.i16s.length * sizeof(int16_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT16:
-                if (elem->value_old.value.u16s.length !=
-                    value.value.u16s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.u16s.u16s,
-                               value.value.u16s.u16s,
-                               value.value.u16s.length * sizeof(uint16_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT32:
-                if (elem->value_old.value.i32s.length !=
-                    value.value.i32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.i32s.i32s,
-                               value.value.i32s.i32s,
-                               value.value.i32s.length * sizeof(int32_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT32:
-                if (elem->value_old.value.u32s.length !=
-                    value.value.u32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.u32s.u32s,
-                               value.value.u32s.u32s,
-                               value.value.u32s.length * sizeof(uint32_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT64:
-                if (elem->value_old.value.i64s.length !=
-                    value.value.i64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.i64s.i64s,
-                               value.value.i64s.i64s,
-                               value.value.i64s.length * sizeof(int64_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT64:
-                if (elem->value_old.value.u64s.length !=
-                    value.value.u64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.u64s.u64s,
-                               value.value.u64s.u64s,
-                               value.value.u64s.length * sizeof(uint64_t)) !=
-                        0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_FLOAT:
-                if (elem->value_old.value.f32s.length !=
-                    value.value.f32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.f32s.f32s,
-                               value.value.f32s.f32s,
-                               value.value.f32s.length * sizeof(float)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_DOUBLE:
-                if (elem->value_old.value.f64s.length !=
-                    value.value.f64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.f64s.f64s,
-                               value.value.f64s.f64s,
-                               value.value.f64s.length * sizeof(double)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_STRING:
-                if (elem->value_old.value.strs.length !=
-                    value.value.strs.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.strs.strs,
-                               value.value.strs.strs,
-                               value.value.strs.length * sizeof(char *)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_CUSTOM: {
-                if (json_equal(elem->value_old.value.json, value.value.json) !=
-                    1) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                }
-                break;
-            }
-            case NEU_TYPE_PTR: {
-                if (elem->value_old.value.ptr.length !=
-                    value.value.ptr.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value_old.value.ptr.ptr,
-                               value.value.ptr.ptr,
-                               value.value.ptr.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-
-                break;
-            }
-            case NEU_TYPE_FLOAT:
-                if (elem->value_old.precision == 0) {
-                    tag_changed = elem->value_old.value.f32 != value.value.f32;
-                    elem->changed |= tag_changed;
-                } else {
-                    if (fabs(elem->value_old.value.f32 - value.value.f32) >
-                        pow(0.1, elem->value_old.precision)) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_DOUBLE:
-                if (elem->value_old.precision == 0) {
-                    tag_changed = elem->value_old.value.d64 != value.value.d64;
-                    elem->changed |= tag_changed;
-                } else {
-                    if (fabs(elem->value_old.value.d64 - value.value.d64) >
-                        pow(0.1, elem->value_old.precision)) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-
-                break;
-            case NEU_TYPE_ERROR:
-                break;
-            }
-        } else {
-            switch (value.type) {
-            case NEU_TYPE_INT8:
-            case NEU_TYPE_UINT8:
-            case NEU_TYPE_INT16:
-            case NEU_TYPE_UINT16:
-            case NEU_TYPE_INT32:
-            case NEU_TYPE_UINT32:
-            case NEU_TYPE_INT64:
-            case NEU_TYPE_UINT64:
-            case NEU_TYPE_BIT:
-            case NEU_TYPE_BOOL:
-            case NEU_TYPE_STRING:
-            case NEU_TYPE_TIME:
-            case NEU_TYPE_DATA_AND_TIME:
-            case NEU_TYPE_WORD:
-            case NEU_TYPE_DWORD:
-            case NEU_TYPE_LWORD:
-            case NEU_TYPE_ARRAY_CHAR:
-                if (memcmp(&elem->value.value, &value.value,
-                           sizeof(value.value)) != 0) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                }
-                break;
-            case NEU_TYPE_BYTES:
-                if (elem->value.value.bytes.length !=
-                    value.value.bytes.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.bytes.bytes,
-                               value.value.bytes.bytes,
-                               value.value.bytes.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_BOOL:
-                if (elem->value.value.bools.length !=
-                    value.value.bools.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.bools.bools,
-                               value.value.bools.bools,
-                               value.value.bools.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT8:
-                if (elem->value.value.i8s.length != value.value.i8s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.i8s.i8s, value.value.i8s.i8s,
-                               value.value.i8s.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT8:
-                if (elem->value.value.u8s.length != value.value.u8s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.u8s.u8s, value.value.u8s.u8s,
-                               value.value.u8s.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT16:
-                if (elem->value.value.i16s.length != value.value.i16s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.i16s.i16s, value.value.i16s.i16s,
-                            value.value.i16s.length * sizeof(int16_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT16:
-                if (elem->value.value.u16s.length != value.value.u16s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.u16s.u16s, value.value.u16s.u16s,
-                            value.value.u16s.length * sizeof(uint16_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT32:
-                if (elem->value.value.i32s.length != value.value.i32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.i32s.i32s, value.value.i32s.i32s,
-                            value.value.i32s.length * sizeof(int32_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT32:
-                if (elem->value.value.u32s.length != value.value.u32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.u32s.u32s, value.value.u32s.u32s,
-                            value.value.u32s.length * sizeof(uint32_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_INT64:
-                if (elem->value.value.i64s.length != value.value.i64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.i64s.i64s, value.value.i64s.i64s,
-                            value.value.i64s.length * sizeof(int64_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_UINT64:
-                if (elem->value.value.u64s.length != value.value.u64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(
-                            elem->value.value.u64s.u64s, value.value.u64s.u64s,
-                            value.value.u64s.length * sizeof(uint64_t)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_FLOAT:
-                if (elem->value.value.f32s.length != value.value.f32s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.f32s.f32s,
-                               value.value.f32s.f32s,
-                               value.value.f32s.length * sizeof(float)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_DOUBLE:
-                if (elem->value.value.f64s.length != value.value.f64s.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.f64s.f64s,
-                               value.value.f64s.f64s,
-                               value.value.f64s.length * sizeof(double)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_ARRAY_STRING:
-                if (elem->value.value.strs.length != value.value.strs.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.strs.strs,
-                               value.value.strs.strs,
-                               value.value.strs.length * sizeof(char *)) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_PTR: {
-                if (elem->value.value.ptr.length != value.value.ptr.length) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                } else {
-                    if (memcmp(elem->value.value.ptr.ptr, value.value.ptr.ptr,
-                               value.value.ptr.length) != 0) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-
-                break;
-            }
-            case NEU_TYPE_CUSTOM: {
-                if (json_equal(elem->value.value.json, value.value.json) != 1) {
-                    elem->changed = true;
-                    tag_changed   = true;
-                }
-                break;
-            }
-            case NEU_TYPE_FLOAT:
-                if (elem->value.precision == 0) {
-                    tag_changed = elem->value.value.f32 != value.value.f32;
-                    elem->changed |= tag_changed;
-                } else {
-                    if (fabs(elem->value.value.f32 - value.value.f32) >
-                        pow(0.1, elem->value.precision)) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-                break;
-            case NEU_TYPE_DOUBLE:
-                if (elem->value.precision == 0) {
-                    tag_changed = elem->value.value.d64 != value.value.d64;
-                    elem->changed |= tag_changed;
-                } else {
-                    if (fabs(elem->value.value.d64 - value.value.d64) >
-                        pow(0.1, elem->value.precision)) {
-                        elem->changed = true;
-                        tag_changed   = true;
-                    }
-                }
-
-                break;
-            case NEU_TYPE_ERROR:
-                elem->changed = true;
-                tag_changed   = true;
-                break;
-            }
+    bool resolved = false;
+    if (elem->configured && elem->config_type == NEU_TYPE_AUTO &&
+        value.type != NEU_TYPE_ERROR) {
+        neu_type_e type = semantic_type(&value);
+        ret             = sample_validate(elem, &value);
+        if (ret != NEU_ERR_SUCCESS) {
+            neu_free_dvalue(&value);
+            memset(&value, 0, sizeof(value));
+            value.type      = NEU_TYPE_ERROR;
+            value.value.i32 = ret;
+        } else if (elem->resolved_type == NEU_TYPE_AUTO) {
+            elem->resolved_type = type;
+            resolved            = true;
         }
+    }
+    if (elem->configured) {
+        value.precision = elem->precision;
+    } else {
+        value.precision = elem->value.precision;
+    }
 
-        const neu_tag_sample_attrs_t *previous_attrs =
-            sub_filter_err && elem->value.type == NEU_TYPE_ERROR
-            ? &elem->value_old.attrs
-            : &elem->value.attrs;
-        if (previous_attrs->has_quality != value.attrs.has_quality ||
+    elem->timestamp = timestamp;
+    if (!(sub_filter_err && value.type == NEU_TYPE_ERROR)) {
+        const neu_dvalue_t *previous     = &elem->value;
+        bool                has_previous = true;
+        if (sub_filter_err && elem->value.type == NEU_TYPE_ERROR) {
+            previous     = &elem->value_old;
+            has_previous = elem->has_old;
+        }
+        tag_changed = resolved || !has_previous ||
+            !value_equal(previous, &value) ||
+            previous->attrs.has_quality != value.attrs.has_quality ||
             (value.attrs.has_quality &&
-             previous_attrs->quality != value.attrs.quality)) {
-            elem->changed = true;
-            tag_changed   = true;
-        }
+             previous->attrs.quality != value.attrs.quality);
+        elem->changed |= tag_changed;
+    }
+    if (sub_filter_err && value.type != NEU_TYPE_ERROR) {
+        value_free(&elem->value_old);
+        value_copy(&value, &elem->value_old);
+        elem->has_old = true;
+    }
+    elem->changed |= force;
 
-        if (sub_filter_err && value.type != NEU_TYPE_ERROR) {
-            elem->value_old.type      = value.type;
-            elem->value_old.value     = value.value;
-            elem->value_old.precision = value.precision;
-            elem->value_old.attrs     = value.attrs;
-        }
+    neu_dvalue_t stored = value;
+    if (value.type == NEU_TYPE_PTR) {
+        value_copy(&value, &stored);
+    }
+    value_free(&elem->value);
+    elem->value = stored;
 
-    error_not_report:
-        elem->value.attrs = value.attrs;
-
-        if (change) {
-            elem->changed = true;
-        }
-
-        if (value.type == NEU_TYPE_PTR) {
-            elem->value.value.ptr.length = value.value.ptr.length;
-            elem->value.value.ptr.type   = value.value.ptr.type;
-            if (elem->value.value.ptr.ptr != NULL) {
-                free(elem->value.value.ptr.ptr);
-            }
-            elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
-            memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
-                   value.value.ptr.length);
-        } else if (value.type == NEU_TYPE_CUSTOM) {
-            if (elem->value.type == NEU_TYPE_CUSTOM) {
-                if (elem->value.value.json != NULL) {
-                    json_decref(elem->value.value.json);
-                    elem->value.value.json = NULL;
+    if (metas != NULL && n_meta > 0) {
+        metas_free(elem->metas, elem->n_meta);
+        elem->metas  = calloc(n_meta, sizeof(neu_tag_meta_t));
+        elem->n_meta = n_meta;
+        for (int i = 0; i < n_meta; i++) {
+            if (!neu_dvalue_is_array(&metas[i].value)) {
+                elem->metas[i] = metas[i];
+                if (metas[i].value.type == NEU_TYPE_PTR) {
+                    value_copy(&metas[i].value, &elem->metas[i].value);
                 }
+            } else {
+                neu_free_dvalue(&metas[i].value);
+                elem->metas[i].value.type = NEU_TYPE_INT8;
             }
-
-            elem->value.value.json = value.value.json;
-
-        } else if (value.type == NEU_TYPE_ARRAY_STRING) {
-            if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
-                for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                    free(elem->value.value.strs.strs[i]);
-                    elem->value.value.strs.strs[i] = NULL;
-                }
-                free(elem->value.value.strs.strs);
-            }
-            elem->value.value.strs.length = value.value.strs.length;
-            elem->value.value.strs.strs   = value.value.strs.strs;
-
-        } else if (NEU_TYPE_ARRAY_CHAR < value.type &&
-                   value.type < NEU_TYPE_ARRAY_STRING) {
-            if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
-                elem->value.type < NEU_TYPE_ARRAY_STRING) {
-                free(elem->value.value.bools.bools);
-            }
-            elem->value.value.bools.length = value.value.bools.length;
-            elem->value.value.bools.bools  = value.value.bools.bools;
-        } else if (value.type == NEU_TYPE_ERROR) {
-            if (elem->value.type == NEU_TYPE_CUSTOM) {
-                if (elem->value.value.json != NULL) {
-                    json_decref(elem->value.value.json);
-                    elem->value.value.json = NULL;
-                }
-            }
-
-            if (elem->value.type == NEU_TYPE_PTR) {
-                if (elem->value.value.ptr.ptr != NULL) {
-                    free(elem->value.value.ptr.ptr);
-                    elem->value.value.ptr.ptr = NULL;
-                }
-            }
-
-            if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
-                for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                    free(elem->value.value.strs.strs[i]);
-                    elem->value.value.strs.strs[i] = NULL;
-                }
-                free(elem->value.value.strs.strs);
-            }
-
-            if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
-                elem->value.type < NEU_TYPE_ARRAY_STRING) {
-                free(elem->value.value.bools.bools);
-                elem->value.value.bools.bools = NULL;
-            }
-
-            elem->value.value = value.value;
-        } else {
-            elem->value.value = value.value;
-        }
-        elem->value.type = value.type;
-
-        if (metas != NULL && n_meta != 0) {
-            if (elem->metas != NULL) {
-                free(elem->metas);
-            }
-            elem->metas = calloc(n_meta, sizeof(neu_tag_meta_t));
-            for (int i = 0; i < n_meta; i++) {
-                if (!neu_dvalue_is_array(&metas[i].value)) {
-                    memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
-                } else {
-                    neu_free_dvalue(&metas[i].value);
-                    elem->metas[i].value.type = NEU_TYPE_INT8;
-                }
-            }
-
-            elem->n_meta = n_meta;
         }
     }
 
+done:
     pthread_mutex_unlock(&cache->mtx);
-    return tag_changed;
+    if (changed) {
+        *changed = tag_changed;
+    }
+    return ret;
+}
+
+bool neu_driver_cache_update_change(neu_driver_cache_t *cache,
+                                    const char *group, const char *tag,
+                                    int64_t timestamp, neu_dvalue_t value,
+                                    neu_tag_meta_t *metas, int n_meta,
+                                    bool change)
+{
+    bool changed = false;
+    neu_driver_cache_update_checked(cache, group, tag, timestamp, value, metas,
+                                    n_meta, change, &changed);
+    return changed;
 }
 
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
@@ -905,159 +549,22 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
-        value->timestamp       = elem->timestamp;
-        value->value.attrs     = elem->value.attrs;
-        value->value.type      = elem->value.type;
-        value->value.precision = elem->value.precision;
+        value->resolved_type = elem->resolved_type;
+        value->generation    = elem->generation;
+        value->timestamp     = elem->timestamp;
+        value_copy(&elem->value, &value->value);
 
         // assert(n_meta <= NEU_TAG_META_SIZE);
         if (elem->metas) {
             *metas = calloc(elem->n_meta, sizeof(neu_tag_meta_t));
-            memcpy(*metas, elem->metas, sizeof(neu_tag_meta_t) * elem->n_meta);
+            for (int i = 0; i < elem->n_meta; i++) {
+                (*metas)[i] = elem->metas[i];
+                value_copy(&elem->metas[i].value, &(*metas)[i].value);
+            }
         } else {
             *metas = NULL;
         }
         *n_meta = elem->n_meta;
-
-        switch (elem->value.type) {
-        case NEU_TYPE_INT8:
-        case NEU_TYPE_UINT8:
-        case NEU_TYPE_BIT:
-            value->value.value.u8 = elem->value.value.u8;
-            break;
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-        case NEU_TYPE_WORD:
-            value->value.value.u16 = elem->value.value.u16;
-            break;
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_UINT32:
-        case NEU_TYPE_DWORD:
-        case NEU_TYPE_FLOAT:
-        case NEU_TYPE_ERROR:
-            value->value.value.u32 = elem->value.value.u32;
-            break;
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64:
-        case NEU_TYPE_DOUBLE:
-        case NEU_TYPE_LWORD:
-            value->value.value.u64 = elem->value.value.u64;
-            break;
-        case NEU_TYPE_BOOL:
-            value->value.value.boolean = elem->value.value.boolean;
-            break;
-        case NEU_TYPE_STRING:
-        case NEU_TYPE_TIME:
-        case NEU_TYPE_DATA_AND_TIME:
-        case NEU_TYPE_ARRAY_CHAR:
-            memcpy(value->value.value.str, elem->value.value.str,
-                   sizeof(elem->value.value.str));
-            break;
-        case NEU_TYPE_BYTES:
-            value->value.value.bytes.length = elem->value.value.bytes.length;
-            memcpy(value->value.value.bytes.bytes,
-                   elem->value.value.bytes.bytes,
-                   elem->value.value.bytes.length);
-            break;
-        case NEU_TYPE_ARRAY_BOOL:
-            value->value.value.bools.length = elem->value.value.bools.length;
-            value->value.value.bools.bools =
-                calloc(elem->value.value.bools.length, sizeof(bool));
-            memcpy(value->value.value.bools.bools,
-                   elem->value.value.bools.bools,
-                   elem->value.value.bools.length);
-            break;
-        case NEU_TYPE_ARRAY_INT8:
-            value->value.value.i8s.length = elem->value.value.i8s.length;
-            value->value.value.i8s.i8s =
-                calloc(elem->value.value.i8s.length, sizeof(int8_t));
-            memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
-                   elem->value.value.i8s.length);
-            break;
-        case NEU_TYPE_ARRAY_UINT8:
-            value->value.value.u8s.length = elem->value.value.u8s.length;
-            value->value.value.u8s.u8s =
-                calloc(elem->value.value.u8s.length, sizeof(uint8_t));
-            memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
-                   elem->value.value.u8s.length);
-            break;
-        case NEU_TYPE_ARRAY_INT16:
-            value->value.value.i16s.length = elem->value.value.i16s.length;
-            value->value.value.i16s.i16s =
-                calloc(elem->value.value.i16s.length, sizeof(int16_t));
-            memcpy(value->value.value.i16s.i16s, elem->value.value.i16s.i16s,
-                   elem->value.value.i16s.length * sizeof(int16_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT16:
-            value->value.value.u16s.length = elem->value.value.u16s.length;
-            value->value.value.u16s.u16s =
-                calloc(elem->value.value.u16s.length, sizeof(uint16_t));
-            memcpy(value->value.value.u16s.u16s, elem->value.value.u16s.u16s,
-                   elem->value.value.u16s.length * sizeof(uint16_t));
-            break;
-        case NEU_TYPE_ARRAY_INT32:
-            value->value.value.i32s.length = elem->value.value.i32s.length;
-            value->value.value.i32s.i32s =
-                calloc(elem->value.value.i32s.length, sizeof(int32_t));
-            memcpy(value->value.value.i32s.i32s, elem->value.value.i32s.i32s,
-                   elem->value.value.i32s.length * sizeof(int32_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT32:
-            value->value.value.u32s.length = elem->value.value.u32s.length;
-            value->value.value.u32s.u32s =
-                calloc(elem->value.value.u32s.length, sizeof(uint32_t));
-            memcpy(value->value.value.u32s.u32s, elem->value.value.u32s.u32s,
-                   elem->value.value.u32s.length * sizeof(uint32_t));
-            break;
-        case NEU_TYPE_ARRAY_INT64:
-            value->value.value.i64s.length = elem->value.value.i64s.length;
-            value->value.value.i64s.i64s =
-                calloc(elem->value.value.i64s.length, sizeof(int64_t));
-            memcpy(value->value.value.i64s.i64s, elem->value.value.i64s.i64s,
-                   elem->value.value.i64s.length * sizeof(int64_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT64:
-            value->value.value.u64s.length = elem->value.value.u64s.length;
-            value->value.value.u64s.u64s =
-                calloc(elem->value.value.u64s.length, sizeof(uint64_t));
-            memcpy(value->value.value.u64s.u64s, elem->value.value.u64s.u64s,
-                   elem->value.value.u64s.length * sizeof(uint64_t));
-            break;
-        case NEU_TYPE_ARRAY_FLOAT:
-            value->value.value.f32s.length = elem->value.value.f32s.length;
-            value->value.value.f32s.f32s =
-                calloc(elem->value.value.f32s.length, sizeof(float));
-            memcpy(value->value.value.f32s.f32s, elem->value.value.f32s.f32s,
-                   elem->value.value.f32s.length * sizeof(float));
-            break;
-        case NEU_TYPE_ARRAY_DOUBLE:
-            value->value.value.f64s.length = elem->value.value.f64s.length;
-            value->value.value.f64s.f64s =
-                calloc(elem->value.value.f64s.length, sizeof(double));
-            memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
-                   elem->value.value.f64s.length * sizeof(double));
-            break;
-        case NEU_TYPE_ARRAY_STRING:
-            value->value.value.strs.length = elem->value.value.strs.length;
-            value->value.value.strs.strs =
-                calloc(elem->value.value.strs.length, sizeof(char *));
-            for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                value->value.value.strs.strs[i] =
-                    strdup(elem->value.value.strs.strs[i]);
-            }
-            break;
-        case NEU_TYPE_PTR:
-            value->value.value.ptr.length = elem->value.value.ptr.length;
-            value->value.value.ptr.type   = elem->value.value.ptr.type;
-            value->value.value.ptr.ptr =
-                calloc(1, elem->value.value.ptr.length);
-            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
-                   elem->value.value.ptr.length);
-            break;
-        case NEU_TYPE_CUSTOM:
-            value->value.value.json = json_deep_copy(elem->value.value.json);
-            break;
-        }
 
         ret = 0;
     }
@@ -1080,159 +587,22 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL && elem->changed) {
-        value->timestamp       = elem->timestamp;
-        value->value.attrs     = elem->value.attrs;
-        value->value.type      = elem->value.type;
-        value->value.precision = elem->value.precision;
+        value->resolved_type = elem->resolved_type;
+        value->generation    = elem->generation;
+        value->timestamp     = elem->timestamp;
+        value_copy(&elem->value, &value->value);
 
         // assert(n_meta <= NEU_TAG_META_SIZE);
         if (elem->metas) {
             *metas = calloc(elem->n_meta, sizeof(neu_tag_meta_t));
-            memcpy(*metas, elem->metas, sizeof(neu_tag_meta_t) * elem->n_meta);
+            for (int i = 0; i < elem->n_meta; i++) {
+                (*metas)[i] = elem->metas[i];
+                value_copy(&elem->metas[i].value, &(*metas)[i].value);
+            }
         } else {
             *metas = NULL;
         }
         *n_meta = elem->n_meta;
-
-        switch (elem->value.type) {
-        case NEU_TYPE_INT8:
-        case NEU_TYPE_UINT8:
-        case NEU_TYPE_BIT:
-            value->value.value.u8 = elem->value.value.u8;
-            break;
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-        case NEU_TYPE_WORD:
-            value->value.value.u16 = elem->value.value.u16;
-            break;
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_UINT32:
-        case NEU_TYPE_FLOAT:
-        case NEU_TYPE_ERROR:
-        case NEU_TYPE_DWORD:
-            value->value.value.u32 = elem->value.value.u32;
-            break;
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64:
-        case NEU_TYPE_DOUBLE:
-        case NEU_TYPE_LWORD:
-            value->value.value.u64 = elem->value.value.u64;
-            break;
-        case NEU_TYPE_BOOL:
-            value->value.value.boolean = elem->value.value.boolean;
-            break;
-        case NEU_TYPE_STRING:
-        case NEU_TYPE_TIME:
-        case NEU_TYPE_DATA_AND_TIME:
-        case NEU_TYPE_ARRAY_CHAR:
-            memcpy(value->value.value.str, elem->value.value.str,
-                   sizeof(elem->value.value.str));
-            break;
-        case NEU_TYPE_BYTES:
-            value->value.value.bytes.length = elem->value.value.bytes.length;
-            memcpy(value->value.value.bytes.bytes,
-                   elem->value.value.bytes.bytes,
-                   elem->value.value.bytes.length);
-            break;
-        case NEU_TYPE_ARRAY_BOOL:
-            value->value.value.bools.length = elem->value.value.bools.length;
-            value->value.value.bools.bools =
-                calloc(elem->value.value.bools.length, sizeof(bool));
-            memcpy(value->value.value.bools.bools,
-                   elem->value.value.bools.bools,
-                   elem->value.value.bools.length);
-            break;
-        case NEU_TYPE_ARRAY_INT8:
-            value->value.value.i8s.length = elem->value.value.i8s.length;
-            value->value.value.i8s.i8s =
-                calloc(elem->value.value.i8s.length, sizeof(int8_t));
-            memcpy(value->value.value.i8s.i8s, elem->value.value.i8s.i8s,
-                   elem->value.value.i8s.length);
-            break;
-        case NEU_TYPE_ARRAY_UINT8:
-            value->value.value.u8s.length = elem->value.value.u8s.length;
-            value->value.value.u8s.u8s =
-                calloc(elem->value.value.u8s.length, sizeof(uint8_t));
-            memcpy(value->value.value.u8s.u8s, elem->value.value.u8s.u8s,
-                   elem->value.value.u8s.length);
-            break;
-        case NEU_TYPE_ARRAY_INT16:
-            value->value.value.i16s.length = elem->value.value.i16s.length;
-            value->value.value.i16s.i16s =
-                calloc(elem->value.value.i16s.length, sizeof(int16_t));
-            memcpy(value->value.value.i16s.i16s, elem->value.value.i16s.i16s,
-                   elem->value.value.i16s.length * sizeof(int16_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT16:
-            value->value.value.u16s.length = elem->value.value.u16s.length;
-            value->value.value.u16s.u16s =
-                calloc(elem->value.value.u16s.length, sizeof(uint16_t));
-            memcpy(value->value.value.u16s.u16s, elem->value.value.u16s.u16s,
-                   elem->value.value.u16s.length * sizeof(uint16_t));
-            break;
-        case NEU_TYPE_ARRAY_INT32:
-            value->value.value.i32s.length = elem->value.value.i32s.length;
-            value->value.value.i32s.i32s =
-                calloc(elem->value.value.i32s.length, sizeof(int32_t));
-            memcpy(value->value.value.i32s.i32s, elem->value.value.i32s.i32s,
-                   elem->value.value.i32s.length * sizeof(int32_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT32:
-            value->value.value.u32s.length = elem->value.value.u32s.length;
-            value->value.value.u32s.u32s =
-                calloc(elem->value.value.u32s.length, sizeof(uint32_t));
-            memcpy(value->value.value.u32s.u32s, elem->value.value.u32s.u32s,
-                   elem->value.value.u32s.length * sizeof(uint32_t));
-            break;
-        case NEU_TYPE_ARRAY_INT64:
-            value->value.value.i64s.length = elem->value.value.i64s.length;
-            value->value.value.i64s.i64s =
-                calloc(elem->value.value.i64s.length, sizeof(int64_t));
-            memcpy(value->value.value.i64s.i64s, elem->value.value.i64s.i64s,
-                   elem->value.value.i64s.length * sizeof(int64_t));
-            break;
-        case NEU_TYPE_ARRAY_UINT64:
-            value->value.value.u64s.length = elem->value.value.u64s.length;
-            value->value.value.u64s.u64s =
-                calloc(elem->value.value.u64s.length, sizeof(uint64_t));
-            memcpy(value->value.value.u64s.u64s, elem->value.value.u64s.u64s,
-                   elem->value.value.u64s.length * sizeof(uint64_t));
-            break;
-        case NEU_TYPE_ARRAY_FLOAT:
-            value->value.value.f32s.length = elem->value.value.f32s.length;
-            value->value.value.f32s.f32s =
-                calloc(elem->value.value.f32s.length, sizeof(float));
-            memcpy(value->value.value.f32s.f32s, elem->value.value.f32s.f32s,
-                   elem->value.value.f32s.length * sizeof(float));
-            break;
-        case NEU_TYPE_ARRAY_DOUBLE:
-            value->value.value.f64s.length = elem->value.value.f64s.length;
-            value->value.value.f64s.f64s =
-                calloc(elem->value.value.f64s.length, sizeof(double));
-            memcpy(value->value.value.f64s.f64s, elem->value.value.f64s.f64s,
-                   elem->value.value.f64s.length * sizeof(double));
-            break;
-        case NEU_TYPE_ARRAY_STRING:
-            value->value.value.strs.length = elem->value.value.strs.length;
-            value->value.value.strs.strs =
-                calloc(elem->value.value.strs.length, sizeof(char *));
-            for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                value->value.value.strs.strs[i] =
-                    strdup(elem->value.value.strs.strs[i]);
-            }
-            break;
-        case NEU_TYPE_PTR:
-            value->value.value.ptr.length = elem->value.value.ptr.length;
-            value->value.value.ptr.type   = elem->value.value.ptr.type;
-            value->value.value.ptr.ptr =
-                calloc(1, elem->value.value.ptr.length);
-            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
-                   elem->value.value.ptr.length);
-            break;
-        case NEU_TYPE_CUSTOM:
-            value->value.value.json = json_deep_copy(elem->value.value.json);
-            break;
-        }
 
         if (elem->value.type != NEU_TYPE_ERROR) {
             elem->changed = false;
@@ -1256,32 +626,7 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
 
     if (elem != NULL) {
         HASH_DEL(cache->table, elem);
-        if (elem->value.type == NEU_TYPE_PTR) {
-            if (elem->value.value.ptr.ptr != NULL) {
-                free(elem->value.value.ptr.ptr);
-                elem->value.value.ptr.ptr = NULL;
-            }
-        } else if (elem->value.type == NEU_TYPE_CUSTOM) {
-            if (elem->value.value.json != NULL) {
-                json_decref(elem->value.value.json);
-                elem->value.value.json = NULL;
-            }
-        } else if (elem->value.type == NEU_TYPE_ARRAY_STRING) {
-            for (size_t i = 0; i < elem->value.value.strs.length; i++) {
-                free(elem->value.value.strs.strs[i]);
-                elem->value.value.strs.strs[i] = NULL;
-            }
-            free(elem->value.value.strs.strs);
-        } else if (NEU_TYPE_ARRAY_CHAR < elem->value.type &&
-                   elem->value.type < NEU_TYPE_ARRAY_STRING) {
-            free(elem->value.value.bools.bools);
-        }
-        if (elem->metas != NULL) {
-            for (int i = 0; i < elem->n_meta; i++) {
-                neu_free_dvalue(&elem->metas[i].value);
-            }
-            free(elem->metas);
-        }
+        elem_clear(elem);
         free(elem);
     }
 

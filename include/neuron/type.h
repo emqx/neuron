@@ -36,6 +36,7 @@ extern "C" {
 #include <jansson.h>
 
 typedef enum {
+    NEU_TYPE_AUTO          = 0,
     NEU_TYPE_INT8          = 1,
     NEU_TYPE_UINT8         = 2,
     NEU_TYPE_INT16         = 3,
@@ -76,6 +77,8 @@ typedef enum {
 inline static const char *neu_type_string(neu_type_e type)
 {
     switch (type) {
+    case NEU_TYPE_AUTO:
+        return "NEU_TYPE_AUTO";
     case NEU_TYPE_INT8:
         return "NEU_TYPE_INT8";
     case NEU_TYPE_UINT8:
@@ -341,8 +344,12 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
 
 typedef struct {
     int64_t timestamp;
+    int64_t source_timestamp;
+    int64_t server_timestamp;
     int32_t quality;
     bool    has_timestamp;
+    bool    has_source_timestamp;
+    bool    has_server_timestamp;
     bool    has_quality;
 } neu_tag_sample_attrs_t;
 

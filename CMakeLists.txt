@@ -233,6 +233,7 @@ add_subdirectory(tests/plugins/c1)
 add_subdirectory(tests/plugins/s1)
 add_subdirectory(tests/plugins/sc1)
 add_subdirectory(tests/plugins/demo_app)
+add_subdirectory(tests/plugins/auto_type)
 
 # Set sane defaults for multi-lib linux systems
 include(GNUInstallDirs)
