@@ -90,7 +90,7 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
 int       neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
                                        const char *group, const char *name,
                                        UT_array **tags);
-void      neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
+int       neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
                                            const char *group, UT_array **tags);
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
                                           const char *          group);

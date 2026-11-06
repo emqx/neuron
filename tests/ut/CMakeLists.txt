@@ -120,7 +120,18 @@ target_compile_definitions(node_property_persist_test PRIVATE
 )
 target_link_libraries(node_property_persist_test neuron-base gtest_main gtest pthread jansson sqlite3)
 
+add_executable(driver_auto_test driver_auto_test.cc driver_auto_helpers.c
+    ${CMAKE_SOURCE_DIR}/src/adapter/driver/cache.c)
+target_include_directories(driver_auto_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+)
+target_compile_options(driver_auto_test PRIVATE -ffunction-sections -fdata-sections)
+target_link_libraries(driver_auto_test neuron-base gtest_main gtest pthread jansson m
+    -Wl,--gc-sections)
+
 include(GoogleTest)
+gtest_discover_tests(driver_auto_test)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
 gtest_discover_tests(jwt_test)
