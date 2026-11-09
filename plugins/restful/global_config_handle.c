@@ -1228,10 +1228,12 @@ static int get_driver_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         gtag->tags[index].precision   = tag->precision;
         gtag->tags[index].decimal     = tag->decimal;
         gtag->tags[index].bias        = tag->bias;
+        gtag->tags[index].unit        = tag->unit;
         gtag->tags[index].t           = NEU_JSON_UNDEFINE;
         tag->name                     = NULL; // moved
         tag->address                  = NULL; // moved
         tag->description              = NULL; // moved
+        tag->unit                     = NULL; // moved
     }
 
 end:
@@ -1500,9 +1502,10 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
         cmd.tags[i].name      = strdup(data->tags[i].name);
         cmd.tags[i].description =
             strdup(data->tags[i].description ? data->tags[i].description : "");
+        cmd.tags[i].unit = strdup(data->tags[i].unit ? data->tags[i].unit : "");
 
         if (NULL == cmd.tags[i].address || NULL == cmd.tags[i].name ||
-            NULL == cmd.tags[i].description) {
+            NULL == cmd.tags[i].description || NULL == cmd.tags[i].unit) {
             ret = NEU_ERR_EINTERNAL;
             goto error;
         }
@@ -1516,7 +1519,7 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
     return ret;
 
 error:
-    for (int j = 0; j < i && j < cmd.n_tag; ++j) {
+    for (int j = 0; j < cmd.n_tag; ++j) {
         neu_tag_fini(&cmd.tags[j]);
     }
     free(cmd.tags);
