@@ -43,11 +43,19 @@
 #include "core/node_manager.h"
 #include "otel/otel_manager.h"
 
+typedef struct {
+    char       group[NEU_GROUP_NAME_LEN];
+    char       tag[NEU_TAG_NAME_LEN];
+    neu_type_e type;
+    uint64_t   generation;
+} write_type_snapshot_t;
+
 typedef struct to_be_write_tag {
     bool           single;
     neu_datatag_t *tag;
     neu_value_u    value;
     UT_array *     tvs;
+    UT_array *     types;
     void *         req;
 } to_be_write_tag_t;
 
@@ -137,9 +145,24 @@ static inline void start_group_timer(neu_adapter_driver_t *driver,
                                      group_t *             grp);
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
 
+static neu_datatag_t effective_tag(const neu_datatag_t *tag, neu_type_e type)
+{
+    neu_datatag_t effective = *tag;
+    if (tag->type == NEU_TYPE_AUTO) {
+        effective.type = type;
+        memset(&effective.option, 0, sizeof(effective.option));
+        neu_datatag_parse_addr_option(&effective, &effective.option);
+    }
+    return effective;
+}
+
 static void format_tag_value(neu_dvalue_t *value)
 {
     double scale = pow(10, 5);
+    if (!isfinite(value->value.d64) ||
+        fabs(value->value.d64) >= (double) UINT64_MAX / scale) {
+        return;
+    }
 
     int negative = 1;
 
@@ -417,11 +440,14 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
             utarray_free(tags);
         }
     } else {
-        neu_driver_cache_update(driver->cache, group, tag, global_timestamp,
-                                value, metas, n_meta);
+        bool changed = false;
+        int  error   = neu_driver_cache_update_checked(
+            driver->cache, group, tag, global_timestamp, value, metas, n_meta,
+            false, &changed);
         update_metric(&driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
         update_metric(&driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
-                      NEU_TYPE_ERROR == value.type, NULL);
+                      NEU_TYPE_ERROR == value.type || error != NEU_ERR_SUCCESS,
+                      NULL);
     }
     nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64
@@ -463,12 +489,13 @@ static void update_im_f_m(neu_adapter_t *adapter, const char *group,
         return;
     }
 
-    bool changed = neu_driver_cache_update_change(driver->cache, group, tag,
-                                                  global_timestamp, value,
-                                                  metas, n_meta, false);
+    bool changed = false;
+    int  error   = neu_driver_cache_update_checked(driver->cache, group, tag,
+                                                global_timestamp, value, metas,
+                                                n_meta, false, &changed);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
                                           NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
-    if (value.type == NEU_TYPE_ERROR) {
+    if (value.type == NEU_TYPE_ERROR || error != NEU_ERR_SUCCESS) {
         return;
     }
 
@@ -563,11 +590,13 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         return;
     }
 
-    neu_driver_cache_update_change(driver->cache, group, tag, global_timestamp,
-                                   value, metas, n_meta, true);
+    bool changed = false;
+    int  error   = neu_driver_cache_update_checked(driver->cache, group, tag,
+                                                global_timestamp, value, metas,
+                                                n_meta, true, &changed);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
                                           NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
-    if (value.type == NEU_TYPE_ERROR) {
+    if (value.type == NEU_TYPE_ERROR || error != NEU_ERR_SUCCESS) {
         return;
     }
 
@@ -729,6 +758,9 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 
         utarray_foreach(el->wt_tags, to_be_write_tag_t *, tag)
         {
+            if (tag->types != NULL) {
+                utarray_free(tag->types);
+            }
             neu_tag_free(tag->tag);
         }
 
@@ -1254,77 +1286,34 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
 }
 
 static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
-                        neu_value_u *value, double decimal)
+                        neu_value_u *value, double decimal, double bias)
 {
+    long double result = value_type == NEU_TYPE_INT64
+        ? (long double) value->i64
+        : (long double) value->d64;
+    result -= (long double) bias;
+    if (decimal != 0) {
+        result /= (long double) decimal;
+    }
     switch (tag_type) {
     case NEU_TYPE_INT8:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->i8 = (int8_t) round(value->d64 / decimal);
-        } else {
-            value->i8 = (int8_t) round(value->i64 / decimal);
-        }
-        break;
     case NEU_TYPE_INT16:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->i16 = (int16_t) round(value->d64 / decimal);
-        } else {
-            value->i16 = (int16_t) round(value->i64 / decimal);
-        }
-        break;
     case NEU_TYPE_INT32:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->i32 = (int32_t) round(value->d64 / decimal);
-        } else {
-            value->i32 = (int32_t) round(value->i64 / decimal);
-        }
-        break;
     case NEU_TYPE_INT64:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->i64 = (int64_t) round(value->d64 / decimal);
-        } else {
-            value->i64 = (int64_t) round(value->i64 / decimal);
-        }
+        value->i64 = (int64_t) roundl(result);
         break;
     case NEU_TYPE_UINT8:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->u8 = (uint8_t) round(value->d64 / decimal);
-        } else {
-            value->u8 = (uint8_t) round(value->u64 / decimal);
-        }
-        break;
     case NEU_TYPE_UINT16:
     case NEU_TYPE_WORD:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->u16 = (uint16_t) round(value->d64 / decimal);
-        } else {
-            value->u16 = (uint16_t) round(value->u64 / decimal);
-        }
-        break;
     case NEU_TYPE_UINT32:
-    case NEU_TYPE_LWORD:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->u32 = (uint32_t) round(value->d64 / decimal);
-        } else {
-            value->u32 = (uint32_t) round(value->u64 / decimal);
-        }
-        break;
-    case NEU_TYPE_UINT64:
     case NEU_TYPE_DWORD:
-        if (value_type == NEU_TYPE_DOUBLE) {
-            value->u64 = (uint64_t) round(value->d64 / decimal);
-        } else {
-            value->u64 = (uint64_t) round(value->u64 / decimal);
-        }
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_LWORD:
+        value->u64 = (uint64_t) roundl(result);
         break;
     case NEU_TYPE_FLOAT:
     case NEU_TYPE_DOUBLE:
-        if (value_type == NEU_TYPE_INT64) {
-            value->d64 = (double) (value->d64 / decimal);
-        } else if (value_type == NEU_TYPE_DOUBLE) {
-            value->d64 = value->d64 / decimal;
-        } else if (value_type == NEU_TYPE_FLOAT) {
-            value->f32 = value->f32 / decimal;
-        }
+        value->d64 = (double) result;
         break;
     default:
         break;
@@ -1363,156 +1352,239 @@ int check_value(neu_type_e write_type, int64_t value, int64_t value_min,
     }
 }
 
+static int check_write_value(neu_type_e tag_type, int64_t value, double value_d,
+                             neu_type_e write_type, double decimal, double bias)
+{
+    long double min = 0, max = 0;
+    bool        integer = true;
+    switch (tag_type) {
+    case NEU_TYPE_AUTO:
+        return NEU_ERR_PLUGIN_TAG_NOT_READY;
+    case NEU_TYPE_INT8:
+        min = INT8_MIN;
+        max = INT8_MAX;
+        break;
+    case NEU_TYPE_UINT8:
+        max = UINT8_MAX;
+        break;
+    case NEU_TYPE_INT16:
+        min = INT16_MIN;
+        max = INT16_MAX;
+        break;
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_WORD:
+        max = UINT16_MAX;
+        break;
+    case NEU_TYPE_INT32:
+        min = INT32_MIN;
+        max = INT32_MAX;
+        break;
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_DWORD:
+        max = UINT32_MAX;
+        break;
+    case NEU_TYPE_INT64:
+        min = INT64_MIN;
+        max = INT64_MAX;
+        break;
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_LWORD:
+        max = UINT64_MAX;
+        break;
+    case NEU_TYPE_BIT:
+        max = 1;
+        break;
+    case NEU_TYPE_FLOAT:
+        min     = -FLT_MAX;
+        max     = FLT_MAX;
+        integer = false;
+        break;
+    case NEU_TYPE_DOUBLE:
+        min     = -DBL_MAX;
+        max     = DBL_MAX;
+        integer = false;
+        break;
+    default: {
+        if (bias != 0) {
+            return NEU_ERR_TAG_BIAS_INVALID;
+        }
+        if (decimal != 0) {
+            return NEU_ERR_TAG_DECIMAL_INVALID;
+        }
+        bool valid = false;
+        switch (tag_type) {
+        case NEU_TYPE_BOOL:
+            valid = write_type == NEU_TYPE_BOOL;
+            break;
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
+        case NEU_TYPE_ARRAY_CHAR:
+            valid = write_type == NEU_TYPE_STRING;
+            break;
+        case NEU_TYPE_CUSTOM:
+            valid = write_type == NEU_TYPE_CUSTOM;
+            break;
+        case NEU_TYPE_BYTES:
+        case NEU_TYPE_ARRAY_INT8:
+        case NEU_TYPE_ARRAY_UINT8:
+        case NEU_TYPE_ARRAY_INT16:
+        case NEU_TYPE_ARRAY_UINT16:
+        case NEU_TYPE_ARRAY_INT32:
+        case NEU_TYPE_ARRAY_UINT32:
+        case NEU_TYPE_ARRAY_INT64:
+        case NEU_TYPE_ARRAY_UINT64:
+            valid = write_type == NEU_TYPE_ARRAY_INT64;
+            break;
+        case NEU_TYPE_ARRAY_FLOAT:
+        case NEU_TYPE_ARRAY_DOUBLE:
+            valid = write_type == NEU_TYPE_ARRAY_INT64 ||
+                write_type == NEU_TYPE_ARRAY_DOUBLE;
+            break;
+        case NEU_TYPE_ARRAY_BOOL:
+            valid = write_type == NEU_TYPE_ARRAY_BOOL;
+            break;
+        case NEU_TYPE_ARRAY_STRING:
+            valid = write_type == NEU_TYPE_ARRAY_STRING;
+            break;
+        default:
+            break;
+        }
+        return valid ? NEU_ERR_SUCCESS : NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+    }
+    }
+    if (write_type != NEU_TYPE_INT64 &&
+        (write_type != NEU_TYPE_DOUBLE ||
+         (integer && decimal == 0 && bias == 0))) {
+        return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+    }
+    if ((write_type == NEU_TYPE_DOUBLE && !isfinite(value_d)) ||
+        (!isfinite(decimal) || !isfinite(bias))) {
+        return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
+    }
+    long double result = write_type == NEU_TYPE_INT64 ? (long double) value
+                                                      : (long double) value_d;
+    result -= (long double) bias;
+    if (decimal != 0) {
+        result /= (long double) decimal;
+    }
+    if (!isfinite(result) || result < min || result > max) {
+        return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
+    }
+    if (integer && fabsl(result - roundl(result)) >= EPSILON) {
+        return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+    }
+    return NEU_ERR_SUCCESS;
+}
+
 int is_value_in_range(neu_type_e tag_type, int64_t value, double value_d,
                       neu_type_e write_type, double decimal)
 {
-    if (decimal != 0) {
-        double result;
+    return check_write_value(tag_type, value, value_d, write_type, decimal, 0);
+}
 
-        if (write_type == NEU_TYPE_INT64) {
-            result = value / decimal;
-        } else {
-            result = value_d / decimal;
+static int prepare_write_tag(neu_adapter_driver_t *driver, group_t *group,
+                             neu_datatag_t *tag, neu_dvalue_t *value,
+                             UT_array **types)
+{
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE)) {
+        return NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE;
+    }
+    if (tag->type == NEU_TYPE_AUTO) {
+        write_type_snapshot_t snapshot = { 0 };
+        if (neu_group_is_change(group->group, group->timestamp) ||
+            neu_driver_cache_type_get(driver->cache, group->name, tag->name,
+                                      &snapshot.type, &snapshot.generation) !=
+                NEU_ERR_SUCCESS) {
+            return NEU_ERR_PLUGIN_TAG_NOT_READY;
         }
-
-        switch (tag_type) {
-        case NEU_TYPE_INT8:
-            return check_value_decimal(write_type, result, INT8_MIN, INT8_MAX);
-        case NEU_TYPE_UINT8:
-            return check_value_decimal(write_type, result, 0, UINT8_MAX);
-        case NEU_TYPE_INT16:
-            return check_value_decimal(write_type, result, INT16_MIN,
-                                       INT16_MAX);
-        case NEU_TYPE_UINT16:
-            return check_value_decimal(write_type, result, 0, UINT16_MAX);
-        case NEU_TYPE_INT32:
-            return check_value_decimal(write_type, result, INT32_MIN,
-                                       INT32_MAX);
-        case NEU_TYPE_UINT32:
-            return check_value_decimal(write_type, result, 0, UINT32_MAX);
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64:
-            if (write_type != NEU_TYPE_INT64 && write_type != NEU_TYPE_DOUBLE) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else if (almost_equal(ceil(result), result, EPSILON) ||
-                       almost_equal(floor(result), result, EPSILON)) {
-                return NEU_ERR_SUCCESS;
-            } else {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-        case NEU_TYPE_FLOAT:
-            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-            if (result < (int64_t) -FLT_MAX || result > (int64_t) FLT_MAX) {
-                return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_DOUBLE:
-            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-            return NEU_ERR_SUCCESS;
-        case NEU_TYPE_STRING:
-        case NEU_TYPE_BOOL:
-        case NEU_TYPE_BIT:
-            return NEU_ERR_TAG_DECIMAL_INVALID;
-        default:
-            return NEU_ERR_SUCCESS;
+        snprintf(snapshot.group, sizeof(snapshot.group), "%s", group->name);
+        snprintf(snapshot.tag, sizeof(snapshot.tag), "%s", tag->name);
+        *tag = effective_tag(tag, snapshot.type);
+        if (*types == NULL) {
+            UT_icd icd = { sizeof(write_type_snapshot_t), NULL, NULL, NULL };
+            utarray_new(*types, &icd);
         }
-    } else {
-        switch (tag_type) {
-        case NEU_TYPE_BOOL:
-            if (write_type == NEU_TYPE_BOOL) {
-                return NEU_ERR_SUCCESS;
-            } else {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
+        utarray_push_back(*types, &snapshot);
+    }
+    int ret = check_write_value(tag->type, value->value.i64, value->value.d64,
+                                value->type, tag->decimal, tag->bias);
+    if (ret != NEU_ERR_SUCCESS) {
+        return ret;
+    }
+    if (value->type == NEU_TYPE_ARRAY_INT64 ||
+        value->type == NEU_TYPE_ARRAY_DOUBLE) {
+        neu_type_e element = NEU_TYPE_AUTO;
+        if (tag->type >= NEU_TYPE_ARRAY_INT8 &&
+            tag->type <= NEU_TYPE_ARRAY_DOUBLE) {
+            element = NEU_TYPE_INT8 + tag->type - NEU_TYPE_ARRAY_INT8;
+        } else if (tag->type == NEU_TYPE_BYTES) {
+            element = NEU_TYPE_UINT8;
+        }
+        if (element != NEU_TYPE_AUTO) {
+            uint32_t length = value->type == NEU_TYPE_ARRAY_INT64
+                ? value->value.i64s.length
+                : value->value.f64s.length;
+            for (uint32_t i = 0; i < length; ++i) {
+                ret = is_value_in_range(element,
+                                        value->type == NEU_TYPE_ARRAY_INT64
+                                            ? value->value.i64s.i64s[i]
+                                            : 0,
+                                        value->type == NEU_TYPE_ARRAY_DOUBLE
+                                            ? value->value.f64s.f64s[i]
+                                            : 0,
+                                        value->type == NEU_TYPE_ARRAY_INT64
+                                            ? NEU_TYPE_INT64
+                                            : NEU_TYPE_DOUBLE,
+                                        0);
+                if (ret != NEU_ERR_SUCCESS) {
+                    return ret;
+                }
             }
-        case NEU_TYPE_BIT:
-            if (write_type != NEU_TYPE_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else if (value != 1 && value != 0) {
-                return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_INT8:
-            return check_value(write_type, value, INT8_MIN, INT8_MAX);
-        case NEU_TYPE_UINT8:
-            return check_value(write_type, value, 0, UINT8_MAX);
-        case NEU_TYPE_INT16:
-            return check_value(write_type, value, INT16_MIN, INT16_MAX);
-        case NEU_TYPE_UINT16:
-            return check_value(write_type, value, 0, UINT16_MAX);
-        case NEU_TYPE_INT32:
-            return check_value(write_type, value, INT32_MIN, INT32_MAX);
-        case NEU_TYPE_UINT32:
-            return check_value(write_type, value, 0, UINT32_MAX);
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64:
-            if (write_type == NEU_TYPE_INT64) {
-                return NEU_ERR_SUCCESS;
-            } else {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-        case NEU_TYPE_FLOAT:
-            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-            if (value < (int64_t) -FLT_MAX || value > (int64_t) FLT_MAX) {
-                return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_DOUBLE:
-            if (write_type != NEU_TYPE_DOUBLE && write_type != NEU_TYPE_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            }
-            return NEU_ERR_SUCCESS;
-        case NEU_TYPE_STRING:
-            if (write_type != NEU_TYPE_STRING) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_CUSTOM:
-            if (write_type != NEU_TYPE_CUSTOM) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_ARRAY_UINT8:
-        case NEU_TYPE_ARRAY_INT8:
-        case NEU_TYPE_ARRAY_UINT16:
-        case NEU_TYPE_ARRAY_INT16:
-        case NEU_TYPE_ARRAY_UINT32:
-        case NEU_TYPE_ARRAY_INT32:
-        case NEU_TYPE_ARRAY_UINT64:
-        case NEU_TYPE_ARRAY_INT64:
-            if (write_type != NEU_TYPE_ARRAY_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_ARRAY_FLOAT:
-        case NEU_TYPE_ARRAY_DOUBLE:
-            if (write_type != NEU_TYPE_ARRAY_DOUBLE &&
-                write_type != NEU_TYPE_ARRAY_INT64) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        case NEU_TYPE_ARRAY_STRING:
-            if (write_type != NEU_TYPE_ARRAY_STRING) {
-                return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
-            } else {
-                return NEU_ERR_SUCCESS;
-            }
-        default:
-            return NEU_ERR_SUCCESS;
         }
     }
+    if (tag->decimal != 0 || tag->bias != 0) {
+        cal_decimal(tag->type, value->type, &value->value, tag->decimal,
+                    tag->bias);
+    } else if ((tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) &&
+               value->type == NEU_TYPE_INT64) {
+        value->value.d64 = (double) value->value.i64;
+    }
+    if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
+        value->type = NEU_TYPE_DOUBLE;
+    }
+    fix_value(tag, value->type, value);
+    value->type = tag->type;
+    return NEU_ERR_SUCCESS;
+}
+
+static bool write_types_valid(neu_adapter_driver_t *driver, UT_array *types)
+{
+    if (types == NULL) {
+        return true;
+    }
+    utarray_foreach(types, write_type_snapshot_t *, snapshot)
+    {
+        group_t *  group      = find_group(driver, snapshot->group);
+        neu_type_e type       = NEU_TYPE_AUTO;
+        uint64_t   generation = 0;
+        if (group == NULL ||
+            neu_group_is_change(group->group, group->timestamp) ||
+            neu_driver_cache_type_get(driver->cache, snapshot->group,
+                                      snapshot->tag, &type,
+                                      &generation) != NEU_ERR_SUCCESS ||
+            generation != snapshot->generation || type != snapshot->type) {
+            return false;
+        }
+        neu_datatag_t *tag   = neu_group_find_tag(group->group, snapshot->tag);
+        bool           valid = tag != NULL && tag->type == NEU_TYPE_AUTO &&
+            neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE);
+        neu_tag_free(tag);
+        if (!valid) {
+            return false;
+        }
+    }
+    return true;
 }
 
 int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
@@ -1542,8 +1614,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         return NEU_ERR_GROUP_NOT_EXIST;
     }
 
-    UT_array *tags = NULL;
-    UT_icd    icd  = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
+    UT_array *tags  = NULL;
+    UT_array *types = NULL;
+    UT_icd    icd   = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
     utarray_new(tags, &icd);
     int value_err = NEU_ERR_SUCCESS;
     int value_check;
@@ -1553,9 +1626,7 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
 
         if (tag != NULL) {
             value_check =
-                is_value_in_range(tag->type, cmd->tags[i].value.value.i64,
-                                  cmd->tags[i].value.value.d64,
-                                  cmd->tags[i].value.type, tag->decimal);
+                prepare_write_tag(driver, g, tag, &cmd->tags[i].value, &types);
         } else {
             nlog_warn("driver write tags not exist, driver: %s, group: %s, "
                       "tag: %s",
@@ -1565,19 +1636,6 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
 
         if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
             value_check == NEU_ERR_SUCCESS) {
-            if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
-                if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
-                    cmd->tags[i].value.value.d64 =
-                        (double) cmd->tags[i].value.value.i64;
-                }
-            }
-
-            if (tag->decimal != 0) {
-                cal_decimal(tag->type, cmd->tags[i].value.type,
-                            &cmd->tags[i].value.value, tag->decimal);
-            }
-            fix_value(tag, cmd->tags[i].value.type, &cmd->tags[i].value);
-
             neu_plugin_tag_value_t tv = {
                 .tag   = neu_tag_dup(tag),
                 .value = cmd->tags[i].value.value,
@@ -1604,6 +1662,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
+        if (types != NULL) {
+            utarray_free(types);
+        }
         return value_err;
     }
 
@@ -1620,6 +1681,9 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
+        if (types != NULL) {
+            utarray_free(types);
+        }
         return NEU_ERR_TAG_NOT_EXIST;
     }
 
@@ -1644,6 +1708,7 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     wtag.single            = false;
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
+    wtag.types             = types;
 
     store_write_tag(g, &wtag);
 
@@ -1682,8 +1747,9 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         }
     }
 
-    UT_array *tags = NULL;
-    UT_icd    icd  = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
+    UT_array *tags  = NULL;
+    UT_array *types = NULL;
+    UT_icd    icd   = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
     utarray_new(tags, &icd);
     int value_err = NEU_ERR_SUCCESS;
     int value_check;
@@ -1696,10 +1762,8 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                 neu_group_find_tag(g->group, cmd->groups[i].tags[k].tag);
 
             if (tag != NULL) {
-                value_check = is_value_in_range(
-                    tag->type, cmd->groups[i].tags[k].value.value.i64,
-                    cmd->groups[i].tags[k].value.value.d64,
-                    cmd->groups[i].tags[k].value.type, tag->decimal);
+                value_check = prepare_write_tag(
+                    driver, g, tag, &cmd->groups[i].tags[k].value, &types);
             } else {
                 value_check = NEU_ERR_TAG_NOT_EXIST;
             }
@@ -1707,25 +1771,10 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
             if (tag != NULL &&
                 neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
                 value_check == NEU_ERR_SUCCESS) {
-                if (tag->type == NEU_TYPE_FLOAT ||
-                    tag->type == NEU_TYPE_DOUBLE) {
-                    if (cmd->groups[i].tags[k].value.type == NEU_TYPE_INT64) {
-                        cmd->groups[i].tags[k].value.value.d64 =
-                            (double) cmd->groups[i].tags[k].value.value.i64;
-                    }
-                }
-
-                if (tag->decimal != 0) {
-                    cal_decimal(tag->type, cmd->groups[i].tags[k].value.type,
-                                &cmd->groups[i].tags[k].value.value,
-                                tag->decimal);
-                }
-                fix_value(tag, cmd->groups[i].tags[k].value.type,
-                          &cmd->groups[i].tags[k].value);
-
                 neu_plugin_tag_value_t tv = {
                     .tag   = neu_tag_dup(tag),
                     .value = cmd->groups[i].tags[k].value.value,
+                    .type  = cmd->groups[i].tags[k].value.type,
                 };
                 utarray_push_back(tags, &tv);
             } else {
@@ -1745,6 +1794,9 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
+        if (types != NULL) {
+            utarray_free(types);
+        }
         return value_err;
     }
 
@@ -1761,6 +1813,9 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
             neu_tag_free(tv->tag);
         }
         utarray_free(tags);
+        if (types != NULL) {
+            utarray_free(types);
+        }
         return NEU_ERR_TAG_NOT_EXIST;
     }
 
@@ -1791,6 +1846,7 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.single            = false;
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
+    wtag.types             = types;
 
     store_write_tag(first_g, &wtag);
 
@@ -1835,9 +1891,9 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             return NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE;
         }
 
-        int value_check = is_value_in_range(tag->type, cmd->value.value.i64,
-                                            cmd->value.value.d64,
-                                            cmd->value.type, tag->decimal);
+        UT_array *types = NULL;
+        int       value_check =
+            prepare_write_tag(driver, g, tag, &cmd->value, &types);
 
         if (value_check != NEU_ERR_SUCCESS) {
             nlog_warn("driver write tag value error(%d), driver: %s, group: "
@@ -1845,22 +1901,12 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                       value_check, driver->adapter.name, cmd->group, cmd->tag);
             driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
                                                           value_check);
+            if (types != NULL) {
+                utarray_free(types);
+            }
             neu_tag_free(tag);
             return value_check;
         }
-
-        if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
-            if (cmd->value.type == NEU_TYPE_INT64) {
-                cmd->value.value.d64 = (double) cmd->value.value.i64;
-            }
-        }
-
-        if (tag->decimal != 0) {
-            cal_decimal(tag->type, cmd->value.type, &cmd->value.value,
-                        tag->decimal);
-        }
-
-        fix_value(tag, cmd->value.type, &cmd->value);
 
         const neu_reqresp_head_t *head = (const neu_reqresp_head_t *) req;
         const char *              iface =
@@ -1878,6 +1924,7 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         wtag.req               = (void *) req;
         wtag.value             = cmd->value.value;
         wtag.tag               = neu_tag_dup(tag);
+        wtag.types             = types;
 
         store_write_tag(g, &wtag);
 
@@ -2044,6 +2091,9 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         utarray_foreach(find->wt_tags, to_be_write_tag_t *, tag)
         {
+            if (tag->types != NULL) {
+                utarray_free(tag->types);
+            }
             if (tag->single) {
                 neu_tag_free(tag->tag);
             } else {
@@ -2199,7 +2249,19 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
         return NEU_ERR_TAG_PRECISION_INVALID;
     }
 
-    if (tag->bias != 0) {
+    if (!isfinite(tag->decimal)) {
+        return NEU_ERR_TAG_DECIMAL_INVALID;
+    }
+    if (!isfinite(tag->bias)) {
+        return NEU_ERR_TAG_BIAS_INVALID;
+    }
+    if (tag->type == NEU_TYPE_AUTO &&
+        !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_READ) &&
+        !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
+        return NEU_ERR_TAG_TYPE_NOT_SUPPORT;
+    }
+
+    if (tag->bias != 0 && tag->type != NEU_TYPE_AUTO) {
         switch (tag->type) {
         case NEU_TYPE_INT8:
         case NEU_TYPE_UINT8:
@@ -2252,9 +2314,10 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    neu_datatag_parse_addr_option(tag, &tag->option);
-    driver->adapter.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin, tag);
+    ret = neu_adapter_driver_validate_tag(driver, group, tag);
+    if (ret != NEU_ERR_SUCCESS) {
+        return ret;
+    }
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
@@ -2286,6 +2349,9 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_del_tag(find->group, tag);
+        if (ret == NEU_ERR_SUCCESS) {
+            neu_driver_cache_del(driver->cache, group, tag);
+        }
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
@@ -2309,32 +2375,17 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    if (strlen(tag->name) >= NEU_TAG_NAME_LEN) {
-        return NEU_ERR_TAG_NAME_TOO_LONG;
-    }
-
-    if (strlen(tag->address) > NEU_TAG_ADDRESS_LEN) {
-        return NEU_ERR_TAG_ADDRESS_TOO_LONG;
-    }
-
-    if (strlen(tag->description) > NEU_TAG_DESCRIPTION_LEN) {
-        return NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
-    }
-
-    if (tag->precision > NEU_TAG_FLOAG_PRECISION_MAX) {
-        return NEU_ERR_TAG_PRECISION_INVALID;
-    }
-
-    ret = driver->adapter.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin, tag);
+    ret = neu_adapter_driver_validate_tag(driver, group, tag);
     if (ret != NEU_ERR_SUCCESS) {
         return ret;
     }
 
-    neu_datatag_parse_addr_option(tag, &tag->option);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_update_tag(find->group, tag);
+        if (ret == NEU_ERR_SUCCESS) {
+            neu_driver_cache_del(driver->cache, group, tag->name);
+        }
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
@@ -2403,13 +2454,27 @@ int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
     return ret;
 }
 
-void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
-                                      const char *group, UT_array **tags)
+int neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
+                                     const char *group, UT_array **tags)
 {
     int ret = neu_adapter_driver_get_tag(driver, group, tags);
     if (ret == NEU_ERR_SUCCESS) {
         utarray_foreach(*tags, neu_datatag_t *, tag)
         {
+            if (tag->type == NEU_TYPE_AUTO) {
+                neu_type_e type       = NEU_TYPE_AUTO;
+                uint64_t   generation = 0;
+                group_t *  g          = find_group(driver, group);
+                if (g == NULL || neu_group_is_change(g->group, g->timestamp) ||
+                    neu_driver_cache_type_get(driver->cache, group, tag->name,
+                                              &type,
+                                              &generation) != NEU_ERR_SUCCESS) {
+                    utarray_free(*tags);
+                    *tags = NULL;
+                    return NEU_ERR_PLUGIN_TAG_NOT_READY;
+                }
+                *tag = effective_tag(tag, type);
+            }
             if (tag->decimal != 0) {
                 if (tag->type == NEU_TYPE_UINT8 || tag->type == NEU_TYPE_INT8 ||
                     tag->type == NEU_TYPE_INT16 ||
@@ -2424,8 +2489,9 @@ void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
             }
         }
     } else {
-        utarray_new(*tags, neu_tag_get_icd());
+        *tags = NULL;
     }
+    return ret;
 }
 
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
@@ -2646,8 +2712,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
         value.type      = NEU_TYPE_ERROR;
         value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
 
-        neu_driver_cache_add(group->driver->cache, group->name, tag->name,
-                             value);
+        neu_driver_cache_add_tag(group->driver->cache, group->name, tag, value);
     }
 
     neu_plugin_group_t grp = {
@@ -2688,6 +2753,32 @@ static int write_callback(void *usr_data)
 
     utarray_foreach(pending, to_be_write_tag_t *, wtag)
     {
+
+        if (!write_types_valid(group->driver, wtag->types)) {
+            group->driver->adapter.cb_funs.driver.write_response(
+                &group->driver->adapter, wtag->req,
+                NEU_ERR_PLUGIN_TAG_NOT_READY);
+            if (wtag->single) {
+                neu_dvalue_t value = { .type  = wtag->tag->type,
+                                       .value = wtag->value };
+                neu_free_dvalue(&value);
+                neu_tag_free(wtag->tag);
+            } else {
+                utarray_foreach(wtag->tvs, neu_plugin_tag_value_t *, tv)
+                {
+                    neu_dvalue_t value = { .type  = tv->type,
+                                           .value = tv->value };
+                    neu_free_dvalue(&value);
+                    neu_tag_free(tv->tag);
+                }
+                utarray_free(wtag->tvs);
+            }
+            utarray_free(wtag->types);
+            continue;
+        }
+        if (wtag->types != NULL) {
+            utarray_free(wtag->types);
+        }
 
         int64_t s_time = 0;
         int64_t e_time = 0;
@@ -2851,6 +2942,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
 
         tag_value.datatag.bias = tag->bias;
 
+        tag_value.value.attrs = value.value.attrs;
+
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
 
@@ -2858,18 +2951,12 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             continue;
         }
 
-        if ((tag->type == NEU_TYPE_FLOAT && isnan(value.value.value.f32)) ||
-            (tag->type == NEU_TYPE_DOUBLE && isnan(value.value.value.d64))) {
-            tag_value.value.type      = NEU_TYPE_ERROR;
-            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
-            utarray_push_back(tag_values, &tag_value);
-            continue;
-        }
+        neu_datatag_t effective = effective_tag(tag, value.resolved_type);
 
-        switch (tag->type) {
+        switch (effective.type) {
         case NEU_TYPE_UINT16:
         case NEU_TYPE_INT16:
-            switch (tag->option.value16.endian) {
+            switch (effective.option.value16.endian) {
             case NEU_DATATAG_ENDIAN_B16:
                 value.value.value.u16 = htons(value.value.value.u16);
                 break;
@@ -2881,7 +2968,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT32:
-            switch (tag->option.value32.endian) {
+            switch (effective.option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32: {
                 uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
                 uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
@@ -2909,7 +2996,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_DOUBLE:
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
-            switch (tag->option.value64.endian) {
+            switch (effective.option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
             case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
@@ -2936,6 +3023,16 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
+        if ((effective.type == NEU_TYPE_FLOAT &&
+             !isfinite(value.value.value.f32)) ||
+            (effective.type == NEU_TYPE_DOUBLE &&
+             !isfinite(value.value.value.d64))) {
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
         if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
             (timestamp - value.timestamp) > timeout && timeout > 0) {
             if (value.value.type == NEU_TYPE_PTR) {
@@ -2960,7 +3057,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                 double bias    = tag->bias;
 
                 tag_value.value.type = NEU_TYPE_DOUBLE;
-                switch (tag->type) {
+                switch (effective.type) {
                 case NEU_TYPE_INT8:
                     tag_value.value.value.d64 =
                         (double) tag_value.value.value.i8 * decimal + bias;
@@ -3002,12 +3099,12 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                         (double) tag_value.value.value.d64 * decimal + bias;
                     break;
                 default:
-                    tag_value.value.type = tag->type;
+                    tag_value.value.type = effective.type;
                     break;
                 }
             }
             if (tag->precision == 0 && tag->bias == 0 &&
-                tag->type == NEU_TYPE_DOUBLE) {
+                effective.type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }
@@ -3041,16 +3138,20 @@ static void read_group(int64_t timestamp, int64_t timeout,
             continue;
         }
 
+        tag_value.value.attrs = value.value.attrs;
+
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
             utarray_push_back(tag_values, &tag_value);
             continue;
         }
 
-        switch (tag->type) {
+        neu_datatag_t effective = effective_tag(tag, value.resolved_type);
+
+        switch (effective.type) {
         case NEU_TYPE_UINT16:
         case NEU_TYPE_INT16:
-            switch (tag->option.value16.endian) {
+            switch (effective.option.value16.endian) {
             case NEU_DATATAG_ENDIAN_B16:
                 value.value.value.u16 = htons(value.value.value.u16);
                 break;
@@ -3062,7 +3163,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT32:
-            switch (tag->option.value32.endian) {
+            switch (effective.option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32: {
                 uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
                 uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
@@ -3090,7 +3191,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_DOUBLE:
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
-            switch (tag->option.value64.endian) {
+            switch (effective.option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
             case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
@@ -3117,6 +3218,16 @@ static void read_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
+        if ((effective.type == NEU_TYPE_FLOAT &&
+             !isfinite(value.value.value.f32)) ||
+            (effective.type == NEU_TYPE_DOUBLE &&
+             !isfinite(value.value.value.d64))) {
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
         if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
@@ -3139,7 +3250,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
                 tag_value.value.type = NEU_TYPE_DOUBLE;
                 double decimal       = tag->decimal != 0 ? tag->decimal : 1;
                 double bias          = tag->bias;
-                switch (tag->type) {
+                switch (effective.type) {
                 case NEU_TYPE_INT8:
                     tag_value.value.value.d64 =
                         (double) tag_value.value.value.i8 * decimal + bias;
@@ -3181,13 +3292,13 @@ static void read_group(int64_t timestamp, int64_t timeout,
                         (double) tag_value.value.value.d64 * decimal + bias;
                     break;
                 default:
-                    tag_value.value.type = tag->type;
+                    tag_value.value.type = effective.type;
                     break;
                 }
             }
 
             if (tag->precision == 0 && tag->bias == 0 &&
-                tag->type == NEU_TYPE_DOUBLE) {
+                effective.type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }
@@ -3236,16 +3347,20 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
             continue;
         }
 
+        tag_value.value.attrs = value.value.attrs;
+
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
             utarray_push_back(tag_values, &tag_value);
             continue;
         }
 
-        switch (tag->type) {
+        neu_datatag_t effective = effective_tag(tag, value.resolved_type);
+
+        switch (effective.type) {
         case NEU_TYPE_UINT16:
         case NEU_TYPE_INT16:
-            switch (tag->option.value16.endian) {
+            switch (effective.option.value16.endian) {
             case NEU_DATATAG_ENDIAN_B16:
                 value.value.value.u16 = htons(value.value.value.u16);
                 break;
@@ -3257,7 +3372,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT32:
-            switch (tag->option.value32.endian) {
+            switch (effective.option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32: {
                 uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
                 uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
@@ -3285,7 +3400,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_DOUBLE:
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
-            switch (tag->option.value64.endian) {
+            switch (effective.option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
             case NEU_DATATAG_ENDIAN_BB64:
                 value.value.value.u64 = neu_htonll(value.value.value.u64);
@@ -3312,6 +3427,16 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
             break;
         }
 
+        if ((effective.type == NEU_TYPE_FLOAT &&
+             !isfinite(value.value.value.f32)) ||
+            (effective.type == NEU_TYPE_DOUBLE &&
+             !isfinite(value.value.value.d64))) {
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
         if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
             (timestamp - value.timestamp) > timeout) {
             if (value.value.type == NEU_TYPE_PTR) {
@@ -3334,7 +3459,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
                 tag_value.value.type = NEU_TYPE_DOUBLE;
                 double decimal       = tag->decimal != 0 ? tag->decimal : 1;
                 double bias          = tag->bias;
-                switch (tag->type) {
+                switch (effective.type) {
                 case NEU_TYPE_INT8:
                     tag_value.value.value.d64 =
                         (double) tag_value.value.value.i8 * decimal + bias;
@@ -3376,13 +3501,13 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
                         (double) tag_value.value.value.d64 * decimal + bias;
                     break;
                 default:
-                    tag_value.value.type = tag->type;
+                    tag_value.value.type = effective.type;
                     break;
                 }
             }
 
             if (tag->precision == 0 && tag->bias == 0 &&
-                tag->type == NEU_TYPE_DOUBLE) {
+                effective.type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value.value);
             }
         }

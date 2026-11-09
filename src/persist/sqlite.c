@@ -29,6 +29,7 @@
 
 #include "errcodes.h"
 #include "utils/log.h"
+#include "utils/set.h"
 
 #include "sqlite.h"
 
@@ -376,9 +377,18 @@ static int apply_schemas(sqlite3 *db, const char *dir)
 static inline int open_db(const char *schema_dir, sqlite3 **db_p)
 {
     sqlite3 *db = NULL;
-    int      rv = sqlite3_open(DB_FILE, &db);
+    int      rv = sqlite3_open_v2(DB_FILE, &db,
+                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE |
+                                 SQLITE_OPEN_FULLMUTEX,
+                             NULL);
     if (SQLITE_OK != rv) {
         nlog_fatal("db `%s` fail: %s", DB_FILE, sqlite3_errstr(rv));
+        sqlite3_close(db);
+        return -1;
+    }
+    if (NULL == sqlite3_db_mutex(db)) {
+        nlog_fatal("db mutex unavailable");
+        sqlite3_close(db);
         return -1;
     }
     sqlite3_busy_timeout(db, 100 * 1000);
@@ -416,6 +426,10 @@ static struct neu_persister_vtbl_s g_sqlite_persister_vtbl = {
     .delete_node              = neu_sqlite_persister_delete_node,
     .update_node              = neu_sqlite_persister_update_node,
     .update_node_state        = neu_sqlite_persister_update_node_state,
+    .add_node_properties      = neu_sqlite_persister_add_node_properties,
+    .delete_node_properties   = neu_sqlite_persister_delete_node_properties,
+    .update_node_property     = neu_sqlite_persister_update_node_property,
+    .load_node_properties     = neu_sqlite_persister_load_node_properties,
     .store_tag                = neu_sqlite_persister_store_tag,
     .store_tags               = neu_sqlite_persister_store_tags,
     .load_tags                = neu_sqlite_persister_load_tags,
@@ -612,6 +626,276 @@ int neu_sqlite_persister_update_node_state(neu_persister_t *self,
                        node_name);
 }
 
+static int begin_transaction(sqlite3 *db)
+{
+    if (!sqlite3_get_autocommit(db) ||
+        SQLITE_OK != sqlite3_exec(db, "BEGIN IMMEDIATE", NULL, NULL, NULL)) {
+        nlog_error("begin transaction fail: %s", sqlite3_errmsg(db));
+        return NEU_ERR_EINTERNAL;
+    }
+    return 0;
+}
+
+static void rollback_transaction(sqlite3 *db)
+{
+    if (!sqlite3_get_autocommit(db) &&
+        SQLITE_OK != sqlite3_exec(db, "ROLLBACK", NULL, NULL, NULL)) {
+        nlog_error("rollback transaction fail: %s", sqlite3_errmsg(db));
+    }
+}
+
+static int node_property_json(const char *text, char **normalized)
+{
+    *normalized = NULL;
+    if (NULL == text) {
+        return NEU_ERR_PARAM_IS_WRONG;
+    }
+
+    json_error_t error;
+    json_t *value = json_loads(text, JSON_DECODE_ANY | JSON_ALLOW_NUL, &error);
+    if (NULL == value) {
+        return json_error_code(&error) == json_error_out_of_memory
+            ? NEU_ERR_EINTERNAL
+            : NEU_ERR_PARAM_IS_WRONG;
+    }
+    if (!neu_node_property_value_valid(value)) {
+        json_decref(value);
+        return NEU_ERR_PARAM_IS_WRONG;
+    }
+
+    *normalized = neu_node_property_json_dump(value);
+    json_decref(value);
+    return *normalized ? 0 : NEU_ERR_EINTERNAL;
+}
+
+enum node_property_operation {
+    NODE_PROPERTY_ADD,
+    NODE_PROPERTY_DELETE,
+    NODE_PROPERTY_UPDATE,
+};
+
+static int write_node_properties(neu_persister_t *self, const char *node,
+                                 const neu_node_property_t *properties,
+                                 const char *const *keys, size_t n,
+                                 enum node_property_operation operation)
+{
+    if (NULL == self || NULL == node || '\0' == *node || 0 == n ||
+        (NODE_PROPERTY_DELETE == operation ? NULL == keys
+                                           : NULL == properties)) {
+        return NEU_ERR_PARAM_IS_WRONG;
+    }
+
+    sqlite3 *      db    = ((neu_sqlite_persister_t *) self)->db;
+    sqlite3_mutex *mutex = db ? sqlite3_db_mutex(db) : NULL;
+    if (NULL == mutex) {
+        return NEU_ERR_EINTERNAL;
+    }
+    sqlite3_mutex_enter(mutex);
+
+    int           rv         = NEU_ERR_EINTERNAL;
+    bool          begun      = false;
+    sqlite3_stmt *stmt       = NULL;
+    char *        value_json = NULL;
+    neu_strset_t  seen       = NULL;
+    const char *  query      = NODE_PROPERTY_ADD == operation
+        ? "INSERT INTO node_properties(node_name, key, value_json) VALUES(?1, "
+          "?2, ?3)"
+        : NODE_PROPERTY_DELETE == operation
+            ? "DELETE FROM node_properties WHERE node_name=?1 AND key=?2"
+            : "UPDATE node_properties SET value_json=?3 WHERE node_name=?1 AND "
+              "key=?2";
+
+    if (0 != begin_transaction(db)) {
+        goto end;
+    }
+    begun = true;
+    if (SQLITE_OK != sqlite3_prepare_v2(db, query, -1, &stmt, NULL) ||
+        SQLITE_OK != sqlite3_bind_text(stmt, 1, node, -1, SQLITE_TRANSIENT)) {
+        goto end;
+    }
+
+    for (size_t i = 0; i < n; ++i) {
+        const char *key =
+            NODE_PROPERTY_DELETE == operation ? keys[i] : properties[i].key;
+        if (NULL == key || '\0' == *key) {
+            rv = NEU_ERR_PARAM_IS_WRONG;
+            goto end;
+        }
+        if (NODE_PROPERTY_DELETE == operation) {
+            int added = neu_strset_add(&seen, key);
+            if (1 != added) {
+                rv = added == 0 ? NEU_ERR_PARAM_IS_WRONG : NEU_ERR_EINTERNAL;
+                goto end;
+            }
+        } else {
+            rv = node_property_json(properties[i].value_json, &value_json);
+            if (0 != rv) {
+                goto end;
+            }
+        }
+
+        rv = NEU_ERR_EINTERNAL;
+        if (SQLITE_OK != sqlite3_reset(stmt) ||
+            SQLITE_OK !=
+                sqlite3_bind_text(stmt, 2, key, -1, SQLITE_TRANSIENT) ||
+            (NODE_PROPERTY_DELETE != operation &&
+             SQLITE_OK !=
+                 sqlite3_bind_text(stmt, 3, value_json, -1,
+                                   SQLITE_TRANSIENT))) {
+            goto end;
+        }
+        free(value_json);
+        value_json = NULL;
+
+        if (SQLITE_DONE != sqlite3_step(stmt)) {
+            int code = sqlite3_extended_errcode(db);
+            if (NODE_PROPERTY_ADD == operation &&
+                (SQLITE_CONSTRAINT_PRIMARYKEY == code ||
+                 SQLITE_CONSTRAINT_UNIQUE == code)) {
+                rv = NEU_ERR_NODE_PROPERTY_EXIST;
+            }
+            goto end;
+        }
+        if (NODE_PROPERTY_UPDATE == operation && 0 == sqlite3_changes(db)) {
+            rv = NEU_ERR_NODE_PROPERTY_NOT_EXIST;
+            goto end;
+        }
+    }
+
+    rv   = sqlite3_finalize(stmt);
+    stmt = NULL;
+    if (SQLITE_OK != rv ||
+        SQLITE_OK != sqlite3_exec(db, "COMMIT", NULL, NULL, NULL)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+    begun = false;
+    rv    = 0;
+
+end:
+    neu_strset_free(&seen);
+    free(value_json);
+    sqlite3_finalize(stmt);
+    if (begun) {
+        rollback_transaction(db);
+    }
+    sqlite3_mutex_leave(mutex);
+    return rv;
+}
+
+int neu_sqlite_persister_add_node_properties(
+    neu_persister_t *self, const char *node,
+    const neu_node_property_t *properties, size_t n_property)
+{
+    return write_node_properties(self, node, properties, NULL, n_property,
+                                 NODE_PROPERTY_ADD);
+}
+
+int neu_sqlite_persister_delete_node_properties(neu_persister_t *  self,
+                                                const char *       node,
+                                                const char *const *keys,
+                                                size_t             n_key)
+{
+    return write_node_properties(self, node, NULL, keys, n_key,
+                                 NODE_PROPERTY_DELETE);
+}
+
+int neu_sqlite_persister_update_node_property(
+    neu_persister_t *self, const char *node,
+    const neu_node_property_t *property)
+{
+    return write_node_properties(self, node, property, NULL, 1,
+                                 NODE_PROPERTY_UPDATE);
+}
+
+int neu_sqlite_persister_load_node_properties(neu_persister_t *     self,
+                                              const char *          node,
+                                              neu_node_property_t **properties,
+                                              size_t *              n_property)
+{
+    if (properties) {
+        *properties = NULL;
+    }
+    if (n_property) {
+        *n_property = 0;
+    }
+    if (NULL == self || NULL == node || '\0' == *node || NULL == properties ||
+        NULL == n_property) {
+        return NEU_ERR_PARAM_IS_WRONG;
+    }
+
+    sqlite3 *      db    = ((neu_sqlite_persister_t *) self)->db;
+    sqlite3_mutex *mutex = db ? sqlite3_db_mutex(db) : NULL;
+    if (NULL == mutex) {
+        return NEU_ERR_EINTERNAL;
+    }
+    sqlite3_mutex_enter(mutex);
+
+    int                  rv       = NEU_ERR_EINTERNAL;
+    sqlite3_stmt *       stmt     = NULL;
+    neu_node_property_t *items    = NULL;
+    size_t               n        = 0;
+    size_t               capacity = 0;
+    const char *         query = "SELECT key, value_json FROM node_properties "
+                        "WHERE node_name=?1 ORDER BY key";
+    if (!sqlite3_get_autocommit(db) ||
+        SQLITE_OK != sqlite3_prepare_v2(db, query, -1, &stmt, NULL) ||
+        SQLITE_OK != sqlite3_bind_text(stmt, 1, node, -1, SQLITE_TRANSIENT)) {
+        goto end;
+    }
+
+    int step;
+    while (SQLITE_ROW == (step = sqlite3_step(stmt))) {
+        const char *key  = (const char *) sqlite3_column_text(stmt, 0);
+        const char *text = (const char *) sqlite3_column_text(stmt, 1);
+        if (NULL == key || '\0' == *key || NULL == text ||
+            strlen(key) != (size_t) sqlite3_column_bytes(stmt, 0) ||
+            strlen(text) != (size_t) sqlite3_column_bytes(stmt, 1)) {
+            goto end;
+        }
+        if (n == capacity) {
+            if (capacity > SIZE_MAX / 2 / sizeof(*items)) {
+                goto end;
+            }
+            size_t               next  = capacity ? capacity * 2 : 8;
+            neu_node_property_t *grown = realloc(items, next * sizeof(*items));
+            if (NULL == grown) {
+                goto end;
+            }
+            items    = grown;
+            capacity = next;
+        }
+        neu_node_property_t *item = &items[n++];
+        *item                     = (neu_node_property_t) { 0 };
+        item->key                 = strdup(key);
+        if (NULL == item->key ||
+            0 != node_property_json(text, &item->value_json)) {
+            goto end;
+        }
+    }
+    if (SQLITE_DONE != step) {
+        goto end;
+    }
+    rv   = sqlite3_finalize(stmt);
+    stmt = NULL;
+    if (SQLITE_OK != rv) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    *properties = items;
+    *n_property = n;
+    items       = NULL;
+    n           = 0;
+    rv          = 0;
+
+end:
+    sqlite3_finalize(stmt);
+    neu_node_properties_free(items, n);
+    sqlite3_mutex_leave(mutex);
+    return rv;
+}
+
 int neu_sqlite_persister_store_tag(neu_persister_t *    self,
                                    const char *         driver_name,
                                    const char *         group_name,
@@ -646,7 +930,10 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
             neu_tag_format_str(tag, format_buf, sizeof(format_buf));
         }
 
-        sqlite3_reset(stmt);
+        if (SQLITE_OK != sqlite3_reset(stmt)) {
+            nlog_error("reset `%s` fail: %s", query, sqlite3_errmsg(db));
+            return -1;
+        }
 
         if (SQLITE_OK != sqlite3_bind_text(stmt, 3, tag->name, -1, NULL)) {
             nlog_error("bind `%s` with name=`%s` fail: %s", query, tag->name,
@@ -703,7 +990,8 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
             return -1;
         }
 
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 12, format_buf, -1, NULL)) {
+        if (SQLITE_OK !=
+            sqlite3_bind_text(stmt, 12, format_buf, -1, SQLITE_TRANSIENT)) {
             nlog_error("bind `%s` with format=`%s` fail: %s", query, format_buf,
                        sqlite3_errmsg(db));
             return -1;
@@ -738,10 +1026,18 @@ int neu_sqlite_persister_store_tags(neu_persister_t *    self,
         " precision, type, decimal, bias, description, value, format, unit"
         ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)";
 
-    if (SQLITE_OK != sqlite3_exec(persister->db, "BEGIN", NULL, NULL, NULL)) {
-        nlog_error("begin transaction fail: %s", sqlite3_errmsg(persister->db));
+    sqlite3_mutex *mutex = sqlite3_db_mutex(persister->db);
+    if (NULL == mutex) {
         return NEU_ERR_EINTERNAL;
     }
+    sqlite3_mutex_enter(mutex);
+    bool begun = false;
+    int  rv    = NEU_ERR_EINTERNAL;
+
+    if (0 != begin_transaction(persister->db)) {
+        goto end;
+    }
+    begun = true;
 
     if (SQLITE_OK !=
         sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
@@ -766,20 +1062,30 @@ int neu_sqlite_persister_store_tags(neu_persister_t *    self,
         goto error;
     }
 
+    if (SQLITE_OK != sqlite3_finalize(stmt)) {
+        stmt = NULL;
+        goto error;
+    }
+    stmt = NULL;
     if (SQLITE_OK != sqlite3_exec(persister->db, "COMMIT", NULL, NULL, NULL)) {
         nlog_error("commit transaction fail: %s",
                    sqlite3_errmsg(persister->db));
         goto error;
     }
 
-    sqlite3_finalize(stmt);
-    return 0;
+    begun = false;
+    rv    = 0;
+    goto end;
 
 error:
     nlog_warn("rollback transaction");
-    sqlite3_exec(persister->db, "ROLLBACK", NULL, NULL, NULL);
+end:
     sqlite3_finalize(stmt);
-    return NEU_ERR_EINTERNAL;
+    if (begun) {
+        rollback_transaction(persister->db);
+    }
+    sqlite3_mutex_leave(mutex);
+    return rv;
 }
 
 static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
