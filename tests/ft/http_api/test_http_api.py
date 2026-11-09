@@ -292,6 +292,77 @@ class TestHttp:
         for node in global_config['nodes']:
             api.del_node(node['name'])
 
+    @pytest.mark.parametrize("unit", ["°C", "", None], ids=["nonempty", "empty", "missing"])
+    def test_global_config_tag_unit_roundtrip(self, unit):
+        driver = copy.deepcopy(driver_1)
+        group = driver["groups"][0]
+        tags = group["tags"]
+        if unit is None:
+            tags[0].pop("unit")
+        else:
+            tags[0]["unit"] = unit
+        tags[1].pop("unit")
+        expected_tags = copy.deepcopy(tags)
+        for tag in expected_tags:
+            tag.setdefault("unit", "")
+
+        data = {
+            "nodes": [{"name": driver["name"], "plugin": driver["plugin"]}],
+            "groups": [{"driver": driver["name"], "group": group["group"],
+                        "interval": group["interval"], "tag_count": len(tags)}],
+            "tags": [{"driver": driver["name"], "group": group["group"], "tags": tags}],
+            "subscriptions": [],
+            "settings": []
+        }
+        try:
+            for _ in range(2):
+                response = api.put_global_config(json=data)
+                assert 200 == response.status_code
+                assert error.NEU_ERR_SUCCESS == response.json()["error"]
+
+                response = api.get_tags(driver["name"], group["group"])
+                assert 200 == response.status_code
+                assert expected_tags == response.json()["tags"]
+
+                response = api.get_global_config()
+                assert 200 == response.status_code
+                data = response.json()
+                exported = next(g for g in data["tags"]
+                                if g["driver"] == driver["name"] and g["group"] == group["group"])
+                assert expected_tags == exported["tags"]
+        finally:
+            api.del_node(driver["name"])
+
+    @pytest.mark.parametrize("unit", ["°C", "", None], ids=["nonempty", "empty", "missing"])
+    def test_driver_tag_unit_roundtrip(self, unit):
+        driver = copy.deepcopy(driver_1)
+        tags = driver["groups"][0]["tags"]
+        if unit is None:
+            tags[0].pop("unit")
+        else:
+            tags[0]["unit"] = unit
+        tags[1].pop("unit")
+        expected = copy.deepcopy(driver)
+        for tag in expected["groups"][0]["tags"]:
+            tag.setdefault("unit", "")
+
+        try:
+            for _ in range(2):
+                response = api.put_drivers([driver])
+                assert 200 == response.status_code
+                assert error.NEU_ERR_SUCCESS == response.json()["error"]
+
+                response = api.get_tags(driver["name"], driver["groups"][0]["group"])
+                assert 200 == response.status_code
+                assert expected["groups"][0]["tags"] == response.json()["tags"]
+
+                response = api.get_driver(driver["name"])
+                assert 200 == response.status_code
+                assert [expected] == response.json()["nodes"]
+                driver = response.json()["nodes"][0]
+        finally:
+            api.del_node(driver["name"])
+
     @description(given="running neuron", when="put drivers with too long node name", then="should fail")
     def test_put_drivers_with_long_node_name(self):
         response = api.put_driver(
