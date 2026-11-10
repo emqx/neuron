@@ -105,6 +105,18 @@ static neu_dvalue_t sample(json_t *settings)
     if (!s) {
         s = "sample";
     }
+    json_t *quality          = json_object_get(settings, "quality");
+    json_t *timestamp        = json_object_get(settings, "timestamp");
+    json_t *source_timestamp = json_object_get(settings, "source_timestamp");
+    json_t *server_timestamp = json_object_get(settings, "server_timestamp");
+    v.attrs.has_quality      = quality != NULL;
+    v.attrs.quality          = json_integer_value(quality);
+    v.attrs.has_timestamp    = timestamp != NULL;
+    v.attrs.timestamp        = json_integer_value(timestamp);
+    v.attrs.has_source_timestamp = source_timestamp != NULL;
+    v.attrs.source_timestamp     = json_integer_value(source_timestamp);
+    v.attrs.has_server_timestamp = server_timestamp != NULL;
+    v.attrs.server_timestamp     = json_integer_value(server_timestamp);
     if (error) {
         v.type      = NEU_TYPE_ERROR;
         v.value.i32 = error;
@@ -184,12 +196,6 @@ static neu_dvalue_t sample(json_t *settings)
     default:
         break;
     }
-    json_t *quality       = json_object_get(settings, "quality");
-    json_t *timestamp     = json_object_get(settings, "timestamp");
-    v.attrs.has_quality   = quality != NULL;
-    v.attrs.quality       = json_integer_value(quality);
-    v.attrs.has_timestamp = timestamp != NULL;
-    v.attrs.timestamp     = json_integer_value(timestamp);
     return v;
 }
 

@@ -130,7 +130,17 @@ target_compile_options(driver_auto_test PRIVATE -ffunction-sections -fdata-secti
 target_link_libraries(driver_auto_test neuron-base gtest_main gtest pthread jansson m
     -Wl,--gc-sections)
 
+add_executable(http_read_attrs_test http_read_attrs_test.cc
+    ${CMAKE_SOURCE_DIR}/plugins/restful/read_response.c)
+target_include_directories(http_read_attrs_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/plugins
+)
+target_link_libraries(http_read_attrs_test neuron-base gtest_main gtest pthread jansson)
+
 include(GoogleTest)
+gtest_discover_tests(http_read_attrs_test)
 gtest_discover_tests(driver_auto_test)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
