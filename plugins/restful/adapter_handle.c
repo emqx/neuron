@@ -550,6 +550,7 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
             gdatatags[i].tags[j].bias    = gtag_array->gtags[i].tags[j].bias;
             gdatatags[i].tags[j].address = gtag_array->gtags[i].tags[j].address;
             gdatatags[i].tags[j].name    = gtag_array->gtags[i].tags[j].name;
+            gdatatags[i].tags[j].unit    = gtag_array->gtags[i].tags[j].unit;
             if (gtag_array->gtags[i].tags[j].description != NULL) {
                 gdatatags[i].tags[j].description =
                     gtag_array->gtags[i].tags[j].description;
@@ -560,6 +561,7 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
             gtag_array->gtags[i].tags[j].address     = NULL; // moved
             gtag_array->gtags[i].tags[j].name        = NULL; // moved
             gtag_array->gtags[i].tags[j].description = NULL; // moved
+            gtag_array->gtags[i].tags[j].unit        = NULL; // moved
         }
     }
 
