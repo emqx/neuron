@@ -1235,6 +1235,123 @@ HTTP 200 响应：
 }
 ```
 
+## 读取点位值
+
+*POST* /api/v2/read
+
+### 请求头部
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### 请求体
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false
+}
+```
+
+`sync` 为可选布尔值，默认为 `false`，读取缓存；`true` 请求同步读取。
+
+### 响应（200 OK）
+
+```json
+{
+    "tags": [
+        {
+            "name": "temperature",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456
+        },
+        {
+            "name": "pressure",
+            "error": 3002,
+            "quality": 0
+        }
+    ]
+}
+```
+
+成功点位返回 `value`，错误点位返回 `error`；浮点值附带 `transferPrecision`。以下采样属性对成功和错误点位均可用，位于点位对象顶层：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| timestamp | 整数（int64） | 驱动提供的原有点位时间戳，原样传递，不转换单位 |
+| quality | 整数（int32） | 驱动提供的质量值 |
+| source_timestamp | 整数（int64） | 源时间戳，Unix epoch 毫秒 |
+| server_timestamp | 整数（int64） | 服务器时间戳，Unix epoch 毫秒 |
+
+四个字段独立可选：仅在当前样本具有对应属性时返回，显式 `0` 会保留；缺失时省略，不返回 `null`，不生成时间戳，也不使用其他时间戳替代。
+
+原有点位元数据（metas）仍在点位对象顶层展开。如果与采样属性同名，存在的采样属性覆盖同名元数据；采样属性缺失时保留原元数据。
+
+## 分页读取点位值
+
+*POST* /api/v2/read/paginate
+
+请求头部与读取点位值接口相同。
+
+### 请求体
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false,
+    "query": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "isError": false
+    }
+}
+```
+
+`query` 可选。分页参数位于 `query` 中，`currentPage` 从 1 开始；`isError: true` 仅返回错误点位，`false` 不启用错误筛选。
+
+### 响应（200 OK）
+
+```json
+{
+    "meta": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "total": 1
+    },
+    "items": [
+        {
+            "name": "temperature",
+            "type": 10,
+            "address": "1!400001",
+            "attribute": 1,
+            "description": "",
+            "precision": 2,
+            "decimal": 0,
+            "bias": 0,
+            "unit": "°C",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456,
+            "attributes": {}
+        }
+    ]
+}
+```
+
+`items[]` 中四个可选采样属性的规则与 `/api/v2/read` 相同。原有 metas 放在 `attributes` 对象中，与顶层采样属性独立；`attributes` 不是采样属性容器。`type` 仍为配置类型（AUTO 为 `0`），不因运行时识别而改变。空结果或超出范围的页返回空 `items` 数组。
+
+这些采样属性属于读取结果，`GET /api/v2/tags` 的配置响应不增加这些字段。
+
 ## 添加插件
 
 *POST*  /api/v2/plugin

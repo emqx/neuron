@@ -9,8 +9,9 @@ The runtime is retained on failure (or with --keep-runtime).
 
 Mock params replace the previous settings: hold (default true), concrete numeric
 NEU_TYPE type (default INT16), value (default 123), error (default 0), update_mode
-(update/meta/trace/im/im_f_m), pointer (STRING/BYTES wrapper), optional quality and
-timestamp, record_path (append JSONL writes: tag, actual type, union value, path).
+(update/meta/trace/im/im_f_m), pointer (STRING/BYTES wrapper), optional quality,
+timestamp, source_timestamp, server_timestamp, record_path (append JSONL writes:
+tag, actual type, union value, path).
 All readable tags receive the selected sample; group_sync uses the same controls.
 """
 
@@ -33,6 +34,7 @@ import urllib.request
 REPO = Path(__file__).resolve().parents[2]
 BUILD = REPO / "build"
 KEEP_RUNTIME = False
+SAMPLE_ATTRS = ("timestamp", "quality", "source_timestamp", "server_timestamp")
 
 
 class AutoTypeHTTP(unittest.TestCase):
@@ -177,23 +179,27 @@ class AutoTypeHTTP(unittest.TestCase):
         return dict({"name": name, "type": 0, "address": "sample",
                      "attribute": 3, "precision": 0, "decimal": 0}, **fields)
 
-    def read(self, name="a", *, group="g", paginate=False, sync=False):
-        response = self.http("POST", "/read/paginate" if paginate else "/read",
-                             {"node": self.node, "group": group, "sync": sync})
+    def read(self, name="a", *, group="g", paginate=False, sync=False, query=None):
+        payload = {"node": self.node, "group": group, "sync": sync}
+        if query is not None:
+            payload["query"] = query
+        response = self.http("POST", "/read/paginate" if paginate else "/read", payload)
         return next(tag for tag in response["items" if paginate else "tags"]
                     if tag["name"] == name)
 
-    def await_sample(self, value=None, error=None, **kwargs):
+    def await_sample(self, value=None, error=None, attrs=None, **kwargs):
         deadline = time.monotonic() + 8
         actual = None
         while time.monotonic() < deadline:
             actual = self.read(**kwargs)
-            if error is not None and actual.get("error") == error:
-                return actual
-            if error is None and "error" not in actual and actual.get("value") == value:
+            sample_attrs = {name: actual[name] for name in SAMPLE_ATTRS if name in actual}
+            matches = (actual.get("error") == error if error is not None else
+                       "error" not in actual and actual.get("value") == value)
+            if matches and (attrs is None or sample_attrs == attrs):
                 return actual
             time.sleep(0.05)
-        self.fail(f"sample did not become value={value!r}, error={error!r}: {actual}")
+        self.fail(f"sample did not become value={value!r}, error={error!r}, "
+                  f"attrs={attrs!r}: {actual}")
 
     def write(self, value, *, name="a", error=0):
         status, response = self.request("POST", "/write", {
@@ -265,12 +271,78 @@ class AutoTypeHTTP(unittest.TestCase):
                 name = f"mode{index}"
                 self.add_tags(self.tag(name))
                 self.await_sample(error=3011, name=name)
-                self.control(update_mode=mode)
-                self.await_sample(123, name=name)
+                attrs = {"timestamp": 1700000000000, "quality": 192,
+                         "source_timestamp": 1700000000123,
+                         "server_timestamp": 1700000000456}
+                self.control(update_mode=mode, **attrs)
+                self.await_sample(123, name=name, attrs=attrs)
+                self.await_sample(123, name=name, attrs=attrs, paginate=True)
                 self.control(type=10, value=1.5, update_mode=mode)
                 self.await_sample(error=3007, name=name)
                 self.control(value=125, update_mode=mode)
                 self.await_sample(125, name=name)
+
+    def test_optional_sample_attrs(self):
+        self.add_tags(self.tag(), self.tag("explicit", type=3))
+        fields = {"timestamp": 1700000000000, "quality": 192,
+                  "source_timestamp": 1700000000123, "server_timestamp": 1700000000456}
+        for flags in range(16):
+            attrs = {key: fields[key] for index, key in enumerate(SAMPLE_ATTRS)
+                     if flags & (1 << index)}
+            with self.subTest(flags=flags):
+                self.control(**attrs)
+                for name in ("a", "explicit"):
+                    for paginate in (False, True):
+                        self.await_sample(123, name=name, attrs=attrs, paginate=paginate)
+                self.await_sample(123, attrs=attrs, sync=True)
+        zeros = dict.fromkeys(SAMPLE_ATTRS, 0)
+        self.control(**zeros)
+        for paginate in (False, True):
+            self.await_sample(123, attrs=zeros, paginate=paginate)
+        self.control(error=3002, **fields)
+        for paginate in (False, True):
+            self.await_sample(error=3002, attrs=fields, paginate=paginate)
+        self.control(error=3002)
+        for paginate in (False, True):
+            self.await_sample(error=3002, attrs={}, paginate=paginate)
+        self.control()
+        for paginate in (False, True):
+            self.await_sample(123, attrs={}, paginate=paginate)
+
+    def test_sample_attrs_pagination(self):
+        self.add_tags(self.tag("a"), self.tag("b"), self.tag("c"))
+        attrs = {"quality": 0, "source_timestamp": 1700000000123}
+        self.control(**attrs)
+        self.await_sample(123, attrs=attrs)
+        self.control(hold=True)
+        request = {"node": self.node, "group": "g"}
+        full = self.http("POST", "/read/paginate", request)["items"]
+        for index, expected in enumerate(full):
+            page = self.http("POST", "/read/paginate", dict(request, query={
+                "currentPage": index + 1, "pageSize": 1}))
+            self.assertEqual([expected["name"]], [tag["name"] for tag in page["items"]])
+            self.assertEqual(attrs, {key: page["items"][0][key] for key in SAMPLE_ATTRS
+                                     if key in page["items"][0]})
+        self.control(error=3002, **attrs)
+        for name in ("a", "b", "c"):
+            self.await_sample(error=3002, attrs=attrs, name=name)
+        self.control(hold=True)
+        errors = self.http("POST", "/read/paginate", dict(request, query={"isError": True}))
+        self.assertEqual(3, errors["meta"]["total"])
+        for index, expected in enumerate(errors["items"]):
+            page = self.http("POST", "/read/paginate", dict(request, query={
+                "isError": True, "currentPage": index + 1, "pageSize": 1}))
+            self.assertEqual([expected], page["items"])
+        for is_error in (False, True):
+            empty = self.http("POST", "/read/paginate", dict(request, query={
+                "isError": is_error, "currentPage": 8, "pageSize": 1}))
+            self.assertEqual([], empty["items"])
+        self.control()
+        for name in ("a", "b", "c"):
+            self.await_sample(123, attrs={}, name=name)
+        empty = self.http("POST", "/read/paginate", dict(request, query={"isError": True}))
+        self.assertEqual([], empty["items"])
+        self.assertEqual(0, empty["meta"]["total"])
 
     def test_scaled_value_and_byte_order(self):
         self.add_tags(self.tag(decimal=0.5, bias=1), self.tag("big", address="sample#B"))

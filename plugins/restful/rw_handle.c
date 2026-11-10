@@ -27,6 +27,7 @@
 #include "utils/http.h"
 #include "utils/time.h"
 
+#include "read_response.h"
 #include "rw_handle.h"
 
 #include "otel/otel_manager.h"
@@ -866,13 +867,22 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         index += 1;
     }
 
-    neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
+    neu_http_read_response_t context = { .response = &api_res,
+                                         .tags     = resp->tags };
+    int                      ret =
+        neu_json_encode_by_fn(&context, neu_http_encode_read_response, &result);
     for (int i = 0; i < api_res.n_tag; i++) {
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
         }
     }
-    neu_http_ok(aio, result);
+    if (ret != 0 || result == NULL) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+    } else {
+        neu_http_ok(aio, result);
+    }
     free(api_res.tags);
     free(result);
 }
@@ -880,9 +890,10 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 void handle_read_paginate_resp(nng_aio *                       aio,
                                neu_resp_read_group_paginate_t *resp)
 {
-    neu_json_read_paginate_resp_t api_res    = { 0 };
-    char *                        result     = NULL;
-    unsigned int                  total_tags = resp->total_count;
+    neu_json_read_paginate_resp_t api_res       = { 0 };
+    char *                        result        = NULL;
+    unsigned int                  total_tags    = resp->total_count;
+    unsigned int                  source_offset = 0;
 
     if (resp->is_error) {
         UT_array *filtered_tags;
@@ -933,6 +944,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
             unsigned int start_index =
                 (resp->current_page - 1) * resp->page_size;
             unsigned int end_index = start_index + resp->page_size;
+            source_offset          = start_index;
 
             if (start_index >= total_tags) {
                 api_res.n_tag = 0;
@@ -1000,8 +1012,12 @@ void handle_read_paginate_resp(nng_aio *                       aio,
     api_res.meta.page_size    = resp->page_size;
     api_res.meta.total        = total_tags;
 
-    neu_json_encode_by_fn(&api_res, neu_json_encode_read_paginate_resp,
-                          &result);
+    neu_http_read_response_t context = { .response = &api_res,
+                                         .tags     = resp->tags,
+                                         .offset   = source_offset,
+                                         .paginate = true };
+    int                      ret =
+        neu_json_encode_by_fn(&context, neu_http_encode_read_response, &result);
 
     for (unsigned int i = 0; i < utarray_len(resp->tags); ++i) {
         neu_resp_tag_value_meta_paginate_t *final_tag_value;
@@ -1020,7 +1036,13 @@ void handle_read_paginate_resp(nng_aio *                       aio,
             free(api_res.tags[i].metas);
         }
     }
-    neu_http_ok(aio, result);
+    if (ret != 0 || result == NULL) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+    } else {
+        neu_http_ok(aio, result);
+    }
     free(api_res.tags);
     free(result);
 }

@@ -1216,6 +1216,123 @@ To update both group name and interval:
 }
 ```
 
+## Read Tag Values
+
+*POST* /api/v2/read
+
+### Request Headers
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### Body
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false
+}
+```
+
+`sync` is an optional boolean, defaulting to `false` to read cached values. Set it to `true` to request a synchronous read.
+
+### Response (200 OK)
+
+```json
+{
+    "tags": [
+        {
+            "name": "temperature",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456
+        },
+        {
+            "name": "pressure",
+            "error": 3002,
+            "quality": 0
+        }
+    ]
+}
+```
+
+A successful tag returns `value`; an error tag returns `error`. Floating-point values also include `transferPrecision`. Both successful and error samples may include these top-level sample attributes:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| timestamp | Integer (int64) | Existing driver-provided tag timestamp, passed through without unit conversion |
+| quality | Integer (int32) | Driver-provided quality value |
+| source_timestamp | Integer (int64) | Source timestamp in Unix epoch milliseconds |
+| server_timestamp | Integer (int64) | Server timestamp in Unix epoch milliseconds |
+
+The four fields are independently optional. A field is returned only when the current sample supplies it; explicit `0` is preserved. Missing fields are omitted, not returned as `null`. No timestamps are generated or substituted from another timestamp field.
+
+Existing tag metadata (metas) remains flattened into the tag object. A present sample attribute replaces a metadata field with the same name; when the sample attribute is absent, the original metadata field is preserved.
+
+## Read Tag Values with Pagination
+
+*POST* /api/v2/read/paginate
+
+Request headers are the same as for reading tag values.
+
+### Body
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false,
+    "query": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "isError": false
+    }
+}
+```
+
+`query` is optional. Pagination parameters belong inside `query`, and `currentPage` starts at 1. Set `isError` to `true` to return only error tags; `false` does not enable error filtering.
+
+### Response (200 OK)
+
+```json
+{
+    "meta": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "total": 1
+    },
+    "items": [
+        {
+            "name": "temperature",
+            "type": 10,
+            "address": "1!400001",
+            "attribute": 1,
+            "description": "",
+            "precision": 2,
+            "decimal": 0,
+            "bias": 0,
+            "unit": "°C",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456,
+            "attributes": {}
+        }
+    ]
+}
+```
+
+The four optional sample attributes in `items[]` follow the same rules as `/api/v2/read`. Existing metas remain inside `attributes`, separate from the top-level sample attributes; `attributes` is not a sample-attribute container. `type` remains the configured type (including `0` for AUTO), not the inferred runtime type. Empty results and out-of-range pages return an empty `items` array.
+
+These sample attributes belong to read responses; the configuration response from `GET /api/v2/tags` is unchanged.
+
 ## Add Plugin
 
 *POST*  /api/v2/plugin
