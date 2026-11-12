@@ -1233,6 +1233,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 }
             }
         } else {
+            neu_req_write_tag_value_fini((neu_req_write_tag_t *) &header[1]);
             neu_req_write_tag_fini((neu_req_write_tag_t *) &header[1]);
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
@@ -1279,6 +1280,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         bool re_flag = false;
 
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            neu_req_write_tags_value_fini((neu_req_write_tags_t *) &header[1]);
             neu_req_write_tags_fini((neu_req_write_tags_t *) &header[1]);
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
@@ -1344,6 +1346,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         bool re_flag = false;
 
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            neu_req_write_gtags_value_fini(
+                (neu_req_write_gtags_t *) &header[1]);
             neu_req_write_gtags_fini((neu_req_write_gtags_t *) &header[1]);
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
