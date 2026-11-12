@@ -114,6 +114,13 @@ void handle_read_paginate(nng_aio *aio)
                 goto error;
             }
 
+            if (req->sort_by && !neu_tag_get_sort_cmp(req->sort_by)) {
+                err_type = NEU_ERR_PARAM_IS_WRONG;
+                goto error;
+            }
+
+            cmd.sort_by      = req->sort_by;
+            req->sort_by     = NULL;
             cmd.driver       = req->node;
             cmd.group        = req->group;
             cmd.name         = req->name;

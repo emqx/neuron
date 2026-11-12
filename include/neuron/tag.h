@@ -109,6 +109,9 @@ typedef struct neu_tag_meta {
 
 UT_icd *neu_tag_get_icd();
 
+typedef int (*neu_tag_cmp_fn)(const void *, const void *);
+neu_tag_cmp_fn neu_tag_get_sort_cmp(const char *sort_by);
+
 void neu_tag_format_str(const neu_datatag_t *tag, char *buf, int len);
 int  neu_format_from_str(const char *format_str, uint8_t *formats);
 

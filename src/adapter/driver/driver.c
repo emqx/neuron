@@ -963,12 +963,16 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
     neu_group_t *                  group = g->group;
     UT_array *                     tags;
 
+    neu_tag_cmp_fn cmp = neu_tag_get_sort_cmp(cmd->sort_by);
     if (cmd->is_error != true && cmd->current_page > 0 && cmd->page_size > 0) {
         tags = neu_group_query_read_tag_paginate(
             group, cmd->name, cmd->desc, cmd->current_page, cmd->page_size,
-            &resp.total_count);
+            &resp.total_count, cmp);
     } else {
         tags = neu_group_query_read_tag(group, cmd->name, cmd->desc, 0, NULL);
+        if (cmp) {
+            utarray_sort(tags, cmp);
+        }
         resp.total_count = utarray_len(tags);
     }
 

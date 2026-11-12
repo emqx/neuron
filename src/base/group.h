@@ -50,7 +50,8 @@ UT_array *   neu_group_query_read_tag(neu_group_t *group, const char *name,
 UT_array *   neu_group_query_read_tag_paginate(neu_group_t *group,
                                                const char *name, const char *desc,
                                                int current_page, int page_size,
-                                               int *total_count);
+                                               int *          total_count,
+                                               neu_tag_cmp_fn cmp);
 uint16_t     neu_group_tag_size(const neu_group_t *group);
 neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag);
 
