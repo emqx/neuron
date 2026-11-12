@@ -411,7 +411,8 @@ UT_array *neu_group_query_read_tag(neu_group_t *group, const char *name,
 UT_array *neu_group_query_read_tag_paginate(neu_group_t *group,
                                             const char *name, const char *desc,
                                             int current_page, int page_size,
-                                            int *total_count)
+                                            int *          total_count,
+                                            neu_tag_cmp_fn cmp)
 {
     UT_array *   array = NULL;
     struct query q     = {
@@ -420,9 +421,29 @@ UT_array *neu_group_query_read_tag_paginate(neu_group_t *group,
     };
 
     pthread_mutex_lock(&group->mtx);
-    array = filter_tags_by_page(group->tags, match_query, &q, current_page,
-                                page_size, total_count);
+    if (cmp) {
+        array = filter_tags(group->tags, match_query, &q);
+    } else {
+        array = filter_tags_by_page(group->tags, match_query, &q, current_page,
+                                    page_size, total_count);
+    }
     pthread_mutex_unlock(&group->mtx);
+
+    if (cmp) {
+        utarray_sort(array, cmp);
+        if (total_count) {
+            *total_count = utarray_len(array);
+        }
+        size_t start = (size_t)(current_page - 1) * page_size;
+        if (start >= utarray_len(array)) {
+            utarray_clear(array);
+        } else {
+            utarray_erase(array, 0, start);
+            if (utarray_len(array) > (unsigned int) page_size) {
+                utarray_resize(array, page_size);
+            }
+        }
+    }
 
     return array;
 }

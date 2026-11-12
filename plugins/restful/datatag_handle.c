@@ -545,8 +545,26 @@ void handle_get_tags(nng_aio *aio)
 
 void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
 {
-    neu_json_get_tags_resp_t tags_res = { 0 };
-    char *                   result   = NULL;
+    neu_json_get_tags_resp_t tags_res    = { 0 };
+    char *                   result      = NULL;
+    char                     sort_by[32] = { 0 };
+
+    ssize_t sort_len =
+        neu_http_get_param_str(aio, "sort_by", sort_by, sizeof(sort_by));
+    if (sort_len != -2) {
+        neu_tag_cmp_fn cmp =
+            sort_len >= 0 && (size_t) sort_len < sizeof(sort_by)
+            ? neu_tag_get_sort_cmp(sort_by)
+            : NULL;
+        if (!cmp) {
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+                neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+            });
+            utarray_free(tags->tags);
+            return;
+        }
+        utarray_sort(tags->tags, cmp);
+    }
 
     tags_res.n_tag = utarray_len(tags->tags);
     tags_res.tags  = calloc(tags_res.n_tag, sizeof(neu_json_tag_t));

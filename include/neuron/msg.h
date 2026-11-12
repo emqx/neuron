@@ -1075,6 +1075,7 @@ typedef struct neu_req_read_group_paginate {
     char *group;
     char *name;
     char *desc;
+    char *sort_by;
     bool  sync;
     int   current_page;
     int   page_size;
@@ -1088,6 +1089,7 @@ neu_req_read_group_paginate_fini(neu_req_read_group_paginate_t *req)
     free(req->group);
     free(req->name);
     free(req->desc);
+    free(req->sort_by);
 }
 
 typedef struct neu_req_write_tag {

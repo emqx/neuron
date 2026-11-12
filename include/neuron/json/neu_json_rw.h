@@ -168,6 +168,7 @@ typedef struct {
     char *node;
     char *name;
     char *desc;
+    char *sort_by;
     bool  sync;
     int   current_page;
     int   page_size;

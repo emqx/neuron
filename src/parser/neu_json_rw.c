@@ -953,6 +953,11 @@ int neu_json_decode_read_paginate_req(char *                         buf,
             .t         = NEU_JSON_BOOL,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
+        {
+            .name      = "sort_by",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
 
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -979,6 +984,7 @@ int neu_json_decode_read_paginate_req(char *                         buf,
         req->current_page = query_elems[2].v.val_int;
         req->page_size    = query_elems[3].v.val_int;
         req->is_error     = query_elems[4].v.val_bool;
+        req->sort_by      = query_elems[5].v.val_str;
     }
 
     *result = req;
@@ -986,6 +992,7 @@ int neu_json_decode_read_paginate_req(char *                         buf,
     return ret;
 
 error:
+    free(query_elems[5].v.val_str);
     free(query_elems[0].v.val_str);
     free(query_elems[1].v.val_str);
     free(req_elems[0].v.val_str);
@@ -1001,6 +1008,7 @@ void neu_json_decode_read_paginate_req_free(neu_json_read_paginate_req_t *req)
 {
     free(req->group);
     free(req->node);
+    free(req->sort_by);
 
     free(req);
 }
