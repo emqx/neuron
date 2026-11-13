@@ -1312,9 +1312,14 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
 static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
                         neu_value_u *value, double decimal, double bias)
 {
-    long double result = value_type == NEU_TYPE_INT64
-        ? (long double) value->i64
-        : (long double) value->d64;
+    long double result;
+    if (value_type == NEU_TYPE_INT64) {
+        result = (long double) value->i64;
+    } else if (value_type == NEU_TYPE_UINT64) {
+        result = (long double) value->u64;
+    } else {
+        result = (long double) value->d64;
+    }
     result -= (long double) bias;
     if (decimal != 0) {
         result /= (long double) decimal;
@@ -1477,7 +1482,7 @@ static int check_write_value(neu_type_e tag_type, int64_t value, double value_d,
         return valid ? NEU_ERR_SUCCESS : NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
     }
     }
-    if (write_type != NEU_TYPE_INT64 &&
+    if (write_type != NEU_TYPE_INT64 && write_type != NEU_TYPE_UINT64 &&
         (write_type != NEU_TYPE_DOUBLE ||
          (integer && decimal == 0 && bias == 0))) {
         return NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH;
@@ -1486,8 +1491,14 @@ static int check_write_value(neu_type_e tag_type, int64_t value, double value_d,
         (!isfinite(decimal) || !isfinite(bias))) {
         return NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE;
     }
-    long double result = write_type == NEU_TYPE_INT64 ? (long double) value
-                                                      : (long double) value_d;
+    long double result;
+    if (write_type == NEU_TYPE_INT64) {
+        result = (long double) value;
+    } else if (write_type == NEU_TYPE_UINT64) {
+        result = (long double) (uint64_t) value;
+    } else {
+        result = (long double) value_d;
+    }
     result -= (long double) bias;
     if (decimal != 0) {
         result /= (long double) decimal;
@@ -1571,8 +1582,11 @@ static int prepare_write_tag(neu_adapter_driver_t *driver, group_t *group,
         cal_decimal(tag->type, value->type, &value->value, tag->decimal,
                     tag->bias);
     } else if ((tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) &&
-               value->type == NEU_TYPE_INT64) {
-        value->value.d64 = (double) value->value.i64;
+               (value->type == NEU_TYPE_INT64 ||
+                value->type == NEU_TYPE_UINT64)) {
+        value->value.d64 = value->type == NEU_TYPE_INT64
+            ? (double) value->value.i64
+            : (double) value->value.u64;
     }
     if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
         value->type = NEU_TYPE_DOUBLE;
