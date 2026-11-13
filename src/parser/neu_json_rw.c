@@ -1390,6 +1390,9 @@ static int decode_write_gtags_req_json(void *                      json_obj,
             req->groups[i].tags[k].tag   = v_elems[0].v.val_str;
             req->groups[i].tags[k].t     = v_elems[1].t;
             req->groups[i].tags[k].value = v_elems[1].v;
+            if (req->groups[i].tags[k].t == NEU_JSON_OBJECT) {
+                json_incref(req->groups[i].tags[k].value.val_object);
+            }
         }
     }
 

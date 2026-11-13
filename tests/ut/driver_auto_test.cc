@@ -184,6 +184,8 @@ TEST(DriverAuto, NonfiniteAndWideBounds)
         is_value_in_range(NEU_TYPE_INT64, INT64_MAX, 0, NEU_TYPE_INT64, 0.5));
     EXPECT_EQ(NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE,
               is_value_in_range(NEU_TYPE_UINT64, -1, 0, NEU_TYPE_INT64, 0));
+    EXPECT_EQ(0, is_value_in_range(NEU_TYPE_UINT64, -1, 0, NEU_TYPE_UINT64, 0));
+    EXPECT_EQ(0, is_value_in_range(NEU_TYPE_FLOAT, -1, 0, NEU_TYPE_UINT64, 0));
     EXPECT_EQ(0,
               is_value_in_range(NEU_TYPE_FLOAT, 0, 1e30, NEU_TYPE_DOUBLE, 0));
     EXPECT_EQ(NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE,

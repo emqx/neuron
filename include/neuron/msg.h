@@ -26,6 +26,7 @@ extern "C" {
 
 #include <pthread.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "json/neu_json_rw.h"
 
@@ -1104,6 +1105,12 @@ static inline void neu_req_write_tag_fini(neu_req_write_tag_t *req)
     free(req->tag);
 }
 
+static inline void neu_req_write_tag_value_fini(neu_req_write_tag_t *req)
+{
+    neu_free_dvalue(&req->value);
+    memset(&req->value, 0, sizeof(req->value));
+}
+
 typedef struct neu_resp_tag_value {
     char         tag[NEU_TAG_NAME_LEN];
     neu_dvalue_t value;
@@ -1150,6 +1157,17 @@ static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
     free(req->tags);
 }
 
+static inline void neu_req_write_tags_value_fini(neu_req_write_tags_t *req)
+{
+    if (req->tags == NULL) {
+        return;
+    }
+    for (int i = 0; i < req->n_tag; ++i) {
+        neu_free_dvalue(&req->tags[i].value);
+        memset(&req->tags[i].value, 0, sizeof(req->tags[i].value));
+    }
+}
+
 typedef struct {
     char *group;
 
@@ -1177,6 +1195,23 @@ static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
         neu_req_gtag_group_fini(&req->groups[i]);
     }
     free(req->groups);
+}
+
+static inline void neu_req_write_gtags_value_fini(neu_req_write_gtags_t *req)
+{
+    if (req->groups == NULL) {
+        return;
+    }
+    for (int i = 0; i < req->n_group; ++i) {
+        if (req->groups[i].tags == NULL) {
+            continue;
+        }
+        for (int k = 0; k < req->groups[i].n_tag; ++k) {
+            neu_free_dvalue(&req->groups[i].tags[k].value);
+            memset(&req->groups[i].tags[k].value, 0,
+                   sizeof(req->groups[i].tags[k].value));
+        }
+    }
 }
 
 typedef struct {
