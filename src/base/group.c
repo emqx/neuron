@@ -133,15 +133,19 @@ uint32_t neu_group_get_interval(const neu_group_t *group)
 
 void neu_group_set_interval(neu_group_t *group, uint32_t interval)
 {
+    pthread_mutex_lock(&group->mtx);
     group->interval = interval;
+    pthread_mutex_unlock(&group->mtx);
 }
 
 int neu_group_update(neu_group_t *group, uint32_t interval)
 {
+    pthread_mutex_lock(&group->mtx);
     if (group->interval != interval) {
         group->interval = interval;
         update_timestamp(group);
     }
+    pthread_mutex_unlock(&group->mtx);
 
     return 0;
 }
@@ -308,14 +312,14 @@ static inline UT_array *filter_tags_by_page(
     tag_elem_t *el = NULL, *tmp = NULL;
     UT_array *  array       = NULL;
     int         count       = 0;
-    int         start_index = (current_page - 1) * page_size;
-    int         end_index   = start_index + page_size;
+    size_t      start_index = (size_t)(current_page - 1) * (size_t) page_size;
+    size_t      end_index   = start_index + (size_t) page_size;
 
     utarray_new(array, neu_tag_get_icd());
     HASH_ITER(hh, tags, el, tmp)
     {
         if (predicate(el->tag, data)) {
-            if (count >= start_index && count < end_index) {
+            if ((size_t) count >= start_index && (size_t) count < end_index) {
                 utarray_push_back(array, el->tag);
             }
             count++;
@@ -378,6 +382,55 @@ static inline bool is_readable_and_match_query(const neu_datatag_t *tag,
     return is_readable(tag, NULL) && match_query(tag, data);
 }
 
+static UT_array *query_tags_locked(neu_group_t *                group,
+                                   const neu_group_tag_query_t *query,
+                                   int *                        total_count)
+{
+    struct query q = { .name      = (char *) query->name,
+                       .desc      = (char *) query->desc,
+                       .n_tagname = query->n_tagname,
+                       .tagnames  = query->tagnames };
+    bool (*predicate)(const neu_datatag_t *, void *) =
+        query->readable ? is_readable_and_match_query : match_query;
+    bool paginate = query->current_page > 0 && query->page_size > 0;
+    if (paginate && query->cmp == NULL) {
+        return filter_tags_by_page(group->tags, predicate, &q,
+                                   query->current_page, query->page_size,
+                                   total_count);
+    }
+
+    UT_array *tags = filter_tags(group->tags, predicate, &q);
+    if (query->cmp) {
+        utarray_sort(tags, query->cmp);
+    }
+    *total_count = utarray_len(tags);
+    if (paginate) {
+        size_t start =
+            (size_t)(query->current_page - 1) * (size_t) query->page_size;
+        if (start >= utarray_len(tags)) {
+            utarray_clear(tags);
+        } else {
+            utarray_erase(tags, 0, start);
+            if (utarray_len(tags) > (unsigned int) query->page_size) {
+                utarray_resize(tags, query->page_size);
+            }
+        }
+    }
+    return tags;
+}
+
+void neu_group_query_snapshot(neu_group_t *                group,
+                              const neu_group_tag_query_t *query, void *arg,
+                              neu_group_snapshot_fn fn)
+{
+    int total_count = 0;
+    pthread_mutex_lock(&group->mtx);
+    UT_array *tags = query_tags_locked(group, query, &total_count);
+    fn(arg, group->timestamp, group->interval, tags, total_count);
+    utarray_free(tags);
+    pthread_mutex_unlock(&group->mtx);
+}
+
 UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
 {
     UT_array *array = NULL;
@@ -414,37 +467,18 @@ UT_array *neu_group_query_read_tag_paginate(neu_group_t *group,
                                             int *          total_count,
                                             neu_tag_cmp_fn cmp)
 {
-    UT_array *   array = NULL;
-    struct query q     = {
-        .name = (char *) name,
-        .desc = (char *) desc,
-    };
-
+    neu_group_tag_query_t query = { .name         = name,
+                                    .desc         = desc,
+                                    .current_page = current_page,
+                                    .page_size    = page_size,
+                                    .cmp          = cmp };
+    int                   total = 0;
     pthread_mutex_lock(&group->mtx);
-    if (cmp) {
-        array = filter_tags(group->tags, match_query, &q);
-    } else {
-        array = filter_tags_by_page(group->tags, match_query, &q, current_page,
-                                    page_size, total_count);
-    }
+    UT_array *array = query_tags_locked(group, &query, &total);
     pthread_mutex_unlock(&group->mtx);
-
-    if (cmp) {
-        utarray_sort(array, cmp);
-        if (total_count) {
-            *total_count = utarray_len(array);
-        }
-        size_t start = (size_t)(current_page - 1) * page_size;
-        if (start >= utarray_len(array)) {
-            utarray_clear(array);
-        } else {
-            utarray_erase(array, 0, start);
-            if (utarray_len(array) > (unsigned int) page_size) {
-                utarray_resize(array, page_size);
-            }
-        }
+    if (total_count) {
+        *total_count = total;
     }
-
     return array;
 }
 

@@ -12,6 +12,12 @@ typedef struct {
     bool         paginate;
 } neu_http_read_response_t;
 
+typedef struct {
+    void *    response;
+    UT_array *tags;
+} neu_http_get_tags_response_t;
+
 int neu_http_encode_read_response(void *json_object, void *param);
+int neu_http_encode_get_tags_response(void *json_object, void *param);
 
 #endif

@@ -848,8 +848,33 @@ typedef struct neu_req_get_tag {
     char name[NEU_TAG_NAME_LEN];
 } neu_req_get_tag_t;
 
+typedef struct {
+    neu_datatag_t tag;
+    neu_type_e    resolved_type;
+} neu_resp_tag_info_t;
+
+static inline void neu_resp_tag_info_copy(void *dst, const void *src)
+{
+    neu_resp_tag_info_t *      to   = (neu_resp_tag_info_t *) dst;
+    const neu_resp_tag_info_t *from = (const neu_resp_tag_info_t *) src;
+    neu_tag_get_icd()->copy(&to->tag, &from->tag);
+    to->resolved_type = from->resolved_type;
+}
+
+static inline void neu_resp_tag_info_fini(void *item)
+{
+    neu_tag_fini(&((neu_resp_tag_info_t *) item)->tag);
+}
+
+static inline UT_icd *neu_resp_tag_info_icd(void)
+{
+    static UT_icd icd = { sizeof(neu_resp_tag_info_t), NULL,
+                          neu_resp_tag_info_copy, neu_resp_tag_info_fini };
+    return &icd;
+}
+
 typedef struct neu_resp_get_tag {
-    UT_array *tags; // array neu_datatag_t
+    UT_array *tags; // array neu_resp_tag_info_t
 } neu_resp_get_tag_t;
 
 typedef struct {
@@ -1126,6 +1151,7 @@ typedef struct neu_resp_tag_value_meta {
     neu_tag_meta_t *metas;
     int             n_meta;
     neu_datatag_t   datatag;
+    neu_type_e      resolved_type;
 } neu_resp_tag_value_meta_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_icd()
@@ -1229,6 +1255,7 @@ typedef struct neu_resp_tag_value_meta_paginate {
     neu_tag_meta_t *metas;
     int             n_meta;
     neu_datatag_t   datatag;
+    neu_type_e      resolved_type;
 } neu_resp_tag_value_meta_paginate_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_paginate_icd()

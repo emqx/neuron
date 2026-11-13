@@ -1136,9 +1136,10 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         goto end;
     }
 
-    utarray_foreach(tags->tags, neu_datatag_t *, tag)
+    utarray_foreach(tags->tags, neu_resp_tag_info_t *, item)
     {
-        int index = utarray_eltidx(tags->tags, tag);
+        int            index = utarray_eltidx(tags->tags, item);
+        neu_datatag_t *tag   = &item->tag;
 
         tags_res.tags[index].name        = tag->name;
         tags_res.tags[index].address     = tag->address;
@@ -1217,9 +1218,10 @@ static int get_driver_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         goto end;
     }
 
-    utarray_foreach(tags->tags, neu_datatag_t *, tag)
+    utarray_foreach(tags->tags, neu_resp_tag_info_t *, item)
     {
-        int index = utarray_eltidx(tags->tags, tag);
+        int            index = utarray_eltidx(tags->tags, item);
+        neu_datatag_t *tag   = &item->tag;
 
         gtag->tags[index].name        = tag->name;
         gtag->tags[index].address     = tag->address;

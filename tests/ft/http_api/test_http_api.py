@@ -322,7 +322,9 @@ class TestHttp:
 
                 response = api.get_tags(driver["name"], group["group"])
                 assert 200 == response.status_code
-                assert expected_tags == response.json()["tags"]
+                expected_live = [dict(tag, resolved_type=tag["type"])
+                                 for tag in expected_tags]
+                assert expected_live == response.json()["tags"]
 
                 response = api.get_global_config()
                 assert 200 == response.status_code
@@ -354,7 +356,9 @@ class TestHttp:
 
                 response = api.get_tags(driver["name"], driver["groups"][0]["group"])
                 assert 200 == response.status_code
-                assert expected["groups"][0]["tags"] == response.json()["tags"]
+                expected_live = [dict(tag, resolved_type=tag["type"])
+                                 for tag in expected["groups"][0]["tags"]]
+                assert expected_live == response.json()["tags"]
 
                 response = api.get_driver(driver["name"])
                 assert 200 == response.status_code

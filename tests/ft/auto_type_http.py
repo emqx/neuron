@@ -29,6 +29,7 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+from urllib.parse import urlencode
 
 
 REPO = Path(__file__).resolve().parents[2]
@@ -184,10 +185,29 @@ class AutoTypeHTTP(unittest.TestCase):
         if query is not None:
             payload["query"] = query
         response = self.http("POST", "/read/paginate" if paginate else "/read", payload)
-        return next(tag for tag in response["items" if paginate else "tags"]
-                    if tag["name"] == name)
+        tag = next(tag for tag in response["items" if paginate else "tags"]
+                   if tag["name"] == name)
+        self.assertIs(int, type(tag["resolved_type"]), tag)
+        return tag
 
-    def await_sample(self, value=None, error=None, attrs=None, **kwargs):
+    def list_tags(self, **query):
+        params = {"node": self.node, "group": "g"}
+        params.update(query)
+        return self.http("GET", "/tags?" + urlencode(params))["tags"]
+
+    def await_types(self, expected):
+        deadline = time.monotonic() + 8
+        actual = None
+        while time.monotonic() < deadline:
+            tags = self.list_tags()
+            self.assertTrue(all(type(tag["resolved_type"]) is int for tag in tags))
+            actual = {tag["name"]: tag["resolved_type"] for tag in tags}
+            if actual == expected:
+                return tags
+            time.sleep(0.05)
+        self.fail(f"resolved types did not become {expected!r}: {actual!r}")
+
+    def await_sample(self, value=None, error=None, attrs=None, resolved_type=None, **kwargs):
         deadline = time.monotonic() + 8
         actual = None
         while time.monotonic() < deadline:
@@ -195,11 +215,12 @@ class AutoTypeHTTP(unittest.TestCase):
             sample_attrs = {name: actual[name] for name in SAMPLE_ATTRS if name in actual}
             matches = (actual.get("error") == error if error is not None else
                        "error" not in actual and actual.get("value") == value)
-            if matches and (attrs is None or sample_attrs == attrs):
+            if (matches and (attrs is None or sample_attrs == attrs) and
+                    (resolved_type is None or actual["resolved_type"] == resolved_type)):
                 return actual
             time.sleep(0.05)
         self.fail(f"sample did not become value={value!r}, error={error!r}, "
-                  f"attrs={attrs!r}: {actual}")
+                  f"attrs={attrs!r}, resolved_type={resolved_type!r}: {actual}")
 
     def write(self, value, *, name="a", error=0):
         status, response = self.request("POST", "/write", {
@@ -220,6 +241,11 @@ class AutoTypeHTTP(unittest.TestCase):
         exported = self.http("GET", "/global/drivers?name=" + self.node)
         self.assertTrue(all(tag["type"] == 0 for node in exported["nodes"]
                             for group in node["groups"] for tag in group["tags"]))
+        self.assertTrue(all("resolved_type" not in tag for node in exported["nodes"]
+                            for group in node["groups"] for tag in group["tags"]))
+        global_config = self.http("GET", "/global/config")
+        self.assertTrue(all("resolved_type" not in tag for group in global_config["tags"]
+                            for tag in group["tags"]))
         with sqlite3.connect(f"file:{self.root}/persistence/sqlite.db?mode=ro", uri=True) as db:
             rows = db.execute("SELECT type FROM tags WHERE driver_name = ?", (self.node,)).fetchall()
         self.assertTrue(rows)
@@ -263,6 +289,126 @@ class AutoTypeHTTP(unittest.TestCase):
         self.control(type=13, value="new lifecycle")
         self.await_sample("new lifecycle")
         self.metadata_is_auto()
+
+    def test_resolved_type_exports_roundtrip_units(self):
+        for unit in ("°C", "", None):
+            tags = [self.tag(), self.tag("explicit", type=3)]
+            if unit is not None:
+                tags[0]["unit"] = unit
+            data = {
+                "nodes": [{"name": self.node, "plugin": "auto_type"}],
+                "groups": [{"driver": self.node, "group": "g", "interval": 100,
+                            "tag_count": len(tags)}],
+                "tags": [{"driver": self.node, "group": "g", "tags": tags}],
+                "subscriptions": [], "settings": []}
+            expected_units = {"a": unit or "", "explicit": ""}
+            for cycle in range(2):
+                self.http("PUT", "/global/config", data, error=0)
+                listed = self.await_types({"a": 0, "explicit": 3})
+                self.assertEqual(expected_units, {tag["name"]: tag["unit"] for tag in listed})
+                data = self.http("GET", "/global/config")
+                exported = next(group for group in data["tags"]
+                                if group["driver"] == self.node and group["group"] == "g")["tags"]
+                self.assertEqual(expected_units, {tag["name"]: tag["unit"] for tag in exported})
+                self.assertEqual({"a": 0, "explicit": 3},
+                                 {tag["name"]: tag["type"] for tag in exported})
+                self.assertTrue(all("resolved_type" not in tag for tag in exported))
+                drivers = self.http("GET", "/global/drivers?name=" + self.node)
+                exported = drivers["nodes"][0]["groups"][0]["tags"]
+                self.assertEqual(expected_units, {tag["name"]: tag["unit"] for tag in exported})
+                self.assertTrue(all("resolved_type" not in tag for tag in exported))
+
+    def test_resolved_type_lifecycle(self):
+        self.add_tags(self.tag(), self.tag("explicit", type=3),
+                      self.tag("write_only", type=5, attribute=2))
+        self.control(hold=True)
+        self.await_types({"a": 0, "explicit": 3, "write_only": 5})
+        for paginate in (False, True):
+            self.await_sample(error=3011, resolved_type=0, paginate=paginate)
+            self.await_sample(error=3011, resolved_type=3, name="explicit", paginate=paginate)
+        self.control()
+        for paginate in (False, True):
+            self.await_sample(123, resolved_type=3, paginate=paginate)
+        self.await_sample(123, resolved_type=3, sync=True)
+        self.await_types({"a": 3, "explicit": 3, "write_only": 5})
+        self.control(hold=True)
+        self.http("POST", "/node/ctl", {"node": self.node, "cmd": 1}, error=0)
+        for paginate in (False, True):
+            self.await_sample(error=3010, resolved_type=3, paginate=paginate)
+        self.await_types({"a": 3, "explicit": 3, "write_only": 5})
+        self.add_tags(self.tag(address="changed"), method="PUT")
+        self.await_types({"a": 0, "explicit": 3, "write_only": 5})
+        for paginate in (False, True):
+            self.await_sample(error=3010, resolved_type=0, paginate=paginate)
+        self.control(type=10, value=12.5)
+        self.http("POST", "/node/ctl", {"node": self.node, "cmd": 0}, error=0)
+        self.await_sample(12.5, resolved_type=10)
+        self.await_types({"a": 10, "explicit": 3, "write_only": 5})
+        for params, expected_error in (({"type": 10, "error": 3002}, 3002),
+                                       ({"type": 3}, 3007)):
+            self.control(**params)
+            for paginate in (False, True):
+                self.await_sample(error=expected_error, resolved_type=10, paginate=paginate)
+            self.await_types({"a": 10, "explicit": 3, "write_only": 5})
+        self.control(type=10, value=12.5)
+        self.await_sample(12.5, resolved_type=10)
+        self.control(hold=True)
+        self.stop()
+        self.start()
+        self.await_sample(error=3011, resolved_type=0)
+        self.await_types({"a": 0, "explicit": 3, "write_only": 5})
+        self.control(type=13, value="new type", pointer=True)
+        for paginate in (False, True):
+            self.await_sample("new type", resolved_type=13, paginate=paginate)
+        self.await_types({"a": 13, "explicit": 3, "write_only": 5})
+        exported = self.http("GET", "/global/drivers?name=" + self.node)
+        tags = exported["nodes"][0]["groups"][0]["tags"]
+        self.assertEqual(0, next(tag for tag in tags if tag["name"] == "a")["type"])
+        self.assertTrue(all("resolved_type" not in tag for tag in tags))
+
+    def test_resolved_type_sort_filter_and_pages(self):
+        self.add_tags(self.tag("a", address="z"),
+                      self.tag("b", type=3, address="a", description="needle"),
+                      self.tag("c", type=10, address="m"),
+                      self.tag("w", type=5, attribute=2))
+        self.control()
+        self.await_sample(123, resolved_type=3)
+        expected = {"a": 3, "b": 3, "c": 10, "w": 5}
+        self.await_types(expected)
+        for sort in ("+name", "-name", "+type", "-type", "+address"):
+            tags = self.list_tags(sort_by=sort)
+            self.assertEqual(expected, {tag["name"]: tag["resolved_type"] for tag in tags})
+        self.assertEqual(["b"], [tag["name"] for tag in self.list_tags(name="needle")])
+        self.assertEqual([], self.list_tags(name="not-present"))
+        self.http("GET", "/tags?" + urlencode({"node": self.node, "group": "g",
+                                               "sort_by": "invalid"}), status=400, error=1003)
+        request = {"node": self.node, "group": "g"}
+        for sort in ("+name", "-type", "+address"):
+            full = self.http("POST", "/read/paginate", dict(request, query={
+                "sort_by": sort, "currentPage": 1, "pageSize": 10}))["items"]
+            self.assertEqual(expected, {tag["name"]: tag["resolved_type"] for tag in full})
+            for index, tag in enumerate(full):
+                page = self.http("POST", "/read/paginate", dict(request, query={
+                    "sort_by": sort, "currentPage": index + 1, "pageSize": 1}))["items"]
+                self.assertEqual([tag["name"]], [item["name"] for item in page])
+                self.assertEqual(expected[tag["name"]], page[0]["resolved_type"])
+        self.control(error=3002)
+        for name in ("a", "b", "c"):
+            self.await_sample(error=3002, name=name, resolved_type=expected[name])
+        self.control(hold=True)
+        full = self.http("POST", "/read/paginate", dict(request, query={
+            "isError": True, "sort_by": "-type"}))["items"]
+        self.assertEqual({name: expected[name] for name in ("a", "b", "c")},
+                         {tag["name"]: tag["resolved_type"] for tag in full})
+        for index, tag in enumerate(full):
+            page = self.http("POST", "/read/paginate", dict(request, query={
+                "isError": True, "sort_by": "-type", "currentPage": index + 1,
+                "pageSize": 1}))["items"]
+            self.assertEqual([tag], page)
+        for is_error in (False, True):
+            response = self.http("POST", "/read/paginate", dict(request, query={
+                "isError": is_error, "currentPage": 99, "pageSize": 1}))
+            self.assertEqual([], response["items"])
 
     def test_all_update_callbacks(self):
         for index, mode in enumerate(("update", "meta", "trace", "im", "im_f_m")):
@@ -347,8 +493,10 @@ class AutoTypeHTTP(unittest.TestCase):
     def test_scaled_value_and_byte_order(self):
         self.add_tags(self.tag(decimal=0.5, bias=1), self.tag("big", address="sample#B"))
         self.control(value=256)
-        self.await_sample(129)
-        self.await_sample(1, name="big")
+        self.await_sample(129, resolved_type=3)
+        self.await_sample(129, resolved_type=3, paginate=True)
+        self.await_types({"a": 3, "big": 3})
+        self.await_sample(1, name="big", resolved_type=3)
         self.write(51)
         self.assertEqual(100, self.records()[-1]["value"])
         self.write(1, name="big")
