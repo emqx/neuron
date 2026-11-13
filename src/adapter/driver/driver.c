@@ -1188,7 +1188,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_INT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s        = value->value.i64s.i64s;
-            value->value.i8s.i8s = calloc(value->value.i64s.length, 1);
+            value->value.i8s.i8s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 1)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.i8s.i8s[i] = (int8_t) i64s[i];
             }
@@ -1198,7 +1200,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_UINT8:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s        = value->value.i64s.i64s;
-            value->value.u8s.u8s = calloc(value->value.i64s.length, 1);
+            value->value.u8s.u8s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 1)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.u8s.u8s[i] = (uint8_t) i64s[i];
             }
@@ -1208,7 +1212,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_INT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.i16s.i16s = calloc(value->value.i64s.length, 2);
+            value->value.i16s.i16s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 2)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.i16s.i16s[i] = (int16_t) i64s[i];
             }
@@ -1218,7 +1224,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_UINT16:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.u16s.u16s = calloc(value->value.i64s.length, 2);
+            value->value.u16s.u16s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 2)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.u16s.u16s[i] = (uint16_t) i64s[i];
             }
@@ -1228,7 +1236,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_INT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.i32s.i32s = calloc(value->value.i64s.length, 4);
+            value->value.i32s.i32s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 4)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.i32s.i32s[i] = (int32_t) i64s[i];
             }
@@ -1238,7 +1248,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_UINT32:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.u32s.u32s = calloc(value->value.i64s.length, 4);
+            value->value.u32s.u32s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 4)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.u32s.u32s[i] = (uint32_t) i64s[i];
             }
@@ -1248,7 +1260,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_UINT64:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.u64s.u64s = calloc(value->value.i64s.length, 8);
+            value->value.u64s.u64s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 8)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.u64s.u64s[i] = (uint64_t) i64s[i];
             }
@@ -1258,7 +1272,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_FLOAT:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.f32s.f32s = calloc(value->value.i64s.length, 4);
+            value->value.f32s.f32s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 4)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.f32s.f32s[i] = (float) i64s[i];
             }
@@ -1266,7 +1282,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         }
         if (value->type == NEU_TYPE_ARRAY_DOUBLE) {
             double *f64s           = value->value.f64s.f64s;
-            value->value.f32s.f32s = calloc(value->value.f64s.length, 4);
+            value->value.f32s.f32s = value->value.f64s.length
+                ? calloc(value->value.f64s.length, 4)
+                : NULL;
             for (size_t i = 0; i < value->value.f64s.length; i++) {
                 value->value.f32s.f32s[i] = (float) f64s[i];
             }
@@ -1276,7 +1294,9 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     case NEU_TYPE_ARRAY_DOUBLE:
         if (value->type == NEU_TYPE_ARRAY_INT64) {
             int64_t *i64s          = value->value.i64s.i64s;
-            value->value.f64s.f64s = calloc(value->value.i64s.length, 8);
+            value->value.f64s.f64s = value->value.i64s.length
+                ? calloc(value->value.i64s.length, 8)
+                : NULL;
             for (size_t i = 0; i < value->value.i64s.length; i++) {
                 value->value.f64s.f64s[i] = (double) i64s[i];
             }
@@ -1591,20 +1611,45 @@ static bool write_types_valid(neu_adapter_driver_t *driver, UT_array *types)
     return true;
 }
 
+// Report an error for a write request that has not reached the driver plugin.
+// The plugin owns dynamically allocated write values once it is called, so the
+// core must release them itself on these pre-plugin failure paths.
+static void write_tag_error(neu_adapter_driver_t *driver,
+                            neu_reqresp_head_t *req, neu_error error)
+{
+    neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
+    neu_req_write_tag_value_fini(cmd);
+    driver->adapter.cb_funs.driver.write_response(&driver->adapter, req, error);
+}
+
+static void write_tags_error(neu_adapter_driver_t *driver,
+                             neu_reqresp_head_t *req, neu_error error)
+{
+    neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
+    neu_req_write_tags_value_fini(cmd);
+    driver->adapter.cb_funs.driver.write_response(&driver->adapter, req, error);
+}
+
+static void write_gtags_error(neu_adapter_driver_t *driver,
+                              neu_reqresp_head_t *req, neu_error error)
+{
+    neu_req_write_gtags_t *cmd = (neu_req_write_gtags_t *) &req[1];
+    neu_req_write_gtags_value_fini(cmd);
+    driver->adapter.cb_funs.driver.write_response(&driver->adapter, req, error);
+}
+
 int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
     neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.write_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        write_tags_error(driver, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
-        driver->adapter.cb_funs.driver.write_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
+        write_tags_error(driver, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
         return NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS;
     }
 
@@ -1613,8 +1658,7 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     if (g == NULL) {
         nlog_warn("driver write tags group not exist, driver: %s, group: %s",
                   driver->adapter.name, cmd->group);
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_GROUP_NOT_EXIST);
+        write_tags_error(driver, req, NEU_ERR_GROUP_NOT_EXIST);
         return NEU_ERR_GROUP_NOT_EXIST;
     }
 
@@ -1657,13 +1701,10 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     if (value_err != NEU_ERR_SUCCESS) {
         nlog_warn("driver write tags value error(%d), driver: %s, group: %s",
                   value_err, driver->adapter.name, cmd->group);
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      value_err);
+        write_tags_error(driver, req, value_err);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
-            neu_dvalue_t dvalue = { .type = tv->type, .value = tv->value };
-            neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
         if (types != NULL) {
@@ -1676,13 +1717,10 @@ int neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         nlog_warn("driver write tags some tag not exist, driver: %s, group: "
                   "%s",
                   driver->adapter.name, cmd->group);
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_TAG_NOT_EXIST);
+        write_tags_error(driver, req, NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
-            neu_dvalue_t dvalue = { .type = tv->type, .value = tv->value };
-            neu_free_dvalue(&dvalue);
         }
         utarray_free(tags);
         if (types != NULL) {
@@ -1726,14 +1764,12 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     group_t *              first_g = NULL;
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.write_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        write_gtags_error(driver, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
-        driver->adapter.cb_funs.driver.write_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
+        write_gtags_error(driver, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
         return NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS;
     }
 
@@ -1741,8 +1777,7 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         group_t *g = find_group(driver, cmd->groups[i].group);
 
         if (g == NULL) {
-            driver->adapter.cb_funs.driver.write_response(
-                &driver->adapter, req, NEU_ERR_GROUP_NOT_EXIST);
+            write_gtags_error(driver, req, NEU_ERR_GROUP_NOT_EXIST);
             return NEU_ERR_GROUP_NOT_EXIST;
         }
 
@@ -1791,8 +1826,7 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     }
 
     if (value_err != NEU_ERR_SUCCESS) {
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      value_err);
+        write_gtags_error(driver, req, value_err);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
@@ -1810,8 +1844,7 @@ int neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     }
 
     if (utarray_len(tags) != (unsigned int) n_tag) {
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_TAG_NOT_EXIST);
+        write_gtags_error(driver, req, NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
@@ -1861,8 +1894,7 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                  neu_reqresp_head_t *  req)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.write_response(
-            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        write_tag_error(driver, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return NEU_ERR_PLUGIN_NOT_RUNNING;
     }
 
@@ -1872,8 +1904,7 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     if (g == NULL) {
         nlog_warn("driver write tag group not exist, driver: %s, group: %s",
                   driver->adapter.name, cmd->group);
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_GROUP_NOT_EXIST);
+        write_tag_error(driver, req, NEU_ERR_GROUP_NOT_EXIST);
         return NEU_ERR_GROUP_NOT_EXIST;
     }
     neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
@@ -1881,16 +1912,14 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     if (tag == NULL) {
         nlog_warn("driver write tag not exist, driver: %s, group: %s, tag: %s",
                   driver->adapter.name, cmd->group, cmd->tag);
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_TAG_NOT_EXIST);
+        write_tag_error(driver, req, NEU_ERR_TAG_NOT_EXIST);
         return NEU_ERR_TAG_NOT_EXIST;
     } else {
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             nlog_warn("driver write tag not allow write, driver: %s, group: "
                       "%s, tag: %s",
                       driver->adapter.name, cmd->group, cmd->tag);
-            driver->adapter.cb_funs.driver.write_response(
-                &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+            write_tag_error(driver, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
             neu_tag_free(tag);
             return NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE;
         }
@@ -1903,8 +1932,7 @@ int neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             nlog_warn("driver write tag value error(%d), driver: %s, group: "
                       "%s, tag: %s",
                       value_check, driver->adapter.name, cmd->group, cmd->tag);
-            driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                          value_check);
+            write_tag_error(driver, req, value_check);
             if (types != NULL) {
                 utarray_free(types);
             }
