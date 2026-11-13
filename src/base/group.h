@@ -28,6 +28,24 @@
 
 typedef struct neu_group neu_group_t;
 
+typedef struct {
+    const char *   name;
+    const char *   desc;
+    uint16_t       n_tagname;
+    char **        tagnames;
+    int            current_page;
+    int            page_size;
+    neu_tag_cmp_fn cmp;
+    bool           readable;
+} neu_group_tag_query_t;
+
+typedef void (*neu_group_snapshot_fn)(void *arg, int64_t timestamp,
+                                      uint32_t interval, UT_array *tags,
+                                      int total_count);
+void neu_group_query_snapshot(neu_group_t *                group,
+                              const neu_group_tag_query_t *query, void *arg,
+                              neu_group_snapshot_fn fn);
+
 neu_group_t *neu_group_new(const char *name, uint32_t interval);
 const char * neu_group_get_name(const neu_group_t *group);
 int          neu_group_set_name(neu_group_t *group, const char *name);

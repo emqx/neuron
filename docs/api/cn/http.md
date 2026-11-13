@@ -34,7 +34,19 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 
 AUTO 必须用于可读点位；仅写 AUTO 点位返回 `2204`。识别后，单点及批量写入均按具体类型检查输入类型和数值范围，再交给驱动。例如 INT16 可接受整数 `123`，但拒绝 `40000` 和字符串 `"123"`。已排队写入若因点位或组 cache 重建失效，返回 `3011`，不会按另一类型重新解释。
 
-配置查询、导出和持久化存储始终保留 `type: 0`，不会回写识别结果，也不新增 `resolved_type` 字段。读取和上报值使用已识别的具体类型，并应用该类型适用的 precision、缩放及地址选项。非数值类型不进行数值缩放，缩放后的输出类型也不会改变设备侧已识别类型。
+配置查询、导出和持久化存储始终保留 `type: 0`，不会回写识别结果。读取和上报值使用已识别的具体类型，并应用该类型适用的 precision、缩放及地址选项。非数值类型不进行数值缩放，缩放后的输出类型也不会改变设备侧已识别类型。
+
+### 点位运行时类型
+
+`GET /api/v2/tags`、`POST /api/v2/read`、`POST /api/v2/read/paginate` 的每个点位对象顶层均返回整数 `resolved_type`：
+
+- 显式类型点位：等于配置 `type`，即使尚无样本、只写或读取报错。
+- AUTO 点位：未识别、cache 不存在或新配置尚待应用时为 `0`；识别后为设备侧实际类型。STRING/BYTES 的内部 PTR 样本返回 STRING/BYTES，不返回 PTR。
+- 已识别后的通信错误、类型不匹配、值过期或停用节点不清除识别结果；cache/配置重建或进程重启后重新识别。
+- `resolved_type` 不是缩放后的输出类型。例如 AUTO 识别为 INT16，`decimal: 0.1` 时可返回 `"resolved_type": 3, "value": 12.3`。前端写入校验还需结合 decimal、bias，并以后端结果为准。
+- 已识别类型不表示当前值有效、节点正在运行或具有写权限，应分别检查 error、节点状态和 attribute。
+
+原有 `type` 仍表示配置类型；普通 `/read` 不因此新增配置 `type` 字段。`resolved_type` 不放入 `attributes`，普通读取存在同名 metas 时由该权威字段覆盖。配置导出 `/global/config`、`/global/drivers`、SQLite 和 MQTT 不新增此字段。
 
 ### 波特率
 
@@ -1050,6 +1062,8 @@ HTTP 200 响应：
 
 *GET*  /api/v2/tags
 
+每个点位返回 `resolved_type`，含义见“点位运行时类型”；`type` 保持配置值。
+
 ### 请求参数
 
 **node**  必需
@@ -1078,6 +1092,7 @@ HTTP 200 响应：
             "name": "tag1",
             //tag type
             "type": 4,
+            "resolved_type": 4,
             //tag address
             "address": "1!400001",
             //tag attribute
@@ -1094,6 +1109,7 @@ HTTP 200 响应：
         {
             "name": "tag2",
             "type": 14,
+            "resolved_type": 14,
             "address": "1!00001",
             "attribute": 3,
             "description": "",
@@ -1103,6 +1119,7 @@ HTTP 200 响应：
         {
             "name": "tag3",
             "type": 11,
+            "resolved_type": 11,
             "address": "1!400009",
             "attribute": 3,
             "description": "",
@@ -1264,6 +1281,7 @@ HTTP 200 响应：
     "tags": [
         {
             "name": "temperature",
+            "resolved_type": 10,
             "value": 25.5,
             "transferPrecision": 2,
             "timestamp": 1700000000000,
@@ -1273,6 +1291,7 @@ HTTP 200 响应：
         },
         {
             "name": "pressure",
+            "resolved_type": 3,
             "error": 3002,
             "quality": 0
         }
@@ -1328,6 +1347,7 @@ HTTP 200 响应：
     "items": [
         {
             "name": "temperature",
+            "resolved_type": 10,
             "type": 10,
             "address": "1!400001",
             "attribute": 1,

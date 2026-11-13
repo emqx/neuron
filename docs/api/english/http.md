@@ -34,7 +34,19 @@ The first valid, successful sample fixes the concrete runtime type for that tag'
 
 AUTO requires a readable tag; write-only AUTO is rejected with `2204`. After detection, single and batch writes are checked against the concrete type, including input type and numeric range, before the driver receives them. For example, an INT16 tag accepts integer `123`, but rejects `40000` and string `"123"`. Writes invalidated by a tag/group cache rebuild return `3011` rather than being reinterpreted with another type.
 
-Configuration queries, exports and persistent storage continue to show `type: 0`; detection does not rewrite metadata or add a `resolved_type` field. Read/report values use the detected concrete type and its applicable precision, scaling and address options. Numeric scaling does not apply to nonnumeric types, and a scaled output value does not change the detected device type.
+Configuration queries, exports and persistent storage continue to show `type: 0`; detection does not rewrite the configured type. Read/report values use the detected concrete type and its applicable precision, scaling and address options. Numeric scaling does not apply to nonnumeric types, and a scaled output value does not change the detected device type.
+
+### Runtime tag type
+
+Every tag object returned by `GET /api/v2/tags`, `POST /api/v2/read` and `POST /api/v2/read/paginate` includes a top-level integer `resolved_type`:
+
+- For explicitly typed tags it equals configured `type`, including tags without samples, write-only tags and read errors.
+- For AUTO it is `0` while unresolved, without a cache entry, or while configuration changes await application. Once identified it is the device-side semantic type. Internally PTR-backed STRING/BYTES samples report STRING/BYTES, not PTR.
+- Communication errors, type mismatches, value expiration and stopping a node do not themselves clear an identified type. Cache/configuration rebuilding or process restart requires identification again.
+- It is not the scaled output type. For example, AUTO resolved as INT16 with `decimal: 0.1` can return `"resolved_type": 3, "value": 12.3`. Frontend write validation must also consider decimal and bias; backend validation remains authoritative.
+- An identified type does not imply a valid current value, a running node or write permission. Check error, node state and attribute separately.
+
+Existing `type` remains the configured type. Ordinary `/read` does not gain a configured `type` field. `resolved_type` is separate from `attributes` and replaces any colliding ordinary-read metadata key. Configuration exports through `/global/config` and `/global/drivers`, SQLite and MQTT do not gain this field.
 
 ### Baud
 
@@ -1031,6 +1043,8 @@ To update both group name and interval:
 
 *GET*  /api/v2/tags
 
+Each tag includes `resolved_type` as described in "Runtime tag type"; `type` remains the configured value.
+
 ### Request Params
 
 **node**  required
@@ -1059,6 +1073,7 @@ To update both group name and interval:
             "name": "tag1",
             //tag type
             "type": 4,
+            "resolved_type": 4,
             //tag address
             "address": "1!400001",
             //tag attribute
@@ -1075,6 +1090,7 @@ To update both group name and interval:
         {
             "name": "tag2",
             "type": 14,
+            "resolved_type": 14,
             "address": "1!00001",
             "attribute": 3,
             "description": "",
@@ -1084,6 +1100,7 @@ To update both group name and interval:
         {
             "name": "tag3",
             "type": 11,
+            "resolved_type": 11,
             "address": "1!400009",
             "attribute": 3,
             "description": "",
@@ -1245,6 +1262,7 @@ To update both group name and interval:
     "tags": [
         {
             "name": "temperature",
+            "resolved_type": 10,
             "value": 25.5,
             "transferPrecision": 2,
             "timestamp": 1700000000000,
@@ -1254,6 +1272,7 @@ To update both group name and interval:
         },
         {
             "name": "pressure",
+            "resolved_type": 3,
             "error": 3002,
             "quality": 0
         }
@@ -1309,6 +1328,7 @@ Request headers are the same as for reading tag values.
     "items": [
         {
             "name": "temperature",
+            "resolved_type": 10,
             "type": 10,
             "address": "1!400001",
             "attribute": 1,

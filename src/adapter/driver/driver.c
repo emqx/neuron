@@ -103,11 +103,13 @@ static int  write_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, UT_array *tag_values);
+                       UT_array *tags, UT_array *tag_values,
+                       bool cache_current);
 static void read_group_paginate(int64_t timestamp, int64_t timeout,
                                 neu_tag_cache_type_e cache_type,
                                 neu_driver_cache_t *cache, const char *group,
-                                UT_array *tags, UT_array *tag_values);
+                                UT_array *tags, UT_array *tag_values,
+                                bool cache_current);
 static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
@@ -144,6 +146,28 @@ static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
 static inline void start_group_timer(neu_adapter_driver_t *driver,
                                      group_t *             grp);
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
+
+static neu_type_e sample_resolved_type(const neu_datatag_t *tag,
+                                       neu_type_e           cached_type,
+                                       bool                 cache_current)
+{
+    return tag->type != NEU_TYPE_AUTO
+        ? tag->type
+        : cache_current ? cached_type : NEU_TYPE_AUTO;
+}
+
+static neu_type_e cached_resolved_type(neu_driver_cache_t * cache,
+                                       const char *         group,
+                                       const neu_datatag_t *tag,
+                                       bool                 cache_current)
+{
+    neu_type_e type       = NEU_TYPE_AUTO;
+    uint64_t   generation = 0;
+    if (tag->type == NEU_TYPE_AUTO && cache_current) {
+        neu_driver_cache_type_get(cache, group, tag->name, &type, &generation);
+    }
+    return sample_resolved_type(tag, type, cache_current);
+}
 
 static neu_datatag_t effective_tag(const neu_datatag_t *tag, neu_type_e type)
 {
@@ -869,6 +893,78 @@ void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
     HASH_ITER(hh, driver->groups, el, tmp) { stop_group_timer(driver, el); }
 }
 
+typedef struct {
+    group_t *            group;
+    UT_array *           values;
+    int64_t              now;
+    neu_tag_cache_type_e cache_type;
+    bool                 paginate;
+    int                  error;
+    int                  total_count;
+} read_snapshot_t;
+
+static void read_snapshot(void *arg, int64_t timestamp, uint32_t interval,
+                          UT_array *tags, int total_count)
+{
+    read_snapshot_t *     ctx           = arg;
+    group_t *             group         = ctx->group;
+    neu_adapter_driver_t *driver        = group->driver;
+    bool                  cache_current = timestamp == group->timestamp;
+    ctx->total_count                    = total_count;
+    if (ctx->error == NEU_ERR_SUCCESS) {
+        if (ctx->paginate) {
+            read_group_paginate(
+                ctx->now, (int64_t) interval * NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                ctx->cache_type, driver->cache, group->name, tags, ctx->values,
+                cache_current);
+        } else {
+            read_group(ctx->now,
+                       (int64_t) interval * NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                       ctx->cache_type, driver->cache, group->name, tags,
+                       ctx->values, cache_current);
+        }
+        return;
+    }
+
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        neu_type_e type = cached_resolved_type(driver->cache, group->name, tag,
+                                               cache_current);
+        if (ctx->paginate) {
+            neu_resp_tag_value_meta_paginate_t value = { 0 };
+            snprintf(value.tag, sizeof(value.tag), "%s", tag->name);
+            value.value.type      = NEU_TYPE_ERROR;
+            value.value.value.i32 = ctx->error;
+            value.resolved_type   = type;
+            neu_tag_get_icd()->copy(&value.datatag, tag);
+            utarray_push_back(ctx->values, &value);
+        } else {
+            neu_resp_tag_value_meta_t value = { 0 };
+            snprintf(value.tag, sizeof(value.tag), "%s", tag->name);
+            value.value.type      = NEU_TYPE_ERROR;
+            value.value.value.i32 = ctx->error;
+            value.resolved_type   = type;
+            utarray_push_back(ctx->values, &value);
+        }
+    }
+}
+
+static int prepare_read(neu_adapter_driver_t *driver, group_t *group, bool sync)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return NEU_ERR_PLUGIN_NOT_RUNNING;
+    }
+    if (sync) {
+        if (driver->adapter.module->intf_funs->driver.group_sync == NULL) {
+            return NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
+        }
+        stop_group_timer(driver, group);
+        driver->adapter.module->intf_funs->driver.group_sync(
+            driver->adapter.plugin, &group->grp);
+    }
+    return NEU_ERR_SUCCESS;
+}
+
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
@@ -882,55 +978,21 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         return;
     }
 
-    neu_resp_read_group_t resp  = { 0 };
-    neu_group_t *         group = g->group;
-    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc,
-                                              cmd->n_tag, cmd->tags);
-
+    neu_resp_read_group_t resp = { 0 };
     utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
-
-    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        utarray_foreach(tags, neu_datatag_t *, tag)
-        {
-            neu_resp_tag_value_meta_t tag_value = { 0 };
-            snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
-            tag_value.value.type      = NEU_TYPE_ERROR;
-            tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
-
-            utarray_push_back(resp.tags, &tag_value);
-        }
-    } else if (cmd->sync) {
-        if (NULL == driver->adapter.module->intf_funs->driver.group_sync) {
-            // plugin does not support sync read
-            utarray_foreach(tags, neu_datatag_t *, tag)
-            {
-                neu_resp_tag_value_meta_t tag_value = { 0 };
-                snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
-                tag_value.value.type = NEU_TYPE_ERROR;
-                tag_value.value.value.i32 =
-                    NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
-
-                utarray_push_back(resp.tags, &tag_value);
-            }
-        } else {
-            // sync read to update cache
-            stop_group_timer(driver, g);
-            driver->adapter.module->intf_funs->driver.group_sync(
-                driver->adapter.plugin, &g->grp);
-            // fetch updated data from cache
-            read_group(global_timestamp,
-                       neu_group_get_interval(group) *
-                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                       neu_adapter_get_tag_cache_type(&driver->adapter),
-                       driver->cache, cmd->group, tags, resp.tags);
-            start_group_timer(driver, g);
-        }
-    } else {
-        read_group(global_timestamp,
-                   neu_group_get_interval(group) *
-                       NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                   neu_adapter_get_tag_cache_type(&driver->adapter),
-                   driver->cache, cmd->group, tags, resp.tags);
+    neu_group_tag_query_t query    = { .name      = cmd->name,
+                                    .desc      = cmd->desc,
+                                    .n_tagname = cmd->n_tag,
+                                    .tagnames  = cmd->tags,
+                                    .readable  = true };
+    read_snapshot_t       snapshot = { .group  = g,
+                                 .values = resp.tags,
+                                 .error = prepare_read(driver, g, cmd->sync) };
+    snapshot.now                   = global_timestamp;
+    snapshot.cache_type = neu_adapter_get_tag_cache_type(&driver->adapter);
+    neu_group_query_snapshot(g->group, &query, &snapshot, read_snapshot);
+    if (cmd->sync && snapshot.error == NEU_ERR_SUCCESS) {
+        start_group_timer(driver, g);
     }
 
     resp.driver = cmd->driver;
@@ -938,7 +1000,6 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     cmd->driver = NULL; // ownership moved
     cmd->group  = NULL; // ownership moved
 
-    utarray_free(tags);
     neu_req_read_group_fini(cmd);
 
     req->type = NEU_RESP_READ_GROUP;
@@ -959,92 +1020,27 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
         return;
     }
 
-    neu_resp_read_group_paginate_t resp  = { 0 };
-    neu_group_t *                  group = g->group;
-    UT_array *                     tags;
-
-    neu_tag_cmp_fn cmp = neu_tag_get_sort_cmp(cmd->sort_by);
-    if (cmd->is_error != true && cmd->current_page > 0 && cmd->page_size > 0) {
-        tags = neu_group_query_read_tag_paginate(
-            group, cmd->name, cmd->desc, cmd->current_page, cmd->page_size,
-            &resp.total_count, cmp);
-    } else {
-        tags = neu_group_query_read_tag(group, cmd->name, cmd->desc, 0, NULL);
-        if (cmp) {
-            utarray_sort(tags, cmp);
-        }
-        resp.total_count = utarray_len(tags);
-    }
-
+    neu_resp_read_group_paginate_t resp = { 0 };
+    bool                           paginate =
+        !cmd->is_error && cmd->current_page > 0 && cmd->page_size > 0;
+    neu_group_tag_query_t query = { .name = cmd->name,
+                                    .desc = cmd->desc,
+                                    .current_page =
+                                        paginate ? cmd->current_page : 0,
+                                    .page_size = paginate ? cmd->page_size : 0,
+                                    .cmp = neu_tag_get_sort_cmp(cmd->sort_by),
+                                    .readable = !paginate };
     utarray_new(resp.tags, neu_resp_tag_value_meta_paginate_icd());
-
-    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        utarray_foreach(tags, neu_datatag_t *, tag)
-        {
-            neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
-            snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
-            tag_value.value.type      = NEU_TYPE_ERROR;
-            tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
-
-            tag_value.datatag.name        = strdup(tag->name);
-            tag_value.datatag.address     = strdup(tag->address);
-            tag_value.datatag.attribute   = tag->attribute;
-            tag_value.datatag.type        = tag->type;
-            tag_value.datatag.precision   = tag->precision;
-            tag_value.datatag.decimal     = tag->decimal;
-            tag_value.datatag.bias        = tag->bias;
-            tag_value.datatag.description = strdup(tag->description);
-            tag_value.datatag.option      = tag->option;
-            tag_value.datatag.unit        = strdup(tag->unit);
-            memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
-
-            utarray_push_back(resp.tags, &tag_value);
-        }
-    } else if (cmd->sync) {
-        if (NULL == driver->adapter.module->intf_funs->driver.group_sync) {
-            // plugin does not support sync read
-            utarray_foreach(tags, neu_datatag_t *, tag)
-            {
-                neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
-                snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
-                tag_value.value.type = NEU_TYPE_ERROR;
-                tag_value.value.value.i32 =
-                    NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
-
-                tag_value.datatag.name        = strdup(tag->name);
-                tag_value.datatag.address     = strdup(tag->address);
-                tag_value.datatag.attribute   = tag->attribute;
-                tag_value.datatag.type        = tag->type;
-                tag_value.datatag.precision   = tag->precision;
-                tag_value.datatag.decimal     = tag->decimal;
-                tag_value.datatag.bias        = tag->bias;
-                tag_value.datatag.description = strdup(tag->description);
-                tag_value.datatag.option      = tag->option;
-                tag_value.datatag.unit        = strdup(tag->unit);
-                memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
-
-                utarray_push_back(resp.tags, &tag_value);
-            }
-        } else {
-            // sync read to update cache
-            stop_group_timer(driver, g);
-            driver->adapter.module->intf_funs->driver.group_sync(
-                driver->adapter.plugin, &g->grp);
-            // fetch updated data from cache
-            read_group_paginate(
-                global_timestamp,
-                neu_group_get_interval(group) *
-                    NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                neu_adapter_get_tag_cache_type(&driver->adapter), driver->cache,
-                cmd->group, tags, resp.tags);
-            start_group_timer(driver, g);
-        }
-    } else {
-        read_group_paginate(global_timestamp,
-                            neu_group_get_interval(group) *
-                                NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                            neu_adapter_get_tag_cache_type(&driver->adapter),
-                            driver->cache, cmd->group, tags, resp.tags);
+    read_snapshot_t snapshot = { .group    = g,
+                                 .values   = resp.tags,
+                                 .paginate = true,
+                                 .error = prepare_read(driver, g, cmd->sync) };
+    snapshot.now             = global_timestamp;
+    snapshot.cache_type      = neu_adapter_get_tag_cache_type(&driver->adapter);
+    neu_group_query_snapshot(g->group, &query, &snapshot, read_snapshot);
+    resp.total_count = snapshot.total_count;
+    if (cmd->sync && snapshot.error == NEU_ERR_SUCCESS) {
+        start_group_timer(driver, g);
     }
 
     resp.driver       = cmd->driver;
@@ -1055,7 +1051,6 @@ void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
     cmd->driver       = NULL; // ownership moved
     cmd->group        = NULL; // ownership moved
 
-    utarray_free(tags);
     neu_req_read_group_paginate_fini(cmd);
 
     req->type = NEU_RESP_READ_GROUP_PAGINATE;
@@ -2479,6 +2474,29 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+typedef struct {
+    group_t * group;
+    UT_array *tags;
+} tag_snapshot_t;
+
+static void query_tag_snapshot(void *arg, int64_t timestamp, uint32_t interval,
+                               UT_array *tags, int total_count)
+{
+    tag_snapshot_t *ctx = arg;
+    (void) interval;
+    (void) total_count;
+    bool cache_current = timestamp == ctx->group->timestamp;
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        utarray_extend_back(ctx->tags);
+        neu_resp_tag_info_t *info = utarray_back(ctx->tags);
+        info->resolved_type       = cached_resolved_type(
+            ctx->group->driver->cache, ctx->group->name, tag, cache_current);
+        info->tag = *tag;
+        memset(tag, 0, sizeof(*tag));
+    }
+}
+
 int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
                                  const char *group, const char *name,
                                  UT_array **tags)
@@ -2488,11 +2506,12 @@ int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
-        if (strlen(name) > 0) {
-            *tags = neu_group_query_tag(find->group, name);
-        } else {
-            *tags = neu_group_get_tag(find->group);
-        }
+        neu_group_tag_query_t query    = { .name = name };
+        tag_snapshot_t        snapshot = { .group = find };
+        utarray_new(snapshot.tags, neu_resp_tag_info_icd());
+        neu_group_query_snapshot(find->group, &query, &snapshot,
+                                 query_tag_snapshot);
+        *tags = snapshot.tags;
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
@@ -2594,7 +2613,7 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
                neu_group_get_interval(group->group) *
                    NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                neu_adapter_get_tag_cache_type(&driver->adapter), driver->cache,
-               group->name, tags, data->tags);
+               group->name, tags, data->tags, true);
 
     nlog_info("report group: %s, all tags: %d, report tags: %d", group->name,
               utarray_len(tags), utarray_len(data->tags));
@@ -2963,6 +2982,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
     {
         neu_driver_cache_value_t  value     = { 0 };
         neu_resp_tag_value_meta_t tag_value = { 0 };
+        tag_value.resolved_type             = tag->type;
 
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             if (neu_driver_cache_meta_get_changed(cache, group, tag->name,
@@ -2989,6 +3009,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
         tag_value.datatag.bias = tag->bias;
 
         tag_value.value.attrs = value.value.attrs;
+        tag_value.resolved_type =
+            sample_resolved_type(tag, value.resolved_type, true);
 
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
@@ -3162,7 +3184,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, UT_array *tag_values)
+                       UT_array *tags, UT_array *tag_values, bool cache_current)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
@@ -3170,7 +3192,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
         neu_driver_cache_value_t  value     = { 0 };
 
         snprintf(tag_value.tag, sizeof(tag_value.tag), "%s", tag->name);
-        tag_value.datatag = *tag;
+        tag_value.datatag       = *tag;
+        tag_value.resolved_type = tag->type;
 
         tag_value.datatag.bias = tag->bias;
 
@@ -3185,6 +3208,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
         }
 
         tag_value.value.attrs = value.value.attrs;
+        tag_value.resolved_type =
+            sample_resolved_type(tag, value.resolved_type, cache_current);
 
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
@@ -3355,7 +3380,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
 static void read_group_paginate(int64_t timestamp, int64_t timeout,
                                 neu_tag_cache_type_e cache_type,
                                 neu_driver_cache_t *cache, const char *group,
-                                UT_array *tags, UT_array *tag_values)
+                                UT_array *tags, UT_array *tag_values,
+                                bool cache_current)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
@@ -3375,6 +3401,7 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         tag_value.datatag.option      = tag->option;
         tag_value.datatag.unit        = strdup(tag->unit);
         memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
+        tag_value.resolved_type = tag->type;
 
         if (tag->attribute == NEU_ATTRIBUTE_WRITE) {
             tag_value.value.type         = NEU_TYPE_STRING;
@@ -3394,6 +3421,8 @@ static void read_group_paginate(int64_t timestamp, int64_t timeout,
         }
 
         tag_value.value.attrs = value.value.attrs;
+        tag_value.resolved_type =
+            sample_resolved_type(tag, value.resolved_type, cache_current);
 
         if (value.value.type == NEU_TYPE_ERROR) {
             tag_value.value = value.value;
