@@ -28,6 +28,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#include <jansson.h>
+
 #include "utils/utarray.h"
 
 typedef enum {
@@ -55,7 +57,8 @@ typedef struct {
     const char *          group;
     const char *          sub_topic;
     int64_t               timestamp;
-    UT_array *            tags; // neu_resp_tag_value_meta_t
+    json_t *              properties; // may be NULL
+    UT_array *            tags;       // neu_resp_tag_value_meta_t
     bool                  upload_err;
     const mqtt_v2_tmpl_t *tag_tmpl;
     mqtt_v2_tag_info_fn   tag_info; // may be NULL
@@ -71,6 +74,8 @@ typedef struct {
 int  mqtt_v2_tmpl_compile(const char *text, mqtt_v2_tmpl_kind_e kind,
                           mqtt_v2_tmpl_t **tmpl, char *err, size_t err_size);
 void mqtt_v2_tmpl_free(mqtt_v2_tmpl_t *tmpl);
+// true when a tag template uses ${tag.error}. Failed tags are reported then.
+bool mqtt_v2_tmpl_reports_error(const mqtt_v2_tmpl_t *tmpl);
 
 /**
  * Render a data template, returns a JSON string to be freed by the caller,
@@ -83,12 +88,14 @@ char *mqtt_v2_tmpl_render(const mqtt_v2_tmpl_t *      tmpl,
 size_t mqtt_v2_tags_count(UT_array *tags, bool upload_err);
 
 /**
- * Substitute `${app}`, `${device}` and `${group}` in a topic template.
+ * Substitute `${prefix}`, `${app}`, `${device}` and `${group}` in a topic
+ * template, `prefix` being the rendered topic prefix.
  *
  * Wildcard characters in the substituted names are replaced by `_`.
  */
-char *mqtt_v2_topic_render(const char *tmpl, const char *app,
-                           const char *device, const char *group);
+char *mqtt_v2_topic_render(const char *tmpl, const char *prefix,
+                           const char *app, const char *device,
+                           const char *group);
 
 #ifdef __cplusplus
 }

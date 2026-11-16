@@ -26,6 +26,8 @@ extern "C" {
 
 #include <pthread.h>
 
+#include <jansson.h>
+
 #include "connection/mqtt_client.h"
 #include "neuron.h"
 #include "utils/uthash.h"
@@ -52,7 +54,8 @@ typedef struct {
 
 typedef struct {
     char             name[NEU_NODE_NAME_LEN];
-    mqtt_v2_group_t *groups; // sorted by name
+    mqtt_v2_group_t *groups;     // sorted by name
+    json_t *         properties; // of the driver node, NULL if none
     char *           state_topic;
     char *           data_topic;
     char *           write_req_topic;
@@ -65,6 +68,12 @@ typedef struct {
     bool             state_published;
     UT_hash_handle   hh;
 } mqtt_v2_device_t;
+
+// context of NEU_REQ_GET_NODE_PROPERTIES, whose response names no node
+typedef struct {
+    uint32_t magic;
+    char     device[NEU_NODE_NAME_LEN];
+} mqtt_v2_props_ctx_t;
 
 typedef struct mqtt_v2_write_ctx {
     uint32_t            magic;

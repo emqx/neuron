@@ -43,6 +43,9 @@ TAG2 = {
     "attribute": config.NEU_TAG_ATTRIBUTE_RW,
     "type": config.NEU_TYPE_INT16,
 }
+# `name` is shadowed by the fixed field of the device state
+PROPERTIES = {"location": "china", "line": 34, "ratio": 2.5,
+              "flags": [True, False], "name": "shadowed"}
 
 APP_STATE_TOPIC = f"neuron/{NODE}/state"
 DEV_STATE_TOPIC = f"neuron/{NODE}/{DRIVER}/state"
@@ -204,6 +207,16 @@ def subscribed(mocker):
 
 
 @pytest.fixture(scope="function")
+def properties(mocker):
+    api.add_node_properties_check(
+        DRIVER, [{"key": key, "value": value} for key, value in PROPERTIES.items()])
+    yield PROPERTIES
+    keys = [p["key"] for p in api.get_node_properties(DRIVER).json()["properties"]]
+    if keys:
+        api.delete_node_properties_check(DRIVER, keys)
+
+
+@pytest.fixture(scope="function")
 def watcher(mocker):
     w = Watcher(mocker.port, "#")
     yield w
@@ -228,7 +241,7 @@ class TestMqttV2:
             ("topic-prefix", "neuron/${device}"),
             ("data-template", "{\"a\": \"${tag.value}\"}"),
             ("data-template", "{\"a\": \"${nope}\"}"),
-            ("data-template", "{\"a\": \"${properties}\"}"),
+            ("data-template", "{\"a\": \"${properties[]}\"}"),
             ("data-template", "{\"a\": "),
             ("tag-template", "{\"a\": \"${tags}\"}"),
             ("offline-cache", 1),
@@ -336,6 +349,66 @@ class TestMqttV2:
                              lambda p: p is None) is None
 
     @description(
+        given="MQTT V2 node subscribing a driver with properties",
+        when="the properties are added, updated and deleted",
+        then="the retained device state follows, its fixed fields win",
+    )
+    def test_device_state_properties(self, mocker, conf_base, properties,
+                                     subscribed):
+        api.node_setting_check(NODE, conf_base)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+        state = wait_retained(mocker.port, DEV_STATE_TOPIC,
+                              lambda p: p and "location" in p)
+        assert DRIVER == state["name"]
+        for key in ("location", "line", "ratio", "flags"):
+            assert PROPERTIES[key] == state[key]
+
+        api.update_node_property_check(DRIVER, "line", 35)
+        state = wait_retained(mocker.port, DEV_STATE_TOPIC,
+                              lambda p: p and 35 == p.get("line"))
+        assert 35 == state["line"]
+
+        api.add_node_properties_check(DRIVER, [{"key": "vendor", "value": "acme"}])
+        state = wait_retained(mocker.port, DEV_STATE_TOPIC,
+                              lambda p: p and "vendor" in p)
+        assert "acme" == state["vendor"]
+
+        api.delete_node_properties_check(DRIVER, ["location", "vendor"])
+        state = wait_retained(
+            mocker.port, DEV_STATE_TOPIC,
+            lambda p: p and "location" not in p and "vendor" not in p)
+        assert 35 == state["line"]
+
+    @description(
+        given="MQTT V2 node with a data template using properties",
+        when="the subscribed group reports",
+        then="the data messages carry the device properties",
+    )
+    def test_data_properties(self, mocker, conf_base, properties, subscribed,
+                             watcher):
+        conf = {
+            **conf_base,
+            "data-template": json.dumps({
+                "loc": "${properties[location]}",
+                "props": "${properties}",
+                "values": "${tags_kv}",
+            }),
+            "tag-template": "${tag.value}",
+        }
+        api.node_setting_check(NODE, conf)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+
+        # reports may precede the properties
+        msg = watcher.wait(
+            lambda m: m.topic == DATA_TOPIC and "loc" in (payload_of(m) or {}),
+            timeout=8)
+        assert msg is not None
+        data = payload_of(msg)
+        assert "china" == data["loc"]
+        assert PROPERTIES == data["props"]
+        assert "tag0" in data["values"]
+
+    @description(
         given="MQTT V2 node with the default templates",
         when="the subscribed group reports",
         then="the data topic receives the device data",
@@ -399,6 +472,36 @@ class TestMqttV2:
         assert topic == data["topic"]
         assert {"tag2"} == set(data["values"])
         assert "tag0" not in data
+
+    @description(
+        given="MQTT V2 node subscribing groups with topics on the prefix",
+        when="the topic prefix changes",
+        then="the data topics follow the prefix, like the device topics",
+    )
+    def test_sub_topic_prefix(self, mocker, conf_base, watcher):
+        # what the dashboard fills in by default
+        api.subscribe_group_check(NODE, DRIVER, GROUP,
+                                  {"topic": "${prefix}/${device}/data"})
+        api.subscribe_group_check(NODE, DRIVER, GROUP2,
+                                  {"topic": "${prefix}/${device}/${group}"})
+        try:
+            api.node_setting_check(NODE, conf_base)
+            api.node_ctl(NODE, config.NEU_CTL_START)
+            assert watcher.wait(lambda m: m.topic == DATA_TOPIC, timeout=8)
+            assert watcher.wait(
+                lambda m: m.topic == f"neuron/{NODE}/{DRIVER}/{GROUP2}", timeout=8)
+
+            api.node_setting_check(NODE, {**conf_base, "topic-prefix": "plant/${app}"})
+            assert watcher.wait(
+                lambda m: m.topic == f"plant/{NODE}/{DRIVER}/data", timeout=8)
+            assert watcher.wait(
+                lambda m: m.topic == f"plant/{NODE}/{DRIVER}/{GROUP2}", timeout=8)
+            state = wait_retained(mocker.port, f"plant/{NODE}/{DRIVER}/state",
+                                  lambda p: p is not None)
+            assert DRIVER == state["name"]
+        finally:
+            api.unsubscribe_group(NODE, DRIVER, GROUP)
+            api.unsubscribe_group(NODE, DRIVER, GROUP2)
 
     @description(
         given="MQTT V2 node",

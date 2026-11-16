@@ -179,7 +179,9 @@ static void subscribe_device_locked(neu_plugin_t *    plugin,
     }
 
     if (NULL != device->write_sub_topic &&
-        0 != strcmp(device->write_sub_topic, device->write_req_topic)) {
+        0 !=
+            strncmp(device->write_sub_topic, device->write_req_topic,
+                    MQTT_V2_TOPIC_MAX_LEN + 1)) {
         unsubscribe_device_locked(plugin, device);
     }
 
@@ -215,8 +217,8 @@ int mqtt_v2_set_topics_locked(neu_plugin_t *plugin)
 
     snprintf(plugin->app, sizeof(plugin->app), "%s", plugin->common.name);
 
-    prefix = mqtt_v2_topic_render(plugin->config.topic_prefix, plugin->app,
-                                  NULL, NULL);
+    prefix = mqtt_v2_topic_render(plugin->config.topic_prefix, NULL,
+                                  plugin->app, NULL, NULL);
     if (NULL != prefix) {
         neu_asprintf(&state, "%s/state", prefix);
     }
@@ -391,6 +393,115 @@ int mqtt_v2_request_tags(neu_plugin_t *plugin)
     return neu_plugin_op(plugin, header, &cmd);
 }
 
+static int mqtt_v2_request_properties(neu_plugin_t *plugin, const char *device)
+{
+    neu_reqresp_head_t header         = { .type = NEU_REQ_GET_NODE_PROPERTIES };
+    neu_req_get_node_properties_t cmd = { 0 };
+    mqtt_v2_props_ctx_t *         ctx = calloc(1, sizeof(*ctx));
+
+    if (NULL == ctx) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    ctx->magic = MQTT_V2_PROPS_CTX_MAGIC;
+    strncpy(ctx->device, device, sizeof(ctx->device) - 1);
+    strncpy(cmd.node, device, sizeof(cmd.node) - 1);
+    header.ctx = ctx;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        free(ctx);
+        return NEU_ERR_IS_BUSY;
+    }
+    return NEU_ERR_SUCCESS;
+}
+
+void mqtt_v2_request_all_properties(neu_plugin_t *plugin)
+{
+    char(*names)[NEU_NODE_NAME_LEN] = NULL;
+    unsigned n                      = 0;
+
+    pthread_mutex_lock(&plugin->mtx);
+    names = calloc(HASH_COUNT(plugin->devices) + 1, sizeof(*names));
+    if (NULL != names) {
+        mqtt_v2_device_t *device = NULL, *tmp = NULL;
+        HASH_ITER(hh, plugin->devices, device, tmp)
+        {
+            memcpy(names[n++], device->name, sizeof(names[0]));
+        }
+    }
+    pthread_mutex_unlock(&plugin->mtx);
+
+    for (unsigned i = 0; i < n; ++i) {
+        mqtt_v2_request_properties(plugin, names[i]);
+    }
+    free(names);
+}
+
+static json_t *properties_to_object(neu_plugin_t *plugin,
+                                    const neu_resp_get_node_properties_t *resp)
+{
+    json_t *object = NULL;
+
+    for (size_t i = 0; i < resp->n_property; ++i) {
+        const neu_node_property_t *property = &resp->properties[i];
+        json_t *                   value    = json_loads(property->value_json,
+                                   JSON_DECODE_ANY | JSON_ALLOW_NUL, NULL);
+
+        if (NULL == value) {
+            plog_warn(plugin, "skip property `%s` of invalid value `%s`",
+                      property->key, property->value_json);
+            continue;
+        }
+        if (NULL == object && NULL == (object = json_object())) {
+            json_decref(value);
+            break;
+        }
+        json_object_set_new(object, property->key, value);
+    }
+
+    return object;
+}
+
+int mqtt_v2_handle_properties(neu_plugin_t *plugin, mqtt_v2_props_ctx_t *ctx,
+                              neu_resp_get_node_properties_t *resp)
+{
+    json_t *          properties = properties_to_object(plugin, resp);
+    mqtt_v2_device_t *device     = NULL;
+
+    neu_resp_get_node_properties_fini(resp);
+
+    pthread_mutex_lock(&plugin->mtx);
+    device = find_device_locked(plugin, ctx->device);
+    if (NULL != device &&
+        (NULL == device->properties || NULL == properties
+             ? device->properties != properties
+             : !json_equal(device->properties, properties))) {
+        plog_notice(plugin, "properties of device:%s changed", device->name);
+        json_decref(device->properties);
+        device->properties      = properties;
+        properties              = NULL;
+        device->state_published = false;
+        publish_device_state_locked(plugin, device);
+    }
+    pthread_mutex_unlock(&plugin->mtx);
+
+    json_decref(properties);
+    free(ctx);
+    return NEU_ERR_SUCCESS;
+}
+
+int mqtt_v2_handle_properties_changed(neu_plugin_t *plugin, const char *driver)
+{
+    bool subscribed = false;
+
+    pthread_mutex_lock(&plugin->mtx);
+    subscribed = NULL != find_device_locked(plugin, driver);
+    pthread_mutex_unlock(&plugin->mtx);
+
+    return subscribed ? mqtt_v2_request_properties(plugin, driver)
+                      : NEU_ERR_SUCCESS;
+}
+
 static void handle_app_state(neu_mqtt_qos_e qos, const char *topic,
                              const uint8_t *payload, uint32_t len, void *data,
                              trace_w3c_t *trace_w3c)
@@ -411,7 +522,7 @@ static void handle_app_state(neu_mqtt_qos_e qos, const char *topic,
     // one after this one has published the online state
     pthread_mutex_lock(&plugin->mtx);
     if (plugin->started && NULL != plugin->state_topic &&
-        0 == strcmp(topic, plugin->state_topic)) {
+        0 == strncmp(topic, plugin->state_topic, MQTT_V2_TOPIC_MAX_LEN + 1)) {
         plog_notice(plugin, "online state on %s overwritten, publish again",
                     topic);
         mqtt_v2_publish_app_state_locked(plugin, true);
@@ -449,8 +560,9 @@ static int publish_data_locked(neu_plugin_t *plugin, mqtt_v2_device_t *device,
         .group        = group->name,
         .sub_topic    = topic,
         .timestamp    = global_timestamp,
+        .properties   = device->properties,
         .tags         = tags,
-        .upload_err   = plugin->config.upload_err,
+        .upload_err   = mqtt_v2_tmpl_reports_error(plugin->config.tag_tmpl),
         .tag_tmpl     = plugin->config.tag_tmpl,
         .tag_info     = tag_info,
         .tag_info_ctx = group,
@@ -474,7 +586,9 @@ int mqtt_v2_handle_trans_data(neu_plugin_t *            plugin,
     mqtt_v2_device_t *device = NULL;
     mqtt_v2_group_t * group  = NULL;
 
-    if (0 == mqtt_v2_tags_count(data->tags, plugin->config.upload_err)) {
+    if (0 ==
+        mqtt_v2_tags_count(
+            data->tags, mqtt_v2_tmpl_reports_error(plugin->config.tag_tmpl))) {
         plog_debug(plugin, "driver:%s group:%s, no tags to upload",
                    data->driver, data->group);
         return NEU_ERR_SUCCESS;
@@ -488,9 +602,10 @@ int mqtt_v2_handle_trans_data(neu_plugin_t *            plugin,
         rv = NEU_ERR_MQTT_FAILURE;
     } else {
         device = find_device_locked(plugin, data->driver);
-        group  = NULL != device ? mqtt_v2_device_find_group(device, data->group)
-                               : NULL;
-        if (NULL == group) {
+        if (NULL != device) {
+            group = mqtt_v2_device_find_group(device, data->group);
+        }
+        if (NULL == device || NULL == group) {
             plog_error(plugin, "driver:%s group:%s not subscribed",
                        data->driver, data->group);
             rv = NEU_ERR_GROUP_NOT_SUBSCRIBE;
@@ -562,9 +677,12 @@ int mqtt_v2_handle_subscribe(neu_plugin_t *plugin, neu_req_subscribe_t *req,
         }
     }
 
-    if (NULL == group ||
-        0 != mqtt_v2_group_set_topic(group, topic, plugin->app, device->name)) {
-        if (NULL == group) {
+    if (NULL == device || NULL == group ||
+        0 !=
+            mqtt_v2_group_set_topic(group, topic, plugin->prefix, plugin->app,
+                                    device->name)) {
+        // the topic is taken by mqtt_v2_group_set_topic only
+        if (NULL == device || NULL == group) {
             free(topic);
         }
         rv = NEU_ERR_EINTERNAL;
@@ -583,6 +701,7 @@ int mqtt_v2_handle_subscribe(neu_plugin_t *plugin, neu_req_subscribe_t *req,
         mqtt_v2_request_tags(plugin);
     }
     if (poll) {
+        mqtt_v2_request_properties(plugin, req->driver);
         mqtt_v2_request_nodes_state(plugin);
     }
     return rv;
@@ -618,7 +737,8 @@ int mqtt_v2_handle_update_group(neu_plugin_t *          plugin,
     mqtt_v2_device_t *device = NULL;
     mqtt_v2_group_t * group  = NULL;
 
-    if ('\0' == req->new_name[0] || 0 == strcmp(req->group, req->new_name)) {
+    if ('\0' == req->new_name[0] ||
+        0 == strncmp(req->group, req->new_name, NEU_GROUP_NAME_LEN)) {
         return NEU_ERR_SUCCESS;
     }
 
@@ -632,7 +752,8 @@ int mqtt_v2_handle_update_group(neu_plugin_t *          plugin,
         NULL == mqtt_v2_device_find_group(device, req->new_name)) {
         plog_notice(plugin, "rename device:%s group:%s to %s", req->driver,
                     req->group, req->new_name);
-        mqtt_v2_device_rename_group(device, group, req->new_name, plugin->app);
+        mqtt_v2_device_rename_group(device, group, req->new_name,
+                                    plugin->prefix, plugin->app);
     }
     pthread_mutex_unlock(&plugin->mtx);
 
@@ -959,7 +1080,9 @@ static int send_write_gtags(neu_plugin_t *plugin, mqtt_v2_write_ctx_t *ctx)
         neu_req_gtag_group_t *group = NULL;
 
         for (int k = 0; k < cmd.n_group; ++k) {
-            if (0 == strcmp(cmd.groups[k].group, ctx->groups[i])) {
+            if (0 ==
+                strncmp(cmd.groups[k].group, ctx->groups[i],
+                        NEU_GROUP_NAME_LEN)) {
                 group = &cmd.groups[k];
                 break;
             }
@@ -1003,7 +1126,7 @@ static void dispatch_write(neu_plugin_t *plugin, mqtt_v2_write_ctx_t *ctx)
     int                  rv        = NEU_ERR_SUCCESS;
 
     for (size_t i = 1; i < req->n_value; ++i) {
-        if (0 != strcmp(ctx->groups[i], ctx->groups[0])) {
+        if (0 != strncmp(ctx->groups[i], ctx->groups[0], NEU_GROUP_NAME_LEN)) {
             one_group = false;
             break;
         }
@@ -1071,7 +1194,9 @@ find_write_device_locked(const neu_plugin_t *plugin, const char *topic)
     HASH_ITER(hh, plugin->devices, device, tmp)
     {
         if (NULL != device->write_req_topic &&
-            0 == strcmp(device->write_req_topic, topic)) {
+            0 ==
+                strncmp(device->write_req_topic, topic,
+                        MQTT_V2_TOPIC_MAX_LEN + 1)) {
             return device;
         }
     }
@@ -1140,8 +1265,12 @@ int mqtt_v2_handle_write_resp(neu_plugin_t *plugin, mqtt_v2_write_ctx_t *ctx,
         utarray_foreach(tags, neu_resp_write_tags_ele_t *, ele)
         {
             for (size_t i = 0; i < req->n_value; ++i) {
-                if (0 == strcmp(req->values[i].tag, ele->tag) &&
-                    0 == strcmp(ctx->groups[i], ele->group)) {
+                if (0 ==
+                        strncmp(req->values[i].tag, ele->tag,
+                                NEU_TAG_NAME_LEN) &&
+                    0 ==
+                        strncmp(ctx->groups[i], ele->group,
+                                NEU_GROUP_NAME_LEN)) {
                     req->values[i].error = ele->error;
                 }
             }

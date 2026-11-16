@@ -233,7 +233,9 @@ int mqtt_v2_write_req_decode(const uint8_t *payload, uint32_t len,
         req->version = strdup(json_string_value(version));
         decode       = NULL;
         for (size_t i = 0; i < sizeof(decoders) / sizeof(decoders[0]); ++i) {
-            if (0 == strcmp(req->version, decoders[i].version)) {
+            if (0 ==
+                strncmp(req->version, decoders[i].version,
+                        strlen(decoders[i].version) + 1)) {
                 decode = decoders[i].decode;
                 break;
             }

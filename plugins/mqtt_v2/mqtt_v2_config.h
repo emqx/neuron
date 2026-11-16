@@ -54,7 +54,6 @@ typedef struct {
     char *             topic_prefix; // may contain `${app}`
     mqtt_v2_tmpl_t *   data_tmpl;
     mqtt_v2_tmpl_t *   tag_tmpl;
-    bool               upload_err;
     bool               cache;
     size_t             cache_mem_size;  // in bytes
     size_t             cache_disk_size; // in bytes
