@@ -50,6 +50,7 @@
 
 #include "manager.h"
 #include "manager_internal.h"
+#include "mqtt_v2/mqtt_v2_params.h"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME DEFAULT_DASHBOARD_PLUGIN_NAME
@@ -912,7 +913,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_reqresp_node_deleted_t resp = { 0 };
         snprintf(resp.node, sizeof(resp.node), "%s", header->receiver);
         // notify MQTT about node removal
-        if (0 == strcmp(adapter->module->module_name, "MQTT")) {
+        if (0 == strcmp(adapter->module->module_name, "MQTT") ||
+            0 == strcmp(adapter->module->module_name, MQTT_V2_MODULE_NAME)) {
             msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
             if (NULL != msg) {
                 neu_reqresp_head_t *hd = neu_msg_get_header(msg);

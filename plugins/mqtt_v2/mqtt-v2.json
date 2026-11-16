@@ -1,0 +1,257 @@
+{
+	"version": {
+		"name": "MQTT Version",
+		"name_zh": "MQTT 版本",
+		"type": "map",
+		"attribute": "optional",
+		"default": 4,
+		"valid": {
+			"map": [
+				{
+					"key": "3.1.1",
+					"value": 4
+				},
+				{
+					"key": "5.0",
+					"value": 5
+				}
+			]
+		}
+	},
+	"client-id": {
+		"name": "Client ID",
+		"name_zh": "客户端 ID",
+		"type": "string",
+		"attribute": "required",
+		"default": "neuron_${random_str}",
+		"valid": {
+			"length": 255
+		}
+	},
+	"qos": {
+		"name": "QoS Level",
+		"name_zh": "QoS 等级",
+		"description": "MQTT QoS level of data messages, write requests and write responses. State messages always use QoS 1.",
+		"description_zh": "数据消息、控制请求与控制响应使用的 MQTT 服务质量等级。状态消息固定使用 QoS 1。",
+		"type": "map",
+		"attribute": "optional",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "QoS 0",
+					"value": 0
+				},
+				{
+					"key": "QoS 1",
+					"value": 1
+				},
+				{
+					"key": "QoS 2",
+					"value": 2
+				}
+			]
+		}
+	},
+	"topic-prefix": {
+		"name": "Topic Prefix",
+		"name_zh": "Topic 前缀",
+		"description": "Prefix of all topics, `${app}` is replaced by the app name. The app online state is published to `{prefix}/state`. Each subscribed device uses `{prefix}/{device}/state`, `{prefix}/{device}/data`, `{prefix}/{device}/write/request` and `{prefix}/{device}/write/response`. A subscription can set its own data topic with the `topic` parameter.",
+		"description_zh": "所有 topic 的前缀，`${app}` 会替换为北向应用名称。北向在线状态发布到 `{前缀}/state`。每个订阅的设备使用 `{前缀}/{设备}/state`、`{前缀}/{设备}/data`、`{前缀}/{设备}/write/request` 和 `{前缀}/{设备}/write/response`。订阅时可通过 `topic` 参数单独指定该组的数据 topic。",
+		"type": "string",
+		"attribute": "optional",
+		"default": "neuron/${app}",
+		"valid": {
+			"length": 255
+		}
+	},
+	"data-template": {
+		"name": "Data Template",
+		"name_zh": "数据模板",
+		"description": "JSON template of data messages, rendered for every report of a subscribed group. Variables: ${app}, ${device}, ${group}, ${timestamp}, ${TIME_RFC3339}, ${TIME_UTC}, ${TIME_LOCAL}, ${TIME_UNIX}, ${TIME:<strftime format>}, ${sub_topic}, ${tags} (array), ${tags_kv} (object keyed by tag name), ${tags[name]}, ${tags[name].value} (any tag attribute). A field whose variable has no value is left out.",
+		"description_zh": "数据消息的 JSON 模板，订阅组每次上报渲染一次。变量：${app}、${device}、${group}、${timestamp}、${TIME_RFC3339}、${TIME_UTC}、${TIME_LOCAL}、${TIME_UNIX}、${TIME:<strftime 格式>}、${sub_topic}、${tags}（数组）、${tags_kv}（以点位名为 key 的对象）、${tags[名称]}、${tags[名称].value}（任意点位属性）。变量取不到值时，该字段不输出。",
+		"type": "json",
+		"attribute": "optional",
+		"default": "{\n  \"timestamp\": \"${timestamp}\",\n  \"device\": \"${device}\",\n  \"group\": \"${group}\",\n  \"tags\": \"${tags}\"\n}",
+		"valid": {
+			"length": 16384
+		}
+	},
+	"tag-template": {
+		"name": "Tag Template",
+		"name_zh": "点位模板",
+		"description": "JSON template of every tag expanded by ${tags}, ${tags_kv} and ${tags[name]}. Variables: ${tag.name}, ${tag.value}, ${tag.timestamp}, ${tag.quality}, ${tag.description}, ${tag.unit}, ${tag.error}, ${tag.type}, and the non tag variables of the data template. A field whose variable has no value is left out, e.g. `error` of a tag read successfully.",
+		"description_zh": "${tags}、${tags_kv}、${tags[名称]} 展开每个点位时使用的 JSON 模板。变量：${tag.name}、${tag.value}、${tag.timestamp}、${tag.quality}、${tag.description}、${tag.unit}、${tag.error}、${tag.type}，以及数据模板中与点位无关的变量。变量取不到值时，该字段不输出，例如读取成功的点位没有 `error`。",
+		"type": "json",
+		"attribute": "optional",
+		"default": "{\n  \"name\": \"${tag.name}\",\n  \"value\": \"${tag.value}\",\n  \"timestamp\": \"${tag.timestamp}\",\n  \"quality\": \"${tag.quality}\",\n  \"description\": \"${tag.description}\",\n  \"unit\": \"${tag.unit}\",\n  \"error\": \"${tag.error}\"\n}",
+		"valid": {
+			"length": 16384
+		}
+	},
+	"upload-err": {
+		"name": "Upload Tag Error Code",
+		"name_zh": "上报点位错误码",
+		"description": "Report the tags that fail to be read, with their error code in ${tag.error}.",
+		"description_zh": "上报采集失败的点位，错误码通过 ${tag.error} 输出。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": true,
+		"valid": {}
+	},
+	"offline-cache": {
+		"name": "Offline Data Caching",
+		"name_zh": "离线缓存",
+		"description": "Offline caching switch. Cache data messages when offline, and sync cached messages when back online. State messages are not cached, they are published again once connected.",
+		"description_zh": "离线缓存开关。连接断开时缓存数据消息，连接重建时同步缓存的消息到服务器。状态消息不缓存，重新连接后会重新发布。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": false,
+		"valid": {}
+	},
+	"cache-mem-size": {
+		"name": "Cache Memory Size (MB)",
+		"name_zh": "缓存内存大小（MB）",
+		"description": "Max in-memory cache size in megabytes when MQTT connection exception occurs. Should be smaller than cache disk size.",
+		"description_zh": "当 MQTT 连接异常时，最大的内存缓存大小（单位：MB）。应该小于缓存磁盘大小。",
+		"type": "int",
+		"attribute": "required",
+		"condition": {
+			"field": "offline-cache",
+			"value": true
+		},
+		"default": 1,
+		"valid": {
+			"min": 1,
+			"max": 1024
+		}
+	},
+	"cache-disk-size": {
+		"name": "Cache Disk Size (MB)",
+		"name_zh": "缓存磁盘大小（MB）",
+		"description": "Max in-disk cache size in megabytes when MQTT connection exception occurs. Should be larger than cache memory size.",
+		"description_zh": "当 MQTT 连接异常时，最大的磁盘缓存大小（单位：MB）。应该大于缓存内存大小。",
+		"type": "int",
+		"attribute": "required",
+		"condition": {
+			"field": "offline-cache",
+			"value": true
+		},
+		"default": 10,
+		"valid": {
+			"min": 1,
+			"max": 10240
+		}
+	},
+	"cache-sync-interval": {
+		"name": "Cache Sync Interval (MS)",
+		"name_zh": "缓存消息重传间隔（MS）",
+		"type": "int",
+		"attribute": "required",
+		"condition": {
+			"field": "offline-cache",
+			"value": true
+		},
+		"default": 100,
+		"valid": {
+			"min": 10,
+			"max": 12000
+		}
+	},
+	"host": {
+		"name": "Broker Host",
+		"name_zh": "服务器地址",
+		"attribute": "required",
+		"type": "string",
+		"default": "broker.emqx.io",
+		"valid": {
+			"length": 255
+		}
+	},
+	"port": {
+		"name": "Broker Port",
+		"name_zh": "服务器端口",
+		"attribute": "required",
+		"type": "int",
+		"default": 1883,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		}
+	},
+	"username": {
+		"name": "Username",
+		"name_zh": "用户名",
+		"attribute": "optional",
+		"type": "string",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"password": {
+		"name": "Password",
+		"name_zh": "密码",
+		"attribute": "optional",
+		"type": "string",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"ssl": {
+		"name": "SSL",
+		"name_zh": "SSL",
+		"description": "Enable SSL connection",
+		"description_zh": "是否启用 SSL 连接",
+		"attribute": "optional",
+		"type": "bool",
+		"default": false,
+		"valid": {}
+	},
+	"ca": {
+		"name": "CA",
+		"name_zh": "CA 证书",
+		"description": "CA certificate which signs the server certificate",
+		"description_zh": "签发服务器证书的 CA 证书",
+		"attribute": "required",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"valid": {
+			"length": 81960
+		}
+	},
+	"cert": {
+		"name": "Client Cert",
+		"name_zh": "客户端证书",
+		"description": "Client x509 certificate when using two way authentication",
+		"description_zh": "使用双向认证时，客户端的 x509 证书",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"valid": {
+			"length": 81960
+		}
+	},
+	"key": {
+		"name": "Client Private Key",
+		"name_zh": "客户端私钥",
+		"description": "Client private key when using two way authentication",
+		"description_zh": "使用双向认证时，客户端的私钥",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"valid": {
+			"length": 81960
+		}
+	}
+}

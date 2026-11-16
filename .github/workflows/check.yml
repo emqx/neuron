@@ -119,7 +119,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        plugin: [core, ekuiper, modbus, mqtt, metrics]
+        plugin: [core, ekuiper, modbus, mqtt, mqtt-v2, metrics]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,7 +128,7 @@ jobs:
       - name: setup dependencies
         run: |
           sudo apt-get install -y mosquitto
-          pip install -U pytest requests prometheus-client gmqtt pynng sniffio
+          pip install -U pytest requests prometheus-client gmqtt pynng sniffio paho-mqtt
           sudo apt-get install -y socat
 
       - uses: actions/download-artifact@v4
@@ -146,6 +146,7 @@ jobs:
             pytest -s -v tests/ft \
               --ignore=tests/ft/app/test_ekuiper.py          \
               --ignore=tests/ft/app/test_mqtt.py             \
+              --ignore=tests/ft/app/test_mqtt_v2.py          \
               --ignore=tests/ft/app/test_azure.py            \
               --ignore=tests/ft/app/test_kafka.py            \
               --ignore=tests/ft/driver/test_modbus.py        \
@@ -159,6 +160,8 @@ jobs:
             pytest -s -v tests/ft/driver/"test_modbus.py"
           elif [ "${{ matrix.plugin }}" = "mqtt" ]; then
             pytest -s -v tests/ft/app/"test_mqtt.py"
+          elif [ "${{ matrix.plugin }}" = "mqtt-v2" ]; then
+            pytest -s -v tests/ft/app/"test_mqtt_v2.py"
           else
             pytest -s -v tests/ft/metrics/"test_metrics.py"          
           fi
