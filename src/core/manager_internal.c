@@ -29,6 +29,7 @@
 #include "base/msg_internal.h"
 
 #include "manager_internal.h"
+#include "mqtt_v2/mqtt_v2_params.h"
 #include "storage.h"
 
 int neu_manager_add_plugin(neu_manager_t *manager, const char *library)
@@ -264,6 +265,13 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
         free(elem.v.val_str);
     }
 
+    if (0 == strcmp(adapter->module->module_name, MQTT_V2_MODULE_NAME)) {
+        int ret = mqtt_v2_params_check(params);
+        if (0 != ret) {
+            return ret;
+        }
+    }
+
     if (NEU_NA_TYPE_APP != neu_adapter_get_type(adapter)) {
         return NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE;
     }
@@ -275,6 +283,16 @@ int neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
                                  const char *driver, const char *group,
                                  const char *params, const char *static_tags)
 {
+    const neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, app);
+    if (NULL != adapter &&
+        0 == strcmp(adapter->module->module_name, MQTT_V2_MODULE_NAME)) {
+        int ret = mqtt_v2_params_check(params);
+        if (0 != ret) {
+            return ret;
+        }
+    }
+
     return neu_subscribe_manager_update_params(
         manager->subscribe_manager, app, driver, group, params, static_tags);
 }
