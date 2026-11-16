@@ -2201,6 +2201,10 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2227,6 +2231,8 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
     ]
 }
 ```
+
+`properties` 可选，为 driver 的自定义属性，每项的格式和取值规则与 [Node 自定义属性](#node-自定义属性) 相同，key 不能重复。导入会替换同名 driver，其原有属性不保留。
 
 ### 响应
 
@@ -2266,7 +2272,7 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
 
 ### 响应
 
-如果成功，返回所有南向节点。
+如果成功，返回所有南向节点。driver 有自定义属性时包含 `properties`，没有属性时不返回该字段。
 
 ```json
 {
@@ -2280,6 +2286,10 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",

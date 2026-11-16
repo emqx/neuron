@@ -1323,12 +1323,14 @@ typedef struct {
 } neu_reqresp_trans_data_t;
 
 typedef struct {
-    char *          node;
-    char *          plugin;
-    char *          setting;
-    char *          tags;
-    uint16_t        n_group;
-    neu_gdatatag_t *groups;
+    char *               node;
+    char *               plugin;
+    char *               setting;
+    char *               tags;
+    uint16_t             n_group;
+    neu_gdatatag_t *     groups;
+    size_t               n_property;
+    neu_node_property_t *properties;
 } neu_req_driver_t;
 
 static inline void neu_req_driver_fini(neu_req_driver_t *req)
@@ -1338,6 +1340,7 @@ static inline void neu_req_driver_fini(neu_req_driver_t *req)
     free(req->setting);
     if (req->tags)
         free(req->tags);
+    neu_node_properties_free(req->properties, req->n_property);
 
     for (uint16_t i = 0; i < req->n_group; i++) {
         for (int j = 0; j < req->groups[i].n_tag; j++) {

@@ -1831,6 +1831,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             for (uint16_t i = 0; i < cmd->n_driver; ++i) {
                 neu_req_driver_t *driver = &cmd->drivers[i];
                 manager_storage_add_node(manager, driver->node, driver->tags);
+                if (driver->n_property > 0 &&
+                    NEU_ERR_SUCCESS !=
+                        neu_persister_add_node_properties(driver->node,
+                                                          driver->properties,
+                                                          driver->n_property)) {
+                    nlog_error("fail to store properties of driver:%s",
+                               driver->node);
+                }
                 adapter_storage_setting(driver->node, driver->setting);
                 for (uint16_t j = 0; j < driver->n_group; j++) {
                     adapter_storage_add_group(driver->node,

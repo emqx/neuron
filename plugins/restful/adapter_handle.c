@@ -682,10 +682,14 @@ check_end:
         cmd.drivers[i].setting    = driver->node.setting;
         cmd.drivers[i].n_group    = driver->gtags.len;
         cmd.drivers[i].tags       = driver->node.tags;
+        cmd.drivers[i].n_property = driver->n_property;
+        cmd.drivers[i].properties = driver->properties;
         driver->node.name         = NULL; // moved
         driver->node.plugin       = NULL; // moved
         driver->node.setting      = NULL; // moved
         driver->node.tags         = NULL; // moved
+        driver->n_property        = 0;    // moved
+        driver->properties        = NULL; // moved
         cmd.n_driver += 1;
 
         ret = json_to_gdatatags(&driver->gtags, &cmd.drivers[i].groups);

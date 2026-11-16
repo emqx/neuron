@@ -266,3 +266,66 @@ class TestNodeProperty:
             json=body if method != "GET" else None)
         assert_error(response, 401, NEU_ERR_NEED_TOKEN)
         assert_properties(node, {})
+
+
+EXPORTED = {"location": "Building A", "ratio": 2.0, "flags": [True, False],
+            "limits": [0, 12.5], "empty": []}
+
+
+@pytest.fixture
+def export_driver(class_setup_and_teardown):
+    driver = "property-export"
+    api.add_node_check(driver, config.PLUGIN_MODBUS_TCP)
+    # a driver exports its settings, which importing requires
+    assert 200 == api.modbus_tcp_node_setting(driver, 502).status_code
+    try:
+        yield driver
+    finally:
+        api.del_node(driver)
+
+
+class TestDriverPropertyExport:
+    def test_export_import(self, export_driver, class_setup_and_teardown):
+        driver = export_driver
+        api.add_node_properties_check(
+            driver, [{"key": key, "value": value} for key, value in EXPORTED.items()])
+
+        response = api.get_drivers([driver])
+        assert response.status_code == 200, response.text
+        nodes = response.json()["nodes"]
+        assert [driver] == [node["name"] for node in nodes]
+        exported = {item["key"]: item["value"] for item in nodes[0]["properties"]}
+        assert exported.keys() == EXPORTED.keys()
+        for key, value in EXPORTED.items():
+            assert_value(exported[key], value)
+
+        # importing replaces the driver, along with its properties
+        api.update_node_property_check(driver, "location", "elsewhere")
+        api.add_node_properties_check(driver, [{"key": "extra", "value": 1}])
+        response = api.put_drivers(nodes)
+        assert response.status_code == 200, response.text
+        assert_properties(driver, EXPORTED)
+
+        class_setup_and_teardown.restart()
+        assert_properties(driver, EXPORTED)
+
+        # a driver without properties exports none, and imports none
+        api.delete_node_properties_check(driver, list(EXPORTED))
+        nodes = api.get_drivers([driver]).json()["nodes"]
+        assert "properties" not in nodes[0]
+        api.add_node_properties_check(driver, [{"key": "extra", "value": 1}])
+        response = api.put_drivers(nodes)
+        assert response.status_code == 200, response.text
+        assert_properties(driver, {})
+
+    @pytest.mark.parametrize("properties", [
+        {"a": 1}, [{"key": "a", "value": None}], [{"key": "", "value": 1}],
+        [{"key": "a", "value": 1}, {"key": "a", "value": 2}]])
+    def test_import_invalid(self, class_setup_and_teardown, properties):
+        driver = "property-import"
+        response = api.put_drivers([{
+            "name": driver, "plugin": config.PLUGIN_MODBUS_TCP,
+            "params": {"host": "127.0.0.1", "port": 502}, "groups": [],
+            "properties": properties}])
+        assert_error(response, 400, NEU_ERR_BODY_IS_WRONG)
+        assert_error(api.get_node_properties(driver), 404, NEU_ERR_NODE_NOT_EXIST)

@@ -57,6 +57,7 @@ typedef enum {
     STATE_GET_SUBSCRIPTION,
     STATE_GET_APP_SETTING,
     STATE_GET_DRIVER_SETTING,
+    STATE_GET_DRIVER_PROPERTIES,
     STATE_DEL_APP,
     STATE_DEL_DRIVER,
     STATE_ADD_NODE,
@@ -119,6 +120,9 @@ static int get_setting_resp(context_t *                  ctx,
                             neu_resp_get_node_setting_t *setting);
 static int get_driver_setting_resp(context_t *                  ctx,
                                    neu_resp_get_node_setting_t *setting);
+static int get_properties(context_t *ctx, neu_resp_node_info_t *info);
+static int get_driver_properties_resp(context_t *                     ctx,
+                                      neu_resp_get_node_properties_t *resp);
 
 static int del_node(context_t *ctx, neu_resp_node_info_t *info);
 static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
@@ -215,6 +219,7 @@ static void context_free(context_t *ctx)
         for (int i = 0; i < ctx->jdrivers.n_driver; ++i) {
             neu_json_driver_t *driver = &ctx->jdrivers.drivers[i];
             free(driver->node.setting);
+            neu_node_properties_free(driver->properties, driver->n_property);
             for (int j = 0; j < driver->gtags.len; ++j) {
                 for (int k = 0; k < driver->gtags.gtags[j].n_tag; k++) {
                     neu_json_decode_tag_fini(&(driver->gtags.gtags[j].tags[k]));
@@ -551,6 +556,18 @@ static void get_drivers_context_next(context_t *ctx, neu_reqresp_type_e type,
         ctx->iter = utarray_next(ctx->drivers, ctx->iter);
         if (ctx->iter) {
             NEXT(ctx, get_setting, ctx->iter);
+            break;
+        }
+        ctx->state = STATE_GET_DRIVER_PROPERTIES;
+        // fall through
+    case STATE_GET_DRIVER_PROPERTIES:
+        if (NULL != ctx->iter && NEU_RESP_GET_NODE_PROPERTIES == type) {
+            NEXT(ctx, get_driver_properties_resp, data);
+        }
+        // a driver deleted meanwhile is exported without properties
+        ctx->iter = utarray_next(ctx->drivers, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_properties, ctx->iter);
             break;
         }
         NEXT(ctx, get_groups, 0);
@@ -1406,6 +1423,43 @@ static int get_driver_setting_resp(context_t *                  ctx,
     }
 
     ctx->jdrivers.drivers[i].node.setting = setting->setting;
+    return 0;
+}
+
+static int get_properties(context_t *ctx, neu_resp_node_info_t *info)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_GET_NODE_PROPERTIES,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+
+    neu_req_get_node_properties_t cmd = { 0 };
+    strncpy(cmd.node, info->node, NEU_NODE_NAME_LEN - 1);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+// the response names no node, it belongs to the driver at `ctx->iter`
+static int get_driver_properties_resp(context_t *                     ctx,
+                                      neu_resp_get_node_properties_t *resp)
+{
+    int i = utarray_eltidx(ctx->drivers, ctx->iter);
+    if (i >= ctx->jdrivers.n_driver) {
+        neu_resp_get_node_properties_fini(resp);
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    ctx->jdrivers.drivers[i].n_property = resp->n_property;
+    ctx->jdrivers.drivers[i].properties = resp->properties;
+    resp->n_property                    = 0; // moved
+    resp->properties                    = NULL;
     return 0;
 }
 
