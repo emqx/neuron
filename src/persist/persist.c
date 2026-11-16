@@ -360,6 +360,34 @@ int neu_persister_update_node_state(const char *node_name, int state)
     return g_impl->vtbl->update_node_state(g_impl, node_name, state);
 }
 
+int neu_persister_add_node_properties(const char *               node,
+                                      const neu_node_property_t *properties,
+                                      size_t                     n_property)
+{
+    return g_impl->vtbl->add_node_properties(g_impl, node, properties,
+                                             n_property);
+}
+
+int neu_persister_delete_node_properties(const char *       node,
+                                         const char *const *keys, size_t n_key)
+{
+    return g_impl->vtbl->delete_node_properties(g_impl, node, keys, n_key);
+}
+
+int neu_persister_update_node_property(const char *               node,
+                                       const neu_node_property_t *property)
+{
+    return g_impl->vtbl->update_node_property(g_impl, node, property);
+}
+
+int neu_persister_load_node_properties(const char *          node,
+                                       neu_node_property_t **properties,
+                                       size_t *              n_property)
+{
+    return g_impl->vtbl->load_node_properties(g_impl, node, properties,
+                                              n_property);
+}
+
 int neu_persister_store_tag(const char *driver_name, const char *group_name,
                             const neu_datatag_t *tag)
 {

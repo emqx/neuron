@@ -26,11 +26,13 @@ extern "C" {
 
 #include <pthread.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "json/neu_json_rw.h"
 
 #include "define.h"
 #include "errcodes.h"
+#include "property.h"
 #include "tag.h"
 #include "type.h"
 #include <math.h>
@@ -206,6 +208,12 @@ typedef enum neu_reqresp_type {
     NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD,
     NEU_REQ_SERVER_AUTH_USER_INFO,
     NEU_RESP_SERVER_AUTH_USER_INFO,
+
+    NEU_REQ_ADD_NODE_PROPERTIES,
+    NEU_REQ_DELETE_NODE_PROPERTIES,
+    NEU_REQ_UPDATE_NODE_PROPERTY,
+    NEU_REQ_GET_NODE_PROPERTIES,
+    NEU_RESP_GET_NODE_PROPERTIES,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -374,6 +382,12 @@ static const char *neu_reqresp_type_string_t[] = {
         "NEU_REQ_SERVER_AUTH_USER_UPDATE_PWD",
     [NEU_REQ_SERVER_AUTH_USER_INFO]  = "NEU_REQ_SERVER_AUTH_USER_INFO",
     [NEU_RESP_SERVER_AUTH_USER_INFO] = "NEU_RESP_SERVER_AUTH_USER_INFO",
+
+    [NEU_REQ_ADD_NODE_PROPERTIES]    = "NEU_REQ_ADD_NODE_PROPERTIES",
+    [NEU_REQ_DELETE_NODE_PROPERTIES] = "NEU_REQ_DELETE_NODE_PROPERTIES",
+    [NEU_REQ_UPDATE_NODE_PROPERTY]   = "NEU_REQ_UPDATE_NODE_PROPERTY",
+    [NEU_REQ_GET_NODE_PROPERTIES]    = "NEU_REQ_GET_NODE_PROPERTIES",
+    [NEU_RESP_GET_NODE_PROPERTIES]   = "NEU_RESP_GET_NODE_PROPERTIES",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -553,6 +567,65 @@ typedef struct neu_req_update_node_tag {
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
 } neu_req_del_node_t;
+
+typedef struct neu_req_add_node_properties {
+    char                 node[NEU_NODE_NAME_LEN];
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_req_add_node_properties_t;
+
+static inline void
+neu_req_add_node_properties_fini(neu_req_add_node_properties_t *req)
+{
+    neu_node_properties_free(req->properties, req->n_property);
+    req->properties = NULL;
+    req->n_property = 0;
+}
+
+typedef struct neu_req_delete_node_properties {
+    char   node[NEU_NODE_NAME_LEN];
+    size_t n_key;
+    char **keys;
+} neu_req_delete_node_properties_t;
+
+static inline void
+neu_req_delete_node_properties_fini(neu_req_delete_node_properties_t *req)
+{
+    for (size_t i = 0; i < req->n_key; ++i) {
+        free(req->keys[i]);
+    }
+    free(req->keys);
+    req->keys  = NULL;
+    req->n_key = 0;
+}
+
+typedef struct neu_req_update_node_property {
+    char                node[NEU_NODE_NAME_LEN];
+    neu_node_property_t property;
+} neu_req_update_node_property_t;
+
+static inline void
+neu_req_update_node_property_fini(neu_req_update_node_property_t *req)
+{
+    neu_node_property_fini(&req->property);
+}
+
+typedef struct neu_req_get_node_properties {
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_get_node_properties_t;
+
+typedef struct neu_resp_get_node_properties {
+    size_t               n_property;
+    neu_node_property_t *properties;
+} neu_resp_get_node_properties_t;
+
+static inline void
+neu_resp_get_node_properties_fini(neu_resp_get_node_properties_t *resp)
+{
+    neu_node_properties_free(resp->properties, resp->n_property);
+    resp->properties = NULL;
+    resp->n_property = 0;
+}
 
 typedef struct neu_req_get_node {
     neu_node_type_e type;
@@ -775,8 +848,33 @@ typedef struct neu_req_get_tag {
     char name[NEU_TAG_NAME_LEN];
 } neu_req_get_tag_t;
 
+typedef struct {
+    neu_datatag_t tag;
+    neu_type_e    resolved_type;
+} neu_resp_tag_info_t;
+
+static inline void neu_resp_tag_info_copy(void *dst, const void *src)
+{
+    neu_resp_tag_info_t *      to   = (neu_resp_tag_info_t *) dst;
+    const neu_resp_tag_info_t *from = (const neu_resp_tag_info_t *) src;
+    neu_tag_get_icd()->copy(&to->tag, &from->tag);
+    to->resolved_type = from->resolved_type;
+}
+
+static inline void neu_resp_tag_info_fini(void *item)
+{
+    neu_tag_fini(&((neu_resp_tag_info_t *) item)->tag);
+}
+
+static inline UT_icd *neu_resp_tag_info_icd(void)
+{
+    static UT_icd icd = { sizeof(neu_resp_tag_info_t), NULL,
+                          neu_resp_tag_info_copy, neu_resp_tag_info_fini };
+    return &icd;
+}
+
 typedef struct neu_resp_get_tag {
-    UT_array *tags; // array neu_datatag_t
+    UT_array *tags; // array neu_resp_tag_info_t
 } neu_resp_get_tag_t;
 
 typedef struct {
@@ -1003,6 +1101,7 @@ typedef struct neu_req_read_group_paginate {
     char *group;
     char *name;
     char *desc;
+    char *sort_by;
     bool  sync;
     int   current_page;
     int   page_size;
@@ -1016,6 +1115,7 @@ neu_req_read_group_paginate_fini(neu_req_read_group_paginate_t *req)
     free(req->group);
     free(req->name);
     free(req->desc);
+    free(req->sort_by);
 }
 
 typedef struct neu_req_write_tag {
@@ -1032,6 +1132,12 @@ static inline void neu_req_write_tag_fini(neu_req_write_tag_t *req)
     free(req->tag);
 }
 
+static inline void neu_req_write_tag_value_fini(neu_req_write_tag_t *req)
+{
+    neu_free_dvalue(&req->value);
+    memset(&req->value, 0, sizeof(req->value));
+}
+
 typedef struct neu_resp_tag_value {
     char         tag[NEU_TAG_NAME_LEN];
     neu_dvalue_t value;
@@ -1045,6 +1151,7 @@ typedef struct neu_resp_tag_value_meta {
     neu_tag_meta_t *metas;
     int             n_meta;
     neu_datatag_t   datatag;
+    neu_type_e      resolved_type;
 } neu_resp_tag_value_meta_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_icd()
@@ -1078,6 +1185,17 @@ static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
     free(req->tags);
 }
 
+static inline void neu_req_write_tags_value_fini(neu_req_write_tags_t *req)
+{
+    if (req->tags == NULL) {
+        return;
+    }
+    for (int i = 0; i < req->n_tag; ++i) {
+        neu_free_dvalue(&req->tags[i].value);
+        memset(&req->tags[i].value, 0, sizeof(req->tags[i].value));
+    }
+}
+
 typedef struct {
     char *group;
 
@@ -1107,6 +1225,23 @@ static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
     free(req->groups);
 }
 
+static inline void neu_req_write_gtags_value_fini(neu_req_write_gtags_t *req)
+{
+    if (req->groups == NULL) {
+        return;
+    }
+    for (int i = 0; i < req->n_group; ++i) {
+        if (req->groups[i].tags == NULL) {
+            continue;
+        }
+        for (int k = 0; k < req->groups[i].n_tag; ++k) {
+            neu_free_dvalue(&req->groups[i].tags[k].value);
+            memset(&req->groups[i].tags[k].value, 0,
+                   sizeof(req->groups[i].tags[k].value));
+        }
+    }
+}
+
 typedef struct {
     char *driver;
     char *group;
@@ -1120,6 +1255,7 @@ typedef struct neu_resp_tag_value_meta_paginate {
     neu_tag_meta_t *metas;
     int             n_meta;
     neu_datatag_t   datatag;
+    neu_type_e      resolved_type;
 } neu_resp_tag_value_meta_paginate_t;
 
 static inline UT_icd *neu_resp_tag_value_meta_paginate_icd()

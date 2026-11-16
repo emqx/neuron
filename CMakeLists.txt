@@ -89,6 +89,7 @@ if(NOT ENABLE_DATALAYERS)
   list(FILTER NEURON_SRC_PARSE EXCLUDE REGEX "neu_json_datalayers\\.c$")
 endif()
 set(NEURON_BASE_SOURCES
+    src/base/property.c
     src/base/tag.c
     src/base/neu_plugin_common.c
     src/base/tag_sort.c
@@ -171,6 +172,7 @@ set(NEURON_SOURCES
     plugins/restful/metric_handle.c
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
+    plugins/restful/read_response.c
     plugins/restful/adapter_handle.c
     plugins/restful/datatag_handle.c
     plugins/restful/global_config_handle.c
@@ -233,6 +235,7 @@ add_subdirectory(tests/plugins/c1)
 add_subdirectory(tests/plugins/s1)
 add_subdirectory(tests/plugins/sc1)
 add_subdirectory(tests/plugins/demo_app)
+add_subdirectory(tests/plugins/auto_type)
 
 # Set sane defaults for multi-lib linux systems
 include(GNUInstallDirs)

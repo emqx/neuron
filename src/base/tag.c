@@ -26,6 +26,62 @@ config_ **/
 #include "errcodes.h"
 #include "tag.h"
 
+#define TAG_CMP(field, expression)                                         \
+    static int tag_cmp_##field(const void *left, const void *right)        \
+    {                                                                      \
+        const neu_datatag_t *a = left, *b = right;                         \
+        int                  result = (expression);                        \
+        return result ? result : strcmp(a->name, b->name);                 \
+    }                                                                      \
+    static int tag_cmp_##field##_desc(const void *left, const void *right) \
+    {                                                                      \
+        return tag_cmp_##field(right, left);                               \
+    }
+
+#define TAG_STR_CMP(field) \
+    TAG_CMP(field, strcmp(a->field ? a->field : "", b->field ? b->field : ""))
+#define TAG_NUM_CMP(field) \
+    TAG_CMP(field, (a->field > b->field) - (a->field < b->field))
+
+TAG_STR_CMP(name)
+TAG_STR_CMP(address)
+TAG_STR_CMP(description)
+TAG_STR_CMP(unit)
+TAG_NUM_CMP(type)
+TAG_NUM_CMP(attribute)
+TAG_NUM_CMP(precision)
+TAG_NUM_CMP(decimal)
+TAG_NUM_CMP(bias)
+
+#undef TAG_NUM_CMP
+#undef TAG_STR_CMP
+#undef TAG_CMP
+
+neu_tag_cmp_fn neu_tag_get_sort_cmp(const char *sort_by)
+{
+    if (!sort_by || (sort_by[0] != '+' && sort_by[0] != '-')) {
+        return NULL;
+    }
+
+#define TAG_SORT_FIELD(field)                                                \
+    if (strcmp(sort_by + 1, #field) == 0) {                                  \
+        return sort_by[0] == '+' ? tag_cmp_##field : tag_cmp_##field##_desc; \
+    }
+
+    TAG_SORT_FIELD(name)
+    TAG_SORT_FIELD(address)
+    TAG_SORT_FIELD(description)
+    TAG_SORT_FIELD(unit)
+    TAG_SORT_FIELD(type)
+    TAG_SORT_FIELD(attribute)
+    TAG_SORT_FIELD(precision)
+    TAG_SORT_FIELD(decimal)
+    TAG_SORT_FIELD(bias)
+
+#undef TAG_SORT_FIELD
+    return NULL;
+}
+
 static void tag_array_copy(void *_dst, const void *_src)
 {
     neu_datatag_t *dst = (neu_datatag_t *) _dst;

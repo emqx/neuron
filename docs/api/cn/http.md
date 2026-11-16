@@ -6,6 +6,7 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 
 ### 数据类型
 
+* AUTO   = 0
 * INT8   = 1
 * UINT8  = 2
 * INT16  = 3
@@ -24,6 +25,28 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 * WORD = 16
 * DWORD = 17
 * LWORD = 18
+
+### AUTO 点位
+
+请求自动识别类型时，必须显式设置点位配置字段 `"type": 0`，省略 `type` 不等于 AUTO。驱动必须通过现有点位校验主动支持 AUTO，并返回具体类型的样本；不支持的驱动返回 `2204`。Modbus 不支持 AUTO。本次提供的是框架能力，不代表 OPC UA 等闭源驱动已接入；动态协议驱动仍需分别实现支持。
+
+第一笔合法的成功样本确定点位的实际运行时类型，在该点位 cache 生命周期内固定。识别前，读取和写入返回 `3011`（点位未就绪）。之后收到不同语义类型的样本时返回 `3007`（类型不匹配），但不改变已识别类型。通信错误也不会清除类型，恢复原类型的样本后可继续正常采集。点位或组 cache 重建（包括重启）会重新识别，单纯断线不会重置。
+
+AUTO 必须用于可读点位；仅写 AUTO 点位返回 `2204`。识别后，单点及批量写入均按具体类型检查输入类型和数值范围，再交给驱动。例如 INT16 可接受整数 `123`，但拒绝 `40000` 和字符串 `"123"`。已排队写入若因点位或组 cache 重建失效，返回 `3011`，不会按另一类型重新解释。
+
+配置查询、导出和持久化存储始终保留 `type: 0`，不会回写识别结果。读取和上报值使用已识别的具体类型，并应用该类型适用的 precision、缩放及地址选项。非数值类型不进行数值缩放，缩放后的输出类型也不会改变设备侧已识别类型。
+
+### 点位运行时类型
+
+`GET /api/v2/tags`、`POST /api/v2/read`、`POST /api/v2/read/paginate` 的每个点位对象顶层均返回整数 `resolved_type`：
+
+- 显式类型点位：等于配置 `type`，即使尚无样本、只写或读取报错。
+- AUTO 点位：未识别、cache 不存在或新配置尚待应用时为 `0`；识别后为设备侧实际类型。STRING/BYTES 的内部 PTR 样本返回 STRING/BYTES，不返回 PTR。
+- 已识别后的通信错误、类型不匹配、值过期或停用节点不清除识别结果；cache/配置重建或进程重启后重新识别。
+- `resolved_type` 不是缩放后的输出类型。例如 AUTO 识别为 INT16，`decimal: 0.1` 时可返回 `"resolved_type": 3, "value": 12.3`。前端写入校验还需结合 decimal、bias，并以后端结果为准。
+- 已识别类型不表示当前值有效、节点正在运行或具有写权限，应分别检查 error、节点状态和 attribute。
+
+原有 `type` 仍表示配置类型；普通 `/read` 不因此新增配置 `type` 字段。`resolved_type` 不放入 `attributes`，普通读取存在同名 metas 时由该权威字段覆盖。配置导出 `/global/config`、`/global/drivers`、SQLite 和 MQTT 不新增此字段。
 
 ### 波特率
 
@@ -298,6 +321,123 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
     "error": 0
 }
 ```
+
+## Node 自定义属性
+
+自定义属性是节点的 key/value 元数据，南向驱动节点和北向应用节点均支持。四种操作统一使用 **/api/v2/node/properties**，且节点必须已存在。
+
+属性的 JSON 值类型在查询和重启后保持不变。节点重命名后，属性随节点迁移到新名称；删除节点时，其属性一并删除。重新创建同名节点不会恢复已删除的属性。
+
+### 请求头部
+
+**Authorization** Bearer \<token\>（登录接口返回的 JWT，鉴权规则与其他节点接口一致）
+
+**Content-Type** application/json（POST、PUT、DELETE）
+
+### 键和值
+
+* `node`、`key` 为必填非空字符串，不允许包含 NUL（`\u0000`）。同一节点内的属性 key 唯一。
+* `value` 必填，`false`、`0`、`""`、`[]` 均为有效值，不能因其为空或为零而省略。请直接传入 JSON 值，不要将其再次编码成 JSON 字符串。
+* 支持的标量值：字符串、布尔值、整数、浮点数。整数范围为有符号 64 位；浮点数必须是可用双精度表示的有限数值。
+* 支持的一维数组：元素全部为字符串、全部为布尔值或全部为数值。数值数组允许整数和浮点数混用，例如 `[1, 2.5]`。允许空数组。
+* 不接受 `null`、对象、嵌套数组及不同类别混合的数组，例如 `[true, 1]`、`[1, "2"]`。字符串值允许包含转义 NUL（`\u0000`）及其他转义字符。
+* POST 的 `properties` 和 DELETE 的 `keys` 必须为非空数组，批次内不允许重复 key，每项都必须合法。批次操作是原子的：全部成功或完全不修改。
+
+### 获取属性
+
+*GET* **/api/v2/node/properties?node=modbus-tcp-node**
+
+查询参数 `node` 必填。节点名称包含特殊字符时需进行 URL 编码。
+
+HTTP 200 响应：
+
+```json
+{
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+节点没有属性时返回 `{"properties": []}`。响应值保持原有 JSON 类型；客户端应按 key 识别属性，不依赖数组中的位置。
+
+### 新增属性
+
+*POST* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+所有 key 都必须是新属性。任一 key 已存在时，拒绝整个批次，不会新增或覆盖任何属性。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 更新单个属性
+
+*PUT* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "key": "enabled",
+    "value": true
+}
+```
+
+替换一个已有属性的值，新值可以变为其他支持的类型。此操作不会创建不存在的属性，也不能重命名 key。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 删除属性
+
+*DELETE* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "keys": ["location", "enabled"]
+}
+```
+
+原子地删除指定 key。不存在的 key 会被忽略，即使所有指定 key 都不存在也返回成功。空 `keys` 数组不表示删除全部属性，而是非法请求。
+
+HTTP 200 响应：
+
+```json
+{"error": 0}
+```
+
+### 响应状态
+
+| HTTP 状态 | 错误码 | 含义 |
+| --- | --- | --- |
+| 200 | 0 | POST、PUT、DELETE 成功；GET 返回上述 properties 对象 |
+| 400 | 1002 | JSON 请求体、必填字段、key、value 或批次不合法 |
+| 400 | 1003 | GET 查询参数缺失或不合法 |
+| 401 / 403 | 现有 JWT 错误码 | 令牌缺失、格式错误、过期或无效，遵循现有鉴权规则 |
+| 404 | 2003 | 节点不存在，适用于全部四种操作 |
+| 404 | 2020 | 属性不存在，仅适用于 PUT |
+| 409 | 2019 | 属性已存在，仅适用于 POST；整个批次保持不变 |
+
+错误响应格式为 `{"error": <错误码>}`。
 
 ## 获取 Node
 
@@ -922,6 +1062,8 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
 
 *GET*  /api/v2/tags
 
+每个点位返回 `resolved_type`，含义见“点位运行时类型”；`type` 保持配置值。
+
 ### 请求参数
 
 **node**  必需
@@ -950,6 +1092,7 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
             "name": "tag1",
             //tag type
             "type": 4,
+            "resolved_type": 4,
             //tag address
             "address": "1!400001",
             //tag attribute
@@ -966,6 +1109,7 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
         {
             "name": "tag2",
             "type": 14,
+            "resolved_type": 14,
             "address": "1!00001",
             "attribute": 3,
             "description": "",
@@ -975,6 +1119,7 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
         {
             "name": "tag3",
             "type": 11,
+            "resolved_type": 11,
             "address": "1!400009",
             "attribute": 3,
             "description": "",
@@ -1106,6 +1251,126 @@ Neuron 将为 IIoT 平台提供一系列 API 服务，用于查询基本信息�
     "error": 0
 }
 ```
+
+## 读取点位值
+
+*POST* /api/v2/read
+
+### 请求头部
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### 请求体
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false
+}
+```
+
+`sync` 为可选布尔值，默认为 `false`，读取缓存；`true` 请求同步读取。
+
+### 响应（200 OK）
+
+```json
+{
+    "tags": [
+        {
+            "name": "temperature",
+            "resolved_type": 10,
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456
+        },
+        {
+            "name": "pressure",
+            "resolved_type": 3,
+            "error": 3002,
+            "quality": 0
+        }
+    ]
+}
+```
+
+成功点位返回 `value`，错误点位返回 `error`；浮点值附带 `transferPrecision`。以下采样属性对成功和错误点位均可用，位于点位对象顶层：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| timestamp | 整数（int64） | 驱动提供的原有点位时间戳，原样传递，不转换单位 |
+| quality | 整数（int32） | 驱动提供的质量值 |
+| source_timestamp | 整数（int64） | 源时间戳，Unix epoch 毫秒 |
+| server_timestamp | 整数（int64） | 服务器时间戳，Unix epoch 毫秒 |
+
+四个字段独立可选：仅在当前样本具有对应属性时返回，显式 `0` 会保留；缺失时省略，不返回 `null`，不生成时间戳，也不使用其他时间戳替代。
+
+原有点位元数据（metas）仍在点位对象顶层展开。如果与采样属性同名，存在的采样属性覆盖同名元数据；采样属性缺失时保留原元数据。
+
+## 分页读取点位值
+
+*POST* /api/v2/read/paginate
+
+请求头部与读取点位值接口相同。
+
+### 请求体
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false,
+    "query": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "isError": false
+    }
+}
+```
+
+`query` 可选。分页参数位于 `query` 中，`currentPage` 从 1 开始；`isError: true` 仅返回错误点位，`false` 不启用错误筛选。
+
+### 响应（200 OK）
+
+```json
+{
+    "meta": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "total": 1
+    },
+    "items": [
+        {
+            "name": "temperature",
+            "resolved_type": 10,
+            "type": 10,
+            "address": "1!400001",
+            "attribute": 1,
+            "description": "",
+            "precision": 2,
+            "decimal": 0,
+            "bias": 0,
+            "unit": "°C",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456,
+            "attributes": {}
+        }
+    ]
+}
+```
+
+`items[]` 中四个可选采样属性的规则与 `/api/v2/read` 相同。原有 metas 放在 `attributes` 对象中，与顶层采样属性独立；`attributes` 不是采样属性容器。`type` 仍为配置类型（AUTO 为 `0`），不因运行时识别而改变。空结果或超出范围的页返回空 `items` 数组。
+
+这些采样属性属于读取结果，`GET /api/v2/tags` 的配置响应不增加这些字段。
 
 ## 添加插件
 

@@ -43,4 +43,11 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
 void handle_put_drivers(nng_aio *aio);
 void handle_put_node_tag(nng_aio *aio);
 
+void handle_add_node_properties(nng_aio *aio);
+void handle_delete_node_properties(nng_aio *aio);
+void handle_update_node_property(nng_aio *aio);
+void handle_get_node_properties(nng_aio *aio);
+void handle_get_node_properties_resp(
+    nng_aio *aio, neu_resp_get_node_properties_t *properties);
+
 #endif

@@ -1,0 +1,4 @@
+{
+    "tag_regex": [{"type": 0, "regex": ""}],
+    "group_interval": 100
+}

@@ -27,6 +27,7 @@
 #include "utils/http.h"
 #include "utils/time.h"
 
+#include "read_response.h"
 #include "rw_handle.h"
 
 #include "otel/otel_manager.h"
@@ -113,6 +114,13 @@ void handle_read_paginate(nng_aio *aio)
                 goto error;
             }
 
+            if (req->sort_by && !neu_tag_get_sort_cmp(req->sort_by)) {
+                err_type = NEU_ERR_PARAM_IS_WRONG;
+                goto error;
+            }
+
+            cmd.sort_by      = req->sort_by;
+            req->sort_by     = NULL;
             cmd.driver       = req->node;
             cmd.group        = req->group;
             cmd.name         = req->name;
@@ -330,43 +338,50 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_ARRAY_INT64:
                 cmd.value.type              = NEU_TYPE_ARRAY_INT64;
                 cmd.value.value.i64s.length = req->value.val_array_int64.length;
-                cmd.value.value.i64s.i64s =
-                    calloc(req->value.val_array_int64.length, sizeof(int64_t));
-                for (size_t i = 0; i < req->value.val_array_int64.length; i++) {
-                    cmd.value.value.i64s.i64s[i] =
-                        req->value.val_array_int64.i64s[i];
+                if (cmd.value.value.i64s.length > 0) {
+                    cmd.value.value.i64s.i64s =
+                        calloc(cmd.value.value.i64s.length, sizeof(int64_t));
+                    for (size_t i = 0; i < cmd.value.value.i64s.length; i++) {
+                        cmd.value.value.i64s.i64s[i] =
+                            req->value.val_array_int64.i64s[i];
+                    }
                 }
                 break;
             case NEU_JSON_ARRAY_DOUBLE:
                 cmd.value.type = NEU_TYPE_ARRAY_DOUBLE;
                 cmd.value.value.f64s.length =
                     req->value.val_array_double.length;
-                cmd.value.value.f64s.f64s =
-                    calloc(req->value.val_array_double.length, sizeof(double));
-                for (size_t i = 0; i < req->value.val_array_double.length;
-                     i++) {
-                    cmd.value.value.f64s.f64s[i] =
-                        req->value.val_array_double.f64s[i];
+                if (cmd.value.value.f64s.length > 0) {
+                    cmd.value.value.f64s.f64s =
+                        calloc(cmd.value.value.f64s.length, sizeof(double));
+                    for (size_t i = 0; i < cmd.value.value.f64s.length; i++) {
+                        cmd.value.value.f64s.f64s[i] =
+                            req->value.val_array_double.f64s[i];
+                    }
                 }
                 break;
             case NEU_JSON_ARRAY_BOOL:
                 cmd.value.type               = NEU_TYPE_ARRAY_BOOL;
                 cmd.value.value.bools.length = req->value.val_array_bool.length;
-                cmd.value.value.bools.bools =
-                    calloc(req->value.val_array_bool.length, sizeof(bool));
-                for (size_t i = 0; i < req->value.val_array_bool.length; i++) {
-                    cmd.value.value.bools.bools[i] =
-                        req->value.val_array_bool.bools[i];
+                if (cmd.value.value.bools.length > 0) {
+                    cmd.value.value.bools.bools =
+                        calloc(cmd.value.value.bools.length, sizeof(bool));
+                    for (size_t i = 0; i < cmd.value.value.bools.length; i++) {
+                        cmd.value.value.bools.bools[i] =
+                            req->value.val_array_bool.bools[i];
+                    }
                 }
                 break;
             case NEU_JSON_ARRAY_STR:
                 cmd.value.type              = NEU_TYPE_ARRAY_STRING;
                 cmd.value.value.strs.length = req->value.val_array_str.length;
-                cmd.value.value.strs.strs =
-                    calloc(req->value.val_array_str.length, sizeof(char *));
-                for (size_t i = 0; i < req->value.val_array_str.length; i++) {
-                    const char *s = req->value.val_array_str.p_strs[i];
-                    cmd.value.value.strs.strs[i] = strdup(s ? s : "");
+                if (cmd.value.value.strs.length > 0) {
+                    cmd.value.value.strs.strs =
+                        calloc(cmd.value.value.strs.length, sizeof(char *));
+                    for (size_t i = 0; i < cmd.value.value.strs.length; i++) {
+                        const char *s = req->value.val_array_str.p_strs[i];
+                        cmd.value.value.strs.strs[i] = strdup(s ? s : "");
+                    }
                 }
                 break;
             case NEU_JSON_OBJECT:
@@ -388,6 +403,7 @@ void handle_write(nng_aio *aio)
             }
 
             if (ret != 0) {
+                neu_req_write_tag_value_fini(&cmd);
                 neu_req_write_tag_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
@@ -548,50 +564,58 @@ void handle_write_tags(nng_aio *aio)
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_INT64;
                     cmd.tags[i].value.value.i64s.length =
                         req->tags[i].value.val_array_int64.length;
-                    cmd.tags[i].value.value.i64s.i64s =
-                        calloc(req->tags[i].value.val_array_int64.length,
-                               sizeof(int64_t));
-                    memcpy(cmd.tags[i].value.value.i64s.i64s,
-                           req->tags[i].value.val_array_int64.i64s,
-                           sizeof(int64_t) *
-                               req->tags[i].value.val_array_int64.length);
+                    if (cmd.tags[i].value.value.i64s.length > 0) {
+                        cmd.tags[i].value.value.i64s.i64s =
+                            calloc(cmd.tags[i].value.value.i64s.length,
+                                   sizeof(int64_t));
+                        memcpy(cmd.tags[i].value.value.i64s.i64s,
+                               req->tags[i].value.val_array_int64.i64s,
+                               sizeof(int64_t) *
+                                   cmd.tags[i].value.value.i64s.length);
+                    }
                     break;
                 case NEU_JSON_ARRAY_DOUBLE:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_DOUBLE;
                     cmd.tags[i].value.value.f64s.length =
                         req->tags[i].value.val_array_double.length;
-                    cmd.tags[i].value.value.f64s.f64s =
-                        calloc(req->tags[i].value.val_array_double.length,
-                               sizeof(double));
-                    memcpy(cmd.tags[i].value.value.f64s.f64s,
-                           req->tags[i].value.val_array_double.f64s,
-                           sizeof(double) *
-                               req->tags[i].value.val_array_double.length);
+                    if (cmd.tags[i].value.value.f64s.length > 0) {
+                        cmd.tags[i].value.value.f64s.f64s =
+                            calloc(cmd.tags[i].value.value.f64s.length,
+                                   sizeof(double));
+                        memcpy(cmd.tags[i].value.value.f64s.f64s,
+                               req->tags[i].value.val_array_double.f64s,
+                               sizeof(double) *
+                                   cmd.tags[i].value.value.f64s.length);
+                    }
                     break;
                 case NEU_JSON_ARRAY_BOOL:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_BOOL;
                     cmd.tags[i].value.value.bools.length =
                         req->tags[i].value.val_array_bool.length;
-                    cmd.tags[i].value.value.bools.bools = calloc(
-                        req->tags[i].value.val_array_bool.length, sizeof(bool));
-                    memcpy(cmd.tags[i].value.value.bools.bools,
-                           req->tags[i].value.val_array_bool.bools,
-                           sizeof(bool) *
-                               req->tags[i].value.val_array_bool.length);
+                    if (cmd.tags[i].value.value.bools.length > 0) {
+                        cmd.tags[i].value.value.bools.bools = calloc(
+                            cmd.tags[i].value.value.bools.length, sizeof(bool));
+                        memcpy(cmd.tags[i].value.value.bools.bools,
+                               req->tags[i].value.val_array_bool.bools,
+                               sizeof(bool) *
+                                   cmd.tags[i].value.value.bools.length);
+                    }
                     break;
                 case NEU_JSON_ARRAY_STR:
                     cmd.tags[i].value.type = NEU_TYPE_ARRAY_STRING;
                     cmd.tags[i].value.value.strs.length =
                         req->tags[i].value.val_array_str.length;
-                    cmd.tags[i].value.value.strs.strs =
-                        calloc(req->tags[i].value.val_array_str.length,
-                               sizeof(char *));
-                    for (size_t k = 0;
-                         k < req->tags[i].value.val_array_str.length; k++) {
-                        const char *s =
-                            req->tags[i].value.val_array_str.p_strs[k];
-                        cmd.tags[i].value.value.strs.strs[k] =
-                            strdup(s ? s : "");
+                    if (cmd.tags[i].value.value.strs.length > 0) {
+                        cmd.tags[i].value.value.strs.strs =
+                            calloc(cmd.tags[i].value.value.strs.length,
+                                   sizeof(char *));
+                        for (size_t k = 0;
+                             k < cmd.tags[i].value.value.strs.length; k++) {
+                            const char *s =
+                                req->tags[i].value.val_array_str.p_strs[k];
+                            cmd.tags[i].value.value.strs.strs[k] =
+                                strdup(s ? s : "");
+                        }
                     }
                     break;
                 case NEU_JSON_OBJECT:
@@ -615,6 +639,7 @@ void handle_write_tags(nng_aio *aio)
             }
 
             if (ret != 0) {
+                neu_req_write_tags_value_fini(&cmd);
                 neu_req_write_tags_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
@@ -682,64 +707,62 @@ static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_INT64;
                 cmd->groups[i].tags[k].value.value.i64s.length =
                     req->groups[i].tags[k].value.val_array_int64.length;
-
-                cmd->groups[i].tags[k].value.value.i64s.i64s =
-                    calloc(req->groups[i].tags[k].value.val_array_int64.length,
-                           sizeof(int64_t));
-
-                memcpy(cmd->groups[i].tags[k].value.value.i64s.i64s,
-                       req->groups[i].tags[k].value.val_array_int64.i64s,
-                       sizeof(int64_t) *
-                           req->groups[i].tags[k].value.val_array_int64.length);
-
+                if (cmd->groups[i].tags[k].value.value.i64s.length > 0) {
+                    cmd->groups[i].tags[k].value.value.i64s.i64s =
+                        calloc(cmd->groups[i].tags[k].value.value.i64s.length,
+                               sizeof(int64_t));
+                    memcpy(cmd->groups[i].tags[k].value.value.i64s.i64s,
+                           req->groups[i].tags[k].value.val_array_int64.i64s,
+                           sizeof(int64_t) *
+                               cmd->groups[i].tags[k].value.value.i64s.length);
+                }
                 break;
             case NEU_JSON_ARRAY_DOUBLE:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_DOUBLE;
                 cmd->groups[i].tags[k].value.value.f64s.length =
                     req->groups[i].tags[k].value.val_array_double.length;
-
-                cmd->groups[i].tags[k].value.value.f64s.f64s = calloc(
-
-                    req->groups[i].tags[k].value.val_array_double.length,
-                    sizeof(double));
-                memcpy(
-                    cmd->groups[i].tags[k].value.value.f64s.f64s,
-                    req->groups[i].tags[k].value.val_array_double.f64s,
-                    sizeof(double) *
-                        req->groups[i].tags[k].value.val_array_double.length);
-
+                if (cmd->groups[i].tags[k].value.value.f64s.length > 0) {
+                    cmd->groups[i].tags[k].value.value.f64s.f64s =
+                        calloc(cmd->groups[i].tags[k].value.value.f64s.length,
+                               sizeof(double));
+                    memcpy(cmd->groups[i].tags[k].value.value.f64s.f64s,
+                           req->groups[i].tags[k].value.val_array_double.f64s,
+                           sizeof(double) *
+                               cmd->groups[i].tags[k].value.value.f64s.length);
+                }
                 break;
             case NEU_JSON_ARRAY_BOOL:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_BOOL;
                 cmd->groups[i].tags[k].value.value.bools.length =
                     req->groups[i].tags[k].value.val_array_bool.length;
-
-                cmd->groups[i].tags[k].value.value.bools.bools =
-                    calloc(sizeof(bool),
-                           req->groups[i].tags[k].value.val_array_bool.length);
-                memcpy(cmd->groups[i].tags[k].value.value.bools.bools,
-                       req->groups[i].tags[k].value.val_array_bool.bools,
-                       sizeof(bool) *
-                           req->groups[i].tags[k].value.val_array_bool.length);
-
+                if (cmd->groups[i].tags[k].value.value.bools.length > 0) {
+                    cmd->groups[i].tags[k].value.value.bools.bools =
+                        calloc(cmd->groups[i].tags[k].value.value.bools.length,
+                               sizeof(bool));
+                    memcpy(cmd->groups[i].tags[k].value.value.bools.bools,
+                           req->groups[i].tags[k].value.val_array_bool.bools,
+                           sizeof(bool) *
+                               cmd->groups[i].tags[k].value.value.bools.length);
+                }
                 break;
             case NEU_JSON_ARRAY_STR:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_ARRAY_STRING;
                 cmd->groups[i].tags[k].value.value.strs.length =
                     req->groups[i].tags[k].value.val_array_str.length;
-
-                cmd->groups[i].tags[k].value.value.strs.strs =
-                    calloc(req->groups[i].tags[k].value.val_array_str.length,
-                           sizeof(char *));
-                for (size_t j = 0;
-                     j < req->groups[i].tags[k].value.val_array_str.length;
-                     j++) {
-                    const char *s =
-                        req->groups[i].tags[k].value.val_array_str.p_strs[j];
-                    cmd->groups[i].tags[k].value.value.strs.strs[j] =
-                        strdup(s ? s : "");
+                if (cmd->groups[i].tags[k].value.value.strs.length > 0) {
+                    cmd->groups[i].tags[k].value.value.strs.strs =
+                        calloc(cmd->groups[i].tags[k].value.value.strs.length,
+                               sizeof(char *));
+                    for (size_t j = 0;
+                         j < cmd->groups[i].tags[k].value.value.strs.length;
+                         j++) {
+                        const char *s = req->groups[i]
+                                            .tags[k]
+                                            .value.val_array_str.p_strs[j];
+                        cmd->groups[i].tags[k].value.value.strs.strs[j] =
+                            strdup(s ? s : "");
+                    }
                 }
-
                 break;
             case NEU_JSON_OBJECT:
                 cmd->groups[i].tags[k].value.type = NEU_TYPE_CUSTOM;
@@ -838,6 +861,7 @@ void handle_write_gtags(nng_aio *aio)
             }
 
             if (ret != 0) {
+                neu_req_write_gtags_value_fini(&cmd);
                 neu_req_write_gtags_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
@@ -866,13 +890,22 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         index += 1;
     }
 
-    neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
+    neu_http_read_response_t context = { .response = &api_res,
+                                         .tags     = resp->tags };
+    int                      ret =
+        neu_json_encode_by_fn(&context, neu_http_encode_read_response, &result);
     for (int i = 0; i < api_res.n_tag; i++) {
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
         }
     }
-    neu_http_ok(aio, result);
+    if (ret != 0 || result == NULL) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+    } else {
+        neu_http_ok(aio, result);
+    }
     free(api_res.tags);
     free(result);
 }
@@ -880,9 +913,10 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 void handle_read_paginate_resp(nng_aio *                       aio,
                                neu_resp_read_group_paginate_t *resp)
 {
-    neu_json_read_paginate_resp_t api_res    = { 0 };
-    char *                        result     = NULL;
-    unsigned int                  total_tags = resp->total_count;
+    neu_json_read_paginate_resp_t api_res       = { 0 };
+    char *                        result        = NULL;
+    unsigned int                  total_tags    = resp->total_count;
+    unsigned int                  source_offset = 0;
 
     if (resp->is_error) {
         UT_array *filtered_tags;
@@ -933,6 +967,7 @@ void handle_read_paginate_resp(nng_aio *                       aio,
             unsigned int start_index =
                 (resp->current_page - 1) * resp->page_size;
             unsigned int end_index = start_index + resp->page_size;
+            source_offset          = start_index;
 
             if (start_index >= total_tags) {
                 api_res.n_tag = 0;
@@ -1000,8 +1035,12 @@ void handle_read_paginate_resp(nng_aio *                       aio,
     api_res.meta.page_size    = resp->page_size;
     api_res.meta.total        = total_tags;
 
-    neu_json_encode_by_fn(&api_res, neu_json_encode_read_paginate_resp,
-                          &result);
+    neu_http_read_response_t context = { .response = &api_res,
+                                         .tags     = resp->tags,
+                                         .offset   = source_offset,
+                                         .paginate = true };
+    int                      ret =
+        neu_json_encode_by_fn(&context, neu_http_encode_read_response, &result);
 
     for (unsigned int i = 0; i < utarray_len(resp->tags); ++i) {
         neu_resp_tag_value_meta_paginate_t *final_tag_value;
@@ -1020,7 +1059,13 @@ void handle_read_paginate_resp(nng_aio *                       aio,
             free(api_res.tags[i].metas);
         }
     }
-    neu_http_ok(aio, result);
+    if (ret != 0 || result == NULL) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+    } else {
+        neu_http_ok(aio, result);
+    }
     free(api_res.tags);
     free(result);
 }

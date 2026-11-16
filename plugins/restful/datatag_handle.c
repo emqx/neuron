@@ -29,6 +29,7 @@
 #include "utils/http.h"
 
 #include "datatag_handle.h"
+#include "read_response.h"
 
 void handle_add_tags(nng_aio *aio)
 {
@@ -545,15 +546,37 @@ void handle_get_tags(nng_aio *aio)
 
 void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
 {
-    neu_json_get_tags_resp_t tags_res = { 0 };
-    char *                   result   = NULL;
+    neu_json_get_tags_resp_t tags_res    = { 0 };
+    char *                   result      = NULL;
+    char                     sort_by[32] = { 0 };
+    int                      error       = NEU_ERR_EINTERNAL;
+
+    ssize_t sort_len =
+        neu_http_get_param_str(aio, "sort_by", sort_by, sizeof(sort_by));
+    if (sort_len != -2) {
+        neu_tag_cmp_fn cmp =
+            sort_len >= 0 && (size_t) sort_len < sizeof(sort_by)
+            ? neu_tag_get_sort_cmp(sort_by)
+            : NULL;
+        if (!cmp) {
+            error = NEU_ERR_PARAM_IS_WRONG;
+            goto error;
+        }
+        utarray_sort(tags->tags, cmp);
+    }
 
     tags_res.n_tag = utarray_len(tags->tags);
-    tags_res.tags  = calloc(tags_res.n_tag, sizeof(neu_json_tag_t));
+    if (tags_res.n_tag > 0) {
+        tags_res.tags = calloc(tags_res.n_tag, sizeof(neu_json_tag_t));
+        if (tags_res.tags == NULL) {
+            goto error;
+        }
+    }
 
-    utarray_foreach(tags->tags, neu_datatag_t *, tag)
+    utarray_foreach(tags->tags, neu_resp_tag_info_t *, item)
     {
-        int index = utarray_eltidx(tags->tags, tag);
+        int            index = utarray_eltidx(tags->tags, item);
+        neu_datatag_t *tag   = &item->tag;
 
         tags_res.tags[index].name        = tag->name;
         tags_res.tags[index].address     = tag->address;
@@ -567,10 +590,21 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].unit        = tag->unit;
     }
 
-    neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
+    neu_http_get_tags_response_t context = { .response = &tags_res,
+                                             .tags     = tags->tags };
+    if (neu_json_encode_by_fn(&context, neu_http_encode_get_tags_response,
+                              &result) != 0 ||
+        result == NULL) {
+        goto error;
+    }
 
     neu_http_ok(aio, result);
+    goto end;
 
+error:
+    NEU_JSON_RESPONSE_ERROR(error,
+                            { neu_http_response(aio, error, result_error); });
+end:
     free(result);
     free(tags_res.tags);
     utarray_free(tags->tags);

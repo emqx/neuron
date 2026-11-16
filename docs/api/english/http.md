@@ -6,6 +6,7 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 
 ### Data Type
 
+* AUTO   = 0
 * INT8   = 1
 * UINT8  = 2
 * INT16  = 3
@@ -24,6 +25,28 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
 * WORD = 16
 * DWORD = 17
 * LWORD = 18
+
+### AUTO tags
+
+Set the required tag configuration field explicitly to `"type": 0` to request automatic type detection. Omitting `type` is not equivalent to AUTO. A driver must opt in through its existing tag validation and return concrete sample types; unsupported drivers reject AUTO with error `2204`. Modbus does not support AUTO. This framework support does not mean that closed-source drivers such as OPC UA have been integrated; each dynamic protocol driver requires its own implementation.
+
+The first valid, successful sample fixes the concrete runtime type for that tag's cache lifecycle. Before detection, reads and writes return `3011` (tag not ready). Later samples with a different semantic type return `3007` (type mismatch), without changing the detected type. Communication errors also preserve it, and sampling recovers when the original type returns. Rebuilding the tag/group cache, including a restart, resets detection; a disconnection alone does not.
+
+AUTO requires a readable tag; write-only AUTO is rejected with `2204`. After detection, single and batch writes are checked against the concrete type, including input type and numeric range, before the driver receives them. For example, an INT16 tag accepts integer `123`, but rejects `40000` and string `"123"`. Writes invalidated by a tag/group cache rebuild return `3011` rather than being reinterpreted with another type.
+
+Configuration queries, exports and persistent storage continue to show `type: 0`; detection does not rewrite the configured type. Read/report values use the detected concrete type and its applicable precision, scaling and address options. Numeric scaling does not apply to nonnumeric types, and a scaled output value does not change the detected device type.
+
+### Runtime tag type
+
+Every tag object returned by `GET /api/v2/tags`, `POST /api/v2/read` and `POST /api/v2/read/paginate` includes a top-level integer `resolved_type`:
+
+- For explicitly typed tags it equals configured `type`, including tags without samples, write-only tags and read errors.
+- For AUTO it is `0` while unresolved, without a cache entry, or while configuration changes await application. Once identified it is the device-side semantic type. Internally PTR-backed STRING/BYTES samples report STRING/BYTES, not PTR.
+- Communication errors, type mismatches, value expiration and stopping a node do not themselves clear an identified type. Cache/configuration rebuilding or process restart requires identification again.
+- It is not the scaled output type. For example, AUTO resolved as INT16 with `decimal: 0.1` can return `"resolved_type": 3, "value": 12.3`. Frontend write validation must also consider decimal and bias; backend validation remains authoritative.
+- An identified type does not imply a valid current value, a running node or write permission. Check error, node state and attribute separately.
+
+Existing `type` remains the configured type. Ordinary `/read` does not gain a configured `type` field. `resolved_type` is separate from `attributes` and replaces any colliding ordinary-read metadata key. Configuration exports through `/global/config` and `/global/drivers`, SQLite and MQTT do not gain this field.
 
 ### Baud
 
@@ -290,6 +313,123 @@ Neuron provide a series of API services for IIoT platform, to query the basic in
     "error": 0
 }
 ```
+
+## Node Properties
+
+Node properties are custom key/value metadata for both southbound driver nodes and northbound application nodes. All four operations use **/api/v2/node/properties** and require an existing node.
+
+Properties retain their JSON value types across reads and restarts. Renaming a node moves its properties to the new name; deleting a node also deletes its properties. Recreating a node with the same name starts with no properties.
+
+### Request Headers
+
+**Authorization** Bearer \<token\> (JWT returned by the login API, using the same authentication rules as other node APIs)
+
+**Content-Type** application/json (POST, PUT and DELETE)
+
+### Keys and Values
+
+* `node` and `key` are required, non-empty strings and must not contain NUL (`\u0000`). Keys are unique within a node.
+* `value` is required, including when it is `false`, `0`, `""` or `[]`. It is a JSON value, not a JSON-encoded string.
+* Supported scalar values: string, boolean, integer and floating-point number. Integers use the signed 64-bit range; floating-point numbers must be finite and representable as double precision.
+* Supported arrays: one-dimensional arrays containing only strings, only booleans, or only numbers. Integers and floating-point numbers may be mixed in a numeric array, for example `[1, 2.5]`. Empty arrays are allowed.
+* `null`, objects, nested arrays and mixed-category arrays such as `[true, 1]` or `[1, "2"]` are rejected. JSON string values may contain escaped NUL (`\u0000`) and other escaped characters.
+* POST `properties` and DELETE `keys` must be non-empty arrays, without duplicate keys. Every item must be valid. A batch either succeeds in full or makes no changes.
+
+### Get Properties
+
+*GET* **/api/v2/node/properties?node=modbus-tcp-node**
+
+The `node` query parameter is required. URL-encode the node name when needed.
+
+HTTP 200 response:
+
+```json
+{
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+A node without properties returns `{"properties": []}`. The response contains JSON values with their original types; clients should identify properties by key rather than array position.
+
+### Add Properties
+
+*POST* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "properties": [
+        {"key": "location", "value": "Building A"},
+        {"key": "enabled", "value": false},
+        {"key": "thresholds", "value": [0, 12.5]}
+    ]
+}
+```
+
+All keys must be new. If any key already exists, the entire batch is rejected without adding or replacing any properties.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Update a Property
+
+*PUT* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "key": "enabled",
+    "value": true
+}
+```
+
+Replaces the value of one existing property. The new value may have a different supported type. This operation does not create a missing property or rename its key.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Delete Properties
+
+*DELETE* **/api/v2/node/properties**
+
+```json
+{
+    "node": "modbus-tcp-node",
+    "keys": ["location", "enabled"]
+}
+```
+
+Deletes the listed keys atomically. Missing keys are ignored and do not cause an error, including when all listed keys are missing. An empty `keys` array is not a request to delete all properties and is rejected.
+
+HTTP 200 response:
+
+```json
+{"error": 0}
+```
+
+### Response Status
+
+| HTTP status | Error | Meaning |
+| --- | --- | --- |
+| 200 | 0 | POST, PUT or DELETE succeeded; GET returns the properties object shown above |
+| 400 | 1002 | Invalid JSON body, missing required fields or invalid keys/values/batch |
+| 400 | 1003 | Missing or invalid GET query parameter |
+| 401 / 403 | Existing JWT error codes | Missing, malformed, expired or invalid token, following the existing authentication rules |
+| 404 | 2003 | Node does not exist (all four operations) |
+| 404 | 2020 | Property does not exist (PUT only) |
+| 409 | 2019 | A property already exists (POST only); the entire batch is unchanged |
+
+Error responses use `{"error": <error code>}`.
 
 ## Get Node
 
@@ -903,6 +1043,8 @@ To update both group name and interval:
 
 *GET*  /api/v2/tags
 
+Each tag includes `resolved_type` as described in "Runtime tag type"; `type` remains the configured value.
+
 ### Request Params
 
 **node**  required
@@ -931,6 +1073,7 @@ To update both group name and interval:
             "name": "tag1",
             //tag type
             "type": 4,
+            "resolved_type": 4,
             //tag address
             "address": "1!400001",
             //tag attribute
@@ -947,6 +1090,7 @@ To update both group name and interval:
         {
             "name": "tag2",
             "type": 14,
+            "resolved_type": 14,
             "address": "1!00001",
             "attribute": 3,
             "description": "",
@@ -956,6 +1100,7 @@ To update both group name and interval:
         {
             "name": "tag3",
             "type": 11,
+            "resolved_type": 11,
             "address": "1!400009",
             "attribute": 3,
             "description": "",
@@ -1087,6 +1232,126 @@ To update both group name and interval:
     "error": 0
 }
 ```
+
+## Read Tag Values
+
+*POST* /api/v2/read
+
+### Request Headers
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### Body
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false
+}
+```
+
+`sync` is an optional boolean, defaulting to `false` to read cached values. Set it to `true` to request a synchronous read.
+
+### Response (200 OK)
+
+```json
+{
+    "tags": [
+        {
+            "name": "temperature",
+            "resolved_type": 10,
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456
+        },
+        {
+            "name": "pressure",
+            "resolved_type": 3,
+            "error": 3002,
+            "quality": 0
+        }
+    ]
+}
+```
+
+A successful tag returns `value`; an error tag returns `error`. Floating-point values also include `transferPrecision`. Both successful and error samples may include these top-level sample attributes:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| timestamp | Integer (int64) | Existing driver-provided tag timestamp, passed through without unit conversion |
+| quality | Integer (int32) | Driver-provided quality value |
+| source_timestamp | Integer (int64) | Source timestamp in Unix epoch milliseconds |
+| server_timestamp | Integer (int64) | Server timestamp in Unix epoch milliseconds |
+
+The four fields are independently optional. A field is returned only when the current sample supplies it; explicit `0` is preserved. Missing fields are omitted, not returned as `null`. No timestamps are generated or substituted from another timestamp field.
+
+Existing tag metadata (metas) remains flattened into the tag object. A present sample attribute replaces a metadata field with the same name; when the sample attribute is absent, the original metadata field is preserved.
+
+## Read Tag Values with Pagination
+
+*POST* /api/v2/read/paginate
+
+Request headers are the same as for reading tag values.
+
+### Body
+
+```json
+{
+    "node": "modbus-tcp-1",
+    "group": "group-1",
+    "sync": false,
+    "query": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "isError": false
+    }
+}
+```
+
+`query` is optional. Pagination parameters belong inside `query`, and `currentPage` starts at 1. Set `isError` to `true` to return only error tags; `false` does not enable error filtering.
+
+### Response (200 OK)
+
+```json
+{
+    "meta": {
+        "currentPage": 1,
+        "pageSize": 10,
+        "total": 1
+    },
+    "items": [
+        {
+            "name": "temperature",
+            "resolved_type": 10,
+            "type": 10,
+            "address": "1!400001",
+            "attribute": 1,
+            "description": "",
+            "precision": 2,
+            "decimal": 0,
+            "bias": 0,
+            "unit": "°C",
+            "value": 25.5,
+            "transferPrecision": 2,
+            "timestamp": 1700000000000,
+            "quality": 192,
+            "source_timestamp": 1700000000123,
+            "server_timestamp": 1700000000456,
+            "attributes": {}
+        }
+    ]
+}
+```
+
+The four optional sample attributes in `items[]` follow the same rules as `/api/v2/read`. Existing metas remain inside `attributes`, separate from the top-level sample attributes; `attributes` is not a sample-attribute container. `type` remains the configured type (including `0` for AUTO), not the inferred runtime type. Empty results and out-of-range pages return an empty `items` array.
+
+These sample attributes belong to read responses; the configuration response from `GET /api/v2/tags` is unchanged.
 
 ## Add Plugin
 

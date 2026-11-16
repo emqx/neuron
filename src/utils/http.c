@@ -364,6 +364,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_FILE_READ_FAILURE:
     case NEU_ERR_LIBRARY_NOT_FOUND:
     case NEU_ERR_NODE_NOT_EXIST:
+    case NEU_ERR_NODE_PROPERTY_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_LICENSE_NOT_FOUND:
     case NEU_ERR_LICENSE_TOKEN_NOT_FOUND:
@@ -377,6 +378,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
+    case NEU_ERR_NODE_PROPERTY_EXIST:
     case NEU_ERR_NODE_NOT_READY:
     case NEU_ERR_NODE_IS_RUNNING:
     case NEU_ERR_NODE_NOT_RUNNING:
