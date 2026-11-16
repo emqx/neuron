@@ -270,7 +270,6 @@ static void log_config(neu_plugin_t *plugin, const mqtt_v2_config_t *config)
     plog_notice(plugin, "config client-id          : %s", config->client_id);
     plog_notice(plugin, "config qos                : %d", config->qos);
     plog_notice(plugin, "config topic-prefix       : %s", config->topic_prefix);
-    plog_notice(plugin, "config upload-err         : %d", config->upload_err);
     plog_notice(plugin, "config offline-cache      : %d", config->cache);
     plog_notice(plugin, "config cache-mem-size     : %zu",
                 config->cache_mem_size);
@@ -309,7 +308,6 @@ int mqtt_v2_config_parse(neu_plugin_t *plugin, const char *setting,
     json_t *params  = NULL;
 
     memset(config, 0, sizeof(*config));
-    config->upload_err = true;
 
     root   = json_loads(setting, 0, NULL);
     params = json_object_get(root, "params");
@@ -335,7 +333,6 @@ int mqtt_v2_config_parse(neu_plugin_t *plugin, const char *setting,
             get_template(plugin, params, "tag-template",
                          MQTT_V2_DEFAULT_TAG_TEMPLATE, MQTT_V2_TMPL_TAG,
                          &config->tag_tmpl) ||
-        0 != get_bool(plugin, params, "upload-err", &config->upload_err) ||
         0 != parse_cache(plugin, params, config) ||
         0 != get_string(plugin, params, "host", true, &config->host) ||
         0 != get_int(plugin, params, "port", true, 1, 65535, &port) ||

@@ -57,6 +57,8 @@ protected:
         t3.value.type      = NEU_TYPE_ERROR;
         t3.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         utarray_push_back(tags, &t3);
+
+        properties = json_pack("{sssi}", "location", "china", "line", 34);
     }
 
     void TearDown() override
@@ -66,6 +68,7 @@ protected:
             free(tag->metas);
         }
         utarray_free(tags);
+        json_decref(properties);
         mqtt_v2_tmpl_free(data_tmpl);
         mqtt_v2_tmpl_free(tag_tmpl);
     }
@@ -99,7 +102,7 @@ protected:
             << err;
     }
 
-    json_t *render(bool upload_err = true)
+    json_t *render(bool upload_err = false)
     {
         mqtt_v2_render_ctx_t ctx = {
             .app          = "app",
@@ -107,6 +110,7 @@ protected:
             .group        = "grp",
             .sub_topic    = "neuron/app/dev/data",
             .timestamp    = 1700000000123,
+            .properties   = properties,
             .tags         = tags,
             .upload_err   = upload_err,
             .tag_tmpl     = tag_tmpl,
@@ -121,15 +125,18 @@ protected:
         return json;
     }
 
-    UT_array *      tags      = NULL;
-    mqtt_v2_tmpl_t *data_tmpl = NULL;
-    mqtt_v2_tmpl_t *tag_tmpl  = NULL;
+    UT_array *      tags       = NULL;
+    json_t *        properties = NULL;
+    mqtt_v2_tmpl_t *data_tmpl  = NULL;
+    mqtt_v2_tmpl_t *tag_tmpl   = NULL;
 };
 
 TEST_F(MqttV2Template, default_templates)
 {
     compile(DATA_DEFAULT, TAG_DEFAULT);
-    json_t *json = render();
+    // the default tag template uses ${tag.error}, so failed tags are reported
+    EXPECT_TRUE(mqtt_v2_tmpl_reports_error(tag_tmpl));
+    json_t *json = render(true);
 
     json_t *expected = json_loads(
         "{\"timestamp\": 1700000000123, \"device\": \"dev\", \"group\": "
@@ -144,15 +151,38 @@ TEST_F(MqttV2Template, default_templates)
     json_decref(json);
 }
 
-TEST_F(MqttV2Template, upload_err_disabled)
+TEST_F(MqttV2Template, error_tags_follow_template)
 {
-    compile(DATA_DEFAULT, "\"${tag.name}\"");
+    compile(DATA_DEFAULT, "{\"name\": \"${tag.name}\"}");
+    EXPECT_FALSE(mqtt_v2_tmpl_reports_error(tag_tmpl));
     json_t *json = render(false);
 
-    json_t *expected = json_loads("[\"t1\", \"t2\"]", 0, NULL);
-    EXPECT_TRUE(json_equal(expected, json_object_get(json, "tags")));
-    EXPECT_EQ(3u, mqtt_v2_tags_count(tags, true));
+    json_t *expected =
+        json_loads("[{\"name\": \"t1\"}, {\"name\": \"t2\"}]", 0, NULL);
+    EXPECT_TRUE(json_equal(expected, json_object_get(json, "tags")))
+        << json_dumps(json, 0);
     EXPECT_EQ(2u, mqtt_v2_tags_count(tags, false));
+    json_decref(expected);
+    json_decref(json);
+
+    mqtt_v2_tmpl_free(data_tmpl);
+    mqtt_v2_tmpl_free(tag_tmpl);
+    data_tmpl = NULL;
+    tag_tmpl  = NULL;
+    compile(DATA_DEFAULT, TAG_DEFAULT);
+    EXPECT_TRUE(mqtt_v2_tmpl_reports_error(tag_tmpl));
+    EXPECT_FALSE(mqtt_v2_tmpl_reports_error(data_tmpl));
+    json = render(true);
+
+    expected = json_loads(
+        "[{\"name\": \"t1\", \"value\": 12, \"description\": "
+        "\"temperature\", \"unit\": \"C\"}, {\"name\": \"t2\", \"value\": "
+        "1.5, \"timestamp\": \"2026-11-16T02:03:00Z\", \"quality\": 192}, "
+        "{\"name\": \"terr\", \"error\": 3008}]",
+        0, NULL);
+    EXPECT_TRUE(json_equal(expected, json_object_get(json, "tags")))
+        << json_dumps(json, 0);
+    EXPECT_EQ(3u, mqtt_v2_tags_count(tags, true));
 
     json_decref(expected);
     json_decref(json);
@@ -181,7 +211,98 @@ TEST_F(MqttV2Template, tag_index)
 
     json_t *expected = json_loads(
         "{\"first\": {\"n\": \"t1\", \"t\": \"INT16\"}, \"v2\": 1.5, \"q2\": "
-        "192, \"err\": 3008}",
+        "192}",
+        0, NULL);
+    EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
+
+    json_decref(expected);
+    json_decref(json);
+}
+
+TEST_F(MqttV2Template, properties)
+{
+    compile(
+        "{\"props\": \"${properties}\", \"loc\": \"${properties[location]}\", "
+        "\"none\": \"${properties[nope]}\"}",
+        "{\"line\": \"${properties[line]}\", \"v\": \"${tag.value}\"}");
+    json_t *json = render();
+
+    json_t *expected = json_loads(
+        "{\"props\": {\"location\": \"china\", \"line\": 34}, \"loc\": "
+        "\"china\"}",
+        0, NULL);
+    EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
+    json_decref(expected);
+    json_decref(json);
+
+    // the tag template sees them as well, a device may have none
+    mqtt_v2_tmpl_free(data_tmpl);
+    mqtt_v2_tmpl_free(tag_tmpl);
+    data_tmpl = NULL;
+    tag_tmpl  = NULL;
+    compile("{\"t1\": \"${tags[t1]}\", \"props\": \"${properties}\"}",
+            "{\"line\": \"${properties[line]}\", \"v\": \"${tag.value}\"}");
+    json     = render();
+    expected = json_loads(
+        "{\"t1\": {\"line\": 34, \"v\": 12}, \"props\": {\"location\": "
+        "\"china\", \"line\": 34}}",
+        0, NULL);
+    EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
+    json_decref(expected);
+    json_decref(json);
+
+    json_decref(properties);
+    properties = NULL;
+    json       = render();
+    expected   = json_loads("{\"t1\": {\"v\": 12}}", 0, NULL);
+    EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
+    json_decref(expected);
+    json_decref(json);
+}
+
+TEST_F(MqttV2Template, sample_attrs)
+{
+    // attributes win over metadata
+    neu_resp_tag_value_meta_t t4 = {};
+    strcpy(t4.tag, "t4");
+    t4.value.type                       = NEU_TYPE_INT32;
+    t4.value.value.i32                  = 4;
+    t4.value.attrs.has_quality          = true;
+    t4.value.attrs.quality              = 0;
+    t4.value.attrs.has_source_timestamp = true;
+    t4.value.attrs.source_timestamp     = 1700000000999;
+    t4.value.attrs.has_server_timestamp = true;
+    t4.value.attrs.server_timestamp     = 1700000001000;
+    t4.n_meta                           = 1;
+    t4.metas = (neu_tag_meta_t *) calloc(1, sizeof(neu_tag_meta_t));
+    strcpy(t4.metas[0].name, "quality");
+    t4.metas[0].value.type      = NEU_TYPE_INT32;
+    t4.metas[0].value.value.i32 = 192;
+    t4.datatag.type             = NEU_TYPE_AUTO;
+    utarray_push_back(tags, &t4);
+
+    // a sample timestamp of its own wins over the others
+    neu_resp_tag_value_meta_t t5 = {};
+    strcpy(t5.tag, "t5");
+    t5.value.type                       = NEU_TYPE_BOOL;
+    t5.value.value.boolean              = true;
+    t5.value.attrs.has_timestamp        = true;
+    t5.value.attrs.timestamp            = 5;
+    t5.value.attrs.has_server_timestamp = true;
+    t5.value.attrs.server_timestamp     = 6;
+    t5.datatag.type                     = NEU_TYPE_AUTO;
+    utarray_push_back(tags, &t5);
+
+    compile("{\"t4\": \"${tags[t4]}\", \"t5\": \"${tags[t5]}\"}",
+            "{\"q\": \"${tag.quality}\", \"ts\": \"${tag.timestamp}\", "
+            "\"src\": \"${tag.sourceTimestamp}\", "
+            "\"srv\": \"${tag.serverTimestamp}\", \"type\": \"${tag.type}\"}");
+    json_t *json = render();
+
+    json_t *expected = json_loads(
+        "{\"t4\": {\"q\": 0, \"ts\": 1700000000999, \"src\": 1700000000999, "
+        "\"srv\": 1700000001000, \"type\": \"INT32\"}, "
+        "\"t5\": {\"ts\": 5, \"srv\": 6, \"type\": \"BOOL\"}}",
         0, NULL);
     EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
 
@@ -199,8 +320,8 @@ TEST_F(MqttV2Template, interpolation_and_keys)
 
     json_t *expected = json_loads(
         "{\"id\": \"app:dev-grp\", \"dev\": {\"t1\": {\"t1\": 12, \"device\": "
-        "\"dev\"}, \"t2\": {\"t2\": 1.5, \"device\": \"dev\"}, \"terr\": "
-        "{\"device\": \"dev\"}}, \"topic\": \"neuron/app/dev/data\", \"n\": 1, "
+        "\"dev\"}, \"t2\": {\"t2\": 1.5, \"device\": \"dev\"}}, \"topic\": "
+        "\"neuron/app/dev/data\", \"n\": 1, "
         "\"b\": true, \"arr\": [\"dev\", null]}",
         0, NULL);
     EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
@@ -267,9 +388,8 @@ TEST(MqttV2TemplateCompile, errors)
           "unknown tag attribute" },
         { "{\"a\": \"${tags[]}\"}", MQTT_V2_TMPL_DATA,
           "invalid tag reference" },
-        { "{\"a\": \"${properties}\"}", MQTT_V2_TMPL_DATA, "unknown variable" },
-        { "{\"a\": \"${properties[location]}\"}", MQTT_V2_TMPL_DATA,
-          "unknown variable" },
+        { "{\"a\": \"${properties[]}\"}", MQTT_V2_TMPL_DATA,
+          "empty property key" },
         { "{\"a\": \"${TIME:}\"}", MQTT_V2_TMPL_DATA, "invalid time format" },
         { "{\"a\": \"${device\"}", MQTT_V2_TMPL_DATA, "unterminated" },
         { "{\"a\": ", MQTT_V2_TMPL_DATA, "invalid JSON" },
@@ -288,13 +408,26 @@ TEST(MqttV2TemplateCompile, errors)
 
 TEST(MqttV2Topic, render)
 {
-    char *topic = mqtt_v2_topic_render("a/${app}/${device}/${group}/x", "app",
-                                       "d+1#", "g");
+    char *topic = mqtt_v2_topic_render("a/${app}/${device}/${group}/x", NULL,
+                                       "app", "d+1#", "g");
     EXPECT_STREQ("a/app/d_1_/g/x", topic);
     free(topic);
 
-    topic = mqtt_v2_topic_render("neuron/${app}", "x${device}", NULL, NULL);
+    topic =
+        mqtt_v2_topic_render("neuron/${app}", NULL, "x${device}", NULL, NULL);
     EXPECT_STREQ("neuron/x${device}", topic);
+    free(topic);
+
+    // the default data topic
+    topic = mqtt_v2_topic_render("${prefix}/${device}/data", "neuron/app",
+                                 "app", "dev", "g");
+    EXPECT_STREQ("neuron/app/dev/data", topic);
+    free(topic);
+
+    // until the prefix is configured
+    topic =
+        mqtt_v2_topic_render("${prefix}/${device}", NULL, "app", "dev", "g");
+    EXPECT_STREQ("/dev", topic);
     free(topic);
 }
 
@@ -306,6 +439,8 @@ TEST(MqttV2Params, topic)
     EXPECT_FALSE(mqtt_v2_topic_tmpl_valid("neuron/${device}", prefix_vars));
     EXPECT_TRUE(mqtt_v2_sub_topic_valid("plant/${app}/${device}/${group}"));
     EXPECT_TRUE(mqtt_v2_sub_topic_valid("${device}/data"));
+    EXPECT_TRUE(mqtt_v2_sub_topic_valid("${prefix}/${device}/data"));
+    EXPECT_FALSE(mqtt_v2_topic_tmpl_valid("${prefix}/x", prefix_vars));
     EXPECT_FALSE(mqtt_v2_sub_topic_valid(""));
     EXPECT_FALSE(mqtt_v2_sub_topic_valid("a/+/b"));
     EXPECT_FALSE(mqtt_v2_sub_topic_valid("a/#"));

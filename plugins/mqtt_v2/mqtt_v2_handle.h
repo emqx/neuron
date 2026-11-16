@@ -27,6 +27,7 @@ extern "C" {
 #include "mqtt_v2_plugin.h"
 
 #define MQTT_V2_WRITE_CTX_MAGIC 0x4d515432
+#define MQTT_V2_PROPS_CTX_MAGIC 0x4d515450
 
 // functions suffixed with `_locked` require `plugin->mtx`
 int  mqtt_v2_set_topics_locked(neu_plugin_t *plugin);
@@ -45,8 +46,9 @@ void mqtt_v2_disconnected_locked(neu_plugin_t *plugin);
 // frees the device table and the pending writes
 void mqtt_v2_devices_free_locked(neu_plugin_t *plugin);
 
-int mqtt_v2_request_nodes_state(neu_plugin_t *plugin);
-int mqtt_v2_request_tags(neu_plugin_t *plugin);
+int  mqtt_v2_request_nodes_state(neu_plugin_t *plugin);
+int  mqtt_v2_request_tags(neu_plugin_t *plugin);
+void mqtt_v2_request_all_properties(neu_plugin_t *plugin);
 
 int mqtt_v2_handle_trans_data(neu_plugin_t *            plugin,
                               neu_reqresp_trans_data_t *data);
@@ -63,6 +65,10 @@ int mqtt_v2_handle_nodes_state(neu_plugin_t *              plugin,
                                neu_resp_get_nodes_state_t *resp);
 int mqtt_v2_handle_sub_tags(neu_plugin_t *                  plugin,
                             neu_resp_get_sub_driver_tags_t *resp);
+// takes ownership of `ctx` and the content of `resp`
+int mqtt_v2_handle_properties(neu_plugin_t *plugin, mqtt_v2_props_ctx_t *ctx,
+                              neu_resp_get_node_properties_t *resp);
+int mqtt_v2_handle_properties_changed(neu_plugin_t *plugin, const char *driver);
 // `tags` is the per tag result of NEU_RESP_WRITE_TAGS, NULL for NEU_RESP_ERROR
 int mqtt_v2_handle_write_resp(neu_plugin_t *plugin, mqtt_v2_write_ctx_t *ctx,
                               int error, UT_array *tags);

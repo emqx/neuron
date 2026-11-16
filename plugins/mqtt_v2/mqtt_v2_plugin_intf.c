@@ -23,6 +23,7 @@
 #include "utils/time.h"
 
 #include "mqtt_v2_handle.h"
+#include "mqtt_v2_params.h"
 #include "mqtt_v2_plugin.h"
 #include "mqtt_v2_plugin_intf.h"
 
@@ -75,6 +76,8 @@ static int timer_cb(void *data)
     mqtt_v2_request_nodes_state(plugin);
     if (0 == ++plugin->ticks % TAGS_REFRESH_TICKS) {
         mqtt_v2_request_tags(plugin);
+        // property changes are notified, this catches missed notices
+        mqtt_v2_request_all_properties(plugin);
     }
     return 0;
 }
@@ -332,7 +335,9 @@ static int plugin_config(neu_plugin_t *plugin, const char *setting)
     pthread_mutex_lock(&plugin->mtx);
     // retained states under topics a new prefix abandons would go stale
     if (NULL != plugin->config.topic_prefix &&
-        0 != strcmp(plugin->config.topic_prefix, config.topic_prefix)) {
+        0 !=
+            strncmp(plugin->config.topic_prefix, config.topic_prefix,
+                    MQTT_V2_TOPIC_MAX_LEN + 1)) {
         flushed = mqtt_v2_retire_topics_locked(plugin);
     }
     old            = plugin->config;
@@ -452,7 +457,7 @@ static int plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     // renaming an app does not notify its plugin
     if (NULL != plugin->prefix &&
-        0 != strcmp(plugin->app, plugin->common.name)) {
+        0 != strncmp(plugin->app, plugin->common.name, NEU_NODE_NAME_LEN)) {
         app_renamed(plugin);
     }
 
@@ -493,7 +498,7 @@ static int plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_REQRESP_NODE_DELETED: {
         const neu_reqresp_node_deleted_t *req = data;
-        if (0 == strcmp(plugin->common.name, req->node)) {
+        if (0 == strncmp(plugin->common.name, req->node, NEU_NODE_NAME_LEN)) {
             pthread_mutex_lock(&plugin->mtx);
             plugin->deleted = true;
             pthread_mutex_unlock(&plugin->mtx);
@@ -508,11 +513,30 @@ static int plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
         rv = mqtt_v2_handle_sub_tags(plugin, data);
         break;
+    case NEU_RESP_GET_NODE_PROPERTIES: {
+        mqtt_v2_props_ctx_t *ctx = head->ctx;
+        if (NULL != ctx && MQTT_V2_PROPS_CTX_MAGIC == ctx->magic) {
+            rv = mqtt_v2_handle_properties(plugin, ctx, data);
+        } else {
+            neu_resp_get_node_properties_fini(data);
+        }
+        break;
+    }
+    case NEU_REQRESP_NODE_PROPERTIES_CHANGED: {
+        const neu_reqresp_node_properties_changed_t *notice = data;
+        rv = mqtt_v2_handle_properties_changed(plugin, notice->node);
+        break;
+    }
     case NEU_RESP_ERROR: {
-        mqtt_v2_write_ctx_t *ctx = head->ctx;
-        if (NULL != ctx && MQTT_V2_WRITE_CTX_MAGIC == ctx->magic) {
+        // both contexts start with their magic
+        const uint32_t *magic = head->ctx;
+        if (NULL != magic && MQTT_V2_WRITE_CTX_MAGIC == *magic) {
             const neu_resp_error_t *resp = data;
-            rv = mqtt_v2_handle_write_resp(plugin, ctx, resp->error, NULL);
+            rv =
+                mqtt_v2_handle_write_resp(plugin, head->ctx, resp->error, NULL);
+        } else if (NULL != magic && MQTT_V2_PROPS_CTX_MAGIC == *magic) {
+            // the cached properties stay, the next refresh retries
+            free(head->ctx);
         }
         break;
     }

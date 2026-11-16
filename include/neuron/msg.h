@@ -214,6 +214,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UPDATE_NODE_PROPERTY,
     NEU_REQ_GET_NODE_PROPERTIES,
     NEU_RESP_GET_NODE_PROPERTIES,
+    NEU_REQRESP_NODE_PROPERTIES_CHANGED,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -388,6 +389,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_UPDATE_NODE_PROPERTY]   = "NEU_REQ_UPDATE_NODE_PROPERTY",
     [NEU_REQ_GET_NODE_PROPERTIES]    = "NEU_REQ_GET_NODE_PROPERTIES",
     [NEU_RESP_GET_NODE_PROPERTIES]   = "NEU_RESP_GET_NODE_PROPERTIES",
+    [NEU_REQRESP_NODE_PROPERTIES_CHANGED] =
+        "NEU_REQRESP_NODE_PROPERTIES_CHANGED",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -1827,6 +1830,11 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
+
+// sent to the MQTT V2 apps subscribing `node` once its properties change
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+} neu_reqresp_node_properties_changed_t;
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];

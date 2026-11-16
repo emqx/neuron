@@ -85,7 +85,7 @@ static inline bool mqtt_v2_topic_tmpl_valid(const char *       tmpl,
 
 static inline bool mqtt_v2_sub_topic_valid(const char *topic)
 {
-    static const char *vars[] = { "app", "device", "group", NULL };
+    static const char *vars[] = { "prefix", "app", "device", "group", NULL };
     return mqtt_v2_topic_tmpl_valid(topic, vars);
 }
 

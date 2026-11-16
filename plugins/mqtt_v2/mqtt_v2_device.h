@@ -43,11 +43,12 @@ mqtt_v2_group_t *mqtt_v2_device_add_group(mqtt_v2_device_t *device,
 void mqtt_v2_device_del_group(mqtt_v2_device_t *device, mqtt_v2_group_t *group);
 int  mqtt_v2_device_rename_group(mqtt_v2_device_t *device,
                                  mqtt_v2_group_t *group, const char *new_name,
-                                 const char *app);
+                                 const char *prefix, const char *app);
 
-// takes ownership of `topic_tmpl`
+// takes ownership of `topic_tmpl`, `prefix` may be NULL until configured
 int mqtt_v2_group_set_topic(mqtt_v2_group_t *group, char *topic_tmpl,
-                            const char *app, const char *device);
+                            const char *prefix, const char *app,
+                            const char *device);
 // `tags` is an array of neu_datatag_t
 void           mqtt_v2_group_set_tags(mqtt_v2_group_t *group, UT_array *tags);
 mqtt_v2_tag_t *mqtt_v2_group_find_tag(mqtt_v2_group_t *group, const char *name);

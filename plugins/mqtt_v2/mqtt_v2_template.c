@@ -46,6 +46,8 @@ typedef enum {
     VAR_TIME_LOCAL,
     VAR_TIME_UNIX,
     VAR_TIME_FORMAT,
+    VAR_PROPERTIES,
+    VAR_PROPERTY,
     VAR_TAGS,
     VAR_TAGS_KV,
     VAR_TAGS_ITEM,
@@ -57,6 +59,8 @@ typedef enum {
     TAG_ATTR_NAME,
     TAG_ATTR_VALUE,
     TAG_ATTR_TIMESTAMP,
+    TAG_ATTR_SOURCE_TIMESTAMP,
+    TAG_ATTR_SERVER_TIMESTAMP,
     TAG_ATTR_QUALITY,
     TAG_ATTR_DESCRIPTION,
     TAG_ATTR_UNIT,
@@ -67,7 +71,7 @@ typedef enum {
 typedef struct {
     var_kind_e kind;
     tag_attr_e attr;
-    char *     arg; // tag name or time format
+    char *     arg; // tag name, property key or time format
 } var_t;
 
 typedef struct {
@@ -108,7 +112,10 @@ struct node {
 
 struct mqtt_v2_tmpl {
     mqtt_v2_tmpl_kind_e kind;
-    node_t *            root;
+    // the tag template uses ${tag.error}, so tags that fail to be read are
+    // reported. A data template never sets this.
+    bool    reports_error;
+    node_t *root;
 };
 
 typedef struct {
@@ -136,6 +143,8 @@ static const struct {
     { "name", TAG_ATTR_NAME },
     { "value", TAG_ATTR_VALUE },
     { "timestamp", TAG_ATTR_TIMESTAMP },
+    { "sourceTimestamp", TAG_ATTR_SOURCE_TIMESTAMP },
+    { "serverTimestamp", TAG_ATTR_SERVER_TIMESTAMP },
     { "quality", TAG_ATTR_QUALITY },
     { "description", TAG_ATTR_DESCRIPTION },
     { "unit", TAG_ATTR_UNIT },
@@ -156,6 +165,7 @@ static const struct {
     { "TIME_UTC", VAR_TIME_UTC },
     { "TIME_LOCAL", VAR_TIME_LOCAL },
     { "TIME_UNIX", VAR_TIME_UNIX },
+    { "properties", VAR_PROPERTIES },
     { "tags", VAR_TAGS },
     { "tags_kv", VAR_TAGS_KV },
 };
@@ -164,6 +174,12 @@ static const struct {
 static const char *quality_metas[]   = { "quality", "q", NULL };
 static const char *timestamp_metas[] = { "timestamp", "sourcetimestamp", "time",
                                          "t",         "servertimestamp", NULL };
+static const char *source_timestamp_metas[] = { "sourceTimestamp",
+                                                "sourcetimestamp",
+                                                "source_timestamp", NULL };
+static const char *server_timestamp_metas[] = { "serverTimestamp",
+                                                "servertimestamp",
+                                                "server_timestamp", NULL };
 
 static json_t *render_node(const node_t *node, scope_t *s);
 
@@ -251,7 +267,8 @@ static void node_free(node_t *node)
 static bool parse_tag_attr(const char *name, tag_attr_e *attr)
 {
     for (size_t i = 0; i < sizeof(tag_attrs) / sizeof(tag_attrs[0]); ++i) {
-        if (0 == strcmp(name, tag_attrs[i].name)) {
+        if (0 ==
+            strncmp(name, tag_attrs[i].name, strlen(tag_attrs[i].name) + 1)) {
             *attr = tag_attrs[i].attr;
             return true;
         }
@@ -267,7 +284,8 @@ static int parse_var(compiler_t *c, char *name, var_t *var)
     memset(var, 0, sizeof(*var));
 
     for (size_t i = 0; i < sizeof(plain_vars) / sizeof(plain_vars[0]); ++i) {
-        if (0 == strcmp(name, plain_vars[i].name)) {
+        if (0 ==
+            strncmp(name, plain_vars[i].name, strlen(plain_vars[i].name) + 1)) {
             var->kind = plain_vars[i].kind;
             goto check;
         }
@@ -280,6 +298,13 @@ static int parse_var(compiler_t *c, char *name, var_t *var)
         }
         var->kind = VAR_TIME_FORMAT;
         var->arg  = strdup(name + 5);
+    } else if (0 == strncmp(name, "properties[", 11) && ']' == name[len - 1]) {
+        if (12 == len) {
+            compile_error(c, "empty property key in `${%s}`", name);
+            return -1;
+        }
+        var->kind = VAR_PROPERTY;
+        var->arg  = strndup(name + 11, len - 12);
     } else if (0 == strncmp(name, "tags[", 5)) {
         const char *close = strrchr(name, ']');
         if (NULL == close || close == name + 5) {
@@ -544,6 +569,54 @@ static char *quote_bare_vars(const char *text)
     return out;
 }
 
+static bool var_is_tag_error(const var_t *var)
+{
+    return VAR_TAG == var->kind && TAG_ATTR_ERROR == var->attr;
+}
+
+static bool str_reports_error(const str_tmpl_t *str)
+{
+    for (size_t i = 0; i < str->n_seg; ++i) {
+        if (str->segs[i].is_var && var_is_tag_error(&str->segs[i].var)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool node_reports_error(const node_t *node)
+{
+    if (NULL == node) {
+        return false;
+    }
+
+    switch (node->kind) {
+    case NODE_VAR:
+        return var_is_tag_error(&node->var);
+    case NODE_STR:
+        return str_reports_error(&node->str);
+    case NODE_OBJECT:
+        for (size_t i = 0; i < node->n_children; ++i) {
+            if (str_reports_error(&node->fields[i].key) ||
+                node_reports_error(node->fields[i].value)) {
+                return true;
+            }
+        }
+        return false;
+    case NODE_ARRAY:
+        for (size_t i = 0; i < node->n_children; ++i) {
+            if (node_reports_error(node->items[i])) {
+                return true;
+            }
+        }
+        return false;
+    case NODE_LITERAL:
+        break;
+    }
+
+    return false;
+}
+
 int mqtt_v2_tmpl_compile(const char *text, mqtt_v2_tmpl_kind_e kind,
                          mqtt_v2_tmpl_t **tmpl, char *err, size_t err_size)
 {
@@ -579,7 +652,14 @@ int mqtt_v2_tmpl_compile(const char *text, mqtt_v2_tmpl_kind_e kind,
     }
     (*tmpl)->kind = kind;
     (*tmpl)->root = root;
+    (*tmpl)->reports_error =
+        MQTT_V2_TMPL_TAG == kind && node_reports_error(root);
     return 0;
+}
+
+bool mqtt_v2_tmpl_reports_error(const mqtt_v2_tmpl_t *tmpl)
+{
+    return NULL != tmpl && tmpl->reports_error;
 }
 
 void mqtt_v2_tmpl_free(mqtt_v2_tmpl_t *tmpl)
@@ -681,6 +761,42 @@ static json_t *meta_value(scope_t *s, const char **names)
     return NULL;
 }
 
+// drivers report sample attributes, older ones metadata instead
+static json_t *render_tag_quality(scope_t *s)
+{
+    const neu_tag_sample_attrs_t *attrs = &s->tag->value.attrs;
+
+    if (attrs->has_quality) {
+        return json_integer(attrs->quality);
+    }
+    return meta_value(s, quality_metas);
+}
+
+static json_t *render_one_timestamp(scope_t *s, bool present, int64_t value,
+                                    const char **metas)
+{
+    if (present) {
+        return json_integer(value);
+    }
+    return meta_value(s, metas);
+}
+
+static json_t *render_tag_timestamp(scope_t *s)
+{
+    const neu_tag_sample_attrs_t *attrs = &s->tag->value.attrs;
+
+    if (attrs->has_timestamp) {
+        return json_integer(attrs->timestamp);
+    }
+    if (attrs->has_source_timestamp) {
+        return json_integer(attrs->source_timestamp);
+    }
+    if (attrs->has_server_timestamp) {
+        return json_integer(attrs->server_timestamp);
+    }
+    return meta_value(s, timestamp_metas);
+}
+
 static json_t *render_tag_info(scope_t *s, tag_attr_e attr)
 {
     const mqtt_v2_render_ctx_t *ctx  = s->ctx;
@@ -718,14 +834,27 @@ static json_t *render_tag_attr(scope_t *s, tag_attr_e attr)
     case TAG_ATTR_ERROR:
         return 0 != s->jtag.error ? json_integer(s->jtag.error) : NULL;
     case TAG_ATTR_QUALITY:
-        return meta_value(s, quality_metas);
+        return render_tag_quality(s);
     case TAG_ATTR_TIMESTAMP:
-        return meta_value(s, timestamp_metas);
+        return render_tag_timestamp(s);
+    case TAG_ATTR_SOURCE_TIMESTAMP:
+        return render_one_timestamp(s, s->tag->value.attrs.has_source_timestamp,
+                                    s->tag->value.attrs.source_timestamp,
+                                    source_timestamp_metas);
+    case TAG_ATTR_SERVER_TIMESTAMP:
+        return render_one_timestamp(s, s->tag->value.attrs.has_server_timestamp,
+                                    s->tag->value.attrs.server_timestamp,
+                                    server_timestamp_metas);
     case TAG_ATTR_DESCRIPTION:
     case TAG_ATTR_UNIT:
         return render_tag_info(s, attr);
     case TAG_ATTR_TYPE: {
-        const char *name = neu_type_string(s->tag->datatag.type);
+        // auto typed tags take the type of their samples
+        neu_type_e type = NEU_TYPE_AUTO == s->tag->datatag.type &&
+                NEU_TYPE_ERROR != s->tag->value.type
+            ? s->tag->value.type
+            : s->tag->datatag.type;
+        const char *name = neu_type_string(type);
         if (0 == strncmp(name, "NEU_TYPE_", 9)) {
             name += 9;
         }
@@ -785,7 +914,7 @@ static json_t *render_tags_item(const mqtt_v2_render_ctx_t *ctx,
 
     utarray_foreach(ctx->tags, neu_resp_tag_value_meta_t *, tag)
     {
-        if (0 == strcmp(tag->tag, var->arg)) {
+        if (0 == strncmp(tag->tag, var->arg, NEU_TAG_NAME_LEN)) {
             return render_tag(ctx, tag, var->attr);
         }
     }
@@ -861,6 +990,15 @@ static json_t *render_var(const var_t *var, scope_t *s)
     case VAR_TIME_UNIX:
     case VAR_TIME_FORMAT:
         return render_time(var->kind, var->arg, ctx->timestamp);
+    case VAR_PROPERTIES:
+        if (NULL == ctx->properties || 0 == json_object_size(ctx->properties)) {
+            return NULL;
+        }
+        return json_deep_copy(ctx->properties);
+    case VAR_PROPERTY: {
+        json_t *value = json_object_get(ctx->properties, var->arg);
+        return NULL != value ? json_deep_copy(value) : NULL;
+    }
     case VAR_TAGS:
         return render_tags(ctx, false);
     case VAR_TAGS_KV:
@@ -995,11 +1133,13 @@ static void append_name(strbuf_t *buf, const char *name)
     }
 }
 
-char *mqtt_v2_topic_render(const char *tmpl, const char *app,
-                           const char *device, const char *group)
+char *mqtt_v2_topic_render(const char *tmpl, const char *prefix,
+                           const char *app, const char *device,
+                           const char *group)
 {
-    static const char *vars[]  = { "${app}", "${device}", "${group}" };
-    const char *       names[] = { app, device, group };
+    static const char *vars[]  = { "${prefix}", "${app}", "${device}",
+                                  "${group}" };
+    const char *       names[] = { prefix, app, device, group };
     strbuf_t           buf     = { 0 };
 
     for (const char *p = tmpl; '\0' != *p;) {

@@ -951,6 +951,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
     case NEU_RESP_GET_DRIVER_GROUP:
     case NEU_REQRESP_NODE_DELETED:
+    case NEU_REQRESP_NODE_PROPERTIES_CHANGED:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_NODE:
     case NEU_RESP_GET_NODE_STATE:

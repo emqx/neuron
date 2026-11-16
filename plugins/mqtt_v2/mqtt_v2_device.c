@@ -30,7 +30,7 @@
 static char *device_topic(const char *prefix, const char *device,
                           const char *suffix)
 {
-    char *name  = mqtt_v2_topic_render("${device}", NULL, device, NULL);
+    char *name  = mqtt_v2_topic_render("${device}", NULL, NULL, device, NULL);
     char *topic = NULL;
 
     if (NULL != name) {
@@ -64,7 +64,7 @@ static void group_free(mqtt_v2_group_t *group)
 
 static int group_cmp(const mqtt_v2_group_t *a, const mqtt_v2_group_t *b)
 {
-    return strcmp(a->name, b->name);
+    return strncmp(a->name, b->name, NEU_GROUP_NAME_LEN);
 }
 
 mqtt_v2_device_t *mqtt_v2_device_new(const char *name, const char *app,
@@ -95,6 +95,7 @@ void mqtt_v2_device_free(mqtt_v2_device_t *device)
         group_free(group);
     }
 
+    json_decref(device->properties);
     free(device->state_topic);
     free(device->data_topic);
     free(device->write_req_topic);
@@ -135,8 +136,8 @@ int mqtt_v2_device_set_topics(mqtt_v2_device_t *device, const char *app,
             continue;
         }
 
-        char *topic = mqtt_v2_topic_render(group->topic_tmpl, app, device->name,
-                                           group->name);
+        char *topic = mqtt_v2_topic_render(group->topic_tmpl, prefix, app,
+                                           device->name, group->name);
         if (NULL == topic) {
             return -1;
         }
@@ -161,8 +162,12 @@ char *mqtt_v2_device_state_payload(const mqtt_v2_device_t *device,
     json_object_set_new(root, "name", json_string(device->name));
     json_object_set_new(root, "state", json_integer(device->state.link));
     json_object_set_new(root, "running", json_integer(device->state.running));
+    // the fixed fields win over properties of the same names
+    if (NULL != device->properties) {
+        json_object_update_missing(root, device->properties);
+    }
 
-    payload = json_dumps(root, 0);
+    payload = json_dumps(root, JSON_REAL_PRECISION(16));
     json_decref(root);
     return payload;
 }
@@ -199,7 +204,7 @@ void mqtt_v2_device_del_group(mqtt_v2_device_t *device, mqtt_v2_group_t *group)
 
 int mqtt_v2_device_rename_group(mqtt_v2_device_t *device,
                                 mqtt_v2_group_t *group, const char *new_name,
-                                const char *app)
+                                const char *prefix, const char *app)
 {
     HASH_DEL(device->groups, group);
     memset(group->name, 0, sizeof(group->name));
@@ -211,8 +216,8 @@ int mqtt_v2_device_rename_group(mqtt_v2_device_t *device,
         return 0;
     }
 
-    char *topic =
-        mqtt_v2_topic_render(group->topic_tmpl, app, device->name, group->name);
+    char *topic = mqtt_v2_topic_render(group->topic_tmpl, prefix, app,
+                                       device->name, group->name);
     if (NULL == topic) {
         return -1;
     }
@@ -222,12 +227,14 @@ int mqtt_v2_device_rename_group(mqtt_v2_device_t *device,
 }
 
 int mqtt_v2_group_set_topic(mqtt_v2_group_t *group, char *topic_tmpl,
-                            const char *app, const char *device)
+                            const char *prefix, const char *app,
+                            const char *device)
 {
     char *topic = NULL;
 
     if (NULL != topic_tmpl) {
-        topic = mqtt_v2_topic_render(topic_tmpl, app, device, group->name);
+        topic =
+            mqtt_v2_topic_render(topic_tmpl, prefix, app, device, group->name);
         if (NULL == topic) {
             free(topic_tmpl);
             return -1;
