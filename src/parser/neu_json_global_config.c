@@ -427,6 +427,13 @@ int neu_json_encode_driver(void *node_json, void *param)
         return -1;
     }
 
+    if (driver->n_property > 0 &&
+        0 !=
+            neu_json_encode_node_properties(node_json, driver->properties,
+                                            driver->n_property)) {
+        return -1;
+    }
+
     json_t *groups_json = json_array();
     if (NULL == groups_json ||
         0 != json_object_set_new(node_json, "groups", groups_json)) {
@@ -467,6 +474,18 @@ int neu_json_decode_driver_json(void *node_json, neu_json_driver_t *driver_p)
         return -1;
     }
 
+    // properties optional
+    json_t *properties_json = json_object_get(node_json, "properties");
+    if (NULL != properties_json &&
+        0 !=
+            neu_json_decode_node_properties_json(properties_json,
+                                                 &driver_p->properties,
+                                                 &driver_p->n_property)) {
+        neu_json_decode_add_node_req_fini(&driver_p->node);
+        neu_json_decode_gtag_array_fini(&driver_p->gtags);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -474,6 +493,9 @@ void neu_json_driver_fini(neu_json_driver_t *req)
 {
     neu_json_decode_add_node_req_fini(&req->node);
     neu_json_decode_gtag_array_fini(&req->gtags);
+    neu_node_properties_free(req->properties, req->n_property);
+    req->properties = NULL;
+    req->n_property = 0;
 }
 
 int neu_json_encode_driver_array(void *obj_json, void *param)

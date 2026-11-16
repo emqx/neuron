@@ -2252,6 +2252,10 @@ Response to the error code, when an error response occurs.
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2278,6 +2282,8 @@ Response to the error code, when an error response occurs.
     ]
 }
 ```
+
+`properties` is optional, the custom properties of the driver. Each item follows the format and value rules of [Node Properties](#node-properties), and keys must be unique. Importing replaces a driver of the same name, its previous properties are not kept.
 
 ### Response
 
@@ -2315,7 +2321,7 @@ Response to the error code, when an error response occurs.
 
 ### Response
 
-If success, returns the list of drivers.
+If success, returns the list of drivers. A driver with custom properties includes `properties`, which is omitted otherwise.
 
 ```json
 {
@@ -2329,6 +2335,10 @@ If success, returns the list of drivers.
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",

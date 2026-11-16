@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "parser/neu_json_global_config.h"
 #include "parser/neu_json_node.h"
 #include "utils/log.h"
 #include "json/json.h"
@@ -633,6 +634,78 @@ TEST(JsonTest, NodePropertiesRejectInvalidUpdate)
                       const_cast<char *>(input), &request));
         EXPECT_EQ(nullptr, request);
         neu_json_decode_update_node_property_req_free(request);
+    }
+}
+
+static std::string drivers_json(const std::string &properties)
+{
+    return R"({"nodes":[{"name":"d1","plugin":"Modbus TCP","params":{},)" +
+        properties + R"("groups":[]},)" +
+        R"({"name":"d2","plugin":"Modbus TCP","params":{},"groups":[]}]})";
+}
+
+TEST(JsonTest, DriverPropertiesDecodeAndEncode)
+{
+    std::string input =
+        drivers_json(R"("properties":[{"key":"location","value":"A"},)"
+                     R"({"key":"ratio","value":2.0},)"
+                     R"({"key":"flags","value":[true,false]}],)");
+    neu_json_drivers_req_t *req = NULL;
+    ASSERT_EQ(
+        0,
+        neu_json_decode_drivers_req(const_cast<char *>(input.c_str()), &req));
+    ASSERT_EQ(2, req->n_driver);
+    ASSERT_EQ(3u, req->drivers[0].n_property);
+    EXPECT_STREQ("location", req->drivers[0].properties[0].key);
+    EXPECT_STREQ("\"A\"", req->drivers[0].properties[0].value_json);
+    EXPECT_STREQ("2.0", req->drivers[0].properties[1].value_json);
+    EXPECT_STREQ("[true,false]", req->drivers[0].properties[2].value_json);
+    EXPECT_EQ(0u, req->drivers[1].n_property);
+    EXPECT_EQ(nullptr, req->drivers[1].properties);
+
+    json_t *object = json_object();
+    ASSERT_EQ(0, neu_json_encode_drivers_req(object, req));
+    json_t *nodes = json_object_get(object, "nodes");
+    ASSERT_EQ(2u, json_array_size(nodes));
+
+    json_t *properties =
+        json_object_get(json_array_get(nodes, 0), "properties");
+    ASSERT_EQ(3u, json_array_size(properties));
+    json_t *ratio = json_array_get(properties, 1);
+    EXPECT_STREQ("ratio", json_string_value(json_object_get(ratio, "key")));
+    EXPECT_TRUE(json_is_real(json_object_get(ratio, "value")));
+    EXPECT_EQ(nullptr, json_object_get(json_array_get(nodes, 1), "properties"));
+
+    json_decref(object);
+    neu_json_decode_drivers_req_free(req);
+}
+
+TEST(JsonTest, DriverPropertiesEmptyAndInvalid)
+{
+    neu_json_drivers_req_t *req   = NULL;
+    std::string             empty = drivers_json(R"("properties":[],)");
+    ASSERT_EQ(
+        0,
+        neu_json_decode_drivers_req(const_cast<char *>(empty.c_str()), &req));
+    EXPECT_EQ(0u, req->drivers[0].n_property);
+    neu_json_decode_drivers_req_free(req);
+
+    const char *invalid[] = {
+        R"("properties":{"a":1},)",
+        R"("properties":[{"key":"a","value":null}],)",
+        R"("properties":[{"key":"a","value":[1,"1"]}],)",
+        R"("properties":[{"key":"","value":1}],)",
+        R"("properties":[{"value":1}],)",
+        R"("properties":[{"key":"a","value":1},{"key":"a","value":2}],)",
+    };
+    for (const char *properties : invalid) {
+        SCOPED_TRACE(properties);
+        std::string input = drivers_json(properties);
+        req               = NULL;
+        EXPECT_NE(0,
+                  neu_json_decode_drivers_req(const_cast<char *>(input.c_str()),
+                                              &req));
+        EXPECT_EQ(nullptr, req);
     }
 }
 
