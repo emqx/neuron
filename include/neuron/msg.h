@@ -215,6 +215,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_NODE_PROPERTIES,
     NEU_RESP_GET_NODE_PROPERTIES,
     NEU_REQRESP_NODE_PROPERTIES_CHANGED,
+
+    NEU_REQ_COPY_NODE,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -391,6 +393,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_NODE_PROPERTIES]   = "NEU_RESP_GET_NODE_PROPERTIES",
     [NEU_REQRESP_NODE_PROPERTIES_CHANGED] =
         "NEU_REQRESP_NODE_PROPERTIES_CHANGED",
+
+    [NEU_REQ_COPY_NODE] = "NEU_REQ_COPY_NODE",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -570,6 +574,11 @@ typedef struct neu_req_update_node_tag {
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
 } neu_req_del_node_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+    char name[NEU_NODE_NAME_LEN];
+} neu_req_copy_node_t;
 
 typedef struct neu_req_add_node_properties {
     char                 node[NEU_NODE_NAME_LEN];

@@ -114,6 +114,8 @@ typedef struct {
 typedef struct {
     neu_json_add_node_req_t    node;
     neu_json_app_group_array_t subscriptions;
+    size_t                     n_property;
+    neu_node_property_t *      properties;
 } neu_json_app_t;
 
 int  neu_json_encode_app(void *node_json, void *param);

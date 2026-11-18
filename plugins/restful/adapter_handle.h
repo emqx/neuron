@@ -24,6 +24,7 @@
 #include "adapter.h"
 
 void handle_add_adapter(nng_aio *aio);
+void handle_copy_node(nng_aio *aio);
 void handle_update_adapter(nng_aio *aio);
 void handle_del_adapter(nng_aio *aio);
 void handle_get_adapter(nng_aio *aio);

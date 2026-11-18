@@ -74,6 +74,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/node",
     },
     {
+        .url = "/api/v2/node/copy",
+    },
+    {
         .url = "/api/v2/plugin",
     },
     {
@@ -342,6 +345,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/node",
         .value.handler = handle_add_adapter,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node/copy",
+        .value.handler = handle_copy_node,
     },
     {
         .method        = NEU_HTTP_METHOD_PUT,

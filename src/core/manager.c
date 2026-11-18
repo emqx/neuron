@@ -1077,6 +1077,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                       cmd->static_tags);
         } else {
             free(cmd->params);
+            free(cmd->static_tags);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -1139,6 +1140,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             notify_monitor(manager, NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT, cmd);
         } else {
             free(cmd->params);
+            free(cmd->static_tags);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -1835,6 +1837,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    case NEU_REQ_COPY_NODE: {
+        neu_req_copy_node_t *cmd = (neu_req_copy_node_t *) &header[1];
+        neu_resp_error_t     e   = { 0 };
+
+        nlog_notice("copy node:%s to:%s", cmd->node, cmd->name);
+        e.error      = neu_manager_copy_node(manager, cmd);
+        header->type = NEU_RESP_ERROR;
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
+        reply(manager, header, &e);
+        break;
+    }
     case NEU_REQ_ADD_DRIVERS: {
         neu_req_driver_array_t *cmd = (neu_req_driver_array_t *) &header[1];
         neu_resp_error_t        e   = { 0 };
