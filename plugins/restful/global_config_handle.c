@@ -68,6 +68,8 @@ typedef enum {
     STATE_UNSUB_APP,
     STATE_ADD_SUBSCRIPTION,
     STATE_ADD_SETTING,
+    STATE_GET_APP_PROPERTIES,
+    STATE_ADD_APP_PROPERTIES,
     STATE_END,
 } context_state_e;
 
@@ -123,6 +125,10 @@ static int get_driver_setting_resp(context_t *                  ctx,
 static int get_properties(context_t *ctx, neu_resp_node_info_t *info);
 static int get_driver_properties_resp(context_t *                     ctx,
                                       neu_resp_get_node_properties_t *resp);
+static int get_app_properties_resp(context_t *                     ctx,
+                                   neu_resp_get_node_properties_t *resp);
+static int add_app_properties(context_t *ctx, neu_json_app_t *app);
+static int encode_missing_apps(context_t *ctx);
 
 static int del_node(context_t *ctx, neu_resp_node_info_t *info);
 static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
@@ -190,10 +196,12 @@ static void context_free(context_t *ctx)
         for (int i = 0; i < ctx->japps.n_app; ++i) {
             neu_json_app_t *app = &ctx->japps.apps[i];
             free(app->node.setting);
+            neu_node_properties_free(app->properties, app->n_property);
             for (int j = 0; j < app->subscriptions.n_group; ++j) {
                 free(app->subscriptions.groups[j].driver);
                 free(app->subscriptions.groups[j].group);
                 free(app->subscriptions.groups[j].params);
+                free(app->subscriptions.groups[j].static_tags);
             }
             free(app->subscriptions.groups);
         }
@@ -678,7 +686,25 @@ static void get_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
             NEXT(ctx, get_subscriptions, ctx->iter);
             break;
         }
-        if (0 != neu_json_encode_apps_req(ctx->json, &ctx->japps)) {
+        ctx->iter  = NULL;
+        ctx->state = STATE_GET_APP_PROPERTIES;
+        // fall through
+    case STATE_GET_APP_PROPERTIES:
+        if (NULL != ctx->iter && NEU_RESP_GET_NODE_PROPERTIES == type) {
+            NEXT(ctx, get_app_properties_resp, data);
+        }
+        ctx->iter = utarray_next(ctx->apps, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_properties, ctx->iter);
+            break;
+        }
+        if (ctx->filter && 0 == ctx->japps.n_app) {
+            ctx->error = NEU_ERR_NODE_NOT_EXIST;
+            ctx->state = STATE_END;
+            break;
+        }
+        if (0 != neu_json_encode_apps_req(ctx->json, &ctx->japps) ||
+            0 != encode_missing_apps(ctx)) {
             ctx->error = NEU_ERR_EINTERNAL;
         }
         ctx->state = STATE_END;
@@ -762,6 +788,31 @@ static void put_apps_context_next(context_t *ctx, neu_reqresp_type_e type,
             } else {
                 NEXT(ctx, add_app_node, app);
             }
+            ++ctx->idx;
+            goto done;
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_APP_PROPERTIES;
+    }
+        // fall through
+    case STATE_ADD_APP_PROPERTIES: {
+        neu_resp_error_t *   err  = data;
+        neu_json_apps_req_t *apps = ctx->apps_req;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        for (; ctx->idx < (size_t) apps->n_app; ++ctx->idx) {
+            neu_json_app_t *app = &apps->apps[ctx->idx];
+            if (0 == app->n_property ||
+                is_default_app_node(app->node.name, app->node.plugin)) {
+                continue;
+            }
+            NEXT(ctx, add_app_properties, app);
             ++ctx->idx;
             goto done;
         }
@@ -1448,6 +1499,84 @@ static int get_properties(context_t *ctx, neu_resp_node_info_t *info)
     return 0;
 }
 
+static int encode_missing_apps(context_t *ctx)
+{
+    json_t *           missing = NULL;
+    neu_strset_node_t *elem = NULL, *tmp = NULL;
+
+    if (NULL == ctx->filter) {
+        return 0;
+    }
+
+    missing = json_array();
+    if (NULL == missing) {
+        return NEU_ERR_EINTERNAL;
+    }
+    HASH_ITER(hh, ctx->filter, elem, tmp)
+    {
+        bool found = false;
+        for (int i = 0; i < ctx->japps.n_app; ++i) {
+            if (0 == strcmp(ctx->japps.apps[i].node.name, elem->str)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found &&
+            0 != json_array_append_new(missing, json_string(elem->str))) {
+            json_decref(missing);
+            return NEU_ERR_EINTERNAL;
+        }
+    }
+    if (0 == json_array_size(missing)) {
+        json_decref(missing);
+        return 0;
+    }
+    if (0 != json_object_set_new(ctx->json, "missing", missing)) {
+        return NEU_ERR_EINTERNAL;
+    }
+    return 0;
+}
+
+static int get_app_properties_resp(context_t *                     ctx,
+                                   neu_resp_get_node_properties_t *resp)
+{
+    int i = utarray_eltidx(ctx->apps, ctx->iter);
+    if (i >= ctx->japps.n_app) {
+        neu_resp_get_node_properties_fini(resp);
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    ctx->japps.apps[i].n_property = resp->n_property;
+    ctx->japps.apps[i].properties = resp->properties;
+    resp->n_property              = 0;
+    resp->properties              = NULL;
+    return 0;
+}
+
+static int add_app_properties(context_t *ctx, neu_json_app_t *app)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx             = ctx->aio,
+        .type            = NEU_REQ_ADD_NODE_PROPERTIES,
+        .otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM,
+    };
+    neu_req_add_node_properties_t cmd = { 0 };
+
+    strncpy(cmd.node, app->node.name, NEU_NODE_NAME_LEN - 1);
+    cmd.n_property  = app->n_property;
+    cmd.properties  = app->properties;
+    app->n_property = 0;
+    app->properties = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_add_node_properties_fini(&cmd);
+        return NEU_ERR_IS_BUSY;
+    }
+    return 0;
+}
+
 // the response names no node, it belongs to the driver at `ctx->iter`
 static int get_driver_properties_resp(context_t *                     ctx,
                                       neu_resp_get_node_properties_t *resp)
@@ -1942,6 +2071,8 @@ static int add_app_subscription(context_t *ctx, neu_json_app_t *app,
     grp->static_tags = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        free(cmd.params);
+        free(cmd.static_tags);
         return NEU_ERR_IS_BUSY;
     }
 
@@ -2059,10 +2190,17 @@ void handle_get_apps(nng_aio *aio)
             if (NULL != (next = strchr(names, ','))) {
                 *next++ = '\0';
             }
+            if ('\0' == names[0]) {
+                continue;
+            }
             if (neu_strset_add(&ctx->filter, names) < 0) {
                 rv = NEU_ERR_EINTERNAL;
                 goto error;
             }
+        }
+        if (NULL == ctx->filter) {
+            rv = NEU_ERR_NODE_NOT_EXIST;
+            goto error;
         }
     }
 

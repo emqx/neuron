@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <dlfcn.h>
+#include <stdio.h>
 
 #include "utils/log.h"
 #include "json/neu_json_param.h"
@@ -26,6 +27,7 @@
 
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
+#include "adapter/storage.h"
 #include "base/msg_internal.h"
 
 #include "manager_internal.h"
@@ -313,12 +315,14 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     }
 
     if (static_tags && NULL == (cmd.static_tags = strdup(static_tags))) {
+        free(cmd.params);
         return NEU_ERR_EINTERNAL;
     }
 
     neu_msg_t *msg = neu_msg_new(NEU_REQ_SUBSCRIBE_GROUP, NULL, &cmd);
     if (NULL == msg) {
         free(cmd.params);
+        free(cmd.static_tags);
         return NEU_ERR_EINTERNAL;
     }
     neu_reqresp_head_t *header = neu_msg_get_header(msg);
@@ -333,12 +337,15 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
         nlog_warn("send %s to %s app failed",
                   neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
         free(cmd.params);
+        free(cmd.static_tags);
         neu_msg_free(msg);
     } else {
         nlog_notice("send %s to %s app",
                     neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
     }
-    cmd.params = NULL;
+    // the app message owns these strings; the driver only needs the names
+    cmd.params      = NULL;
+    cmd.static_tags = NULL;
 
     msg = neu_msg_new(NEU_REQ_SUBSCRIBE_GROUP, NULL, &cmd);
     if (NULL == msg) {
@@ -604,4 +611,201 @@ int neu_manager_add_drivers(neu_manager_t *manager, neu_req_driver_array_t *req)
     }
 
     return ret;
+}
+
+static bool copy_name_reserved(const char *name)
+{
+    return 0 == strncmp(name, "monitor", sizeof("monitor")) ||
+        0 == strncmp(name, "DataStorage", sizeof("DataStorage")) ||
+        0 == strncmp(name, "DataProcessing", sizeof("DataProcessing"));
+}
+
+static int copy_group_available(neu_manager_t *manager, const char *driver,
+                                const char *group)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+
+    if (NULL == adapter ||
+        NEU_NA_TYPE_DRIVER != neu_adapter_get_type(adapter)) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+    return neu_adapter_driver_group_exist((neu_adapter_driver_t *) adapter,
+                                          group);
+}
+
+static int bind_copied_node(neu_manager_t *manager, neu_adapter_t *adapter)
+{
+    struct sockaddr_un addr = { 0 };
+    socklen_t          len  = sizeof(addr);
+
+    if (0 !=
+        getsockname(adapter->control_fd, (struct sockaddr *) &addr, &len)) {
+        return NEU_ERR_EINTERNAL;
+    }
+    if (0 !=
+        neu_node_manager_update(manager->node_manager, adapter->name, addr)) {
+        return NEU_ERR_EINTERNAL;
+    }
+    return NEU_ERR_SUCCESS;
+}
+
+static void notify_monitor_node_added(neu_manager_t *manager, const char *node,
+                                      const char *plugin)
+{
+    struct sockaddr_un addr =
+        neu_node_manager_get_addr(manager->node_manager, "monitor");
+    neu_req_add_node_t  ev     = { 0 };
+    neu_msg_t *         msg    = NULL;
+    neu_reqresp_head_t *header = NULL;
+
+    if (0 == addr.sun_path[1]) {
+        return;
+    }
+    strncpy(ev.node, node, sizeof(ev.node) - 1);
+    if (NULL != plugin) {
+        strncpy(ev.plugin, plugin, sizeof(ev.plugin) - 1);
+    }
+    msg = neu_msg_new(NEU_REQ_ADD_NODE_EVENT, NULL, &ev);
+    if (NULL == msg) {
+        return;
+    }
+    header = neu_msg_get_header(msg);
+    snprintf(header->sender, sizeof(header->sender), "%s", "manager");
+    snprintf(header->receiver, sizeof(header->receiver), "%s", "monitor");
+    if (0 != neu_send_msg_to(manager->server_fd, &addr, msg)) {
+        neu_msg_free(msg);
+    }
+}
+
+int neu_manager_copy_node(neu_manager_t *            manager,
+                          const neu_req_copy_node_t *req)
+{
+    neu_adapter_t *source                      = NULL;
+    neu_adapter_t *created                     = NULL;
+    UT_array *     subs                        = NULL;
+    char *         setting                     = NULL;
+    char           tags[NEU_NODE_TAGS_LEN]     = { 0 };
+    char           plugin[NEU_PLUGIN_NAME_LEN] = { 0 };
+    int            rv                          = NEU_ERR_SUCCESS;
+    bool           created_ok                  = false;
+
+    if ('\0' == req->node[0] || '\0' == req->name[0]) {
+        return NEU_ERR_NODE_NAME_EMPTY;
+    }
+    if (copy_name_reserved(req->name)) {
+        return NEU_ERR_NODE_NOT_ALLOW_UPDATE;
+    }
+
+    source = neu_node_manager_find(manager->node_manager, req->node);
+    if (NULL == source) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+    if (NEU_NA_TYPE_APP != neu_adapter_get_type(source) ||
+        copy_name_reserved(req->node)) {
+        return NEU_ERR_NODE_NOT_ALLOW_UPDATE;
+    }
+    if (neu_node_manager_is_single(manager->node_manager, req->node) ||
+        neu_node_manager_is_monitor(manager->node_manager, req->node)) {
+        return NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE;
+    }
+    if (NULL != neu_node_manager_find(manager->node_manager, req->name)) {
+        return NEU_ERR_NODE_EXIST;
+    }
+    strncpy(plugin, source->module->module_name, sizeof(plugin) - 1);
+
+    subs = neu_subscribe_manager_get(manager->subscribe_manager, req->node,
+                                     NULL, NULL);
+    if (NULL != subs) {
+        utarray_foreach(subs, neu_resp_subscribe_info_t *, sub)
+        {
+            int error = copy_group_available(manager, sub->driver, sub->group);
+
+            if (NEU_ERR_SUCCESS != error) {
+                utarray_free(subs);
+                return error;
+            }
+        }
+    }
+
+    if (NEU_ERR_SUCCESS != neu_adapter_get_setting(source, &setting)) {
+        free(setting);
+        setting = NULL;
+    }
+
+    neu_node_manager_copy_tags(manager->node_manager, req->node, tags,
+                               sizeof(tags));
+    rv = neu_manager_add_node(manager, req->name, plugin, NULL,
+                              '\0' == tags[0] ? NULL : tags,
+                              NEU_NODE_RUNNING_STATE_INIT, false);
+    if (NEU_ERR_SUCCESS != rv) {
+        free(setting);
+        if (NULL != subs) {
+            utarray_free(subs);
+        }
+        return rv;
+    }
+    created_ok = true;
+    created    = neu_node_manager_find(manager->node_manager, req->name);
+
+    rv = bind_copied_node(manager, created);
+    if (NEU_ERR_SUCCESS == rv && NULL != setting) {
+        rv = neu_adapter_set_setting_stopped(created, setting);
+    }
+    if (NEU_ERR_SUCCESS == rv) {
+        manager_storage_add_node(manager, req->name,
+                                 '\0' == tags[0] ? NULL : tags);
+        if (NULL != setting) {
+            adapter_storage_setting(req->name, setting);
+        }
+    }
+    free(setting);
+    setting = NULL;
+
+    if (NEU_ERR_SUCCESS == rv) {
+        neu_node_property_t *properties = NULL;
+        size_t               n_property = 0;
+
+        rv = neu_persister_load_node_properties(req->node, &properties,
+                                                &n_property);
+        if (NEU_ERR_SUCCESS == rv && n_property > 0) {
+            rv = neu_persister_add_node_properties(req->name, properties,
+                                                   n_property);
+        }
+        neu_node_properties_free(properties, n_property);
+    }
+
+    if (NEU_ERR_SUCCESS == rv && NULL != subs) {
+        utarray_foreach(subs, neu_resp_subscribe_info_t *, sub)
+        {
+            uint16_t port = 0;
+
+            rv = neu_manager_subscribe(manager, req->name, sub->driver,
+                                       sub->group, sub->params,
+                                       sub->static_tags, &port);
+            if (NEU_ERR_SUCCESS != rv) {
+                break;
+            }
+            neu_manager_send_subscribe(manager, req->name, sub->driver,
+                                       sub->group, port, sub->params,
+                                       sub->static_tags);
+            manager_storage_subscribe(manager, req->name, sub->driver,
+                                      sub->group, sub->params,
+                                      sub->static_tags);
+        }
+    }
+    if (NULL != subs) {
+        utarray_free(subs);
+        subs = NULL;
+    }
+
+    if (NEU_ERR_SUCCESS != rv) {
+        if (created_ok) {
+            del_node(manager, req->name);
+        }
+        return rv;
+    }
+
+    notify_monitor_node_added(manager, req->name, plugin);
+    return NEU_ERR_SUCCESS;
 }

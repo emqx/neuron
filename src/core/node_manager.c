@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -87,6 +88,22 @@ void neu_node_manager_destroy(neu_node_manager_t *mgr)
 
     utarray_free(mgr->monitors);
     free(mgr);
+}
+
+int neu_node_manager_copy_tags(neu_node_manager_t *mgr, const char *name,
+                               char *tags, size_t len)
+{
+    node_entity_t *node = NULL;
+
+    if (NULL == tags || 0 == len) {
+        return -1;
+    }
+    HASH_FIND_STR(mgr->nodes, name, node);
+    if (NULL == node) {
+        return -1;
+    }
+    snprintf(tags, len, "%s", node->tags ? node->tags : "");
+    return 0;
 }
 
 int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter,

@@ -181,7 +181,8 @@ extern "C" {
     XX(NEU_REQ_GET_NODE_PROPERTIES, neu_req_get_node_properties_t)             \
     XX(NEU_RESP_GET_NODE_PROPERTIES, neu_resp_get_node_properties_t)           \
     XX(NEU_REQRESP_NODE_PROPERTIES_CHANGED,                                    \
-       neu_reqresp_node_properties_changed_t)
+       neu_reqresp_node_properties_changed_t)                                  \
+    XX(NEU_REQ_COPY_NODE, neu_req_copy_node_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

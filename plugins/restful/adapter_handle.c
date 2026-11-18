@@ -18,6 +18,9 @@
  **/
 
 #include <stdlib.h>
+#include <string.h>
+
+#include <jansson.h>
 
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
@@ -862,6 +865,89 @@ void handle_put_node_tag(nng_aio *aio)
                 }
                 int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
+            }
+        })
+}
+
+typedef struct {
+    char *node;
+    char *name;
+} neu_json_copy_node_req_t;
+
+static int neu_json_decode_copy_node_req(char *                     buf,
+                                         neu_json_copy_node_req_t **result)
+{
+    json_t *                  root = json_loads(buf, 0, NULL);
+    json_t *                  node = NULL;
+    json_t *                  name = NULL;
+    neu_json_copy_node_req_t *req  = NULL;
+
+    if (!json_is_object(root)) {
+        json_decref(root);
+        return -1;
+    }
+    node = json_object_get(root, "node");
+    name = json_object_get(root, "name");
+    if (!json_is_string(node) || !json_is_string(name) ||
+        '\0' == json_string_value(node)[0] ||
+        '\0' == json_string_value(name)[0]) {
+        json_decref(root);
+        return -1;
+    }
+
+    req = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        json_decref(root);
+        return -1;
+    }
+    req->node = strdup(json_string_value(node));
+    req->name = strdup(json_string_value(name));
+    json_decref(root);
+    if (NULL == req->node || NULL == req->name) {
+        free(req->node);
+        free(req->name);
+        free(req);
+        return -1;
+    }
+    *result = req;
+    return 0;
+}
+
+static void neu_json_decode_copy_node_req_free(neu_json_copy_node_req_t *req)
+{
+    if (NULL == req) {
+        return;
+    }
+    free(req->node);
+    free(req->name);
+    free(req);
+}
+
+void handle_copy_node(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_copy_node_req_t, neu_json_decode_copy_node_req, {
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN ||
+                strlen(req->name) >= NEU_NODE_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            } else {
+                neu_reqresp_head_t  header = { 0 };
+                neu_req_copy_node_t cmd    = { 0 };
+
+                header.ctx             = aio;
+                header.type            = NEU_REQ_COPY_NODE;
+                header.otel_trace_type = NEU_OTEL_TRACE_TYPE_REST_COMM;
+                strncpy(cmd.node, req->node, sizeof(cmd.node) - 1);
+                strncpy(cmd.name, req->name, sizeof(cmd.name) - 1);
+                if (0 != neu_plugin_op(plugin, header, &cmd)) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                         neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });

@@ -2371,6 +2371,35 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, const char *setting)
     return rv;
 }
 
+int neu_adapter_set_setting_stopped(neu_adapter_t *adapter, const char *setting)
+{
+    const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
+    int   rv   = intf_funs->setting(adapter->plugin, setting);
+    char *copy = NULL;
+
+    if (rv != 0) {
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
+    // Legacy MQTT opens the broker inside setting(). Close it before the
+    // copied node is left for the operator to start.
+    rv = intf_funs->stop(adapter->plugin);
+    if (rv != 0) {
+        return rv;
+    }
+
+    copy = strdup(setting);
+    if (NULL == copy) {
+        return NEU_ERR_EINTERNAL;
+    }
+    if (adapter->setting != NULL) {
+        free(adapter->setting);
+    }
+    adapter->setting = copy;
+    adapter->state   = NEU_NODE_RUNNING_STATE_STOPPED;
+    return NEU_ERR_SUCCESS;
+}
+
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 {
     if (adapter->setting != NULL) {

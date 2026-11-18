@@ -97,6 +97,8 @@ int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
 
 int neu_manager_add_drivers(neu_manager_t *         manager,
                             neu_req_driver_array_t *req);
+int neu_manager_copy_node(neu_manager_t *            manager,
+                          const neu_req_copy_node_t *req);
 
 inline static void forward_msg(neu_manager_t *     manager,
                                neu_reqresp_head_t *header, const char *node)

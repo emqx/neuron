@@ -1640,6 +1640,9 @@ int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
 
 end:
     free(sub_info->params);
+    if (0 != rv) {
+        free(sub_info->static_tags);
+    }
     return rv;
 }
 
@@ -1673,6 +1676,9 @@ int handle_update_subscribe(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
 
 end:
     free(sub_info->params);
+    if (0 != rv) {
+        free(sub_info->static_tags);
+    }
     return rv;
 }
 

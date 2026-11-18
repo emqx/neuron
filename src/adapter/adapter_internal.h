@@ -94,6 +94,8 @@ neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
 void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer);
 
 int neu_adapter_set_setting(neu_adapter_t *adapter, const char *config);
+// Applies setting and leaves the node stopped. Does not call start.
+int neu_adapter_set_setting_stopped(neu_adapter_t *adapter, const char *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 UT_array *neu_adapter_get_groups(neu_adapter_t *adapter, const char *filter);
