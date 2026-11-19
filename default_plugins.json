@@ -1,6 +1,7 @@
 {
 	"plugins": [
 		"libplugin-mqtt.so",
+		"libplugin-mqtt-v2.so",
 		"libplugin-aws-iot.so",
 		"libplugin-azure-iot.so",
 		"libplugin-ekuiper.so",

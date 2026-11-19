@@ -50,6 +50,7 @@
 
 #include "manager.h"
 #include "manager_internal.h"
+#include "mqtt_v2/mqtt_v2_params.h"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME DEFAULT_DASHBOARD_PLUGIN_NAME
@@ -66,6 +67,7 @@ inline static void forward_msg_copy(neu_manager_t *     manager,
 
 inline static void notify_monitor(neu_manager_t *    manager,
                                   neu_reqresp_type_e event, void *data);
+static void notify_properties_changed(neu_manager_t *manager, const char *node);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  update_timestamp(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
@@ -286,6 +288,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             e.error = neu_persister_add_node_properties(
                 cmd->node, cmd->properties, cmd->n_property);
         }
+        if (NEU_ERR_SUCCESS == e.error) {
+            notify_properties_changed(manager, cmd->node);
+        }
         neu_req_add_node_properties_fini(cmd);
         header->type = NEU_RESP_ERROR;
         neu_msg_exchange(header);
@@ -301,6 +306,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             e.error = neu_persister_delete_node_properties(
                 cmd->node, (const char *const *) cmd->keys, cmd->n_key);
         }
+        if (NEU_ERR_SUCCESS == e.error) {
+            notify_properties_changed(manager, cmd->node);
+        }
         neu_req_delete_node_properties_fini(cmd);
         header->type = NEU_RESP_ERROR;
         neu_msg_exchange(header);
@@ -315,6 +323,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (neu_node_manager_find(manager->node_manager, cmd->node) != NULL) {
             e.error =
                 neu_persister_update_node_property(cmd->node, &cmd->property);
+        }
+        if (NEU_ERR_SUCCESS == e.error) {
+            notify_properties_changed(manager, cmd->node);
         }
         neu_req_update_node_property_fini(cmd);
         header->type = NEU_RESP_ERROR;
@@ -978,7 +989,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_reqresp_node_deleted_t resp = { 0 };
         snprintf(resp.node, sizeof(resp.node), "%s", header->receiver);
         // notify MQTT about node removal
-        if (0 == strcmp(adapter->module->module_name, "MQTT")) {
+        if (0 ==
+                strncmp(adapter->module->module_name, "MQTT", sizeof("MQTT")) ||
+            0 ==
+                strncmp(adapter->module->module_name, MQTT_V2_MODULE_NAME,
+                        sizeof(MQTT_V2_MODULE_NAME))) {
             msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
             if (NULL != msg) {
                 neu_reqresp_head_t *hd = neu_msg_get_header(msg);
@@ -1062,6 +1077,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                       cmd->static_tags);
         } else {
             free(cmd->params);
+            free(cmd->static_tags);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -1124,6 +1140,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             notify_monitor(manager, NEU_REQ_UPDATE_SUBSCRIBE_GROUP_EVENT, cmd);
         } else {
             free(cmd->params);
+            free(cmd->static_tags);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -1820,6 +1837,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    case NEU_REQ_COPY_NODE: {
+        neu_req_copy_node_t *cmd = (neu_req_copy_node_t *) &header[1];
+        neu_resp_error_t     e   = { 0 };
+
+        nlog_notice("copy node:%s to:%s", cmd->node, cmd->name);
+        e.error      = neu_manager_copy_node(manager, cmd);
+        header->type = NEU_RESP_ERROR;
+        snprintf(header->receiver, sizeof(header->receiver), "%s",
+                 header->sender);
+        reply(manager, header, &e);
+        break;
+    }
     case NEU_REQ_ADD_DRIVERS: {
         neu_req_driver_array_t *cmd = (neu_req_driver_array_t *) &header[1];
         neu_resp_error_t        e   = { 0 };
@@ -1829,6 +1858,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             for (uint16_t i = 0; i < cmd->n_driver; ++i) {
                 neu_req_driver_t *driver = &cmd->drivers[i];
                 manager_storage_add_node(manager, driver->node, driver->tags);
+                if (driver->n_property > 0 &&
+                    NEU_ERR_SUCCESS !=
+                        neu_persister_add_node_properties(driver->node,
+                                                          driver->properties,
+                                                          driver->n_property)) {
+                    nlog_error("fail to store properties of driver:%s",
+                               driver->node);
+                }
                 adapter_storage_setting(driver->node, driver->setting);
                 for (uint16_t j = 0; j < driver->n_group; j++) {
                     adapter_storage_add_group(driver->node,
@@ -2058,6 +2095,48 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         }
         neu_msg_free(msg);
     }
+}
+
+// only MQTT V2 handles the notice, other apps would reject an unknown message
+static void notify_properties_changed(neu_manager_t *manager, const char *node)
+{
+    neu_reqresp_node_properties_changed_t notice = { 0 };
+    UT_array *                            apps =
+        neu_subscribe_manager_find_by_driver(manager->subscribe_manager, node);
+
+    snprintf(notice.node, sizeof(notice.node), "%s", node);
+    utarray_foreach(apps, neu_app_subscribe_t *, app)
+    {
+        // an app subscribing several groups appears once per group
+        bool seen = false;
+        for (neu_app_subscribe_t *p = utarray_front(apps); p != app;
+             p                      = utarray_next(apps, p)) {
+            if (0 == strncmp(p->app_name, app->app_name, NEU_NODE_NAME_LEN)) {
+                seen = true;
+                break;
+            }
+        }
+
+        const neu_adapter_t *adapter =
+            neu_node_manager_find(manager->node_manager, app->app_name);
+        if (seen || NULL == adapter ||
+            0 !=
+                strncmp(adapter->module->module_name, MQTT_V2_MODULE_NAME,
+                        sizeof(MQTT_V2_MODULE_NAME))) {
+            continue;
+        }
+
+        neu_msg_t *msg =
+            neu_msg_new(NEU_REQRESP_NODE_PROPERTIES_CHANGED, NULL, &notice);
+        if (NULL == msg) {
+            break;
+        }
+        neu_reqresp_head_t *hd = neu_msg_get_header(msg);
+        snprintf(hd->receiver, sizeof(hd->receiver), "%s", app->app_name);
+        snprintf(hd->sender, sizeof(hd->sender), "%s", "manager");
+        reply(manager, hd, &notice);
+    }
+    utarray_free(apps);
 }
 
 static int update_timestamp(void *usr_data)

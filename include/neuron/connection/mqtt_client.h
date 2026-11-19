@@ -120,6 +120,13 @@ int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
 int neu_mqtt_client_open(neu_mqtt_client_t *client);
 int neu_mqtt_client_close(neu_mqtt_client_t *client);
 
+/** Send a DISCONNECT packet so that the broker discards the will message.
+ *
+ * Waits at most `timeout_ms` for the packet to be sent. The client does not
+ * reconnect afterwards, and should be closed.
+ */
+int neu_mqtt_client_disconnect(neu_mqtt_client_t *client, uint32_t timeout_ms);
+
 /** Publish a `qos` message with `len` bytes `payload` on `topic`.
  *
  * This function initiates sending a `PUBLISH` packet, and if successful
@@ -133,6 +140,17 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client);
 int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                             char *topic, uint8_t *payload, uint32_t len,
                             void *data, neu_mqtt_client_publish_cb_t cb);
+
+/** Same as `neu_mqtt_client_publish`, with the RETAIN flag set to `retain`.
+ *
+ * Publishing a zero-length `payload` with `retain` set clears the message the
+ * broker retains on `topic`.
+ */
+int neu_mqtt_client_publish_with_retain(neu_mqtt_client_t *client,
+                                        neu_mqtt_qos_e qos, char *topic,
+                                        uint8_t *payload, uint32_t len,
+                                        bool retain, void *data,
+                                        neu_mqtt_client_publish_cb_t cb);
 
 int neu_mqtt_client_publish_with_trace(neu_mqtt_client_t *client,
                                        neu_mqtt_qos_e qos, char *topic,

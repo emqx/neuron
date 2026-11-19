@@ -214,6 +214,9 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UPDATE_NODE_PROPERTY,
     NEU_REQ_GET_NODE_PROPERTIES,
     NEU_RESP_GET_NODE_PROPERTIES,
+    NEU_REQRESP_NODE_PROPERTIES_CHANGED,
+
+    NEU_REQ_COPY_NODE,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -388,6 +391,10 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_UPDATE_NODE_PROPERTY]   = "NEU_REQ_UPDATE_NODE_PROPERTY",
     [NEU_REQ_GET_NODE_PROPERTIES]    = "NEU_REQ_GET_NODE_PROPERTIES",
     [NEU_RESP_GET_NODE_PROPERTIES]   = "NEU_RESP_GET_NODE_PROPERTIES",
+    [NEU_REQRESP_NODE_PROPERTIES_CHANGED] =
+        "NEU_REQRESP_NODE_PROPERTIES_CHANGED",
+
+    [NEU_REQ_COPY_NODE] = "NEU_REQ_COPY_NODE",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -567,6 +574,11 @@ typedef struct neu_req_update_node_tag {
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
 } neu_req_del_node_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+    char name[NEU_NODE_NAME_LEN];
+} neu_req_copy_node_t;
 
 typedef struct neu_req_add_node_properties {
     char                 node[NEU_NODE_NAME_LEN];
@@ -1352,12 +1364,14 @@ typedef struct {
 } neu_reqresp_trans_data_t;
 
 typedef struct {
-    char *          node;
-    char *          plugin;
-    char *          setting;
-    char *          tags;
-    uint16_t        n_group;
-    neu_gdatatag_t *groups;
+    char *               node;
+    char *               plugin;
+    char *               setting;
+    char *               tags;
+    uint16_t             n_group;
+    neu_gdatatag_t *     groups;
+    size_t               n_property;
+    neu_node_property_t *properties;
 } neu_req_driver_t;
 
 static inline void neu_req_driver_fini(neu_req_driver_t *req)
@@ -1367,6 +1381,7 @@ static inline void neu_req_driver_fini(neu_req_driver_t *req)
     free(req->setting);
     if (req->tags)
         free(req->tags);
+    neu_node_properties_free(req->properties, req->n_property);
 
     for (uint16_t i = 0; i < req->n_group; i++) {
         for (int j = 0; j < req->groups[i].n_tag; j++) {
@@ -1853,6 +1868,11 @@ neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
+
+// sent to the MQTT V2 apps subscribing `node` once its properties change
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+} neu_reqresp_node_properties_changed_t;
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];

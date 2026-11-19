@@ -480,6 +480,10 @@ static struct {
         .schema = "mqtt",
     },
     {
+        .plugin = "MQTT V2",
+        .schema = "mqtt-v2",
+    },
+    {
         .plugin = "NON A11",
         .schema = "nona11",
     },

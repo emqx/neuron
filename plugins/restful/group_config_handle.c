@@ -282,6 +282,8 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
     req->static_tags = NULL;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        free(cmd.params);
+        free(cmd.static_tags);
         return NEU_ERR_IS_BUSY;
     }
 

@@ -75,6 +75,8 @@ void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req);
 typedef struct {
     neu_json_add_node_req_t node;
     neu_json_gtag_array_t   gtags;
+    size_t                  n_property;
+    neu_node_property_t *   properties;
 } neu_json_driver_t;
 
 int  neu_json_encode_driver(void *node_json, void *param);
@@ -112,6 +114,8 @@ typedef struct {
 typedef struct {
     neu_json_add_node_req_t    node;
     neu_json_app_group_array_t subscriptions;
+    size_t                     n_property;
+    neu_node_property_t *      properties;
 } neu_json_app_t;
 
 int  neu_json_encode_app(void *node_json, void *param);

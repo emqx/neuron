@@ -185,7 +185,17 @@ int neu_json_decode_update_node_property_req(
 void neu_json_decode_update_node_property_req_free(
     neu_json_update_node_property_req_t *req);
 int neu_json_encode_get_node_properties_resp(
-    neu_json_get_node_properties_resp_t *resp, char **result);
+    const neu_json_get_node_properties_resp_t *resp, char **result);
+
+// decodes an array of `{"key", "value"}` items with unique keys, an empty
+// array gives no properties
+int neu_json_decode_node_properties_json(void *                json_array,
+                                         neu_node_property_t **properties,
+                                         size_t *              n_property);
+// sets the `properties` array of `json_object`
+int neu_json_encode_node_properties(void *                     json_object,
+                                    const neu_node_property_t *properties,
+                                    size_t                     n_property);
 
 #ifdef __cplusplus
 }
