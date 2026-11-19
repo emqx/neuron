@@ -302,6 +302,60 @@ Configuration queries, exports and persistent storage continue to show `type: 0`
 }
 ```
 
+## Copy a northbound node
+
+*POST* **/api/v2/node/copy**
+
+Copies one northbound application on the same gateway. Plugin, setting, node tags, custom properties and subscriptions are copied unchanged, including client-id, device-id, topics and certificates. The new node stays stopped. Call `/api/v2/node/ctl` to connect it upstream.
+
+`monitor`, `DataStorage`, `DataProcessing` and any single-instance northbound plugin cannot be copied. Southbound nodes cannot be copied.
+
+Every subscription is checked before the node is created. If a driver or group is missing, or setting, properties or subscriptions fail after creation, the new node is removed. The response contains only `error`.
+
+### Request Headers
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### Response Status
+
+* 200 OK
+* 400
+  * 1002 invalid body
+  * 2004 invalid node setting
+  * 2010 node name too long
+  * 2013 southbound node, reserved node, or the new name is `monitor`, `DataStorage` or `DataProcessing`
+  * 2015 empty node name
+* 404
+  * 2003 source node does not exist, or a subscribed driver does not exist
+  * 2106 subscribed group does not exist
+* 409
+  * 2002 new node name already exists
+  * 2307 single-instance plugin cannot be created again
+* 500
+  * 1001 internal error
+  * 1010 server busy
+
+### Body
+
+```json
+{
+    "node": "mqtt-line1",
+    "name": "mqtt-line1-bak"
+}
+```
+
+`node` is the source northbound node. `name` is the new node name. Both are required and non-empty.
+
+### Response
+
+```json
+{
+    "error": 0
+}
+```
+
 ## Node Properties
 
 Node properties are custom key/value metadata for both southbound driver nodes and northbound application nodes. All four operations use **/api/v2/node/properties** and require an existing node.
@@ -2232,6 +2286,10 @@ Response to the error code, when an error response occurs.
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2258,6 +2316,8 @@ Response to the error code, when an error response occurs.
     ]
 }
 ```
+
+`properties` is optional, the custom properties of the driver. Each item follows the format and value rules of [Node Properties](#node-properties), and keys must be unique. Importing replaces a driver of the same name, its previous properties are not kept.
 
 ### Response
 
@@ -2295,7 +2355,7 @@ Response to the error code, when an error response occurs.
 
 ### Response
 
-If success, returns the list of drivers.
+If success, returns the list of drivers. A driver with custom properties includes `properties`, which is omitted otherwise.
 
 ```json
 {
@@ -2309,6 +2369,10 @@ If success, returns the list of drivers.
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2336,6 +2400,112 @@ If success, returns the list of drivers.
 }
 ```
 otherwise returns the error code.
+
+```json
+{
+    "error": 0
+}
+```
+
+## Export selected northbound nodes
+
+*GET* /api/v2/global/apps
+
+Exports northbound applications as `apps.json`. The optional `name` query parameter is a comma-separated list of node names and limits the file to those nodes. Without `name`, every northbound node is exported.
+
+Names must match exactly. When some requested names do not exist, the file still contains the nodes that do, plus a `missing` array. When none of the names exist, the response is 404 with error 2003 and no file is produced.
+
+Each application contains its name, plugin, tags, setting and subscriptions (`driver`, `group`, `params`, `static_tags`). Custom properties are included as `properties` when the node has any, using the same item format as [Node Properties](#node-properties). Nodes with no properties omit the field. `monitor`, `DataProcessing` and `DataStorage` are included.
+
+### Request Headers
+
+**Authorization** Bearer \<token\>
+
+### Parameters
+
+**name** Optional. Northbound node names separated by commas. URL-encode the value. Example: `name=mqtt-line1,mqtt-mes`.
+
+### Response Status
+
+* 200 OK, body is the file `apps.json`
+* 400
+  * 1003 query parameter cannot be decoded
+* 404
+  * 2003 none of the names in `name` exist
+* 500
+  * 1001 internal error
+  * 1010 server busy
+
+### Response
+
+```json
+{
+    "apps": [
+        {
+            "name": "mqtt-line1",
+            "plugin": "MQTT",
+            "tags": "line1",
+            "params": {
+                "client-id": "neuron_line1",
+                "host": "broker.emqx.io",
+                "port": 1883
+            },
+            "properties": [
+                {"key": "workshop", "value": "A"}
+            ],
+            "groups": [
+                {
+                    "driver": "s7-line1",
+                    "group": "group1",
+                    "params": {"topic": "line1/data"}
+                }
+            ]
+        }
+    ],
+    "missing": ["mqtt-mes"]
+}
+```
+
+`missing` is present only when at least one requested name was not found. Export writes the subscription records as they are stored. It does not check whether those groups still exist.
+
+## Import northbound nodes
+
+*PUT* /api/v2/global/apps
+
+The body is the same document produced by export. `missing` is ignored. A non-default node is deleted and created again, so its previous custom properties are not kept and `properties` from the file are written after the node is created. `monitor` / `Monitor`, `DataProcessing` / `eKuiper` and `DataStorage` / `Datalayers` are not deleted; their setting, tags and subscriptions are updated, and `properties` in the file do not replace the properties already on those nodes.
+
+If a subscribed driver or group does not exist, import stops at that subscription and returns its error. Nodes already deleted and recreated by this request are not restored. Use `POST /api/v2/node/copy` to duplicate a northbound node on the same gateway.
+
+### Request Headers
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### Response Status
+
+* 200 OK
+* 400
+  * 1002 invalid body
+  * 2010 node name too long
+  * 2011 node cannot be deleted
+  * 2107 group name too long
+  * 3013 plugin name too long
+* 404
+  * 2003 subscribed driver does not exist
+  * 2106 subscribed group does not exist
+  * 3014 plugin does not exist
+* 409
+  * 2307 plugin cannot create another instance
+* 500
+  * 1001 internal error
+  * 1010 server busy
+
+### Body
+
+The `apps` array described in [Export selected northbound nodes](#export-selected-northbound-nodes).
+
+### Response
 
 ```json
 {

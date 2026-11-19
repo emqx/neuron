@@ -57,6 +57,7 @@ cp neuron.json ${package_name}/config/
 cp build/plugins/schema/ekuiper.json \
     build/plugins/schema/monitor.json \
     build/plugins/schema/mqtt.json \
+    build/plugins/schema/mqtt-v2.json \
     build/plugins/schema/modbus-tcp.json \
     build/plugins/schema/file.json \
     build/plugins/schema/kafka.json \
@@ -65,6 +66,7 @@ cp build/plugins/schema/ekuiper.json \
 cp build/plugins/libplugin-ekuiper.so \
     build/plugins/libplugin-monitor.so \
     build/plugins/libplugin-mqtt.so \
+    build/plugins/libplugin-mqtt-v2.so \
     build/plugins/libplugin-modbus-tcp.so \
     build/plugins/libplugin-file.so \
     build/plugins/libplugin-kafka.so \

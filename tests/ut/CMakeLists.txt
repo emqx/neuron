@@ -101,6 +101,16 @@ target_include_directories(mqtt_schema_test PRIVATE
 )
 target_link_libraries(mqtt_schema_test neuron-base gtest_main gtest)
 
+add_executable(mqtt_v2_test mqtt_v2_test.cc
+	${CMAKE_SOURCE_DIR}/plugins/mqtt_v2/mqtt_v2_template.c
+	${CMAKE_SOURCE_DIR}/plugins/mqtt_v2/mqtt_v2_write.c)
+target_include_directories(mqtt_v2_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+	${CMAKE_SOURCE_DIR}/plugins
+)
+target_link_libraries(mqtt_v2_test neuron-base gtest_main gtest jansson)
+
 file(COPY ${CMAKE_SOURCE_DIR}/tests/ut/EDE_test.csv DESTINATION ${UT_DIRECTORY}/config)
 add_executable(ede_test ede_test.cc ${CMAKE_SOURCE_DIR}/src/utils/ede.c)
 target_include_directories(ede_test PRIVATE
@@ -154,5 +164,6 @@ gtest_discover_tests(common_test)
 gtest_discover_tests(cache_test)
 gtest_discover_tests(cid_test)
 gtest_discover_tests(mqtt_schema_test)
+gtest_discover_tests(mqtt_v2_test)
 gtest_discover_tests(ede_test)
 gtest_discover_tests(node_property_persist_test)

@@ -310,6 +310,60 @@ AUTO 必须用于可读点位；仅写 AUTO 点位返回 `2204`。识别后，�
 }
 ```
 
+## 复制北向 Node
+
+*POST* **/api/v2/node/copy**
+
+在同一网关上复制一个北向应用。插件、setting、节点 tags、自定义属性和订阅按原配置完整复制，不改写 client-id、device-id、topic 或证书。新节点保持停止，需要调用 `/api/v2/node/ctl` 启动后才会连接上游。
+
+`monitor`、`DataStorage`、`DataProcessing` 以及插件标记为单实例的北向节点不能复制。南向节点不能复制。
+
+复制前会检查每条订阅的南向节点和组是否存在。任一订阅挂不上，或者创建之后的 setting、属性、订阅步骤失败，新节点不会留下。失败时响应只有 `error`。
+
+### 请求头部
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### 响应状态
+
+* 200 OK
+* 400
+  * 1002 请求 body 无效
+  * 2004 node 配置无效
+  * 2010 node 名称太长
+  * 2013 南向节点、保留节点，或新名称是 `monitor`、`DataStorage`、`DataProcessing`
+  * 2015 node 名称为空
+* 404
+  * 2003 源节点不存在，或订阅的南向节点不存在
+  * 2106 订阅的组不存在
+* 409
+  * 2002 新节点名已存在
+  * 2307 单实例插件不允许再创建
+* 500
+  * 1001 内部错误
+  * 1010 程序繁忙
+
+### 请求体
+
+```json
+{
+    "node": "mqtt-line1",
+    "name": "mqtt-line1-bak"
+}
+```
+
+`node` 是源北向节点名，`name` 是新节点名，两者都不能为空。
+
+### 响应
+
+```json
+{
+    "error": 0
+}
+```
+
 ## Node 自定义属性
 
 自定义属性是节点的 key/value 元数据，南向驱动节点和北向应用节点均支持。四种操作统一使用 **/api/v2/node/properties**，且节点必须已存在。
@@ -2201,6 +2255,10 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2227,6 +2285,8 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
     ]
 }
 ```
+
+`properties` 可选，为 driver 的自定义属性，每项的格式和取值规则与 [Node 自定义属性](#node-自定义属性) 相同，key 不能重复。导入会替换同名 driver，其原有属性不保留。
 
 ### 响应
 
@@ -2266,7 +2326,7 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
 
 ### 响应
 
-如果成功，返回所有南向节点。
+如果成功，返回所有南向节点。driver 有自定义属性时包含 `properties`，没有属性时不返回该字段。
 
 ```json
 {
@@ -2280,6 +2340,10 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
                 "param3": true,
                 "param4": 11.22
             },
+            "properties": [
+                {"key": "location", "value": "Building A"},
+                {"key": "thresholds", "value": [0, 12.5]}
+            ],
             "groups": [
                 {
                     "name": "group1",
@@ -2307,6 +2371,112 @@ node 字段选填，不填此字段时 core 不可以为 false，此时仅切换
 }
 ```
 否则返回错误玛。
+
+```json
+{
+    "error": 0
+}
+```
+
+## 导出指定北向 Node
+
+*GET* /api/v2/global/apps
+
+导出北向应用到 `apps.json`。查询参数 `name` 用逗号分隔节点名，只导出这些节点。不带 `name` 时导出全部北向节点。
+
+名字必须与节点名完全一致。请求的名字里有的不存在时，文件仍返回已存在的节点，并增加 `missing` 数组。一个都没有命中时返回 404，错误码 2003，不生成文件。
+
+每个应用包含名称、插件、tags、setting、订阅（`driver`、`group`、`params`、`static_tags`）。节点有自定义属性时包含 `properties`，格式与 [Node 自定义属性](#node-自定义属性) 相同；没有属性时不返回该字段。`monitor`、`DataProcessing`、`DataStorage` 也会被导出。
+
+### 请求头部
+
+**Authorization** Bearer \<token\>
+
+### 请求参数
+
+**name** 可选。要导出的北向节点名，多个名字用英文逗号分隔，需要 URL 编码。例如 `name=mqtt-line1,mqtt-mes`。
+
+### 响应状态
+
+* 200 OK，响应体为文件 `apps.json`
+* 400
+  * 1003 查询参数无法解码
+* 404
+  * 2003 `name` 中的节点都不存在
+* 500
+  * 1001 内部错误
+  * 1010 程序繁忙
+
+### 响应
+
+```json
+{
+    "apps": [
+        {
+            "name": "mqtt-line1",
+            "plugin": "MQTT",
+            "tags": "line1",
+            "params": {
+                "client-id": "neuron_line1",
+                "host": "broker.emqx.io",
+                "port": 1883
+            },
+            "properties": [
+                {"key": "workshop", "value": "A"}
+            ],
+            "groups": [
+                {
+                    "driver": "s7-line1",
+                    "group": "group1",
+                    "params": {"topic": "line1/data"}
+                }
+            ]
+        }
+    ],
+    "missing": ["mqtt-mes"]
+}
+```
+
+`missing` 只在 `name` 里有未命中的名字时出现。订阅组当时是否还存在不影响导出，订阅记录按当前配置写出。
+
+## 导入北向 Node
+
+*PUT* /api/v2/global/apps
+
+请求体与导出文件相同。`missing` 会被忽略。非默认节点按名称删除后重建，因此原有自定义属性不保留，文件里的 `properties` 会重新写入。`monitor` / `Monitor`、`DataProcessing` / `eKuiper`、`DataStorage` / `Datalayers` 不会被删除，只更新 setting、tags 和订阅；这些节点文件中的 `properties` 不覆盖现有属性。
+
+订阅的南向节点或组不存在时，导入停在该条订阅并返回对应错误码。这次请求里已经删除并重建的节点不会自动恢复。复制请使用 `POST /api/v2/node/copy`，不要用导入在同网关上再造一个节点。
+
+### 请求头部
+
+**Content-Type** application/json
+
+**Authorization** Bearer \<token\>
+
+### 响应状态
+
+* 200 OK
+* 400
+  * 1002 请求 body 无效
+  * 2010 node 名称太长
+  * 2011 node 不允许删除
+  * 2107 group 名称太长
+  * 3013 插件名字太长
+* 404
+  * 2003 订阅的南向节点不存在
+  * 2106 订阅的组不存在
+  * 3014 插件不存在
+* 409
+  * 2307 插件不允许再创建实例
+* 500
+  * 1001 内部错误
+  * 1010 程序繁忙
+
+### 请求体
+
+与 [导出指定北向 Node](#导出指定北向-node) 的 `apps` 数组相同。
+
+### 响应
 
 ```json
 {
