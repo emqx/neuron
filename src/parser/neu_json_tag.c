@@ -174,6 +174,27 @@ int neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p)
         goto decode_fail;
     }
 
+    // Validate before converting JSON integers to enums or uint8_t.
+    for (size_t i = 0; i < NEU_JSON_ELEM_SIZE(tag_elems); i++) {
+        json_t *value = json_object_get(json_obj, tag_elems[i].name);
+        if (tag_elems[i].t == NEU_JSON_INT && value != NULL &&
+            !json_is_integer(value)) {
+            goto decode_fail;
+        }
+    }
+
+    // Leave length checks to the driver to preserve specific error codes.
+    if (tag.name == NULL || tag.name[0] == '\0' || tag.address == NULL ||
+        tag.address[0] == '\0' || tag.type < 1 ||
+        (tag.type > NEU_TYPE_ARRAY_STRING && tag.type != NEU_TYPE_CUSTOM) ||
+        tag.type == NEU_TYPE_ERROR || tag.type == NEU_TYPE_PTR ||
+        tag.attribute <= 0 ||
+        tag.attribute > (NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_WRITE |
+                         NEU_ATTRIBUTE_SUBSCRIBE) ||
+        tag.precision < 0 || tag.precision > NEU_TAG_FLOAG_PRECISION_MAX) {
+        goto decode_fail;
+    }
+
     if (!neu_json_tag_check_type(&tag)) {
         goto decode_fail;
     }

@@ -64,9 +64,9 @@ static bool tags_check_symbol(const char *tags)
 {
     for (size_t i = 0; i < strlen(tags); i++) {
         char c = tags[i];
-        if (c == '[' || c == ']' || c == '{' || c == '}' || c == ';' || 
-            c == ':' || c == '\'' || c == '"' || c == '<' || c == '>' || 
-            c == '?' || c == '\\' || c == '|' || c == '`' || c == '\t' || 
+        if (c == '[' || c == ']' || c == '{' || c == '}' || c == ';' ||
+            c == ':' || c == '\'' || c == '"' || c == '<' || c == '>' ||
+            c == '?' || c == '\\' || c == '|' || c == '`' || c == '\t' ||
             c == '\n') {
             return false;
         }
