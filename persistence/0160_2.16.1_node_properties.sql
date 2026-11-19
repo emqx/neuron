@@ -1,4 +1,5 @@
-CREATE TABLE node_properties (
+CREATE TABLE IF NOT EXISTS
+node_properties (
     node_name TEXT NOT NULL,
     key TEXT NOT NULL CHECK(length(key) > 0),
     value_json TEXT NOT NULL,
