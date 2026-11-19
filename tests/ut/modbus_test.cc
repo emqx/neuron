@@ -154,6 +154,92 @@ TEST(test_modbus_data_unwrap, should_return_right_data_value)
     EXPECT_EQ(0x44, *(bytes + 3));
 }
 
+static neu_datatag_t modbus_tag(const char *address, neu_type_e type,
+                                neu_attribute_e attribute)
+{
+    neu_datatag_t tag = {};
+    tag.name          = const_cast<char *>("tag");
+    tag.address       = const_cast<char *>(address);
+    tag.type          = type;
+    tag.attribute     = attribute;
+    tag.description   = const_cast<char *>("");
+    return tag;
+}
+
+TEST(modbus_auto_type, address_selects_concrete_point_type)
+{
+    struct {
+        const char *    address;
+        neu_attribute_e attribute;
+        neu_type_e      type;
+        modbus_area_e   area;
+        uint8_t         bit;
+        bool            has_bit;
+    } accepted[] = {
+        { "1!000001", NEU_ATTRIBUTE_READ, NEU_TYPE_BIT, MODBUS_AREA_COIL, 0,
+          false },
+        { "1!100001", NEU_ATTRIBUTE_READ, NEU_TYPE_BIT, MODBUS_AREA_INPUT, 0,
+          false },
+        { "1!300001", NEU_ATTRIBUTE_READ, NEU_TYPE_UINT16,
+          MODBUS_AREA_INPUT_REGISTER, 0, false },
+        { "1!400001", NEU_ATTRIBUTE_READ, NEU_TYPE_UINT16,
+          MODBUS_AREA_HOLD_REGISTER, 0, false },
+        { "1!400001.15", NEU_ATTRIBUTE_READ, NEU_TYPE_BIT,
+          MODBUS_AREA_HOLD_REGISTER, 15, true },
+        { "1!300010.0", NEU_ATTRIBUTE_READ, NEU_TYPE_BIT,
+          MODBUS_AREA_INPUT_REGISTER, 0, true },
+    };
+
+    for (auto item : accepted) {
+        neu_datatag_t tag =
+            modbus_tag(item.address, NEU_TYPE_AUTO, item.attribute);
+        modbus_point_t point = {};
+        EXPECT_EQ(NEU_ERR_SUCCESS, modbus_tag_to_point(&tag, &point, base_1))
+            << item.address;
+        EXPECT_EQ(NEU_TYPE_AUTO, tag.type);
+        EXPECT_EQ(item.type, point.type);
+        EXPECT_EQ(item.area, point.area);
+        EXPECT_EQ(item.has_bit, point.option.bit.op);
+        if (item.has_bit) {
+            EXPECT_EQ(item.bit, point.option.bit.bit);
+        }
+    }
+
+    neu_datatag_t endian =
+        modbus_tag("1!400002#B", NEU_TYPE_AUTO, NEU_ATTRIBUTE_READ);
+    modbus_point_t point = {};
+    EXPECT_EQ(NEU_ERR_SUCCESS, modbus_tag_to_point(&endian, &point, base_1));
+    EXPECT_EQ(NEU_TYPE_UINT16, point.type);
+    EXPECT_EQ(NEU_DATATAG_ENDIAN_B16, point.option.value16.endian);
+
+    neu_datatag_t explicit_tag =
+        modbus_tag("1!400001", NEU_TYPE_INT32, NEU_ATTRIBUTE_READ);
+    EXPECT_EQ(NEU_ERR_SUCCESS,
+              modbus_tag_to_point(&explicit_tag, &point, base_1));
+    EXPECT_EQ(NEU_TYPE_INT32, point.type);
+    EXPECT_EQ(2, point.n_register);
+
+    for (const char *address :
+         { "1!000001.1", "1!400001.16", "1!400001.1#B", "1!200001" }) {
+        neu_datatag_t rejected =
+            modbus_tag(address, NEU_TYPE_AUTO, NEU_ATTRIBUTE_READ);
+        EXPECT_EQ(NEU_ERR_TAG_ADDRESS_FORMAT_INVALID,
+                  modbus_tag_to_point(&rejected, &point, base_1))
+            << address;
+    }
+
+    neu_datatag_t write_input = modbus_tag(
+        "1!300001", NEU_TYPE_AUTO,
+        static_cast<neu_attribute_e>(NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_WRITE));
+    EXPECT_EQ(NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT,
+              modbus_tag_to_point(&write_input, &point, base_1));
+    neu_datatag_t write_bit = modbus_tag(
+        "1!400001.1", NEU_TYPE_AUTO,
+        static_cast<neu_attribute_e>(NEU_ATTRIBUTE_READ | NEU_ATTRIBUTE_WRITE));
+    EXPECT_EQ(NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT,
+              modbus_tag_to_point(&write_bit, &point, base_1));
+}
+
 int main(int argc, char **argv)
 {
     zlog_init("./config/dev.conf");

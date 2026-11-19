@@ -430,13 +430,30 @@ class AutoTypeHTTP(unittest.TestCase):
         self.assertEqual(3, self.records()[-1]["type"])
         self.write(40000, error=3020)
         self.write("123", error=3007)
-        self.http("POST", "/node", {"name": "modbus-auto-reject", "plugin": "Modbus TCP"}, error=0)
+        self.http("POST", "/node", {"name": "modbus-auto", "plugin": "Modbus TCP"}, error=0)
         try:
-            self.http("POST", "/group", {"node": "modbus-auto-reject", "group": "g", "interval": 100}, error=0)
-            self.http("POST", "/tags", {"node": "modbus-auto-reject", "group": "g",
-                "tags": [self.tag(address="1!400001")]}, status=400, error=2204)
+            self.http("POST", "/group", {"node": "modbus-auto", "group": "g", "interval": 100}, error=0)
+            self.http("POST", "/tags", {"node": "modbus-auto", "group": "g", "tags": [
+                self.tag("coil", address="1!000001", attribute=3),
+                self.tag("disc", address="1!100001", attribute=1),
+                self.tag("ireg", address="1!300001", attribute=1),
+                self.tag("hreg", address="1!400001", attribute=3),
+                self.tag("hbit", address="1!400001.1", attribute=1),
+                self.tag("endian", address="1!400002#B", attribute=3),
+            ]}, error=0)
+            for name, address, attribute, code in (
+                ("coilbit", "1!000001.1", 1, 2205),
+                ("widebit", "1!400001.16", 1, 2205),
+                ("writereg", "1!300001", 3, 2203),
+                ("writebit", "1!400001.1", 3, 2203),
+            ):
+                self.http("POST", "/tags", {"node": "modbus-auto", "group": "g", "tags": [
+                    self.tag(name, address=address, attribute=attribute)]}, status=400, error=code)
+            listed = self.http("GET", "/tags?node=modbus-auto&group=g")["tags"]
+            self.assertEqual({"coil": 0, "disc": 0, "ireg": 0, "hreg": 0, "hbit": 0, "endian": 0},
+                             {tag["name"]: tag["type"] for tag in listed})
         finally:
-            self.http("DELETE", "/node", {"name": "modbus-auto-reject"}, error=0)
+            self.http("DELETE", "/node", {"name": "modbus-auto"}, error=0)
 
 
 if __name__ == "__main__":
