@@ -45,6 +45,7 @@ typedef struct modbus_point_write {
     neu_value_u    value;
 } modbus_point_write_t;
 
+int modbus_auto_type(const char *address, neu_type_e *type);
 int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point,
                         modbus_address_base address_base);
 int modbus_write_tag_to_point(const neu_plugin_tag_value_t *tag,
