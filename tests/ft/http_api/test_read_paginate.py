@@ -167,11 +167,16 @@ class TestReadPaginate:
         assert 8 == response.json()["meta"]["total"]
         assert 0 == len(response.json()["items"])
 
-        response = api.read_tags_paginate(node=param[0], group='group', query= {"currentPage": 0, "pageSize": 5})
-        assert 0 == response.json()["meta"]["currentPage"]
-        assert 5 == response.json()["meta"]["pageSize"]
-        assert 8 == response.json()["meta"]["total"]
-        assert 8 == len(response.json()["items"])
+        for query in [
+            {"currentPage": 0, "pageSize": 5},
+            {"currentPage": 2147483649, "pageSize": 2},
+            {"currentPage": 4294967297, "pageSize": 1},
+            {"currentPage": -1, "pageSize": 1},
+            {"currentPage": 1, "pageSize": 0},
+        ]:
+            response = api.read_tags_paginate(node=param[0], group='group', query=query)
+            assert 400 == response.status_code
+            assert error.NEU_ERR_BODY_IS_WRONG == response.json()["error"]
 
     @description(given="created modbus node and tags", when="read tags with filter(isError)", then="read success")
     def test_read_tags_filter_isError(self, param):

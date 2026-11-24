@@ -1,3 +1,4 @@
+#include <climits>
 #include <cmath>
 #include <gtest/gtest.h>
 #include <jansson.h>
@@ -6,10 +7,88 @@
 
 #include "parser/neu_json_global_config.h"
 #include "parser/neu_json_node.h"
+#include "parser/neu_json_tag.h"
+#include "tag.h"
 #include "utils/log.h"
 #include "json/json.h"
+#include "json/neu_json_rw.h"
 
 zlog_category_t *neuron = NULL;
+
+TEST(JsonTest, ReadPaginateRejectInvalidParameters)
+{
+    const char *invalid[] = {
+        "-1",
+        "0",
+        "2147483648",
+        "2147483649",
+        "4294967297",
+        "9223372036854775807",
+        "-9223372036854775808",
+        "1.5",
+        "1.0",
+        "\"1\"",
+        "true",
+        "false",
+        "null",
+        "[]",
+        "{}",
+    };
+    for (const char *field : { "currentPage", "pageSize" }) {
+        for (const char *value : invalid) {
+            std::string input =
+                R"({"node":"driver","group":"group","query":{")" +
+                std::string(field) + "\":" + value + "}}";
+            SCOPED_TRACE(input);
+            neu_json_read_paginate_req_t *req = NULL;
+            int ret = neu_json_decode_read_paginate_req(
+                const_cast<char *>(input.c_str()), &req);
+            EXPECT_NE(0, ret);
+            EXPECT_EQ(nullptr, req);
+            if (req) {
+                neu_json_decode_read_paginate_req_free(req);
+            }
+        }
+    }
+}
+
+TEST(JsonTest, ReadPaginateAcceptValidBoundaries)
+{
+    for (int page : { 1, INT_MAX }) {
+        for (int size : { 1, INT_MAX }) {
+            std::string input =
+                R"({"node":"driver","group":"group","query":{"currentPage":)" +
+                std::to_string(page) + ",\"pageSize\":" + std::to_string(size) +
+                "}}";
+            neu_json_read_paginate_req_t *req = NULL;
+            ASSERT_EQ(0,
+                      neu_json_decode_read_paginate_req(
+                          const_cast<char *>(input.c_str()), &req));
+            EXPECT_EQ(page, req->current_page);
+            EXPECT_EQ(size, req->page_size);
+            neu_json_decode_read_paginate_req_free(req);
+        }
+    }
+}
+
+TEST(JsonTest, ReadPaginateAcceptOmittedParameters)
+{
+    const char *inputs[] = {
+        R"({"node":"driver","group":"group"})",
+        R"({"node":"driver","group":"group","query":{}})",
+        R"({"node":"driver","group":"group","query":{"isError":true}})",
+    };
+    for (const char *input : inputs) {
+        neu_json_read_paginate_req_t *req = NULL;
+        ASSERT_EQ(
+            0,
+            neu_json_decode_read_paginate_req(const_cast<char *>(input), &req));
+        EXPECT_EQ(0, req->current_page);
+        EXPECT_EQ(0, req->page_size);
+        neu_json_decode_read_paginate_req_free(req);
+    }
+}
+
 TEST(JsonTest, DecodeField)
 {
     char *buf =
@@ -332,6 +411,136 @@ TEST(JsonTest, EncodeArray)
 
     free(result);
     neu_json_decode_free(ob);
+}
+
+TEST(JsonTest, TagRejectInvalidParameters)
+{
+    const std::string invalid[] = {
+        R"({"name":""})",
+        R"({"address":""})",
+        R"({"type":-1})",
+        R"({"type":15})",
+        R"({"type":19})",
+        R"({"type":35})",
+        R"({"type":41})",
+        R"({"type":4294967299})",
+        R"({"type":9223372036854775807})",
+        R"({"type":"3"})",
+        R"({"type":3.0})",
+        R"({"type":null})",
+        R"({"attribute":-1})",
+        R"({"attribute":0})",
+        R"({"attribute":8})",
+        R"({"attribute":4294967297})",
+        R"({"attribute":true})",
+        R"({"precision":-1})",
+        "{\"precision\":" + std::to_string(NEU_TAG_FLOAG_PRECISION_MAX + 1) +
+            "}",
+        R"({"precision":256})",
+        R"({"precision":4294967296})",
+        R"({"precision":1.5})",
+        R"({"precision":"1"})",
+        R"({"precision":null})",
+        R"({"name":"bad","type":4294967299,"attribute":-1})",
+    };
+    for (const std::string &fields : invalid) {
+        SCOPED_TRACE(fields);
+        json_t *object = json_loads(
+            R"({"name":"tag","type":3,"attribute":1,"address":"1!400001"})", 0,
+            NULL);
+        json_t *overrides = json_loads(fields.c_str(), 0, NULL);
+        ASSERT_NE(nullptr, object);
+        ASSERT_NE(nullptr, overrides);
+        ASSERT_EQ(0, json_object_update(object, overrides));
+        neu_json_tag_t tag = {};
+        int            ret = neu_json_decode_tag_json(object, &tag);
+        EXPECT_NE(0, ret);
+        if (ret == 0) {
+            neu_json_decode_tag_fini(&tag);
+        }
+        json_decref(overrides);
+        json_decref(object);
+    }
+}
+
+TEST(JsonTest, TagDeferLengthValidationToDriver)
+{
+    for (const char *field : { "name", "address" }) {
+        json_t *object = json_loads(
+            R"({"name":"tag","type":3,"attribute":1,"address":"1!400001"})", 0,
+            NULL);
+        ASSERT_NE(nullptr, object);
+        std::string value(std::string(field) == "name" ? NEU_TAG_NAME_LEN
+                                                       : NEU_TAG_ADDRESS_LEN,
+                          'a');
+        ASSERT_EQ(
+            0, json_object_set_new(object, field, json_string(value.c_str())));
+        neu_json_tag_t tag = {};
+        ASSERT_EQ(0, neu_json_decode_tag_json(object, &tag));
+        EXPECT_EQ(value, std::string(field) == "name" ? tag.name : tag.address);
+        neu_json_decode_tag_fini(&tag);
+        json_decref(object);
+    }
+}
+
+TEST(JsonTest, TagAcceptValidBoundaries)
+{
+    for (int type = NEU_TYPE_AUTO; type <= NEU_TYPE_CUSTOM; ++type) {
+        if (type == NEU_TYPE_ERROR || type == NEU_TYPE_PTR ||
+            (type > NEU_TYPE_ARRAY_STRING && type != NEU_TYPE_CUSTOM)) {
+            continue;
+        }
+        for (int attribute = 1; attribute <= 7; ++attribute) {
+            for (int precision : { 0, NEU_TAG_FLOAG_PRECISION_MAX }) {
+                std::string name(NEU_TAG_NAME_LEN - 1, 'n');
+                std::string address(NEU_TAG_ADDRESS_LEN - 1, 'a');
+                json_t *    object =
+                    json_pack("{s:s,s:s,s:i,s:i,s:i}", "name", name.c_str(),
+                              "address", address.c_str(), "type", type,
+                              "attribute", attribute, "precision", precision);
+                ASSERT_NE(nullptr, object);
+                neu_json_tag_t tag = {};
+                ASSERT_EQ(0, neu_json_decode_tag_json(object, &tag));
+                EXPECT_EQ(type, tag.type);
+                EXPECT_EQ(attribute, tag.attribute);
+                EXPECT_EQ(precision, tag.precision);
+                neu_json_decode_tag_fini(&tag);
+                json_decref(object);
+            }
+        }
+    }
+}
+
+TEST(JsonTest, TagRequestsRejectInvalidBatch)
+{
+    std::string tags =
+        R"([{"name":"valid","type":3,"attribute":1,"address":"1!400001"},)"
+        R"({"name":"bad","type":4294967299,"attribute":-1,"address":"1!400002"}])";
+    std::string input =
+        R"({"node":"driver","group":"group","tags":)" + tags + "}";
+    neu_json_add_tags_req_t *add = NULL;
+    EXPECT_NE(
+        0,
+        neu_json_decode_add_tags_req(const_cast<char *>(input.c_str()), &add));
+    EXPECT_EQ(nullptr, add);
+    neu_json_decode_add_tags_req_free(add);
+
+    neu_json_update_tags_req_t *update = NULL;
+    EXPECT_NE(0,
+              neu_json_decode_update_tags_req(const_cast<char *>(input.c_str()),
+                                              &update));
+    EXPECT_EQ(nullptr, update);
+    neu_json_decode_update_tags_req_free(update);
+
+    input =
+        R"({"node":"driver","groups":[{"group":"group","interval":1000,"tags":)" +
+        tags + "}]}";
+    neu_json_add_gtags_req_t *groups = NULL;
+    EXPECT_NE(0,
+              neu_json_decode_add_gtags_req(const_cast<char *>(input.c_str()),
+                                            &groups));
+    EXPECT_EQ(nullptr, groups);
+    neu_json_decode_add_gtags_req_free(groups);
 }
 
 namespace {
