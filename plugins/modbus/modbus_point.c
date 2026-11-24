@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <memory.h>
+#include <stdio.h>
 
 #include <neuron.h>
 
@@ -35,12 +36,69 @@ static int  tag_cmp_write(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
 static bool tag_sort_write(neu_tag_sort_t *sort, void *tag,
                            void *tag_to_be_sorted);
 
+int modbus_auto_type(const char *address, neu_type_e *type)
+{
+    uint8_t  slave = 0;
+    char     area  = 0;
+    uint32_t start = 0;
+    int      n     = 0;
+
+    if (address == NULL || type == NULL ||
+        sscanf(address, "%hhu!%c%u%n", &slave, &area, &start, &n) != 3 ||
+        start > 65536) {
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    }
+
+    const char *rest = address + n;
+    switch (area) {
+    case '0':
+    case '1':
+        if (rest[0] != '\0') {
+            return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+        }
+        *type = NEU_TYPE_BIT;
+        return NEU_ERR_SUCCESS;
+    case '3':
+    case '4':
+        if (rest[0] == '\0' || rest[0] == '#') {
+            *type = NEU_TYPE_UINT16;
+            return NEU_ERR_SUCCESS;
+        }
+        if (rest[0] == '.') {
+            unsigned bit = 0;
+            int      m   = 0;
+            if (sscanf(rest, ".%u%n", &bit, &m) != 1 || rest[m] != '\0' ||
+                bit > 15) {
+                return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+            }
+            *type = NEU_TYPE_BIT;
+            return NEU_ERR_SUCCESS;
+        }
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    default:
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    }
+}
+
 int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point,
                         modbus_address_base address_base)
 {
-    int      ret           = NEU_ERR_SUCCESS;
-    uint32_t start_address = 0;
-    ret                    = neu_datatag_parse_addr_option(tag, &point->option);
+    int           ret           = NEU_ERR_SUCCESS;
+    uint32_t      start_address = 0;
+    neu_datatag_t view          = { 0 };
+
+    if (tag == NULL) {
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    }
+    view = *tag;
+    if (tag->type == NEU_TYPE_AUTO) {
+        ret = modbus_auto_type(tag->address, &view.type);
+        if (ret != NEU_ERR_SUCCESS) {
+            return ret;
+        }
+    }
+    tag = &view;
+    ret = neu_datatag_parse_addr_option(tag, &point->option);
     if (ret != 0) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
