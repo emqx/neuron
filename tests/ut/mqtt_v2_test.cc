@@ -370,6 +370,46 @@ TEST_F(MqttV2Template, time_formats)
     json_decref(json);
 }
 
+TEST_F(MqttV2Template, time_functions_take_a_timestamp)
+{
+    setenv("TZ", "UTC", 1);
+    tzset();
+
+    neu_resp_tag_value_meta_t *t1 =
+        (neu_resp_tag_value_meta_t *) utarray_front(tags);
+    t1->value.attrs.has_timestamp        = true;
+    t1->value.attrs.timestamp            = 1700000001123;
+    t1->value.attrs.has_source_timestamp = true;
+    t1->value.attrs.source_timestamp     = 1700000002123;
+
+    compile("{\"group_local\": \"${TIME_LOCAL(timestamp)}\", "
+            "\"plain\": \"${TIME_LOCAL}\", "
+            "\"one\": \"${TIME_UTC(tags[t1].timestamp)}\", "
+            "\"tags\": \"${tags}\"}",
+            "{\"name\": \"${tag.name}\", "
+            "\"local\": \"${TIME_LOCAL( tag.timestamp )}\", "
+            "\"src\": \"${TIME_UTC(tag.sourceTimestamp)}\", "
+            "\"srv\": \"${TIME_RFC3339(tag.serverTimestamp)}\", "
+            "\"unix\": \"${TIME_UNIX(tag.timestamp)}\", "
+            "\"fmt\": \"${TIME:%H%M%S(tag.timestamp)}\"}");
+    json_t *json = render();
+
+    json_t *expected = json_loads(
+        "{\"group_local\": \"2023-11-14 22:13:20.123\", "
+        "\"plain\": \"2023-11-14 22:13:20.123\", "
+        "\"one\": \"2023-11-14T22:13:21.123Z\", "
+        "\"tags\": ["
+        "{\"name\": \"t1\", \"local\": \"2023-11-14 22:13:21.123\", "
+        "\"src\": \"2023-11-14T22:13:22.123Z\", \"unix\": 1700000001, "
+        "\"fmt\": \"221321\"}, "
+        "{\"name\": \"t2\"}]}",
+        0, NULL);
+    EXPECT_TRUE(json_equal(expected, json)) << json_dumps(json, 0);
+
+    json_decref(expected);
+    json_decref(json);
+}
+
 TEST(MqttV2TemplateCompile, errors)
 {
     struct {
@@ -391,6 +431,16 @@ TEST(MqttV2TemplateCompile, errors)
         { "{\"a\": \"${properties[]}\"}", MQTT_V2_TMPL_DATA,
           "empty property key" },
         { "{\"a\": \"${TIME:}\"}", MQTT_V2_TMPL_DATA, "invalid time format" },
+        { "{\"a\": \"${TIME_LOCAL()}\"}", MQTT_V2_TMPL_DATA,
+          "empty time argument" },
+        { "{\"a\": \"${TIME_LOCAL(tag.value)}\"}", MQTT_V2_TMPL_TAG,
+          "not a timestamp" },
+        { "{\"a\": \"${TIME_LOCAL(nope)}\"}", MQTT_V2_TMPL_DATA,
+          "unknown time argument" },
+        { "{\"a\": \"${TIME_LOCAL(tag.timestamp)}\"}", MQTT_V2_TMPL_DATA,
+          "only be used in the tag template" },
+        { "{\"a\": \"${TIME_LOCAL(tags[x].timestamp)}\"}", MQTT_V2_TMPL_TAG,
+          "cannot be used" },
         { "{\"a\": \"${device\"}", MQTT_V2_TMPL_DATA, "unterminated" },
         { "{\"a\": ", MQTT_V2_TMPL_DATA, "invalid JSON" },
     };
