@@ -68,10 +68,19 @@ typedef enum {
     TAG_ATTR_TYPE,
 } tag_attr_e;
 
+// which clock a TIME_* function formats. GROUP is the message timestamp.
+typedef enum {
+    TIME_SRC_GROUP = 0,
+    TIME_SRC_TAG,
+    TIME_SRC_NAMED_TAG,
+} time_src_e;
+
 typedef struct {
     var_kind_e kind;
     tag_attr_e attr;
-    char *     arg; // tag name, property key or time format
+    time_src_e time_src;
+    char *     arg;      // tag name, property key or strftime format
+    char *     time_ref; // tag name for TIME_*(tags[name].timestamp)
 } var_t;
 
 typedef struct {
@@ -219,11 +228,19 @@ static void compile_error(compiler_t *c, const char *fmt, const char *arg)
     }
 }
 
+static void var_fini(var_t *var)
+{
+    free(var->arg);
+    free(var->time_ref);
+    var->arg      = NULL;
+    var->time_ref = NULL;
+}
+
 static void str_fini(str_tmpl_t *str)
 {
     for (size_t i = 0; i < str->n_seg; ++i) {
         free(str->segs[i].text);
-        free(str->segs[i].var.arg);
+        var_fini(&str->segs[i].var);
     }
     free(str->segs);
     str->segs  = NULL;
@@ -241,7 +258,7 @@ static void node_free(node_t *node)
         json_decref(node->literal);
         break;
     case NODE_VAR:
-        free(node->var.arg);
+        var_fini(&node->var);
         break;
     case NODE_STR:
         str_fini(&node->str);
@@ -276,12 +293,156 @@ static bool parse_tag_attr(const char *name, tag_attr_e *attr)
     return false;
 }
 
+static bool timestamp_attr(tag_attr_e attr)
+{
+    return TAG_ATTR_TIMESTAMP == attr || TAG_ATTR_SOURCE_TIMESTAMP == attr ||
+        TAG_ATTR_SERVER_TIMESTAMP == attr;
+}
+
+static void trim_spaces(char *text)
+{
+    char * start = text;
+    size_t len   = 0;
+
+    while (isspace((unsigned char) *start)) {
+        ++start;
+    }
+    if (start != text) {
+        memmove(text, start, strlen(start) + 1);
+    }
+    len = strlen(text);
+    while (0 < len && isspace((unsigned char) text[len - 1])) {
+        text[--len] = '\0';
+    }
+}
+
+static bool time_function(const char *name, var_kind_e *kind)
+{
+    static const struct {
+        const char *name;
+        var_kind_e  kind;
+    } fns[] = {
+        { "TIME_RFC3339", VAR_TIME_RFC3339 },
+        { "TIME_UTC", VAR_TIME_UTC },
+        { "TIME_LOCAL", VAR_TIME_LOCAL },
+        { "TIME_UNIX", VAR_TIME_UNIX },
+    };
+
+    for (size_t i = 0; i < sizeof(fns) / sizeof(fns[0]); ++i) {
+        if (0 == strncmp(name, fns[i].name, strlen(fns[i].name) + 1)) {
+            *kind = fns[i].kind;
+            return true;
+        }
+    }
+    return false;
+}
+
+// expr is one of timestamp, tag.<clock> or tags[name].<clock>
+static int parse_time_expr(compiler_t *c, const char *origin, char *expr,
+                           var_t *var)
+{
+    trim_spaces(expr);
+    if ('\0' == expr[0]) {
+        compile_error(c, "empty time argument `${%s}`", origin);
+        return -1;
+    }
+    if (0 == strncmp(expr, "timestamp", strlen("timestamp") + 1)) {
+        var->time_src = TIME_SRC_GROUP;
+        return 0;
+    }
+    if (0 == strncmp(expr, "tag.", strlen("tag."))) {
+        if (!parse_tag_attr(expr + strlen("tag."), &var->attr) ||
+            !timestamp_attr(var->attr)) {
+            compile_error(c, "`${%s}` is not a timestamp", origin);
+            return -1;
+        }
+        var->time_src = TIME_SRC_TAG;
+        return 0;
+    }
+    if (0 == strncmp(expr, "tags[", strlen("tags["))) {
+        const char *close = strrchr(expr, ']');
+
+        if (NULL == close || close == expr + strlen("tags[") ||
+            '.' != close[1] || !parse_tag_attr(close + 2, &var->attr) ||
+            !timestamp_attr(var->attr)) {
+            compile_error(c, "`${%s}` is not a timestamp", origin);
+            return -1;
+        }
+        var->time_src = TIME_SRC_NAMED_TAG;
+        var->time_ref = strndup(expr + strlen("tags["), close - (expr + 5));
+        return NULL != var->time_ref ? 0 : -1;
+    }
+
+    compile_error(c, "unknown time argument `${%s}`", origin);
+    return -1;
+}
+
+// TIME_LOCAL(tag.timestamp), TIME:%Y-%m-%d(timestamp), and the same for the
+// other clocks. `name` is restored before returning.
+static int parse_time_call(compiler_t *c, char *name, var_t *var)
+{
+    char * origin = strdup(name);
+    char * open   = strchr(name, '(');
+    size_t len    = strlen(name);
+    bool   split  = false;
+    int    rv     = -1;
+
+    if (NULL == origin) {
+        return -1;
+    }
+    if (NULL == open || ')' != name[len - 1] || NULL != strchr(open + 1, '(')) {
+        compile_error(c, "invalid time function `${%s}`", origin);
+        goto done;
+    }
+
+    *open         = '\0';
+    name[len - 1] = '\0';
+    split         = true;
+
+    if (0 == strncmp(name, "TIME:", strlen("TIME:"))) {
+        size_t flen = strlen(name + strlen("TIME:"));
+        if (0 == flen || TMPL_TIME_FORMAT_MAX_LEN < flen) {
+            compile_error(c, "invalid time format `${%s}`", origin);
+            goto done;
+        }
+        var->kind = VAR_TIME_FORMAT;
+        var->arg  = strdup(name + strlen("TIME:"));
+        if (NULL == var->arg) {
+            goto done;
+        }
+    } else if (!time_function(name, &var->kind)) {
+        compile_error(c, "unknown variable `${%s}`", origin);
+        goto done;
+    }
+
+    rv = parse_time_expr(c, origin, open + 1, var);
+    if (0 != rv) {
+        var_fini(var);
+    }
+
+done:
+    if (split) {
+        *open         = '(';
+        name[len - 1] = ')';
+    }
+    free(origin);
+    return rv;
+}
+
 // `name` is the text between `${` and `}`
 static int parse_var(compiler_t *c, char *name, var_t *var)
 {
     size_t len = strlen(name);
 
     memset(var, 0, sizeof(*var));
+
+    if (0 == strncmp(name, "TIME", strlen("TIME")) &&
+        NULL != strchr(name, '(')) {
+        if (0 != parse_time_call(c, name, var)) {
+            return -1;
+        }
+        goto check;
+    }
 
     for (size_t i = 0; i < sizeof(plain_vars) / sizeof(plain_vars[0]); ++i) {
         if (0 ==
@@ -332,19 +493,18 @@ static int parse_var(compiler_t *c, char *name, var_t *var)
     }
 
 check:
-    if (MQTT_V2_TMPL_DATA == c->kind && VAR_TAG == var->kind) {
+    if (MQTT_V2_TMPL_DATA == c->kind &&
+        (VAR_TAG == var->kind || TIME_SRC_TAG == var->time_src)) {
         compile_error(c, "`${%s}` can only be used in the tag template", name);
-        free(var->arg);
-        var->arg = NULL;
+        var_fini(var);
         return -1;
     }
 
     if (MQTT_V2_TMPL_TAG == c->kind &&
         (VAR_TAGS == var->kind || VAR_TAGS_KV == var->kind ||
-         VAR_TAGS_ITEM == var->kind)) {
+         VAR_TAGS_ITEM == var->kind || TIME_SRC_NAMED_TAG == var->time_src)) {
         compile_error(c, "`${%s}` cannot be used in the tag template", name);
-        free(var->arg);
-        var->arg = NULL;
+        var_fini(var);
         return -1;
     }
 
@@ -413,7 +573,7 @@ static int compile_str(compiler_t *c, const char *text, str_tmpl_t *str)
             goto error;
         }
         if (0 != str_add_seg(str, &seg)) {
-            free(seg.var.arg);
+            var_fini(&seg.var);
             goto error;
         }
 
@@ -921,6 +1081,86 @@ static json_t *render_tags_item(const mqtt_v2_render_ctx_t *ctx,
     return NULL;
 }
 
+static bool meta_timestamp(scope_t *s, const char **names, int64_t *out)
+{
+    for (; NULL != *names; ++names) {
+        for (int k = 0; k < s->jtag.n_meta; ++k) {
+            neu_json_tag_meta_t *meta = &s->jtag.metas[k];
+            if (NULL != meta->name && 0 == strcasecmp(meta->name, *names) &&
+                NEU_JSON_INT == meta->t) {
+                *out = meta->value.val_int;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool attr_timestamp(scope_t *s, tag_attr_e attr, int64_t *out)
+{
+    const neu_tag_sample_attrs_t *attrs = &s->tag->value.attrs;
+
+    switch (attr) {
+    case TAG_ATTR_TIMESTAMP:
+        if (attrs->has_timestamp) {
+            *out = attrs->timestamp;
+            return true;
+        }
+        if (attrs->has_source_timestamp) {
+            *out = attrs->source_timestamp;
+            return true;
+        }
+        if (attrs->has_server_timestamp) {
+            *out = attrs->server_timestamp;
+            return true;
+        }
+        return meta_timestamp(s, timestamp_metas, out);
+    case TAG_ATTR_SOURCE_TIMESTAMP:
+        if (attrs->has_source_timestamp) {
+            *out = attrs->source_timestamp;
+            return true;
+        }
+        return meta_timestamp(s, source_timestamp_metas, out);
+    case TAG_ATTR_SERVER_TIMESTAMP:
+        if (attrs->has_server_timestamp) {
+            *out = attrs->server_timestamp;
+            return true;
+        }
+        return meta_timestamp(s, server_timestamp_metas, out);
+    default:
+        return false;
+    }
+}
+
+static bool resolve_time(const var_t *var, scope_t *s, int64_t *out)
+{
+    if (TIME_SRC_GROUP == var->time_src) {
+        *out = s->ctx->timestamp;
+        return true;
+    }
+    if (TIME_SRC_TAG == var->time_src) {
+        return NULL != s->tag && attr_timestamp(s, var->attr, out);
+    }
+    if (NULL == s->ctx->tags || NULL == var->time_ref) {
+        return false;
+    }
+
+    utarray_foreach(s->ctx->tags, neu_resp_tag_value_meta_t *, tag)
+    {
+        scope_t one = { 0 };
+        bool    ok  = false;
+
+        if (0 != strncmp(tag->tag, var->time_ref, NEU_TAG_NAME_LEN)) {
+            continue;
+        }
+        scope_enter(&one, s->ctx, tag);
+        ok = attr_timestamp(&one, var->attr, out);
+        scope_leave(&one);
+        return ok;
+    }
+    return false;
+}
+
 static json_t *render_time(var_kind_e kind, const char *format,
                            int64_t timestamp)
 {
@@ -987,8 +1227,13 @@ static json_t *render_var(const var_t *var, scope_t *s)
     case VAR_TIME_UTC:
     case VAR_TIME_LOCAL:
     case VAR_TIME_UNIX:
-    case VAR_TIME_FORMAT:
-        return render_time(var->kind, var->arg, ctx->timestamp);
+    case VAR_TIME_FORMAT: {
+        int64_t timestamp = 0;
+        if (!resolve_time(var, s, &timestamp)) {
+            return NULL;
+        }
+        return render_time(var->kind, var->arg, timestamp);
+    }
     case VAR_PROPERTIES:
         if (NULL == ctx->properties || 0 == json_object_size(ctx->properties)) {
             return NULL;
